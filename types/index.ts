@@ -10,7 +10,7 @@ export interface Wallet {
 export interface TokenBalance {
   ethBalance: string;
   uscBalance: string;
-  papayosBalance: string;
+  eurcBalance: string;
 }
 
 // Network types

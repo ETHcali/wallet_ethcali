@@ -16,14 +16,14 @@ export default function Login({ onSuccess }: LoginProps) {
   return (
     <div className="login-container">
       <h2>Welcome to ETH CALI Wallet</h2>
-      <p>Login with email or phone to access your wallet</p>
+      <p>Sign in with your email to access your wallet</p>
       <Button 
         onClick={handleLogin} 
         variant="primary" 
         size="large"
         disabled={!ready}
       >
-        Login with Privy
+        Sign In with Email
       </Button>
 
       <style jsx>{`

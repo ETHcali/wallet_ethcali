@@ -1,6 +1,5 @@
 import React from 'react';
 import Head from 'next/head';
-import ThemeToggle from './ThemeToggle';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -18,7 +17,7 @@ const Layout: React.FC<LayoutProps> = ({
   const imageUrl = `${siteUrl}/banner_ethcali.jpg`;
   
   return (
-    <div className="min-h-screen flex flex-col w-full bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+    <div className="min-h-screen flex flex-col w-full bg-black transition-colors duration-300">
       <Head>
         <title>{title}</title>
         <meta name="description" content={description} />
@@ -44,28 +43,25 @@ const Layout: React.FC<LayoutProps> = ({
         <meta name="author" content="ETH CALI" />
       </Head>
 
-      <header className="py-8 px-4 text-center border-b border-gray-200 dark:border-gray-800 bg-black relative z-10">
+      <header className="py-8 px-4 text-center border-b border-cyan-500/20 bg-black relative z-10">
         <div className="relative py-6 flex flex-col items-center">
-          <div className="absolute top-0 right-0">
-            <ThemeToggle />
-          </div>
           <img 
             src="/logo_eth_cali_blanco.png" 
             alt="ETH CALI Logo" 
             className="w-36 h-auto mb-4 filter drop-shadow-md md:w-40"
           />
-          <h1 className="text-white text-xl font-semibold text-shadow-sm md:text-2xl">{title}</h1>
+          <h1 className="text-white text-xl font-semibold text-shadow-sm md:text-2xl font-mono">{title}</h1>
         </div>
       </header>
 
       <main className="flex-1 w-full max-w-4xl mx-auto px-4 py-6 md:px-6 md:py-8">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 md:p-6 transition-colors duration-300">
+        <div className="bg-gray-900 rounded-xl shadow-md p-4 md:p-6 transition-colors duration-300">
           {children}
         </div>
       </main>
 
-      <footer className="py-6 px-4 text-center border-t border-gray-200 dark:border-gray-800 bg-black text-white text-sm">
-        <p className="opacity-90">Powered by ETH CALI</p>
+      <footer className="py-6 px-4 text-center border-t border-cyan-500/20 bg-black text-white text-sm font-mono">
+        <p className="opacity-90">POWERED_BY_ETH_CALI</p>
       </footer>
     </div>
   );

@@ -43,7 +43,7 @@ function MyApp({ Component, pageProps }: AppProps) {
       <PrivyProvider
         appId={PRIVY_APP_ID}
         config={{
-          loginMethods: ['email', 'sms'],
+          loginMethods: ['email'],
           appearance: {
             theme: 'light',
             accentColor: '#4B66F3',

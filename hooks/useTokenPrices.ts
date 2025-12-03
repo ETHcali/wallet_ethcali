@@ -43,7 +43,8 @@ export function useTokenPrices() {
       // Set fallback prices
       setPrices({
         [COINGECKO_IDS.ETH]: { usd: 3500, usd_24h_change: 1.5 },
-        [COINGECKO_IDS.USDC]: { usd: 1, usd_24h_change: 0.01 }
+        [COINGECKO_IDS.USDC]: { usd: 1, usd_24h_change: 0.01 },
+        [COINGECKO_IDS.EURC]: { usd: 1.08, usd_24h_change: 0.02 } // 1 EUR ≈ 1.08 USD
       });
     } finally {
       setIsLoading(false);
@@ -63,12 +64,16 @@ export function useTokenPrices() {
   const getPriceForToken = useCallback((tokenSymbol: string): { price: number; change24h: number } => {
     const coinId = COINGECKO_IDS[tokenSymbol];
     if (!coinId || !prices[coinId]) {
+      console.warn(`Price not found for ${tokenSymbol}, using fallback`);
+      // Return approximate fallback values
+      if (tokenSymbol === 'EURC') return { price: 1.08, change24h: 0 };
+      if (tokenSymbol === 'USDC') return { price: 1.00, change24h: 0 };
       return { price: 0, change24h: 0 };
     }
     
     return { 
-      price: prices[coinId].usd, 
-      change24h: prices[coinId].usd_24h_change 
+      price: prices[coinId].usd || 0, 
+      change24h: prices[coinId].usd_24h_change || 0
     };
   }, [prices]);
 

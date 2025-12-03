@@ -5,15 +5,15 @@ A secure and easy-to-use Ethereum wallet application built with Next.js and Priv
 ## 🌟 Features
 
 ### 🔐 **Easy Authentication**
-- Login with email or phone via Privy
+- Login with email via Privy
 - Automatic embedded wallet creation
+- ZKPassport personhood verification (scan QR with passport)
 - Export private keys functionality
-- Secure authentication flow
 
 ### 💰 **Multi-Token Support**
-- **ETH**: Native Ethereum on Optimism
+- **ETH**: Native Ethereum on Base
 - **USDC**: USD Coin (Native Circle USDC)
-- **PAPAYOS**: Custom token support with contract `0xfeEF2ce2B94B8312EEB05665e2F03efbe3B0a916`
+- **EURC**: Euro Coin (Circle's EUR stablecoin)
 
 ### 🚀 **Advanced Features**
 - Real-time balance fetching from Optimism blockchain
@@ -24,8 +24,9 @@ A secure and easy-to-use Ethereum wallet application built with Next.js and Priv
 - Beautiful modern UI with TailwindCSS
 
 ### 🔗 **Network Support**
-- Optimism Mainnet (Chain ID: 10)
-- Optimistic Etherscan integration
+- Base Mainnet (Chain ID: 8453)
+- Ethereum Mainnet (Chain ID: 1)
+- BaseScan integration
 - Real-time price data from CoinGecko
 
 ## 🚀 Quick Start
@@ -81,11 +82,11 @@ ethcaliwallet/
 │   └── useTokenPrices.ts
 ├── utils/               # Utility functions
 │   ├── api.ts
-│   └── tokenUtils.ts
+│   ├── tokenUtils.ts
+│   └── zkpassport.ts    # ZKPassport KYC integration
 ├── types/               # TypeScript definitions
 ├── lib/                 # Core library functions
 ├── public/              # Static assets
-│   └── ppytoken.jpg     # PAPAYOS token logo
 └── styles/              # CSS and styling
 ```
 
@@ -93,16 +94,18 @@ ethcaliwallet/
 
 | Token | Contract Address | Decimals | Network |
 |-------|------------------|----------|---------|
-| **ETH** | Native | 18 | Optimism |
-| **USDC** | `0x0b2c639c533813f4aa9d7837caf62653d097ff85` | 6 | Optimism |
-| **PAPAYOS** | `0xfeEF2ce2B94B8312EEB05665e2F03efbe3B0a916` | 18 | Optimism |
+| **ETH** | Native | 18 | Base |
+| **USDC** | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` | 6 | Base |
+| **EURC** | `0x60a3E35Cc302bFA44Cb288Bc5a4F316Fdb1adb42` | 6 | Base |
+| **EURC** | `0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c` | 6 | Ethereum |
 
 ## 🔧 Key Technologies
 
 - **Frontend**: Next.js 14, React, TypeScript
 - **Styling**: TailwindCSS with dark mode support
-- **Authentication**: Privy (Email/Phone)
-- **Blockchain**: Viem, Optimism
+- **Authentication**: Privy (Email)
+- **Personhood**: ZKPassport SDK with QR scanning
+- **Blockchain**: Viem, Base Network
 - **Gas Sponsorship**: Biconomy Account Abstraction
 - **Deployment**: Vercel
 

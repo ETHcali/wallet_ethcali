@@ -4,8 +4,7 @@ import { TokenBalance } from '../types/index';
 export const COINGECKO_IDS = {
   ETH: 'ethereum',
   USDC: 'usd-coin',
-  OP: 'optimism',
-  PAPAYOS: 'papayos'
+  EURC: 'euro-coin' // Circle's EURC
 };
 
 // Base URL for CoinGecko images
@@ -15,48 +14,42 @@ const COINGECKO_IMAGE_URL = 'https://assets.coingecko.com/coins/images';
 const FALLBACK_IMAGES = {
   ETH: '/images/ethereum.png',
   USDC: '/images/usdc.png',
-  OP: '/images/optimism.png',
-  PAPAYOS: '/ppytoken.jpg',
+  EURC: '/images/eurc.png',
   DEFAULT: '/images/token-default.png'
 };
 
 /**
  * Get token logo URL from CoinGecko
- * @param tokenSymbol The token symbol (ETH, USDC, etc)
+ * @param tokenSymbol The token symbol (ETH, USDC, EURC)
  * @returns The URL to the token logo
  */
 export function getTokenLogoUrl(tokenSymbol: string): string {
   const symbol = tokenSymbol.toUpperCase();
-  const id = COINGECKO_IDS[symbol];
   
-  if (!id) {
-    return FALLBACK_IMAGES[symbol] || FALLBACK_IMAGES.DEFAULT;
-  }
-  
-  // For ETH: https://assets.coingecko.com/coins/images/279/large/ethereum.png
-  // For USDC: https://assets.coingecko.com/coins/images/6319/large/USD_Coin_icon.png
-  // For OP: https://assets.coingecko.com/coins/images/25244/large/Optimism.png
   switch (symbol) {
     case 'ETH':
       return `${COINGECKO_IMAGE_URL}/279/large/ethereum.png`;
     case 'USDC':
       return `${COINGECKO_IMAGE_URL}/6319/large/USD_Coin_icon.png`;
-    case 'OP':
-      return `${COINGECKO_IMAGE_URL}/25244/large/Optimism.png`;
-    case 'PAPAYOS':
-      return '/ppytoken.jpg';
+    case 'EURC':
+      // EURC on CoinGecko: https://www.coingecko.com/en/coins/euro-coin
+      return `${COINGECKO_IMAGE_URL}/26045/large/euro-coin.png`;
     default:
-      return FALLBACK_IMAGES.DEFAULT;
+      return FALLBACK_IMAGES[symbol] || FALLBACK_IMAGES.DEFAULT;
   }
 }
 
 /**
  * Get network logo URL
- * @param networkId The network ID (10 for Optimism)
+ * @param networkId The network ID (1 for Ethereum, 8453 for Base)
  * @returns The URL to the network logo
  */
 export function getNetworkLogoUrl(networkId: number): string {
   switch (networkId) {
+    case 1: // Ethereum
+      return `${COINGECKO_IMAGE_URL}/279/small/ethereum.png`;
+    case 8453: // Base
+      return 'https://avatars.githubusercontent.com/u/108554348?s=280&v=4';
     case 10: // Optimism
       return `${COINGECKO_IMAGE_URL}/25244/small/Optimism.png`;
     default:
@@ -80,4 +73,4 @@ export function formatTokenBalance(balance: string, decimals: number = 6): strin
   }
   
   return value.toFixed(decimals);
-} 
+}
