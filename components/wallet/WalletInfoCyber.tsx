@@ -261,7 +261,26 @@ const WalletInfoCyber: React.FC<WalletInfoProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-gray-500 font-mono mb-1">ADDRESS</p>
-              <p className="text-cyan-400 font-mono text-sm">{formatAddress(wallet.address)}</p>
+              <p className="text-cyan-400 font-mono text-sm">
+                <a
+                  href={`${explorerUrl}/address/${wallet.address}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:underline"
+                >
+                  {formatAddress(wallet.address)}
+                </a>
+              </p>
+              <p className="text-[11px] text-gray-500 font-mono">
+                <a
+                  href={`${explorerUrl}/address/${wallet.address}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:underline"
+                >
+                  {wallet.address}
+                </a>
+              </p>
             </div>
             <div className="flex gap-2">
               <button
@@ -270,14 +289,12 @@ const WalletInfoCyber: React.FC<WalletInfoProps> = ({
               >
                 COPY
               </button>
-              <a 
-                href={`${explorerUrl}/address/${wallet.address}`}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                onClick={() => setIsQRScannerOpen(true)}
                 className="px-3 py-1.5 bg-pink-500/10 hover:bg-pink-500/20 border border-pink-500/50 rounded text-pink-400 text-xs font-mono"
               >
-                SCAN
-              </a>
+                SCAN_QR
+              </button>
               <button
                 onClick={() => setIsQRModalOpen(true)}
                 className="px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/50 rounded text-cyan-400 text-xs font-mono"

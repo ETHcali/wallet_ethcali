@@ -11,6 +11,7 @@ export interface TokenBalance {
   ethBalance: string;
   uscBalance: string;
   eurcBalance: string;
+  papayosBalance?: string;
 }
 
 // Network types
