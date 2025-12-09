@@ -34,7 +34,7 @@
     "vercel": "^32.5.3"
   },
   "engines": {
-    "node": ">=24.0.0",
+    "node": "20.x",
     "npm": ">=8.x"
   },
   "resolutions": {

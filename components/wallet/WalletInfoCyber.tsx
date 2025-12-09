@@ -205,18 +205,18 @@ const WalletInfoCyber: React.FC<WalletInfoProps> = ({
       {/* Cyber glow effect */}
       <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 via-purple-500/20 to-pink-500/20 rounded-2xl blur-xl"></div>
       
-      <div className="relative bg-black p-6 rounded-2xl border border-cyan-500/30">
+      <div className="relative bg-black p-4 sm:p-6 rounded-2xl border border-cyan-500/30 space-y-5 sm:space-y-6">
         {/* Header */}
-        <div className="flex flex-col gap-3 mb-6">
-          <div className="flex justify-between items-center">
-            <h3 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent font-mono">
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <h3 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent font-mono">
               WALLET_INTERFACE
             </h3>
             <div className="flex items-center gap-2">
               <button 
                 onClick={onRefresh}
                 disabled={isLoading}
-                className="px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/50 rounded-lg text-cyan-400 text-sm font-mono transition-all"
+                className="px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/50 rounded-lg text-cyan-400 text-xs sm:text-sm font-mono transition-all"
               >
                 {isLoading ? '⟳' : '↻'} SYNC
               </button>
@@ -224,12 +224,12 @@ const WalletInfoCyber: React.FC<WalletInfoProps> = ({
           </div>
 
           {/* Chain switcher + Export keys */}
-          <div className="p-3 bg-gray-900/60 border border-cyan-500/30 rounded-xl">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+          <div className="p-3 bg-gray-900/60 border border-cyan-500/30 rounded-xl space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <button
                   onClick={() => setShowNetworks(!showNetworks)}
-                  className="px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/50 rounded-lg text-cyan-300 text-xs font-mono transition-all"
+                  className="px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/50 rounded-lg text-cyan-300 text-xs font-mono transition-all w-full sm:w-auto"
                 >
                   {showNetworks ? '▲ CHAINS' : '▼ CHAINS'}
                 </button>
@@ -237,7 +237,7 @@ const WalletInfoCyber: React.FC<WalletInfoProps> = ({
               </div>
               <button
                 onClick={handleExportWallet}
-                className="px-3 py-1.5 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 hover:from-cyan-500/30 hover:to-purple-500/30 border border-cyan-500/50 rounded-lg text-cyan-300 text-xs font-mono font-bold transition-all"
+                className="px-3 py-1.5 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 hover:from-cyan-500/30 hover:to-purple-500/30 border border-cyan-500/50 rounded-lg text-cyan-300 text-xs font-mono font-bold transition-all w-full sm:w-auto"
               >
                 🔐 EXPORT_KEYS
               </button>
@@ -257,8 +257,8 @@ const WalletInfoCyber: React.FC<WalletInfoProps> = ({
         </div>
 
         {/* Address Display */}
-        <div className="mb-6 p-4 bg-gray-900/50 border border-purple-500/30 rounded-xl">
-          <div className="flex items-center justify-between">
+        <div className="p-4 bg-gray-900/50 border border-purple-500/30 rounded-xl">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <p className="text-xs text-gray-500 font-mono mb-1">ADDRESS</p>
               <p className="text-cyan-400 font-mono text-sm">
@@ -271,7 +271,7 @@ const WalletInfoCyber: React.FC<WalletInfoProps> = ({
                   {formatAddress(wallet.address)}
                 </a>
               </p>
-              <p className="text-[11px] text-gray-500 font-mono">
+              <p className="text-[11px] text-gray-500 font-mono break-all sm:break-normal">
                 <a
                   href={`${explorerUrl}/address/${wallet.address}`}
                   target="_blank"
@@ -282,7 +282,7 @@ const WalletInfoCyber: React.FC<WalletInfoProps> = ({
                 </a>
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 sm:justify-end">
               <button
                 onClick={() => navigator.clipboard.writeText(wallet.address)}
                 className="px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/50 rounded text-purple-400 text-xs font-mono"
@@ -318,10 +318,10 @@ const WalletInfoCyber: React.FC<WalletInfoProps> = ({
         </div>
 
         {/* Token List - Cyber Grid */}
-        <div className="space-y-3 mb-6">
+        <div className="space-y-3">
           {/* ETH */}
           <div className="group p-4 bg-gray-900/50 hover:bg-gray-900/70 border border-cyan-500/20 hover:border-cyan-500/50 rounded-xl transition-all">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full border-2 border-cyan-500/50 p-0.5">
                   <img src={ethLogoUrl} alt="ETH" className="w-full h-full rounded-full" />
@@ -331,14 +331,14 @@ const WalletInfoCyber: React.FC<WalletInfoProps> = ({
                   <p className="text-xs text-gray-500 font-mono">Ethereum</p>
                 </div>
               </div>
-              <div className="text-right">
+              <div className="text-left sm:text-right">
                 <p className="font-mono text-white font-bold">{formatTokenBalance(balances.ethBalance, 6)}</p>
                 <p className="text-sm text-cyan-400 font-mono">{formatUsd(ethValueUsd)}</p>
                 <p className="text-xs text-gray-500 font-mono">@ {formatUsd(ethPrice.price)}</p>
               </div>
               <button
                 onClick={() => openSendModal('ETH')}
-                className="ml-4 px-4 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/50 rounded-lg text-cyan-400 font-mono text-sm transition-all"
+                className="w-full sm:w-auto sm:ml-4 px-4 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/50 rounded-lg text-cyan-400 font-mono text-sm transition-all"
               >
                 SEND
               </button>
@@ -347,7 +347,7 @@ const WalletInfoCyber: React.FC<WalletInfoProps> = ({
 
           {/* USDC */}
           <div className="group p-4 bg-gray-900/50 hover:bg-gray-900/70 border border-purple-500/20 hover:border-purple-500/50 rounded-xl transition-all">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full border-2 border-purple-500/50 p-0.5">
                   <img src={usdcLogoUrl} alt="USDC" className="w-full h-full rounded-full" />
@@ -357,14 +357,14 @@ const WalletInfoCyber: React.FC<WalletInfoProps> = ({
                   <p className="text-xs text-gray-500 font-mono">USD Coin</p>
                 </div>
               </div>
-              <div className="text-right">
+              <div className="text-left sm:text-right">
                 <p className="font-mono text-white font-bold">{formatTokenBalance(balances.uscBalance, 6)}</p>
                 <p className="text-sm text-purple-400 font-mono">{formatUsd(usdcValueUsd)}</p>
                 <p className="text-xs text-gray-500 font-mono">@ {formatUsd(usdcPrice.price)}</p>
               </div>
               <button
                 onClick={() => openSendModal('USDC')}
-                className="ml-4 px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/50 rounded-lg text-purple-400 font-mono text-sm transition-all"
+                className="w-full sm:w-auto sm:ml-4 px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/50 rounded-lg text-purple-400 font-mono text-sm transition-all"
               >
                 SEND
               </button>
@@ -373,7 +373,7 @@ const WalletInfoCyber: React.FC<WalletInfoProps> = ({
 
           {/* EURC */}
           <div className="group p-4 bg-gray-900/50 hover:bg-gray-900/70 border border-pink-500/20 hover:border-pink-500/50 rounded-xl transition-all">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full border-2 border-pink-500/50 p-0.5">
                   <img src={eurcLogoUrl} alt="EURC" className="w-full h-full rounded-full" />
@@ -383,14 +383,14 @@ const WalletInfoCyber: React.FC<WalletInfoProps> = ({
                   <p className="text-xs text-gray-500 font-mono">Euro Coin</p>
                 </div>
               </div>
-              <div className="text-right">
+              <div className="text-left sm:text-right">
                 <p className="font-mono text-white font-bold">{formatTokenBalance(balances.eurcBalance, 6)}</p>
                 <p className="text-sm text-pink-400 font-mono">{formatUsd(eurcValueUsd)}</p>
                 <p className="text-xs text-gray-500 font-mono">@ {formatUsd(eurcPrice.price)}</p>
               </div>
               <button
                 onClick={() => openSendModal('EURC')}
-                className="ml-4 px-4 py-2 bg-pink-500/20 hover:bg-pink-500/30 border border-pink-500/50 rounded-lg text-pink-400 font-mono text-sm transition-all"
+                className="w-full sm:w-auto sm:ml-4 px-4 py-2 bg-pink-500/20 hover:bg-pink-500/30 border border-pink-500/50 rounded-lg text-pink-400 font-mono text-sm transition-all"
               >
                 SEND
               </button>
