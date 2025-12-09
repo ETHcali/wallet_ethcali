@@ -1,12 +1,4 @@
 {
   "buildCommand": "npm install && npm run build",
-  "outputDirectory": ".next",
-  "functions": {
-    "api/**": {
-      "runtime": "nodejs20.x"
-    },
-    "pages/api/**": {
-      "runtime": "nodejs20.x"
-    }
-  }
+  "outputDirectory": ".next"
 } 
