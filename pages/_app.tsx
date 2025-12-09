@@ -6,7 +6,7 @@ import { ThemeProvider } from '../context/ThemeContext';
 
 function MyApp({ Component, pageProps }: AppProps) {
   // App ID from the Privy Dashboard (using environment variable)
-  const PRIVY_APP_ID = process.env.PRIVY_APP_ID || "cmavjopg6021ilh0ng5vnr5gc";
+  const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID || "cmavjopg6021ilh0ng5vnr5gc";
   
   // Log in development to help debug
   if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
