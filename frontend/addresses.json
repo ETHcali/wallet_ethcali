@@ -1,0 +1,18 @@
+{
+  "unichain": {
+    "chainId": 130,
+    "addresses": {
+      "ZKPassportNFT": "0x25B43cE10ffD04Cb90123D7582E6B5100B27f9cB",
+      "SponsorContract": "0x9Df46E1C221F8b067343f9B760F5Cb2c4757FE2d",
+      "FaucetVault": "0x76235436cbD3F2ff12CC3610f2643654211Efb3d"
+    }
+  },
+  "base": {
+    "chainId": 8453,
+    "addresses": {
+      "ZKPassportNFT": "0x18B581aBA74e0068B60b3Af00814B8293B837A60",
+      "SponsorContract": "0x2940e286B41d279b61E484B98a08498E355E4778",
+      "FaucetVault": "0x607003f188C49ed6E0553805734B9990393402dF"
+    }
+  }
+}

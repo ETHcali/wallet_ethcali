@@ -1,0 +1,9 @@
+{
+  "network": "unichain",
+  "chainId": 130,
+  "addresses": {
+    "ZKPassportNFT": "0x25B43cE10ffD04Cb90123D7582E6B5100B27f9cB",
+    "SponsorContract": "0x9Df46E1C221F8b067343f9B760F5Cb2c4757FE2d",
+    "FaucetVault": "0x76235436cbD3F2ff12CC3610f2643654211Efb3d"
+  }
+}

@@ -6,7 +6,7 @@ import SendTokenModalTailwind from './SendTokenModalTailwind';
 import QRScannerTailwind from './QRScannerTailwind';
 import { parseUnits, encodeFunctionData } from 'viem';
 import { useTokenPrices } from '../../hooks/useTokenPrices';
-import NetworkSwitcher from '../NetworkSwitcher';
+import { getNetworkName } from '../../utils/contracts';
 
 interface WalletInfoProps {
   wallet: Wallet;
@@ -14,7 +14,6 @@ interface WalletInfoProps {
   isLoading: boolean;
   onRefresh: () => void;
   chainId?: number;
-  onChainChange?: (chainId: number) => void;
 }
 
 const WalletInfoCyber: React.FC<WalletInfoProps> = ({
@@ -23,7 +22,6 @@ const WalletInfoCyber: React.FC<WalletInfoProps> = ({
   isLoading,
   onRefresh,
   chainId = 8453,
-  onChainChange
 }) => {
   const { exportWallet } = usePrivy();
   const { wallets } = useWallets();
@@ -36,7 +34,8 @@ const WalletInfoCyber: React.FC<WalletInfoProps> = ({
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
   const [scannedAddress, setScannedAddress] = useState<string | null>(null);
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
-  const [showNetworks, setShowNetworks] = useState(false);
+  
+  const networkName = getNetworkName(chainId);
   
   const privyWallet = wallets?.find(w => w.address.toLowerCase() === wallet.address.toLowerCase());
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${wallet.address}`;
@@ -223,36 +222,21 @@ const WalletInfoCyber: React.FC<WalletInfoProps> = ({
             </div>
           </div>
 
-          {/* Chain switcher + Export keys */}
-          <div className="p-3 bg-gray-900/60 border border-cyan-500/30 rounded-xl space-y-2">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <button
-                  onClick={() => setShowNetworks(!showNetworks)}
-                  className="px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/50 rounded-lg text-cyan-300 text-xs font-mono transition-all w-full sm:w-auto"
-                >
-                  {showNetworks ? '▲ CHAINS' : '▼ CHAINS'}
-                </button>
-                <span className="text-xs text-gray-400 font-mono">Current: {chainId === 1 ? 'Ethereum' : chainId === 8453 ? 'Base' : chainId === 10 ? 'Optimism' : chainId}</span>
-              </div>
-              <button
-                onClick={handleExportWallet}
-                className="px-3 py-1.5 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 hover:from-cyan-500/30 hover:to-purple-500/30 border border-cyan-500/50 rounded-lg text-cyan-300 text-xs font-mono font-bold transition-all w-full sm:w-auto"
-              >
-                🔐 EXPORT_KEYS
-              </button>
+          {/* Network badge + Export keys */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold ${
+              networkName === 'base' 
+                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
+                : 'bg-pink-500/20 text-pink-400 border border-pink-500/30'
+            }`}>
+              {networkName.toUpperCase()} MAINNET
             </div>
-            {showNetworks && (
-              <div className="mt-3">
-                <NetworkSwitcher
-                  currentChainId={chainId}
-                  onNetworkChange={(id) => {
-                    if (onChainChange) onChainChange(id);
-                    setShowNetworks(false);
-                  }}
-                />
-              </div>
-            )}
+            <button
+              onClick={handleExportWallet}
+              className="px-3 py-1.5 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 hover:from-cyan-500/30 hover:to-purple-500/30 border border-cyan-500/50 rounded-lg text-cyan-300 text-xs font-mono font-bold transition-all"
+            >
+              🔐 EXPORT_KEYS
+            </button>
           </div>
         </div>
 

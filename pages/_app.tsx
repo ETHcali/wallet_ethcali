@@ -48,14 +48,14 @@ function MyApp({ Component, pageProps }: AppProps) {
       <PrivyProvider
         appId={PRIVY_APP_ID}
         config={{
-          loginMethods: ['email'],
+          loginMethods: ['email', 'passkey', 'wallet'],
           appearance: {
             theme: 'light',
             accentColor: '#4B66F3',
             logo: '/logo_eth_cali.png',
           },
           embeddedWallets: {
-            createOnLogin: 'all-users',
+            createOnLogin: 'users-without-wallets',
             showWalletUIs: true,
           },
         }}
