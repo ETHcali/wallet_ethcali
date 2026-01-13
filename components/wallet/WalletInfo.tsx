@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { Wallet, TokenBalance } from '../../types/index';
 import Button from '../../components/shared/Button';
 import Loading from '../../components/shared/Loading';
@@ -50,6 +51,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
   // Get token logo URLs from CoinGecko
   const ethLogoUrl = getTokenLogoUrl('ETH');
   const usdcLogoUrl = getTokenLogoUrl('USDC');
+  const eurclogoUrl = getTokenLogoUrl('EURC');
   
   // Explorer mapping per chain
   const explorerBase = (() => {
@@ -248,7 +250,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
       <div className="wallet-address-container">
         <div className="qr-code-container">
           <div className="qr-code">
-            <img src={qrCodeUrl} alt="Wallet Address QR Code" />
+            <Image src={qrCodeUrl} alt="Wallet Address QR Code" width={150} height={150} unoptimized />
           </div>
           <p className="qr-help">Scan to view or send funds</p>
         </div>
@@ -321,10 +323,28 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           </div>
         ) : (
           <div className="token-list">
+             {/* Total Balance - Featured */}
+            <div className="total-balance-featured">
+              <div className="total-balance-content">
+                <div className="total-label">Total Portfolio Value</div>
+                <div className="total-amount-large">{formatUsd(totalValueUsd)}</div>
+              </div>
+              <div className="portfolio-breakdown">
+                <span className="breakdown-item">
+                  <Image src={ethLogoUrl} alt="ETH" width={16} height={16} className="breakdown-icon" unoptimized />
+                  {formatUsd(ethValueUsd)}
+                </span>
+                <span className="breakdown-divider">+</span>
+                <span className="breakdown-item">
+                  <Image src={usdcLogoUrl} alt="USDC" width={16} height={16} className="breakdown-icon" unoptimized />
+                  {formatUsd(usdcValueUsd)}
+                </span>
+              </div>
+            </div>
             {/* ETH Balance */}
             <div className="token-item">
               <div className="token-info">
-                <img src={ethLogoUrl} alt="ETH" className="token-icon" />
+                <Image src={ethLogoUrl} alt="ETH" width={40} height={40} className="token-icon" unoptimized />
                 <div className="token-details">
                   <span className="token-name">Ethereum</span>
                   <span className="token-symbol">ETH</span>
@@ -344,7 +364,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
             {/* USDC Balance */}
             <div className="token-item">
               <div className="token-info">
-                <img src={usdcLogoUrl} alt="USDC" className="token-icon" />
+                <Image src={usdcLogoUrl} alt="USDC" width={40} height={40} className="token-icon" unoptimized />
                 <div className="token-details">
                   <span className="token-name">USD Coin</span>
                   <span className="token-symbol">USDC</span>
@@ -360,25 +380,9 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
                 </Button>
               </div>
             </div>
+
             
-            {/* Total Balance - Featured */}
-            <div className="total-balance-featured">
-              <div className="total-balance-content">
-                <div className="total-label">Total Portfolio Value</div>
-                <div className="total-amount-large">{formatUsd(totalValueUsd)}</div>
-              </div>
-              <div className="portfolio-breakdown">
-                <span className="breakdown-item">
-                  <img src={ethLogoUrl} alt="ETH" className="breakdown-icon" />
-                  {formatUsd(ethValueUsd)}
-                </span>
-                <span className="breakdown-divider">+</span>
-                <span className="breakdown-item">
-                  <img src={usdcLogoUrl} alt="USDC" className="breakdown-icon" />
-                  {formatUsd(usdcValueUsd)}
-                </span>
-              </div>
-            </div>
+
           </div>
         )}
       </div>

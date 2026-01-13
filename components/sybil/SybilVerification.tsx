@@ -146,13 +146,8 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSu
       // Step 3: Prepare direct mint transaction data
       const mintTxData = encodeFunctionData({
         abi: ZKPassportNFTABI,
-        functionName: 'mint',
-        args: [
-          userWallet.address as `0x${string}`,
-          uniqueIdentifier,
-          faceMatchPassed,
-          personhoodVerified || true
-        ],
+        functionName: 'mintWithVerification',
+          args: [uniqueIdentifier, faceMatchPassed, personhoodVerified || true],
       });
 
       // Step 4: Send sponsored transaction directly to NFT contract

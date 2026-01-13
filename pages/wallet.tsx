@@ -56,15 +56,6 @@ export default function WalletPage() {
         <div className="space-y-6">
           {userWallet ? (
             <div className="space-y-6" key={currentChainId}>
-          {/* Professional Header */}
-          <div className="text-center py-6">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent mb-2">
-              Multi-Chain Wallet
-            </h1>
-            <p className="text-gray-500 text-sm">
-              Professional Web3 wallet with gas-sponsored transactions
-            </p>
-          </div>
               <WalletInfo 
                 wallet={userWallet as unknown as Wallet} 
                 balances={balances}

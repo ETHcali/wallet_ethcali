@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 
-type ChainLabel = 'base' | 'ethereum' | 'unichain';
+type ChainLabel = 'base' | 'ethereum' | 'unichain' | 'optimism';
 
 type ChainConfig = {
   id: number;
@@ -39,12 +39,21 @@ const CHAIN_CONFIGS: Record<ChainLabel, ChainConfig> = {
     usdc: process.env.NEXT_PUBLIC_USDC_ADDRESS_UNICHAIN || '0x5a1b40E9B1c89b2B72D0c7c1b45C07e9e6d55dCd',
     explorerUrl: 'https://explorer.unichain.org',
   },
+  optimism: {
+    id: 10,
+    label: 'optimism',
+    name: 'Optimism',
+    swag1155: process.env.NEXT_PUBLIC_SWAG1155_ADDRESS_OPTIMISM || '',
+    usdc: process.env.NEXT_PUBLIC_USDC_ADDRESS_OPTIMISM || '0x7F5c764cBc14f9669B88837ca1490cCa17c31607',
+    explorerUrl: 'https://optimistic.etherscan.io',
+  },
 };
 
 const CHAIN_ID_TO_LABEL: Record<number, ChainLabel> = {
   [CHAIN_CONFIGS.base.id]: 'base',
   [CHAIN_CONFIGS.ethereum.id]: 'ethereum',
   [CHAIN_CONFIGS.unichain.id]: 'unichain',
+  [CHAIN_CONFIGS.optimism.id]: 'optimism',
 };
 
 function getLabelByChainId(chainId?: number): ChainLabel {

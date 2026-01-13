@@ -3,10 +3,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 
-const ADMIN_ADDRESS = '0x1fd2A56907B1db9B29c2D8F0037b6D4E104f5711'.toLowerCase();
+const ADMIN_ADDRESS = process.env.NEXT_PUBLIC_ADMIN_ADDRESS!.toLowerCase();
 
 const SUPPORTED_CHAINS = [
-  { id: 8453, name: 'Base', logo: '/chains/base logo.svg' },
+  { id: 8453, name: 'Base', logo: '/chains/base_logo.svg' },
   { id: 1, name: 'Ethereum', logo: '/chains/ethereum.png' },
   { id: 10, name: 'Optimism', logo: '/chains/op mainnet.png' },
   { id: 130, name: 'Unichain', logo: '/chains/unichain.png' },
@@ -52,18 +52,19 @@ const Navigation: React.FC<NavigationProps> = ({
   // Switch wallet chain
   const handleChainSwitch = async (chainId: number) => {
     if (!userWallet) return;
-    
     try {
       const provider = await userWallet.getEthereumProvider();
       const chainHex = `0x${chainId.toString(16)}`;
-      
       await provider.request({
         method: 'wallet_switchEthereumChain',
         params: [{ chainId: chainHex }],
       });
-      
       setDisplayChainId(chainId);
       onChainChange?.(chainId);
+      // Force reload for Unichain to ensure UI updates
+      if (chainId === 130) {
+        window.location.reload();
+      }
     } catch (error: any) {
       // If chain doesn't exist, add it
       if (error.code === 4902) {
@@ -73,7 +74,7 @@ const Navigation: React.FC<NavigationProps> = ({
             chainId: '0x82',
             chainName: 'Unichain',
             nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-            rpcUrls: ['https://mainnet.unichain.org'],
+            rpcUrls: ['https://rpc.unichain.org'],
             blockExplorerUrls: ['https://unichain.blockscout.com'],
           } : {
             chainId: '0x2105',
@@ -82,18 +83,24 @@ const Navigation: React.FC<NavigationProps> = ({
             rpcUrls: ['https://mainnet.base.org'],
             blockExplorerUrls: ['https://basescan.org'],
           };
-          
           await provider.request({
             method: 'wallet_addEthereumChain',
             params: [chainConfig],
           });
-          
           setDisplayChainId(chainId);
           onChainChange?.(chainId);
+          if (chainId === 130) {
+            window.location.reload();
+          }
         } catch (addError) {
+          alert('Error adding Unichain: ' + addError?.message);
           console.error('Error adding chain:', addError);
         }
+      } else if (chainId === 130) {
+        alert('Your wallet provider does not support Unichain (chainId 130). Even though it is enabled for gas sponsorship, your wallet must support this chain. Please check with your wallet provider or Privy dashboard.');
+        console.error('Unsupported chainId 130 for Unichain.');
       } else {
+        alert('Error switching chain: ' + error?.message);
         console.error('Error switching chain:', error);
       }
     }
@@ -135,6 +142,7 @@ const Navigation: React.FC<NavigationProps> = ({
 
           {/* Chain Switcher + User */}
           <div className="flex items-center gap-2">
+            
             {/* Chain Switcher Dropdown */}
             <div className="relative group">
               <button className="flex items-center gap-2 px-3 py-1.5 bg-gray-900 border border-gray-700 rounded-lg text-xs font-mono text-gray-300 hover:border-cyan-500/50 transition-all">

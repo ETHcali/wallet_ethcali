@@ -28,13 +28,6 @@ export default function SwagStorePage() {
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-930 to-black">
       <Navigation currentChainId={chainId} />
       <Layout>
-        <section className="py-10 text-center text-white">
-          <p className="text-xs uppercase tracking-[0.3em] text-cyan-400">ETH CALI</p>
-          <h1 className="mt-3 text-4xl font-bold">Swag Store</h1>
-          <p className="mx-auto mt-3 max-w-2xl text-slate-400">
-            Multi-chain merch drops backed by the Swag1155 contract. Connect on Base, Ethereum, or Unichain to claim your gear with USDC.
-          </p>
-        </section>
 
         {isLoading && (
           <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 text-center text-slate-400">

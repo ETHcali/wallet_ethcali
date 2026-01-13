@@ -3,7 +3,7 @@ import { base, mainnet } from 'viem/chains';
 import { CONTRACTS, ADDRESSES, getContracts, getAddresses } from '../frontend/contracts';
 
 // Admin address for faucet management
-export const ADMIN_ADDRESS = '0x3b89ad8cc39900778abcdcc22bc83cac031a415b';
+export const ADMIN_ADDRESS = process.env.NEXT_PUBLIC_ADMIN_ADDRESS || '0x3B89Ad8CC39900778aBCdcc22bc83cAC031A415B'; 
 
 // Unichain definition (not in viem by default)
 export const unichain: Chain = {
@@ -12,8 +12,8 @@ export const unichain: Chain = {
   network: 'unichain',
   nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
   rpcUrls: {
-    default: { http: ['https://mainnet.unichain.org'] },
-    public: { http: ['https://mainnet.unichain.org'] },
+    default: { http: ['https://rpc.unichain.org'] },
+    public: { http: ['https://rpc.unichain.org'] },
   },
   blockExplorers: {
     default: { name: 'Uniscan', url: 'https://unichain.blockscout.com' },

@@ -101,7 +101,7 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
             rpcUrls: ['https://mainnet.unichain.org'],
             blockExplorerUrls: ['https://unichain.blockscout.com'],
           } : {
-            chainId: '0x2105',
+            chainId: '8453',
             chainName: 'Base',
             nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
             rpcUrls: ['https://mainnet.base.org'],

@@ -54,9 +54,9 @@ function MyApp({ Component, pageProps }: AppProps) {
         config={{
           loginMethods: ['email', 'passkey', 'wallet'],
           appearance: {
-            theme: 'light',
+            theme: 'dark',
             accentColor: '#4B66F3',
-            logo: '/logo_eth_cali.png',
+            logo: '/logoethcali.png',
             walletChainType: 'ethereum-only',
             walletList: ['detected_wallets', 'metamask', 'coinbase_wallet', 'rainbow', 'wallet_connect'],
           },

@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import { getNetworkLogoUrl } from '../utils/tokenUtils';
 
 interface NetworkSwitcherProps {
@@ -20,12 +21,25 @@ const NETWORKS = [
     logoUrl: getNetworkLogoUrl(1),
     activeColor: 'bg-purple-500/20 text-purple-400 border-purple-500/50',
     inactiveColor: 'bg-gray-800 text-gray-500 border-gray-700'
+  },
+  {
+    id: 10,
+    name: 'Optimism',
+    logoUrl: getNetworkLogoUrl(10),
+    activeColor: 'bg-pink-500/20 text-pink-400 border-pink-500/50',
+    inactiveColor: 'bg-gray-800 text-gray-500 border-gray-700'
+  },
+  {
+    id: 130,
+    name: 'Unichain',
+    logoUrl: getNetworkLogoUrl(130),
+    activeColor: 'bg-green-500/20 text-green-400 border-green-500/50',
+    inactiveColor: 'bg-gray-800 text-gray-500 border-gray-700'
   }
 ];
 
 export default function NetworkSwitcher({ currentChainId, onNetworkChange }: NetworkSwitcherProps) {
   const handleClick = (networkId: number) => {
-    console.log(`🔘 Network button clicked: ${networkId}`);
     onNetworkChange(networkId);
   };
 
@@ -43,19 +57,13 @@ export default function NetworkSwitcher({ currentChainId, onNetworkChange }: Net
               hover:scale-105
             `}
           >
-            <img 
-              src={network.logoUrl} 
+            <Image
+              src={network.logoUrl}
               alt={`${network.name} logo`}
+              width={24}
+              height={24}
               className={`w-6 h-6 object-contain ${network.logoUrl.includes('.svg') ? '' : 'rounded-full'}`}
-              onError={(e) => {
-                // Fallback to emoji if image fails to load
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-                const emoji = network.id === 8453 ? '🔵' : '💎';
-                if (!target.parentElement?.querySelector('.fallback-emoji')) {
-                  target.parentElement?.insertAdjacentHTML('beforeend', `<span class="text-xl fallback-emoji">${emoji}</span>`);
-                }
-              }}
+              unoptimized
             />
             <span className="text-sm">{network.name.toUpperCase()}</span>
           </button>
