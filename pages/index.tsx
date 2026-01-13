@@ -89,9 +89,10 @@ export default function Home() {
                 onClick={login}
                 className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 rounded-xl text-white font-bold text-lg transition-all transform hover:scale-105 shadow-lg"
               >
-                Access Wallet
+                GO TO WALLET
               </button>
             </div>
+            
 
             {/* Features Section */}
             <div className="mb-20">
