@@ -439,120 +439,167 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSu
     setNftMetadata(null);
   };
 
-  if (isLoading) {
-    return (
-      <div className="bg-black/60 border border-cyan-500/30 rounded-lg p-4">
-        <div className="flex items-center justify-center gap-3">
-          <div className="w-3 h-3 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-cyan-400 font-mono text-[10px] tracking-wider">LOADING...</span>
-        </div>
-      </div>
-    );
-  }
+  // Helper function to get IPFS gateway URL
+  const getIPFSImageUrl = (imageUrl: string): string => {
+    if (!imageUrl) return '';
+    if (imageUrl.startsWith('ipfs://')) {
+      return `https://gateway.pinata.cloud/ipfs/${imageUrl.replace('ipfs://', '')}`;
+    }
+    if (imageUrl.startsWith('http')) {
+      return imageUrl;
+    }
+    return imageUrl;
+  };
 
-  // Already has NFT - Show NFT Details
-  if (alreadyHasNFT && status === 'minted' && !mintTxHash) {
+  // NFT Card Component
+  const renderNFTCard = () => {
+    if (isLoading) {
+      return (
+        <div className="bg-black/60 border border-cyan-500/30 rounded-lg p-4">
+          <div className="flex items-center justify-center gap-3">
+            <div className="w-3 h-3 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-cyan-400 font-mono text-[10px] tracking-wider">LOADING...</span>
+          </div>
+        </div>
+      );
+    }
+
+    if (alreadyHasNFT && (tokenId || tokenData || nftMetadata)) {
+      return (
+        <div className="bg-black/60 border border-green-500/40 rounded-lg p-4 space-y-3">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-3 h-3 bg-green-500 rounded-full shadow-lg shadow-green-500/50"></div>
+            <div>
+              <h2 className="text-sm font-bold text-green-400 font-mono tracking-wide">VERIFIED</h2>
+              <p className="text-gray-600 text-[10px] font-mono">{getNetworkName(chainId).toUpperCase()}</p>
+            </div>
+          </div>
+
+          {/* NFT Image if available */}
+          {nftMetadata?.image && (
+            <div className="mb-3 rounded-lg overflow-hidden border border-cyan-500/20 relative aspect-square">
+              <Image 
+                src={getIPFSImageUrl(nftMetadata.image)} 
+                alt="ZKPassport NFT" 
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 400px"
+                unoptimized={nftMetadata.image.startsWith('ipfs://')}
+              />
+            </div>
+          )}
+
+          {/* NFT Name */}
+          {nftMetadata?.name && (
+            <div className="mb-2">
+              <h3 className="text-sm font-bold text-cyan-400 font-mono">{nftMetadata.name}</h3>
+            </div>
+          )}
+
+          {/* NFT Description */}
+          {nftMetadata?.description && (
+            <div className="mb-2">
+              <p className="text-[10px] text-gray-500 font-mono">{nftMetadata.description}</p>
+            </div>
+          )}
+
+          {/* NFT Details */}
+          {(tokenId || tokenData) && (
+            <div className="space-y-1.5 text-[10px] font-mono">
+              {tokenId && (
+                <div className="flex justify-between py-1 border-b border-gray-800">
+                  <span className="text-gray-600">token_id</span>
+                  <span className="text-cyan-400">#{tokenId.toString()}</span>
+                </div>
+              )}
+              {tokenData && (
+                <>
+                  <div className="flex justify-between py-1 border-b border-gray-800">
+                    <span className="text-gray-600">uid</span>
+                    <span className="text-cyan-400">{maskIdentifier(tokenData.uniqueIdentifier)}</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-gray-800">
+                    <span className="text-gray-600">face_match</span>
+                    <span className={tokenData.faceMatchPassed ? 'text-green-400' : 'text-gray-600'}>
+                      {tokenData.faceMatchPassed ? 'PASS' : 'N/A'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-1">
+                    <span className="text-gray-600">personhood</span>
+                    <span className={tokenData.personhoodVerified ? 'text-green-400' : 'text-gray-600'}>
+                      {tokenData.personhoodVerified ? 'VERIFIED' : 'FALSE'}
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Attributes from metadata */}
+          {nftMetadata?.attributes && nftMetadata.attributes.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-gray-800">
+              <div className="text-[9px] text-gray-600 font-mono mb-2 tracking-wider">ATTRIBUTES</div>
+              <div className="flex flex-wrap gap-1.5">
+                {nftMetadata.attributes.map((attr: any, idx: number) => (
+                  <div 
+                    key={idx}
+                    className="px-2 py-1 bg-gray-900/50 border border-gray-800 rounded text-[9px] font-mono"
+                  >
+                    <span className="text-gray-500">{attr.trait_type}:</span>{' '}
+                    <span className="text-cyan-400">{attr.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <Link
+            href="/faucet"
+            className="block w-full py-2.5 bg-green-500/20 hover:bg-green-500/30 border border-green-500/40 rounded text-green-400 font-mono text-xs font-bold text-center transition-all"
+          >
+            CLAIM_FAUCET →
+          </Link>
+        </div>
+      );
+    }
+
+    // No NFT - Show placeholder card
     return (
-      <div className="bg-black/60 border border-green-500/40 rounded-lg p-4 space-y-3">
+      <div className="bg-black/60 border border-gray-700/40 rounded-lg p-4 space-y-3">
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-3 h-3 bg-green-500 rounded-full shadow-lg shadow-green-500/50"></div>
+          <div className="w-3 h-3 bg-gray-600 rounded-full"></div>
           <div>
-            <h2 className="text-sm font-bold text-green-400 font-mono tracking-wide">VERIFIED</h2>
+            <h2 className="text-sm font-bold text-gray-400 font-mono tracking-wide">NO_VERIFICATION</h2>
             <p className="text-gray-600 text-[10px] font-mono">{getNetworkName(chainId).toUpperCase()}</p>
           </div>
         </div>
 
-        {/* NFT Image if available */}
-        {nftMetadata?.image && (
-          <div className="mb-3 rounded-lg overflow-hidden border border-cyan-500/20 relative aspect-square">
-            <Image 
-              src={nftMetadata.image.startsWith('ipfs://') 
-                ? `https://gateway.pinata.cloud/ipfs/${nftMetadata.image.replace('ipfs://', '')}`
-                : nftMetadata.image
-              } 
-              alt="ZKPassport NFT" 
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 400px"
-              unoptimized={nftMetadata.image.startsWith('ipfs://')}
-            />
+        <div className="text-center py-8">
+          <div className="text-gray-600 text-[10px] font-mono mb-4">
+            VERIFY YOUR IDENTITY TO MINT YOUR ZKPASSPORT NFT
           </div>
-        )}
-
-        {/* NFT Name */}
-        {nftMetadata?.name && (
-          <div className="mb-2">
-            <h3 className="text-sm font-bold text-cyan-400 font-mono">{nftMetadata.name}</h3>
+          <div className="text-gray-700 text-[9px] font-mono">
+            • PRIVACY_FIRST • NO_KYC • SOULBOUND
           </div>
-        )}
-
-        {/* NFT Details */}
-        {(tokenId || tokenData) && (
-          <div className="space-y-1.5 text-[10px] font-mono">
-            {tokenId && (
-              <div className="flex justify-between py-1 border-b border-gray-800">
-                <span className="text-gray-600">token_id</span>
-                <span className="text-cyan-400">#{tokenId.toString()}</span>
-              </div>
-            )}
-            {tokenData && (
-              <>
-                <div className="flex justify-between py-1 border-b border-gray-800">
-                  <span className="text-gray-600">uid</span>
-                  <span className="text-cyan-400">{maskIdentifier(tokenData.uniqueIdentifier)}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-gray-800">
-                  <span className="text-gray-600">face_match</span>
-                  <span className={tokenData.faceMatchPassed ? 'text-green-400' : 'text-gray-600'}>
-                    {tokenData.faceMatchPassed ? 'PASS' : 'N/A'}
-                  </span>
-                </div>
-                <div className="flex justify-between py-1">
-                  <span className="text-gray-600">personhood</span>
-                  <span className={tokenData.personhoodVerified ? 'text-green-400' : 'text-gray-600'}>
-                    {tokenData.personhoodVerified ? 'VERIFIED' : 'FALSE'}
-                  </span>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* Attributes from metadata */}
-        {nftMetadata?.attributes && nftMetadata.attributes.length > 0 && (
-          <div className="mt-3 pt-3 border-t border-gray-800">
-            <div className="text-[9px] text-gray-600 font-mono mb-2 tracking-wider">ATTRIBUTES</div>
-            <div className="flex flex-wrap gap-1.5">
-              {nftMetadata.attributes.map((attr: any, idx: number) => (
-                <div 
-                  key={idx}
-                  className="px-2 py-1 bg-gray-900/50 border border-gray-800 rounded text-[9px] font-mono"
-                >
-                  <span className="text-gray-500">{attr.trait_type}:</span>{' '}
-                  <span className="text-cyan-400">{attr.value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <Link
-          href="/faucet"
-          className="block w-full py-2.5 bg-green-500/20 hover:bg-green-500/30 border border-green-500/40 rounded text-green-400 font-mono text-xs font-bold text-center transition-all"
-        >
-          CLAIM_FAUCET →
-        </Link>
+        </div>
       </div>
     );
-  }
+  };
+
 
   return (
-    <div className="bg-black/60 border border-cyan-500/30 rounded-lg p-4 space-y-4">
-      {/* Minimal Header */}
-      <div className="flex items-center gap-2">
-        <div className="w-2 h-2 bg-cyan-500 rounded-full"></div>
-        <h2 className="text-xs font-bold text-cyan-400 font-mono tracking-wider">VERIFY_IDENTITY</h2>
-      </div>
+    <div className="space-y-4">
+      {/* NFT Card - Always shown at top */}
+      {renderNFTCard()}
+
+      {/* Verification Flow - Only show if no NFT */}
+      {!alreadyHasNFT && (
+        <div className="bg-black/60 border border-cyan-500/30 rounded-lg p-4 space-y-4">
+          {/* Minimal Header */}
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-cyan-500 rounded-full"></div>
+            <h2 className="text-xs font-bold text-cyan-400 font-mono tracking-wider">VERIFY_IDENTITY</h2>
+          </div>
 
       {/* Idle State */}
       {status === 'idle' && (
@@ -741,10 +788,7 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSu
             {nftMetadata?.image && (
               <div className="mb-3 rounded-lg overflow-hidden border border-cyan-500/20 relative aspect-square">
                 <Image 
-                  src={nftMetadata.image.startsWith('ipfs://') 
-                    ? `https://gateway.pinata.cloud/ipfs/${nftMetadata.image.replace('ipfs://', '')}`
-                    : nftMetadata.image
-                  } 
+                  src={getIPFSImageUrl(nftMetadata.image)} 
                   alt="ZKPassport NFT" 
                   fill
                   className="object-cover"
@@ -887,6 +931,8 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSu
           >
             RETRY →
           </button>
+        </div>
+      )}
         </div>
       )}
     </div>

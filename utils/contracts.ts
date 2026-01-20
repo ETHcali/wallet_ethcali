@@ -287,14 +287,79 @@ export async function getFaucetNFTContract(chainId: number): Promise<string> {
 // Transaction Helpers (for use with wallet provider)
 // ============================================
 
-export function getClaimTxData(chainId: number) {
+export function getClaimTxData(chainId: number, vaultId: number) {
   const addresses = getContractAddresses(chainId);
   const abi = getContractABI('FaucetManager');
 
   return {
     to: addresses.FaucetManager as `0x${string}`,
-    data: encodeFunctionData({ abi, functionName: 'claim' } as any),
+    data: encodeFunctionData({ abi, functionName: 'claim', args: [vaultId] } as any),
   };
+}
+
+// Get active vaults for users to claim from
+export async function getActiveVaults(chainId: number): Promise<any[]> {
+  const client = getPublicClient(chainId);
+  const addresses = getContractAddresses(chainId);
+  const abi = getContractABI('FaucetManager');
+
+  try {
+    const result = await readContract(client, addresses.FaucetManager, abi, 'getActiveVaults');
+    const [vaultIds, vaults] = result as [bigint[], any[]];
+    return vaults.map((vault, index) => ({
+      id: Number(vaultIds[index]),
+      name: vault.name,
+      description: vault.description,
+      claimAmount: vault.claimAmount,
+      balance: vault.balance,
+      totalClaimed: vault.totalClaimed,
+      totalReturned: vault.totalReturned,
+      vaultType: vault.vaultType,
+      active: vault.active,
+      whitelistEnabled: vault.whitelistEnabled,
+      createdAt: Number(vault.createdAt),
+    }));
+  } catch (error) {
+    console.error('Error getting active vaults:', error);
+    return [];
+  }
+}
+
+// Check if user can claim from a specific vault
+export async function canUserClaim(chainId: number, vaultId: number, userAddress: string): Promise<{ canClaim: boolean; reason: string }> {
+  const client = getPublicClient(chainId);
+  const addresses = getContractAddresses(chainId);
+  const abi = getContractABI('FaucetManager');
+
+  try {
+    const result = await readContract(client, addresses.FaucetManager, abi, 'canUserClaim', [vaultId, userAddress]);
+    return result as { canClaim: boolean; reason: string };
+  } catch (error) {
+    console.error('Error checking user claim eligibility:', error);
+    return { canClaim: false, reason: 'Error checking eligibility' };
+  }
+}
+
+// Get claim info for a user and vault
+export async function getClaimInfo(chainId: number, vaultId: number, userAddress: string): Promise<any> {
+  const client = getPublicClient(chainId);
+  const addresses = getContractAddresses(chainId);
+  const abi = getContractABI('FaucetManager');
+
+  try {
+    const result = await readContract(client, addresses.FaucetManager, abi, 'getClaimInfo', [vaultId, userAddress]);
+    return {
+      hasClaimed: result.hasClaimed,
+      claimedAmount: formatEther(result.claimedAmount as bigint),
+      claimedAt: Number(result.claimedAt),
+      hasReturned: result.hasReturned,
+      returnedAmount: formatEther(result.returnedAmount as bigint),
+      returnedAt: Number(result.returnedAt),
+    };
+  } catch (error) {
+    console.error('Error getting claim info:', error);
+    return null;
+  }
 }
 
 export function getDepositTxData(chainId: number, amountEth: string) {

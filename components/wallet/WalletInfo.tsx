@@ -141,14 +141,55 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
     }
   };
 
+  // Get token addresses based on chain
+  const getTokenAddress = (tokenSymbol: string): string | null => {
+    if (tokenSymbol === 'ETH') return null; // Native token
+    if (!chainId) return null;
+    
+    const tokenAddresses: Record<number, Record<string, string>> = {
+      1: { // Ethereum
+        USDC: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+        USDT: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
+        EURC: '0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c',
+      },
+      10: { // Optimism
+        USDC: '0x7F5c764cBc14f9669B88837ca1490cCa17c31607',
+        USDT: '0x94b008aA00579c1307B0EF2c499aD98a8ce58e58',
+      },
+      8453: { // Base
+        USDC: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+        USDT: '0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2',
+        EURC: '0x60a3E35Cc302bFA44Cb288Bc5a4F316Fdb1adb42',
+      },
+      130: { // Unichain
+        USDC: '0x078D782b760474a361dDA0AF3839290b0EF57AD6',
+      },
+    };
+    
+    return tokenAddresses[chainId]?.[tokenSymbol] || null;
+  };
+
+  // Prepare available tokens for SendTokenModal - show all 4 tokens regardless of balance
+  const availableTokens = [
+    { symbol: 'ETH', balance: balances.ethBalance, name: 'Ethereum' },
+    { symbol: 'USDC', balance: balances.uscBalance, name: 'USD Coin' },
+    { symbol: 'USDT', balance: balances.usdtBalance || '0', name: 'Tether USD' },
+    { symbol: 'EURC', balance: balances.eurcBalance || '0', name: 'Euro Coin' },
+  ];
+
   // Handle opening the send token modal
-  const openSendModal = (token: 'ETH' | 'USDC') => {
-    setSelectedToken(token);
+  const openSendModal = (token?: string) => {
+    if (token) {
+      const foundToken = availableTokens.find(t => t.symbol === token);
+      if (foundToken) {
+        setSelectedToken(token as 'ETH' | 'USDC');
+      }
+    }
     setIsSendModalOpen(true);
   };
   
   // Handle sending tokens
-  const handleSendToken = async (recipient: string, amount: string) => {
+  const handleSendToken = async (recipient: string, amount: string, tokenType: string) => {
     // Use active wallet from useActiveWallet hook (the wallet user logged in with)
     const walletToUse = activeWallet || privyWallet;
     
@@ -170,9 +211,20 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
     setTxHash(null);
     
     try {
+      const transferAbi = [{
+        inputs: [
+          { name: 'to', type: 'address' },
+          { name: 'amount', type: 'uint256' }
+        ],
+        name: 'transfer',
+        outputs: [{ name: '', type: 'bool' }],
+        stateMutability: 'nonpayable',
+        type: 'function'
+      }] as const;
+
       if (walletIsEmbedded) {
         // Embedded wallet - use Privy's sendTransaction with gas sponsorship
-        if (selectedToken === 'ETH') {
+        if (tokenType === 'ETH') {
           const value = parseUnits(amount, 18);
           const result = await sendTransaction(
             {
@@ -184,29 +236,24 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
             } as any
           );
           setTxHash(result.hash);
-        } else if (selectedToken === 'USDC') {
-          const USDC_ADDRESS = '0x0b2c639c533813f4aa9d7837caf62653d097ff85';
-          const transferAbi = [{
-            inputs: [
-              { name: 'to', type: 'address' },
-              { name: 'amount', type: 'uint256' }
-            ],
-            name: 'transfer',
-            outputs: [{ name: '', type: 'bool' }],
-            stateMutability: 'nonpayable',
-            type: 'function'
-          }] as const;
+        } else {
+          // ERC20 token transfer
+          const tokenAddress = getTokenAddress(tokenType);
+          if (!tokenAddress) {
+            throw new Error(`Token ${tokenType} not supported on this network`);
+          }
           
-          const usdcAmount = parseUnits(amount, 6);
+          const decimals = tokenType === 'USDT' || tokenType === 'USDC' || tokenType === 'EURC' ? 6 : 18;
+          const tokenAmount = parseUnits(amount, decimals);
           const data = encodeFunctionData({
             abi: transferAbi,
             functionName: 'transfer',
-            args: [recipient as `0x${string}`, usdcAmount]
+            args: [recipient as `0x${string}`, tokenAmount]
           });
           
           const result = await sendTransaction(
             {
-              to: USDC_ADDRESS as `0x${string}`,
+              to: tokenAddress as `0x${string}`,
               data,
             },
             {
@@ -219,7 +266,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
         // External wallet (MetaMask, etc.) - use provider directly, user pays gas
         const provider = await walletToUse.getEthereumProvider();
         
-        if (selectedToken === 'ETH') {
+        if (tokenType === 'ETH') {
           const value = parseUnits(amount, 18);
           const txHash = await provider.request({
             method: 'eth_sendTransaction',
@@ -230,31 +277,26 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
             }],
           });
           setTxHash(txHash as string);
-        } else if (selectedToken === 'USDC') {
-          const USDC_ADDRESS = '0x0b2c639c533813f4aa9d7837caf62653d097ff85';
-          const transferAbi = [{
-            inputs: [
-              { name: 'to', type: 'address' },
-              { name: 'amount', type: 'uint256' }
-            ],
-            name: 'transfer',
-            outputs: [{ name: '', type: 'bool' }],
-            stateMutability: 'nonpayable',
-            type: 'function'
-          }] as const;
+        } else {
+          // ERC20 token transfer
+          const tokenAddress = getTokenAddress(tokenType);
+          if (!tokenAddress) {
+            throw new Error(`Token ${tokenType} not supported on this network`);
+          }
           
-          const usdcAmount = parseUnits(amount, 6);
+          const decimals = tokenType === 'USDT' || tokenType === 'USDC' || tokenType === 'EURC' ? 6 : 18;
+          const tokenAmount = parseUnits(amount, decimals);
           const data = encodeFunctionData({
             abi: transferAbi,
             functionName: 'transfer',
-            args: [recipient as `0x${string}`, usdcAmount]
+            args: [recipient as `0x${string}`, tokenAmount]
           });
           
           const txHash = await provider.request({
             method: 'eth_sendTransaction',
             params: [{
               from: walletToUse.address,
-              to: USDC_ADDRESS,
+              to: tokenAddress,
               data,
             }],
           });
@@ -451,7 +493,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
         ) : activeTab === 'tokens' ? (
           <div className="token-list">
             {/* ETH Balance */}
-            <div className="token-item" onClick={() => openSendModal('ETH')}>
+            <div className="token-item">
               <div className="token-info">
                 <Image src={ethLogoUrl} alt="ETH" width={32} height={32} className="token-icon" unoptimized />
                 <div className="token-details">
@@ -466,7 +508,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
             </div>
 
             {/* USDC Balance */}
-            <div className="token-item" onClick={() => openSendModal('USDC')}>
+            <div className="token-item">
               <div className="token-info">
                 <Image src={usdcLogoUrl} alt="USDC" width={32} height={32} className="token-icon" unoptimized />
                 <div className="token-details">
@@ -571,8 +613,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
         <SendTokenModal
           onClose={() => setIsSendModalOpen(false)}
           onSend={handleSendToken}
-          tokenType={selectedToken}
-          balance={selectedToken === 'ETH' ? balances.ethBalance : balances.uscBalance}
+          availableTokens={availableTokens}
           isSending={isSendingTx}
           txHash={txHash}
           initialRecipient={scannedAddress || ''}
@@ -769,17 +810,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           background: rgba(17, 24, 39, 0.6);
           border-radius: 12px;
           border: 1px solid rgba(75, 85, 99, 0.25);
-          cursor: pointer;
           transition: all 0.15s ease;
-        }
-
-        .token-item:hover {
-          background: rgba(31, 41, 55, 0.8);
-          border-color: rgba(107, 114, 128, 0.4);
-        }
-
-        .token-item:active {
-          transform: scale(0.99);
         }
 
         .token-info {
