@@ -73,9 +73,9 @@ export default function Home() {
                 <Image
                   src="/logotethcali.png"
                   alt="ETH CALI"
-                  width={200}
+                  width={96}
                   height={96}
-                  className="h-16 sm:h-24 mx-auto"
+                  className="h-16 sm:h-24 mx-auto w-auto"
                   priority
                 />
               </div>

@@ -127,8 +127,13 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
     setIsFunding(true);
     try {
       // Privy fundWallet API - opens modal for Apple Pay / Google Pay
-      // Chain and asset are configured in the Privy Dashboard
-      await fundWallet({ address: wallet.address });
+      // Pass address and chain - asset and amount default to Dashboard settings
+      const viemChain = getViemChain();
+      await fundWallet(wallet.address, {
+        chain: viemChain,
+        // asset defaults to 'native-currency' (ETH)
+        // amount defaults to Dashboard configured amount
+      });
     } catch (error) {
       console.error('Error funding wallet:', error);
     } finally {

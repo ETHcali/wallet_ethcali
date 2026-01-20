@@ -5,16 +5,18 @@ import Head from 'next/head';
 import type { AppProps } from 'next/app';
 import { useState } from 'react';
 import '../styles/globals.css';
-import { ThemeProvider } from '../contexts/ThemeContext';
 
 function MyApp({ Component, pageProps }: AppProps) {
-  // App ID from the Privy Dashboard (using environment variable)
-  const PRIVY_APP_ID = process.env.PRIVY_APP_ID || "cmavjopg6021ilh0ng5vnr5gc";
+  const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
   const [queryClient] = useState(() => new QueryClient());
-  
-  // Log in development to help debug
-  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-    console.log('🔐 Privy App ID:', PRIVY_APP_ID ? 'Configured' : 'Missing');
+
+  if (!PRIVY_APP_ID) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', flexDirection: 'column', padding: '2rem', textAlign: 'center', backgroundColor: '#0a0a0a', color: '#ef4444' }}>
+        <h1 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Configuration Error</h1>
+        <p style={{ fontSize: '1rem', color: '#fca5a5' }}>NEXT_PUBLIC_PRIVY_APP_ID is missing. Set it in your .env file.</p>
+      </div>
+    );
   }
   
   // Define metadata constants
@@ -24,7 +26,7 @@ function MyApp({ Component, pageProps }: AppProps) {
   const imageUrl = `${siteUrl}/banner_ethcali.jpg`;
 
   return (
-    <ThemeProvider>
+    <>
       <Head>
         <title>{title}</title>
         <meta name="description" content={description} />
@@ -49,36 +51,34 @@ function MyApp({ Component, pageProps }: AppProps) {
         <meta name="keywords" content="ethereum, wallet, crypto, blockchain, web3, optimism, ETHCALI" />
         <meta name="author" content="ETH CALI" />
       </Head>
+
       <PrivyProvider
         appId={PRIVY_APP_ID}
         config={{
-          // Focus on embedded wallets only for gasless experience
-          // Users login with email/passkey and get a Privy embedded wallet with gas sponsorship
-          // No wallet login methods (like 'wallet', 'metamask', etc.) = no external wallet connections
           loginMethods: ['email', 'passkey'],
           appearance: {
             theme: 'dark',
             accentColor: '#06b6d4',
-            logo: '/logoethcali.png',
+            logo: '/logotethcali.png',
             walletChainType: 'ethereum-only',
             showWalletLoginFirst: false,
           },
           embeddedWallets: {
             ethereum: {
-              createOnLogin: 'all-users', // All users get an embedded wallet for gasless txns
+              createOnLogin: 'all-users',
             },
             showWalletUIs: true,
           },
         }}
       >
-          <QueryClientProvider client={queryClient}>
-            <Component {...pageProps} />
-            {process.env.NODE_ENV === 'development' && (
-              <ReactQueryDevtools initialIsOpen={false} />
-            )}
-          </QueryClientProvider>
-        </PrivyProvider>
-      </ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <Component {...pageProps} />
+          {process.env.NODE_ENV === 'development' && (
+            <ReactQueryDevtools initialIsOpen={false} />
+          )}
+        </QueryClientProvider>
+      </PrivyProvider>
+    </>
   );
 }
 

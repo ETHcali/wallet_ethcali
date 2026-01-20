@@ -8,8 +8,10 @@
     "start": "next start",
     "lint": "next lint",
     "clean": "rm -rf node_modules package-lock.json .next",
+    "clean:cache": "rm -rf .next",
     "clean:install": "npm run clean && npm install",
     "clean:build": "npm run clean && npm install && npm run build",
+    "rebuild": "npm run clean:cache && npm run build",
     "postinstall": "npx update-browserslist-db@latest || true"
   },
   "dependencies": {
