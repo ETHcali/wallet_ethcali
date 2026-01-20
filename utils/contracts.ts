@@ -35,8 +35,16 @@ export function getChainConfig(chainId: number): Chain {
 }
 
 // Get network name from chainId
-export function getNetworkName(chainId: number): 'base' | 'unichain' {
-  return chainId === 130 ? 'unichain' : 'base';
+export function getNetworkName(chainId: number): string {
+  switch (chainId) {
+    case 1:
+      return 'ethereum';
+    case 130:
+      return 'unichain';
+    case 8453:
+    default:
+      return 'base';
+  }
 }
 
 // Create public client for reading contract state
@@ -51,11 +59,12 @@ export function getPublicClient(chainId: number) {
 // Get contract addresses for a chain
 export function getContractAddresses(chainId: number) {
   const network = getNetworkName(chainId);
-  return getAddresses(network).addresses;
+  // Use type assertion as network name comes from chainId
+  return getAddresses(network as any).addresses;
 }
 
 // Get contract ABI (cast as any to avoid complex union type issues)
-export function getContractABI(contractName: 'ZKPassportNFT' | 'FaucetVault'): any {
+export function getContractABI(contractName: 'ZKPassportNFT' | 'FaucetManager'): any {
   // ABIs are the same across networks
   return CONTRACTS.networks.base.contracts[contractName].abi;
 }
@@ -114,17 +123,101 @@ export async function hasNFT(chainId: number, uniqueIdentifier: string): Promise
   }
 }
 
+/**
+ * Get tokenId for a user's address by checking NFTMinted events
+ */
+export async function getTokenIdByAddress(chainId: number, userAddress: string): Promise<bigint | null> {
+  const client = getPublicClient(chainId);
+  const addresses = getContractAddresses(chainId);
+  const abi = getContractABI('ZKPassportNFT');
+
+  try {
+    // Get NFTMinted events for this address
+    const events = await client.getLogs({
+      address: addresses.ZKPassportNFT as `0x${string}`,
+      event: {
+        type: 'event',
+        name: 'NFTMinted',
+        inputs: [
+          { type: 'address', indexed: true, name: 'to' },
+          { type: 'uint256', indexed: false, name: 'tokenId' },
+          { type: 'string', indexed: false, name: 'uniqueIdentifier' },
+          { type: 'bool', indexed: false, name: 'faceMatchPassed' },
+          { type: 'bool', indexed: false, name: 'personhoodVerified' },
+        ],
+      } as any,
+      args: {
+        to: userAddress as `0x${string}`,
+      } as any,
+      fromBlock: 0n,
+    });
+
+    if (events && events.length > 0) {
+      // Get the most recent tokenId
+      const latestEvent = events[events.length - 1];
+      return latestEvent.args.tokenId as bigint;
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error getting tokenId:', error);
+    return null;
+  }
+}
+
+/**
+ * Get token data for a tokenId
+ */
+export async function getTokenData(chainId: number, tokenId: bigint): Promise<{
+  uniqueIdentifier: string;
+  faceMatchPassed: boolean;
+  personhoodVerified: boolean;
+} | null> {
+  const client = getPublicClient(chainId);
+  const addresses = getContractAddresses(chainId);
+  const abi = getContractABI('ZKPassportNFT');
+
+  try {
+    const result = await readContract(client, addresses.ZKPassportNFT, abi, 'getTokenData', [tokenId]);
+    return result as {
+      uniqueIdentifier: string;
+      faceMatchPassed: boolean;
+      personhoodVerified: boolean;
+    };
+  } catch (error) {
+    console.error('Error getting token data:', error);
+    return null;
+  }
+}
+
+/**
+ * Get token URI (metadata) for a tokenId
+ */
+export async function getTokenURI(chainId: number, tokenId: bigint): Promise<string | null> {
+  const client = getPublicClient(chainId);
+  const addresses = getContractAddresses(chainId);
+  const abi = getContractABI('ZKPassportNFT');
+
+  try {
+    const uri = await readContract(client, addresses.ZKPassportNFT, abi, 'tokenURI', [tokenId]);
+    return uri as string;
+  } catch (error) {
+    console.error('Error getting token URI:', error);
+    return null;
+  }
+}
+
 // ============================================
-// FaucetVault Contract Functions
+// FaucetManager Contract Functions
 // ============================================
 
 export async function getFaucetBalance(chainId: number): Promise<string> {
   const client = getPublicClient(chainId);
   const addresses = getContractAddresses(chainId);
-  const abi = getContractABI('FaucetVault');
+  const abi = getContractABI('FaucetManager');
 
   try {
-    const result = await readContract(client, addresses.FaucetVault, abi, 'getBalance');
+    const result = await readContract(client, addresses.FaucetManager, abi, 'getBalance');
     return formatEther(result as bigint);
   } catch (error) {
     console.error('Error getting faucet balance:', error);
@@ -135,10 +228,10 @@ export async function getFaucetBalance(chainId: number): Promise<string> {
 export async function getClaimAmount(chainId: number): Promise<string> {
   const client = getPublicClient(chainId);
   const addresses = getContractAddresses(chainId);
-  const abi = getContractABI('FaucetVault');
+  const abi = getContractABI('FaucetManager');
 
   try {
-    const result = await readContract(client, addresses.FaucetVault, abi, 'claimAmount');
+    const result = await readContract(client, addresses.FaucetManager, abi, 'claimAmount');
     return formatEther(result as bigint);
   } catch (error) {
     console.error('Error getting claim amount:', error);
@@ -149,10 +242,10 @@ export async function getClaimAmount(chainId: number): Promise<string> {
 export async function hasClaimed(chainId: number, userAddress: string): Promise<boolean> {
   const client = getPublicClient(chainId);
   const addresses = getContractAddresses(chainId);
-  const abi = getContractABI('FaucetVault');
+  const abi = getContractABI('FaucetManager');
 
   try {
-    const result = await readContract(client, addresses.FaucetVault, abi, 'hasClaimed', [userAddress]);
+    const result = await readContract(client, addresses.FaucetManager, abi, 'hasClaimed', [userAddress]);
     return Boolean(result);
   } catch (error) {
     console.error('Error checking claim status:', error);
@@ -163,10 +256,10 @@ export async function hasClaimed(chainId: number, userAddress: string): Promise<
 export async function isFaucetPaused(chainId: number): Promise<boolean> {
   const client = getPublicClient(chainId);
   const addresses = getContractAddresses(chainId);
-  const abi = getContractABI('FaucetVault');
+  const abi = getContractABI('FaucetManager');
 
   try {
-    const result = await readContract(client, addresses.FaucetVault, abi, 'paused');
+    const result = await readContract(client, addresses.FaucetManager, abi, 'paused');
     return Boolean(result);
   } catch (error) {
     console.error('Error checking faucet paused status:', error);
@@ -178,10 +271,10 @@ export async function isFaucetPaused(chainId: number): Promise<boolean> {
 export async function getFaucetNFTContract(chainId: number): Promise<string> {
   const client = getPublicClient(chainId);
   const addresses = getContractAddresses(chainId);
-  const abi = getContractABI('FaucetVault');
+  const abi = getContractABI('FaucetManager');
 
   try {
-    const result = await readContract(client, addresses.FaucetVault, abi, 'nftContract');
+    const result = await readContract(client, addresses.FaucetManager, abi, 'nftContract');
     return String(result);
   } catch (error) {
     console.error('Error getting faucet NFT contract:', error);
@@ -195,10 +288,10 @@ export async function getFaucetNFTContract(chainId: number): Promise<string> {
 
 export function getClaimTxData(chainId: number) {
   const addresses = getContractAddresses(chainId);
-  const abi = getContractABI('FaucetVault');
+  const abi = getContractABI('FaucetManager');
 
   return {
-    to: addresses.FaucetVault as `0x${string}`,
+    to: addresses.FaucetManager as `0x${string}`,
     data: encodeFunctionData({ abi, functionName: 'claim' } as any),
   };
 }
@@ -207,37 +300,37 @@ export function getDepositTxData(chainId: number, amountEth: string) {
   const addresses = getContractAddresses(chainId);
 
   return {
-    to: addresses.FaucetVault as `0x${string}`,
+    to: addresses.FaucetManager as `0x${string}`,
     value: parseEther(amountEth),
   };
 }
 
 export function getWithdrawTxData(chainId: number, amountEth: string) {
   const addresses = getContractAddresses(chainId);
-  const abi = getContractABI('FaucetVault');
+  const abi = getContractABI('FaucetManager');
 
   return {
-    to: addresses.FaucetVault as `0x${string}`,
+    to: addresses.FaucetManager as `0x${string}`,
     data: encodeFunctionData({ abi, functionName: 'withdraw', args: [parseEther(amountEth)] } as any),
   };
 }
 
 export function getPauseTxData(chainId: number) {
   const addresses = getContractAddresses(chainId);
-  const abi = getContractABI('FaucetVault');
+  const abi = getContractABI('FaucetManager');
 
   return {
-    to: addresses.FaucetVault as `0x${string}`,
+    to: addresses.FaucetManager as `0x${string}`,
     data: encodeFunctionData({ abi, functionName: 'pause' } as any),
   };
 }
 
 export function getUnpauseTxData(chainId: number) {
   const addresses = getContractAddresses(chainId);
-  const abi = getContractABI('FaucetVault');
+  const abi = getContractABI('FaucetManager');
 
   return {
-    to: addresses.FaucetVault as `0x${string}`,
+    to: addresses.FaucetManager as `0x${string}`,
     data: encodeFunctionData({ abi, functionName: 'unpause' } as any),
   };
 }
@@ -245,10 +338,10 @@ export function getUnpauseTxData(chainId: number) {
 // Update claim amount (admin only)
 export function getUpdateClaimAmountTxData(chainId: number, amountEth: string) {
   const addresses = getContractAddresses(chainId);
-  const abi = getContractABI('FaucetVault');
+  const abi = getContractABI('FaucetManager');
 
   return {
-    to: addresses.FaucetVault as `0x${string}`,
+    to: addresses.FaucetManager as `0x${string}`,
     data: encodeFunctionData({ abi, functionName: 'updateClaimAmount', args: [parseEther(amountEth)] } as any),
   };
 }
@@ -256,10 +349,10 @@ export function getUpdateClaimAmountTxData(chainId: number, amountEth: string) {
 // Update NFT contract address (admin only)
 export function getSetNFTContractTxData(chainId: number, newContractAddress: string) {
   const addresses = getContractAddresses(chainId);
-  const abi = getContractABI('FaucetVault');
+  const abi = getContractABI('FaucetManager');
 
   return {
-    to: addresses.FaucetVault as `0x${string}`,
+    to: addresses.FaucetManager as `0x${string}`,
     data: encodeFunctionData({ abi, functionName: 'setNFTContract', args: [newContractAddress] } as any),
   };
 }

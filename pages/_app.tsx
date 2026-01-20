@@ -54,12 +54,14 @@ function MyApp({ Component, pageProps }: AppProps) {
         config={{
           // Focus on embedded wallets only for gasless experience
           // Users login with email/passkey and get a Privy embedded wallet with gas sponsorship
+          // No wallet login methods (like 'wallet', 'metamask', etc.) = no external wallet connections
           loginMethods: ['email', 'passkey'],
           appearance: {
             theme: 'dark',
             accentColor: '#06b6d4',
             logo: '/logoethcali.png',
             walletChainType: 'ethereum-only',
+            showWalletLoginFirst: false,
           },
           embeddedWallets: {
             ethereum: {

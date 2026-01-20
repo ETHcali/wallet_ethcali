@@ -5,55 +5,53 @@ import Layout from '../components/shared/Layout';
 import Loading from '../components/shared/Loading';
 import Navigation from '../components/Navigation';
 import FaucetClaim from '../components/faucet/FaucetClaim';
-import FaucetAdmin from '../components/faucet/FaucetAdmin';
-import { isAdmin, getNetworkName } from '../utils/contracts';
+import { getNetworkName, getContractAddresses, getAddressExplorerUrl } from '../utils/contracts';
 
 export default function FaucetPage() {
   const router = useRouter();
   const { ready, authenticated } = usePrivy();
   const { wallets } = useWallets();
-  const [currentChainId, setCurrentChainId] = useState(8453); // Default to Base
+  const [currentChainId, setCurrentChainId] = useState(8453);
 
-  const userWallet = wallets?.[0];
-  const userIsAdmin = isAdmin(userWallet?.address);
+  const addresses = getContractAddresses(currentChainId);
 
-  // Redirect to home if not authenticated
   useEffect(() => {
     if (ready && !authenticated) {
       router.push('/');
     }
   }, [ready, authenticated, router]);
 
-  // Show loading state while Privy initializes
   if (!ready) {
     return <Loading fullScreen={true} text="Loading..." />;
   }
 
-  // Don't render if not authenticated (will redirect)
   if (!authenticated) {
     return <Loading fullScreen={true} text="Redirecting..." />;
   }
 
   return (
     <div className="min-h-screen bg-gray-950">
-      <Navigation 
+      <Navigation
         currentChainId={currentChainId}
         onChainChange={setCurrentChainId}
       />
       <Layout>
-        <div className="space-y-6">
-          {/* Page Header */}
-          <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent font-mono">
-              FAUCET
-            </h1>
-            <p className="text-gray-500 font-mono text-xs mt-1">
-              Claim ETH on {getNetworkName(currentChainId).toUpperCase()}
+        <div className="space-y-4">
+          {/* Minimal Cypherpunk Header */}
+          <div className="mb-4">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <h1 className="text-lg font-bold text-green-400 font-mono tracking-wider">
+                FAUCET
+              </h1>
+            </div>
+            <p className="text-gray-600 font-mono text-[10px] tracking-widest uppercase">
+              ETH • {getNetworkName(currentChainId)} • SYBIL_GATED
             </p>
           </div>
 
-          {/* User Claim Section - key forces re-render on chain change */}
-          <FaucetClaim 
+          {/* Faucet Claim Component */}
+          <FaucetClaim
             key={`claim-${currentChainId}`}
             chainId={currentChainId}
             onClaimSuccess={() => {
@@ -61,27 +59,31 @@ export default function FaucetPage() {
             }}
           />
 
-          {/* Admin Section */}
-          {userIsAdmin && (
-            <div className="space-y-4">
-              <div className="border-t border-orange-500/30 pt-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="text-orange-400">⚡</span>
-                  <p className="text-orange-400 font-mono text-sm font-bold">ADMIN_ACCESS</p>
-                </div>
-              </div>
-              <FaucetAdmin key={`admin-${currentChainId}`} chainId={currentChainId} />
-            </div>
-          )}
+          {/* Compact Info Row */}
+          <div className="flex gap-2 text-[10px] font-mono text-gray-600 pt-2">
+            <span className="flex items-center gap-1">
+              <span className="text-green-500">▪</span> VERIFIED_ONLY
+            </span>
+            <span className="text-gray-700">|</span>
+            <span className="flex items-center gap-1">
+              <span className="text-cyan-500">▪</span> ONE_CLAIM
+            </span>
+            <span className="text-gray-700">|</span>
+            <span className="flex items-center gap-1">
+              <span className="text-purple-500">▪</span> SPONSORED_GAS
+            </span>
+          </div>
 
-          {/* Info Section */}
-          <div className="bg-gray-900/50 border border-gray-700 rounded-xl p-4 space-y-3">
-            <h3 className="text-sm font-bold text-gray-400 font-mono">HOW_IT_WORKS</h3>
-            <div className="space-y-2 text-xs text-gray-500 font-mono">
-              <p>1. Complete Sybil verification to get your ZKPassport NFT</p>
-              <p>2. Return here to claim your ETH</p>
-              <p>3. Each verified human can claim once per network</p>
-            </div>
+          {/* Contract Link - Minimal */}
+          <div className="text-[10px] font-mono text-gray-700 pt-1 border-t border-gray-800">
+            <a
+              href={getAddressExplorerUrl(currentChainId, addresses.FaucetManager)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-600 hover:text-green-500 transition-colors"
+            >
+              contract: {addresses.FaucetManager.slice(0, 8)}...{addresses.FaucetManager.slice(-6)}
+            </a>
           </div>
         </div>
       </Layout>

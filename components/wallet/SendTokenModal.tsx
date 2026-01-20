@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Button from '../shared/Button';
 import Loading from '../shared/Loading';
-import QRScannerTailwind from './QRScannerTailwind';
+import QRScanner from './QRScanner';
 
 interface SendTokenModalProps {
   onClose: () => void;
@@ -209,7 +209,7 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
 
       {/* QR Scanner */}
       {isQRScannerOpen && (
-        <QRScannerTailwind 
+        <QRScanner 
           onScan={handleQRScan} 
           onClose={() => setIsQRScannerOpen(false)} 
         />

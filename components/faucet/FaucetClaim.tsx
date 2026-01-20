@@ -10,8 +10,6 @@ import {
   getFaucetNFTContract,
   getClaimTxData,
   getExplorerUrl,
-  getAddressExplorerUrl,
-  getContractAddresses,
   getNetworkName,
 } from '../../utils/contracts';
 
@@ -36,12 +34,9 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
   const [faucetBalance, setFaucetBalance] = useState('0');
   const [claimAmount, setClaimAmount] = useState('0');
   const [isPaused, setIsPaused] = useState(false);
-  const [linkedNFTContract, setLinkedNFTContract] = useState('');
 
-  const addresses = getContractAddresses(chainId);
   const networkName = getNetworkName(chainId);
 
-  // Load faucet data
   const loadFaucetData = async () => {
     if (!userWallet?.address) return;
 
@@ -49,13 +44,12 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
     setError(null);
 
     try {
-      const [nftOwned, claimed, balance, amount, paused, nftContract] = await Promise.all([
+      const [nftOwned, claimed, balance, amount, paused] = await Promise.all([
         hasNFTByAddress(chainId, userWallet.address),
         hasClaimed(chainId, userWallet.address),
         getFaucetBalance(chainId),
         getClaimAmount(chainId),
         isFaucetPaused(chainId),
-        getFaucetNFTContract(chainId),
       ]);
 
       setHasNFT(nftOwned);
@@ -63,10 +57,9 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
       setFaucetBalance(balance);
       setClaimAmount(amount);
       setIsPaused(paused);
-      setLinkedNFTContract(nftContract);
     } catch (err) {
       console.error('Error loading faucet data:', err);
-      setError('Failed to load faucet data');
+      setError('LOAD_ERROR');
     } finally {
       setIsLoading(false);
     }
@@ -76,19 +69,18 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
     loadFaucetData();
   }, [chainId, userWallet?.address]);
 
-  // Switch wallet to the correct chain
   const switchWalletChain = async () => {
     if (!userWallet) return false;
-    
+
     try {
       const provider = await userWallet.getEthereumProvider();
       const chainHex = `0x${chainId.toString(16)}`;
-      
+
       await provider.request({
         method: 'wallet_switchEthereumChain',
         params: [{ chainId: chainHex }],
       });
-      
+
       return true;
     } catch (error: any) {
       if (error.code === 4902) {
@@ -107,19 +99,17 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
             rpcUrls: ['https://mainnet.base.org'],
             blockExplorerUrls: ['https://basescan.org'],
           };
-          
+
           await provider.request({
             method: 'wallet_addEthereumChain',
             params: [chainConfig],
           });
-          
+
           return true;
         } catch (addError) {
-          console.error('Error adding chain:', addError);
           return false;
         }
       }
-      console.error('Error switching chain:', error);
       return false;
     }
   };
@@ -132,28 +122,25 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
     setTxHash(null);
 
     try {
-      // First, switch to the correct chain
       const switched = await switchWalletChain();
       if (!switched) {
-        throw new Error('Failed to switch to the correct network');
+        throw new Error('NETWORK_SWITCH_FAILED');
       }
 
       const txData = getClaimTxData(chainId);
 
-      // Send sponsored transaction for faucet claim
       const result = await sendTransaction(
         {
           to: txData.to as `0x${string}`,
           data: txData.data,
         },
         {
-          sponsor: true, // Enable Privy's native gas sponsorship
-        } as any // Type assertion for compatibility
+          sponsor: true,
+        } as any
       );
 
       setTxHash(result.hash);
-      
-      // Refresh data after a delay
+
       setTimeout(() => {
         loadFaucetData();
         onClaimSuccess?.();
@@ -161,135 +148,90 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
 
     } catch (err: any) {
       console.error('Claim error:', err);
-      setError(err.message || 'Failed to claim');
+      setError(err.message || 'CLAIM_FAILED');
     } finally {
       setIsClaiming(false);
     }
   };
 
-  // Determine eligibility status
   const getEligibilityStatus = () => {
-    if (isPaused) return { canClaim: false, reason: 'Faucet is currently paused' };
-    if (!hasNFT) return { canClaim: false, reason: 'You need a ZKPassport NFT to claim' };
-    if (alreadyClaimed) return { canClaim: false, reason: 'You have already claimed' };
+    if (isPaused) return { canClaim: false, code: 'PAUSED' };
+    if (!hasNFT) return { canClaim: false, code: 'NO_NFT' };
+    if (alreadyClaimed) return { canClaim: false, code: 'CLAIMED' };
     if (parseFloat(faucetBalance) < parseFloat(claimAmount)) {
-      return { canClaim: false, reason: 'Faucet is empty' };
+      return { canClaim: false, code: 'EMPTY' };
     }
-    return { canClaim: true, reason: 'You are eligible to claim!' };
+    return { canClaim: true, code: 'ELIGIBLE' };
   };
 
   const eligibility = getEligibilityStatus();
 
   if (isLoading) {
     return (
-      <div className="bg-gray-900 border border-cyan-500/30 rounded-xl p-6">
+      <div className="bg-black/60 border border-green-500/30 rounded-lg p-4">
         <div className="flex items-center justify-center gap-3">
-          <div className="w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-cyan-400 font-mono">LOADING_FAUCET_DATA...</span>
+          <div className="w-3 h-3 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-green-400 font-mono text-[10px] tracking-wider">LOADING...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-gray-900 border border-cyan-500/30 rounded-xl p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <span className="text-3xl">🚰</span>
-        <div>
-          <h2 className="text-xl font-bold text-cyan-400 font-mono">CLAIM_FAUCET</h2>
-          <p className="text-gray-500 text-sm font-mono">Get ETH for verified humans</p>
-        </div>
-      </div>
-
-      {/* Network Badge */}
+    <div className="bg-black/60 border border-green-500/30 rounded-lg p-4 space-y-4">
+      {/* Status Bar */}
       <div className="flex items-center justify-between">
-        <div className={`px-3 py-1 rounded-full text-xs font-mono font-bold ${
-          networkName === 'base' 
-            ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
-            : 'bg-pink-500/20 text-pink-400 border border-pink-500/30'
-        }`}>
-          {networkName.toUpperCase()} MAINNET
+        <div className="flex items-center gap-2">
+          <div className={`w-1.5 h-1.5 rounded-full ${isPaused ? 'bg-red-500' : 'bg-green-500'}`}></div>
+          <span className="text-[10px] font-mono text-gray-500 tracking-wider">
+            {isPaused ? 'PAUSED' : 'ACTIVE'}
+          </span>
         </div>
-        <span className={`text-xs font-mono ${isPaused ? 'text-red-400' : 'text-green-400'}`}>
-          {isPaused ? '⏸ PAUSED' : '● ACTIVE'}
+        <span className="text-[10px] font-mono text-gray-600">
+          {networkName.toUpperCase()}
         </span>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-gray-800/50 border border-cyan-500/20 rounded-lg p-4">
-          <p className="text-xs text-gray-500 font-mono mb-1">CLAIM_AMOUNT</p>
-          <p className="text-2xl font-bold text-cyan-400 font-mono">{claimAmount} ETH</p>
-          <p className="text-xs text-gray-600 font-mono mt-1">per verified human</p>
+      {/* Stats Grid - Compact */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="bg-black/40 rounded p-3">
+          <p className="text-[9px] text-gray-600 font-mono tracking-wider mb-1">CLAIM</p>
+          <p className="text-lg font-bold text-green-400 font-mono">{claimAmount}</p>
+          <p className="text-[9px] text-gray-700 font-mono">ETH</p>
         </div>
-        <div className="bg-gray-800/50 border border-purple-500/20 rounded-lg p-4">
-          <p className="text-xs text-gray-500 font-mono mb-1">VAULT_BALANCE</p>
-          <p className="text-2xl font-bold text-purple-400 font-mono">{parseFloat(faucetBalance).toFixed(4)} ETH</p>
-          <p className="text-xs text-gray-600 font-mono mt-1">available to claim</p>
-        </div>
-      </div>
-
-      {/* NFT Contract Info */}
-      <div className="bg-gray-800/30 border border-green-500/20 rounded-lg p-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs text-gray-500 font-mono">REQUIRED_NFT_CONTRACT</p>
-            <p className="text-xs text-green-400 font-mono mt-1">ZKPassport Soulbound NFT</p>
-          </div>
-          <a
-            href={getAddressExplorerUrl(chainId, linkedNFTContract || addresses.ZKPassportNFT)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-cyan-400 font-mono hover:underline"
-          >
-            {linkedNFTContract ? `${linkedNFTContract.slice(0, 6)}...${linkedNFTContract.slice(-4)}` : 'View →'}
-          </a>
+        <div className="bg-black/40 rounded p-3">
+          <p className="text-[9px] text-gray-600 font-mono tracking-wider mb-1">VAULT</p>
+          <p className="text-lg font-bold text-cyan-400 font-mono">{parseFloat(faucetBalance).toFixed(3)}</p>
+          <p className="text-[9px] text-gray-700 font-mono">ETH</p>
         </div>
       </div>
 
-      {/* Eligibility Checklist */}
-      <div className="bg-gray-800/30 border border-gray-700 rounded-lg p-4 space-y-3">
-        <p className="text-sm text-gray-400 font-mono font-bold">ELIGIBILITY_CHECK</p>
-        
+      {/* Eligibility Checks - Minimal */}
+      <div className="space-y-1.5 text-[10px] font-mono">
         <div className="flex items-center gap-2">
-          <span className={hasNFT ? 'text-green-400' : 'text-red-400'}>
-            {hasNFT ? '✓' : '✗'}
-          </span>
-          <span className={`text-sm font-mono ${hasNFT ? 'text-green-400' : 'text-gray-400'}`}>
-            ZKPassport NFT Holder
-          </span>
+          <div className={`w-1.5 h-1.5 rounded-full ${hasNFT ? 'bg-green-500' : 'bg-gray-600'}`}></div>
+          <span className={hasNFT ? 'text-green-400' : 'text-gray-600'}>ZKPASSPORT</span>
         </div>
-        
         <div className="flex items-center gap-2">
-          <span className={!alreadyClaimed ? 'text-green-400' : 'text-red-400'}>
-            {!alreadyClaimed ? '✓' : '✗'}
-          </span>
-          <span className={`text-sm font-mono ${!alreadyClaimed ? 'text-green-400' : 'text-gray-400'}`}>
-            First-time claimer
-          </span>
+          <div className={`w-1.5 h-1.5 rounded-full ${!alreadyClaimed ? 'bg-green-500' : 'bg-gray-600'}`}></div>
+          <span className={!alreadyClaimed ? 'text-green-400' : 'text-gray-600'}>FIRST_CLAIM</span>
         </div>
-        
         <div className="flex items-center gap-2">
-          <span className={!isPaused ? 'text-green-400' : 'text-red-400'}>
-            {!isPaused ? '✓' : '✗'}
-          </span>
-          <span className={`text-sm font-mono ${!isPaused ? 'text-green-400' : 'text-gray-400'}`}>
-            Faucet active
-          </span>
+          <div className={`w-1.5 h-1.5 rounded-full ${!isPaused ? 'bg-green-500' : 'bg-gray-600'}`}></div>
+          <span className={!isPaused ? 'text-green-400' : 'text-gray-600'}>FAUCET_ACTIVE</span>
         </div>
       </div>
 
-      {/* Eligibility Message */}
-      <div className={`p-4 rounded-lg border ${
-        eligibility.canClaim 
-          ? 'bg-green-500/10 border-green-500/30' 
-          : 'bg-yellow-500/10 border-yellow-500/30'
+      {/* Status Message */}
+      <div className={`p-2 rounded border ${
+        eligibility.canClaim
+          ? 'bg-green-500/10 border-green-500/30'
+          : 'bg-gray-900/50 border-gray-700'
       }`}>
-        <p className={`font-mono text-sm ${
-          eligibility.canClaim ? 'text-green-400' : 'text-yellow-400'
+        <p className={`font-mono text-[10px] tracking-wider ${
+          eligibility.canClaim ? 'text-green-400' : 'text-gray-500'
         }`}>
-          {eligibility.canClaim ? '✓ ' : '⚠ '}{eligibility.reason}
+          STATUS: {eligibility.code}
         </p>
       </div>
 
@@ -297,79 +239,69 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
       <button
         onClick={handleClaim}
         disabled={!eligibility.canClaim || isClaiming}
-        className={`w-full py-4 rounded-lg font-mono font-bold text-lg transition-all ${
+        className={`w-full py-3 rounded font-mono font-bold text-sm transition-all ${
           eligibility.canClaim && !isClaiming
-            ? 'bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 text-white'
-            : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+            ? 'bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 text-green-400'
+            : 'bg-gray-900/50 border border-gray-700 text-gray-600 cursor-not-allowed'
         }`}
       >
         {isClaiming ? (
           <span className="flex items-center justify-center gap-2">
-            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-3 h-3 border-2 border-green-400 border-t-transparent rounded-full animate-spin"></div>
             CLAIMING...
           </span>
         ) : (
-          `CLAIM ${claimAmount} ETH`
+          `CLAIM ${claimAmount} ETH →`
         )}
       </button>
 
-      {/* Success Message */}
+      {/* Success */}
       {txHash && (
-        <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
-          <p className="text-green-400 font-mono text-sm mb-2">✓ CLAIM_SUCCESS!</p>
+        <div className="p-2 bg-green-500/10 border border-green-500/30 rounded">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+            <span className="text-[10px] text-green-400 font-mono tracking-wider">SUCCESS</span>
+          </div>
           <a
             href={getExplorerUrl(chainId, txHash)}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs text-green-400 font-mono hover:underline break-all"
+            className="text-[9px] text-gray-500 hover:text-green-400 font-mono"
           >
-            View transaction: {txHash.slice(0, 20)}...
+            tx: {txHash.slice(0, 10)}...{txHash.slice(-6)} →
           </a>
         </div>
       )}
 
-      {/* Error Message */}
+      {/* Error */}
       {error && (
-        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
-          <p className="text-red-400 font-mono text-sm">✗ {error}</p>
+        <div className="p-2 bg-red-500/10 border border-red-500/30 rounded">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+            <span className="text-[10px] text-red-400 font-mono tracking-wider">{error}</span>
+          </div>
         </div>
       )}
 
-      {/* NFT Link */}
+      {/* Get NFT Link */}
       {!hasNFT && (
-        <div className="text-center">
-          <Link
-            href="/sybil"
-            className="text-cyan-400 font-mono text-sm hover:underline"
-          >
-            → Get your ZKPassport NFT to become eligible
-          </Link>
-        </div>
+        <Link
+          href="/sybil"
+          className="block text-center text-[10px] text-cyan-500/70 hover:text-cyan-400 font-mono transition-colors"
+        >
+          GET_ZKPASSPORT →
+        </Link>
       )}
 
-      {/* Contract Info Footer */}
-      <div className="bg-gray-800/20 rounded-lg p-3 space-y-1">
-        <p className="text-xs text-gray-600 font-mono">FAUCET_CONTRACT</p>
-        <a
-          href={getAddressExplorerUrl(chainId, addresses.FaucetVault)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs text-gray-500 font-mono hover:text-cyan-400 break-all"
-        >
-          {addresses.FaucetVault}
-        </a>
-      </div>
-
-      {/* Refresh Button */}
+      {/* Refresh */}
       <button
         onClick={loadFaucetData}
-        className="w-full py-2 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-lg text-gray-400 font-mono text-sm transition-all"
+        className="w-full py-2 text-[10px] text-gray-600 hover:text-gray-400 font-mono"
       >
-        ↻ REFRESH_STATUS
+        REFRESH
       </button>
     </div>
   );
 };
 
 export default FaucetClaim;
-

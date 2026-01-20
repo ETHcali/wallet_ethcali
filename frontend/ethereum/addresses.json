@@ -2,8 +2,8 @@
   "network": "ethereum",
   "chainId": 1,
   "addresses": {
-    "ZKPassportNFT": "0x52b13De80B98f8fA55B00F1A7B6deB6443Df4759",
-    "FaucetVault": "0xc01596D5Fd66a6F4F3C23239462BE7bbC2f936f2",
-    "Swag1155": "0xEb2956BA73AD4C97cCd66BCd81559a8E153173e4"
+    "ZKPassportNFT": "0x607003f188c49ed6e0553805734b9990393402df",
+    "FaucetManager": "0x2940e286b41d279b61e484b98a08498e355e4778",
+    "Swag1155": "0xd9663db045850171850fd1298a2176b329a67928"
   }
 }

@@ -433,6 +433,9 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSu
     setProofsGenerated(0);
     setMintTxHash(null);
     setIsMinting(false);
+    setTokenId(null);
+    setTokenData(null);
+    setNftMetadata(null);
   };
 
   if (isLoading) {
@@ -650,34 +653,110 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSu
         </div>
       )}
 
-      {/* Minted Success */}
-      {status === 'minted' && mintTxHash && (
+      {/* Minted Success - Show NFT Details */}
+      {status === 'minted' && (
         <div className="space-y-3">
           <div className="bg-green-500/10 border border-green-500/30 rounded p-3">
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-3">
               <div className="w-2 h-2 bg-green-500 rounded-full shadow-lg shadow-green-500/50"></div>
               <span className="text-[10px] text-green-400 font-mono tracking-wider">MINTED</span>
             </div>
 
-            <div className="space-y-1 text-[10px] font-mono mb-2">
-              <div className="flex justify-between">
-                <span className="text-gray-600">uid</span>
-                <span className="text-cyan-400">{uniqueIdentifier ? maskIdentifier(uniqueIdentifier) : '***'}</span>
+            {/* NFT Image if available */}
+            {nftMetadata?.image && (
+              <div className="mb-3 rounded-lg overflow-hidden border border-cyan-500/20">
+                <img 
+                  src={nftMetadata.image.startsWith('ipfs://') 
+                    ? `https://gateway.pinata.cloud/ipfs/${nftMetadata.image.replace('ipfs://', '')}`
+                    : nftMetadata.image
+                  } 
+                  alt="ZKPassport NFT" 
+                  className="w-full h-auto"
+                />
               </div>
-              <div className="flex justify-between">
+            )}
+
+            {/* NFT Name */}
+            {nftMetadata?.name && (
+              <div className="mb-2">
+                <h3 className="text-sm font-bold text-cyan-400 font-mono">{nftMetadata.name}</h3>
+              </div>
+            )}
+
+            {/* NFT Details */}
+            <div className="space-y-1.5 text-[10px] font-mono mb-3">
+              {tokenId && (
+                <div className="flex justify-between py-1 border-b border-gray-800">
+                  <span className="text-gray-600">token_id</span>
+                  <span className="text-cyan-400">#{tokenId.toString()}</span>
+                </div>
+              )}
+              <div className="flex justify-between py-1 border-b border-gray-800">
+                <span className="text-gray-600">uid</span>
+                <span className="text-cyan-400">
+                  {tokenData?.uniqueIdentifier 
+                    ? maskIdentifier(tokenData.uniqueIdentifier) 
+                    : uniqueIdentifier 
+                      ? maskIdentifier(uniqueIdentifier) 
+                      : '***'}
+                </span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-gray-800">
+                <span className="text-gray-600">face_match</span>
+                <span className={tokenData?.faceMatchPassed ? 'text-green-400' : 'text-gray-600'}>
+                  {tokenData?.faceMatchPassed ? 'PASS' : 'N/A'}
+                </span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-gray-800">
+                <span className="text-gray-600">personhood</span>
+                <span className={tokenData?.personhoodVerified ? 'text-green-400' : 'text-gray-600'}>
+                  {tokenData?.personhoodVerified ? 'VERIFIED' : 'FALSE'}
+                </span>
+              </div>
+              <div className="flex justify-between py-1">
                 <span className="text-gray-600">status</span>
-                <span className="text-green-400">VERIFIED_HUMAN</span>
+                <span className="text-green-400">SOULBOUND</span>
               </div>
             </div>
 
-            <a
-              href={getExplorerUrl(chainId, mintTxHash)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[9px] text-gray-500 hover:text-cyan-400 font-mono"
-            >
-              tx: {mintTxHash.slice(0, 10)}...{mintTxHash.slice(-6)} →
-            </a>
+            {/* Attributes from metadata */}
+            {nftMetadata?.attributes && nftMetadata.attributes.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-gray-800">
+                <div className="text-[9px] text-gray-600 font-mono mb-2 tracking-wider">ATTRIBUTES</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {nftMetadata.attributes.map((attr: any, idx: number) => (
+                    <div 
+                      key={idx}
+                      className="px-2 py-1 bg-gray-900/50 border border-gray-800 rounded text-[9px] font-mono"
+                    >
+                      <span className="text-gray-500">{attr.trait_type}:</span>{' '}
+                      <span className="text-cyan-400">{attr.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Transaction Link */}
+            {mintTxHash && (
+              <div className="mt-3 pt-3 border-t border-gray-800">
+                <a
+                  href={getExplorerUrl(chainId, mintTxHash)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[9px] text-gray-500 hover:text-cyan-400 font-mono"
+                >
+                  tx: {mintTxHash.slice(0, 10)}...{mintTxHash.slice(-6)} →
+                </a>
+              </div>
+            )}
+
+            {/* Network Info */}
+            <div className="mt-2 pt-2 border-t border-gray-800">
+              <span className="text-[9px] text-gray-600 font-mono">
+                {getNetworkName(chainId).toUpperCase()} • SOULBOUND • NON_TRANSFERABLE
+              </span>
+            </div>
           </div>
 
           <Link

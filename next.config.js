@@ -1,5 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'assets.coingecko.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'api.qrserver.com',
+      },
+    ],
+  },
   reactStrictMode: true,
   // Expose only needed keys; note PRIVY_APP_ID is still sent to client for SDK init
   env: {

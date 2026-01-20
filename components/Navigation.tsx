@@ -3,8 +3,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { getChainRpc } from '../config/networks';
-
-const ADMIN_ADDRESS = process.env.NEXT_PUBLIC_ADMIN_ADDRESS?.toLowerCase() || '';
+import { useContractAdmin } from '../hooks/useContractAdmin';
+import { useFaucetManagerAdmin } from '../hooks/useFaucetAdmin';
+import { useZKPassportAdmin } from '../hooks/useZKPassportAdmin';
 
 const SUPPORTED_CHAINS = [
   { id: 8453, name: 'Base', logo: '/chains/base_logo.svg' },
@@ -30,35 +31,49 @@ const Navigation: React.FC<NavigationProps> = ({
   const [displayChainId, setDisplayChainId] = useState(currentChainId);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSwitching, setIsSwitching] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   // Sync displayChainId with prop
   useEffect(() => {
     setDisplayChainId(currentChainId);
   }, [currentChainId]);
 
-  // Close dropdown when clicking outside
+  // Close dropdown and mobile menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
+      }
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
+        setIsMobileMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Close mobile menu on route change
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [router.pathname]);
+
   const userWallet = wallets?.[0];
-  
-  // Check if user is admin
-  const isAdmin = wallets.some(w => w.address?.toLowerCase() === ADMIN_ADDRESS);
+
+  // Check if user is admin/owner on the current chain's contracts
+  const { isAdmin: isSwagAdmin } = useContractAdmin();
+  const { isAdmin: isFaucetAdmin, isSuperAdmin: isFaucetSuperAdmin } = useFaucetManagerAdmin();
+  const { isOwner: isZKPassportOwner } = useZKPassportAdmin();
 
   const navItems = [
     { href: '/wallet', label: 'WALLET' },
     { href: '/faucet', label: 'FAUCET' },
     { href: '/sybil', label: 'IDENTITY' },
     { href: '/swag', label: 'SWAG' },
-    ...(isAdmin ? [{ href: '/swag/admin', label: 'ADMIN' }] : []),
+    ...(isSwagAdmin ? [{ href: '/swag/admin', label: 'SWAG ADMIN' }] : []),
+    ...(isFaucetAdmin || isFaucetSuperAdmin ? [{ href: '/faucet/admin', label: 'FAUCET ADMIN' }] : []),
+    ...(isZKPassportOwner ? [{ href: '/sybil/admin', label: 'IDENTITY ADMIN' }] : []),
   ];
 
   const isActive = (href: string) => router.pathname === href || router.pathname.startsWith(href + '/');
@@ -198,20 +213,20 @@ const Navigation: React.FC<NavigationProps> = ({
   if (!authenticated) return null;
 
   return (
-    <nav className={`bg-black border-b border-cyan-500/30 ${className}`}>
-      <div className="max-w-6xl mx-auto px-4">
+    <nav className={`bg-black border-b border-cyan-500/30 sticky top-0 z-50 ${className}`}>
+      <div className="max-w-6xl mx-auto px-3 sm:px-4">
         <div className="flex items-center justify-between h-14">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
-            <img 
-              src="/logotethcali.png" 
-              alt="ETH CALI" 
-              className="h-8 w-auto"
+            <img
+              src="/logotethcali.png"
+              alt="ETH CALI"
+              className="h-7 sm:h-8 w-auto"
             />
           </Link>
 
-          {/* Navigation Links */}
-          <div className="flex items-center gap-1">
+          {/* Desktop Navigation Links */}
+          <div className="hidden md:flex items-center gap-1">
             {navItems.map((item) => (
               <Link
                 key={item.href}
@@ -229,15 +244,15 @@ const Navigation: React.FC<NavigationProps> = ({
             ))}
           </div>
 
-          {/* Chain Switcher + User */}
+          {/* Right Side: Chain + Actions */}
           <div className="flex items-center gap-2">
-            
+
             {/* Chain Switcher Dropdown */}
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 disabled={isSwitching}
-                className={`flex items-center gap-2 px-3 py-1.5 bg-gray-900 border rounded-lg text-xs font-mono transition-all duration-200 ${
+                className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 bg-gray-900 border rounded-lg text-xs font-mono transition-all duration-200 ${
                   isSwitching
                     ? 'border-yellow-500/50 text-yellow-400'
                     : isDropdownOpen
@@ -253,7 +268,7 @@ const Navigation: React.FC<NavigationProps> = ({
                   )}
                 </div>
                 <span className="hidden sm:inline">{isSwitching ? 'Switching...' : currentChain.name}</span>
-                <span className={`text-gray-500 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}>▼</span>
+                <span className={`text-gray-500 transition-transform duration-200 text-[10px] ${isDropdownOpen ? 'rotate-180' : ''}`}>▼</span>
               </button>
 
               {/* Dropdown Menu */}
@@ -287,19 +302,71 @@ const Navigation: React.FC<NavigationProps> = ({
               </div>
             </div>
 
-            {/* Address */}
-            {userWallet && (
-              <span className="text-xs text-gray-500 font-mono hidden md:block">
-                {userWallet.address.slice(0, 4)}...{userWallet.address.slice(-3)}
-              </span>
-            )}
-
-            {/* Logout */}
+            {/* Logout - Desktop */}
             <button
               onClick={logout}
-              className="px-2 py-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-lg text-red-400 text-xs font-mono transition-all"
+              className="hidden sm:block px-2 py-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-lg text-red-400 text-xs font-mono transition-all"
             >
               EXIT
+            </button>
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden p-2 text-gray-400 hover:text-cyan-400 transition-colors"
+              aria-label="Toggle menu"
+            >
+              {isMobileMenuOpen ? (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Menu */}
+        <div
+          ref={mobileMenuRef}
+          className={`md:hidden overflow-hidden transition-all duration-300 ${
+            isMobileMenuOpen ? 'max-h-80 opacity-100 pb-4' : 'max-h-0 opacity-0'
+          }`}
+        >
+          <div className="flex flex-col gap-1 pt-2 border-t border-gray-800">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`
+                  px-4 py-3 rounded-lg font-mono text-sm transition-all
+                  ${isActive(item.href)
+                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50'
+                    : 'text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10'
+                  }
+                `}
+              >
+                {item.label}
+              </Link>
+            ))}
+
+            {/* Address in mobile menu */}
+            {userWallet && (
+              <div className="px-4 py-2 text-xs text-gray-500 font-mono border-t border-gray-800 mt-2 pt-3">
+                {userWallet.address.slice(0, 8)}...{userWallet.address.slice(-6)}
+              </div>
+            )}
+
+            {/* Logout in mobile menu */}
+            <button
+              onClick={logout}
+              className="mx-4 mt-2 px-4 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-lg text-red-400 text-sm font-mono transition-all text-center"
+            >
+              LOGOUT
             </button>
           </div>
         </div>

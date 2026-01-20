@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Wallet, TokenBalance } from '../../types/index';
@@ -11,6 +12,7 @@ import { parseUnits, encodeFunctionData } from 'viem';
 import { base, mainnet, optimism } from 'viem/chains';
 import { useTokenPrices } from '../../hooks/useTokenPrices';
 import { useActiveWallet } from '../../hooks/useActiveWallet';
+import ReceiveModal from './ReceiveModal';
 
 interface WalletInfoProps {
   wallet: Wallet;
@@ -47,14 +49,14 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
   const [scannedAddress, setScannedAddress] = useState<string | null>(null);
 
+  // State for Receive modal
+  const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
+
   // Fund wallet state
   const [isFunding, setIsFunding] = useState(false);
   
   // Get the actual wallet instance from Privy's useWallets hook
   const privyWallet = wallets?.find(w => w.address.toLowerCase() === wallet.address.toLowerCase());
-  
-  // Generate QR code URL using a public QR code service
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${wallet.address}`;
   
   // Get token logo URLs from CoinGecko
   const ethLogoUrl = getTokenLogoUrl('ETH');
@@ -335,7 +337,11 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
             </button>
             <button
               className="quick-action-btn receive-btn"
-              onClick={openQRScanner}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsReceiveModalOpen(true);
+              }}
             >
               <div className="action-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -365,9 +371,6 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
       <div className="wallet-address-card">
         <div className="address-row">
           <div className="address-info">
-            <div className="qr-code-mini">
-              <img src={qrCodeUrl} alt="QR" />
-            </div>
             <div className="address-text">
               <span className="address-label">Wallet Address</span>
               <span className="address-value">{formatAddress(wallet.address, true)}</span>
@@ -569,6 +572,18 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           txHash={txHash}
           initialRecipient={scannedAddress || ''}
           chainId={chainId}
+        />
+      )}
+
+      {/* Receive Modal */}
+      {isReceiveModalOpen && (
+        <ReceiveModal
+          address={wallet.address}
+          onClose={() => setIsReceiveModalOpen(false)}
+          onScanQR={() => {
+            setIsReceiveModalOpen(false);
+            openQRScanner();
+          }}
         />
       )}
       

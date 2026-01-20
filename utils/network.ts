@@ -1,5 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
-import { usePrivy, useWallets } from '@privy-io/react-auth';
+import { useWallets } from '@privy-io/react-auth';
+// Import addresses from frontend folder (single source of truth from deployments)
+import { ADDRESSES } from '../frontend/contracts';
 
 type ChainLabel = 'base' | 'ethereum' | 'unichain' | 'optimism';
 
@@ -8,44 +10,72 @@ type ChainConfig = {
   label: ChainLabel;
   name: string;
   swag1155: string;
+  faucetManager: string;
+  zkpassport: string;
   usdc: string;
   explorerUrl: string;
 };
 
 const FALLBACK_CHAIN_ID = Number(process.env.NEXT_PUBLIC_DEFAULT_CHAIN_ID || 8453);
 
+// USDC addresses (not part of our deployed contracts)
+const USDC_ADDRESSES: Record<ChainLabel, string> = {
+  base: '0x833589fCD6eDb6E08f4c7C32D4f71b1566469C5d',
+  ethereum: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+  unichain: '0x078D782b760474a361dDA0AF3839290b0EF57AD6',
+  optimism: '0x7F5c764cBc14f9669B88837ca1490cCa17c31607',
+};
+
+// Explorer URLs per chain
+const EXPLORER_URLS: Record<ChainLabel, string> = {
+  base: 'https://basescan.org',
+  ethereum: 'https://etherscan.io',
+  unichain: 'https://explorer.unichain.org',
+  optimism: 'https://optimistic.etherscan.io',
+};
+
+// Build chain configs from frontend/addresses.json (single source of truth)
 const CHAIN_CONFIGS: Record<ChainLabel, ChainConfig> = {
   base: {
-    id: 8453,
+    id: ADDRESSES.base.chainId,
     label: 'base',
     name: 'Base',
-    swag1155: process.env.NEXT_PUBLIC_SWAG1155_ADDRESS_BASE || '',
-    usdc: process.env.NEXT_PUBLIC_USDC_ADDRESS_BASE || '0x833589fCD6eDb6E08f4c7C32D4f71b1566469C5d',
-    explorerUrl: 'https://basescan.org',
+    swag1155: ADDRESSES.base.addresses.Swag1155,
+    faucetManager: ADDRESSES.base.addresses.FaucetManager,
+    zkpassport: ADDRESSES.base.addresses.ZKPassportNFT,
+    usdc: USDC_ADDRESSES.base,
+    explorerUrl: EXPLORER_URLS.base,
   },
   ethereum: {
-    id: 1,
+    id: ADDRESSES.ethereum.chainId,
     label: 'ethereum',
     name: 'Ethereum',
-    swag1155: process.env.NEXT_PUBLIC_SWAG1155_ADDRESS_ETHEREUM || '',
-    usdc: process.env.NEXT_PUBLIC_USDC_ADDRESS_ETHEREUM || '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-    explorerUrl: 'https://etherscan.io',
+    swag1155: ADDRESSES.ethereum.addresses.Swag1155,
+    faucetManager: ADDRESSES.ethereum.addresses.FaucetManager,
+    zkpassport: ADDRESSES.ethereum.addresses.ZKPassportNFT,
+    usdc: USDC_ADDRESSES.ethereum,
+    explorerUrl: EXPLORER_URLS.ethereum,
   },
   unichain: {
-    id: 130,
+    id: ADDRESSES.unichain.chainId,
     label: 'unichain',
     name: 'Unichain',
-    swag1155: process.env.NEXT_PUBLIC_SWAG1155_ADDRESS_UNICHAIN || '',
-    usdc: process.env.NEXT_PUBLIC_USDC_ADDRESS_UNICHAIN || '0x5a1b40E9B1c89b2B72D0c7c1b45C07e9e6d55dCd',
-    explorerUrl: 'https://explorer.unichain.org',
+    swag1155: ADDRESSES.unichain.addresses.Swag1155,
+    faucetManager: ADDRESSES.unichain.addresses.FaucetManager,
+    zkpassport: ADDRESSES.unichain.addresses.ZKPassportNFT,
+    usdc: USDC_ADDRESSES.unichain,
+    explorerUrl: EXPLORER_URLS.unichain,
   },
+  // Optimism not yet deployed - empty addresses
   optimism: {
     id: 10,
     label: 'optimism',
     name: 'Optimism',
-    swag1155: process.env.NEXT_PUBLIC_SWAG1155_ADDRESS_OPTIMISM || '',
-    usdc: process.env.NEXT_PUBLIC_USDC_ADDRESS_OPTIMISM || '0x7F5c764cBc14f9669B88837ca1490cCa17c31607',
-    explorerUrl: 'https://optimistic.etherscan.io',
+    swag1155: '',
+    faucetManager: '',
+    zkpassport: '',
+    usdc: USDC_ADDRESSES.optimism,
+    explorerUrl: EXPLORER_URLS.optimism,
   },
 };
 
@@ -104,8 +134,21 @@ export function useSwagAddresses() {
   return {
     chainId: config.id,
     swag1155: config.swag1155,
+    faucetManager: config.faucetManager,
+    zkpassport: config.zkpassport,
     usdc: config.usdc,
     explorerUrl: config.explorerUrl,
     label: config.label,
+  };
+}
+
+// Get all contract addresses for a chain
+export function getContractAddresses(chainId?: number) {
+  const config = getChainConfig(chainId);
+  return {
+    swag1155: config.swag1155,
+    faucetManager: config.faucetManager,
+    zkpassport: config.zkpassport,
+    usdc: config.usdc,
   };
 }

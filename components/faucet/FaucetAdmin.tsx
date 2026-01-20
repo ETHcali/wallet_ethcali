@@ -334,13 +334,13 @@ const FaucetAdmin: React.FC<FaucetAdminProps> = ({ chainId }) => {
       <div className="bg-gray-800/30 rounded-lg p-4 space-y-2">
         <p className="text-xs text-gray-500 font-mono">CONTRACT_ADDRESSES</p>
         <p className="text-xs text-gray-400 font-mono break-all">
-          Faucet: {addresses.FaucetVault}
+          Faucet: {addresses.FaucetManager}
         </p>
         <p className="text-xs text-gray-400 font-mono break-all">
           NFT: {addresses.ZKPassportNFT}
         </p>
         <p className="text-xs text-purple-400 font-mono">
-          💰 All transactions sponsored by Privy
+          All transactions sponsored by Privy
         </p>
       </div>
 
