@@ -2,14 +2,18 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { QRCodeSVG } from 'qrcode.react';
 import { useWallets, useSendTransaction } from '@privy-io/react-auth';
-import { encodeFunctionData } from 'viem';
+import { encodeFunctionData, createPublicClient, http, waitForTransactionReceipt, decodeEventLog } from 'viem';
 import {
   hasNFTByAddress,
   hasNFT,
   getContractAddresses,
   getExplorerUrl,
   getNetworkName,
+  getTokenIdByAddress,
+  getTokenData,
+  getTokenURI,
 } from '../../utils/contracts';
+import { getChainRpc } from '../../config/networks';
 import ZKPassportNFTABI from '../../frontend/abis/ZKPassportNFT.json';
 
 // Dynamic imports for ZKPassport (client-side only)
@@ -76,6 +80,13 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSu
   const [alreadyHasNFT, setAlreadyHasNFT] = useState(false);
   const [mintTxHash, setMintTxHash] = useState<string | null>(null);
   const [isMinting, setIsMinting] = useState(false);
+  const [tokenId, setTokenId] = useState<bigint | null>(null);
+  const [tokenData, setTokenData] = useState<{
+    uniqueIdentifier: string;
+    faceMatchPassed: boolean;
+    personhoodVerified: boolean;
+  } | null>(null);
+  const [nftMetadata, setNftMetadata] = useState<any>(null);
 
   const addresses = getContractAddresses(chainId);
 
@@ -89,7 +100,7 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSu
     }
   }, []);
 
-  // Check if user already has NFT
+  // Check if user already has NFT and fetch details
   useEffect(() => {
     const checkNFTOwnership = async () => {
       if (!userWallet?.address) {
@@ -102,6 +113,32 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSu
         setAlreadyHasNFT(hasToken);
         if (hasToken) {
           setStatus('minted');
+          
+          // Fetch NFT details
+          const fetchedTokenId = await getTokenIdByAddress(chainId, userWallet.address);
+          if (fetchedTokenId) {
+            setTokenId(fetchedTokenId);
+            const [data, uri] = await Promise.all([
+              getTokenData(chainId, fetchedTokenId),
+              getTokenURI(chainId, fetchedTokenId),
+            ]);
+            setTokenData(data);
+            if (uri) {
+              try {
+                if (uri.startsWith('data:application/json;base64,')) {
+                  const base64Data = uri.split(',')[1];
+                  const jsonData = JSON.parse(atob(base64Data));
+                  setNftMetadata(jsonData);
+                } else if (uri.startsWith('http')) {
+                  const response = await fetch(uri);
+                  const jsonData = await response.json();
+                  setNftMetadata(jsonData);
+                }
+              } catch (err) {
+                console.error('Error parsing metadata:', err);
+              }
+            }
+          }
         }
       } catch (error) {
         console.error('Error checking NFT ownership:', error);
@@ -166,6 +203,97 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSu
       setMintTxHash(result.hash);
       setStatus('minted');
       setAlreadyHasNFT(true);
+      
+      // Fetch NFT details after minting
+      try {
+        // Wait for transaction receipt
+        const rpcUrl = getChainRpc(chainId);
+        const client = createPublicClient({
+          transport: http(rpcUrl),
+        });
+        
+        const receipt = await waitForTransactionReceipt(client, {
+          hash: result.hash as `0x${string}`,
+        });
+        
+        // Extract tokenId from NFTMinted event
+        const nftMintedEvent = receipt.logs.find((log: any) => {
+          try {
+            const decoded = decodeEventLog({
+              abi: ZKPassportNFTABI as any,
+              data: log.data,
+              topics: log.topics,
+            });
+            return decoded.eventName === 'NFTMinted';
+          } catch {
+            return false;
+          }
+        });
+        
+        if (nftMintedEvent) {
+          const decoded = decodeEventLog({
+            abi: ZKPassportNFTABI as any,
+            data: nftMintedEvent.data,
+            topics: nftMintedEvent.topics,
+          });
+          const mintedTokenId = (decoded.args as any).tokenId as bigint;
+          setTokenId(mintedTokenId);
+          
+          // Fetch token data and metadata
+          const [data, uri] = await Promise.all([
+            getTokenData(chainId, mintedTokenId),
+            getTokenURI(chainId, mintedTokenId),
+          ]);
+          
+          setTokenData(data);
+          
+          // Parse tokenURI if it's base64
+          if (uri) {
+            try {
+              if (uri.startsWith('data:application/json;base64,')) {
+                const base64Data = uri.split(',')[1];
+                const jsonData = JSON.parse(atob(base64Data));
+                setNftMetadata(jsonData);
+              } else if (uri.startsWith('http')) {
+                const response = await fetch(uri);
+                const jsonData = await response.json();
+                setNftMetadata(jsonData);
+              }
+            } catch (err) {
+              console.error('Error parsing metadata:', err);
+            }
+          }
+        } else {
+          // Fallback: try to get tokenId by address
+          const fetchedTokenId = await getTokenIdByAddress(chainId, userWallet.address);
+          if (fetchedTokenId) {
+            setTokenId(fetchedTokenId);
+            const [data, uri] = await Promise.all([
+              getTokenData(chainId, fetchedTokenId),
+              getTokenURI(chainId, fetchedTokenId),
+            ]);
+            setTokenData(data);
+            if (uri) {
+              try {
+                if (uri.startsWith('data:application/json;base64,')) {
+                  const base64Data = uri.split(',')[1];
+                  const jsonData = JSON.parse(atob(base64Data));
+                  setNftMetadata(jsonData);
+                } else if (uri.startsWith('http')) {
+                  const response = await fetch(uri);
+                  const jsonData = await response.json();
+                  setNftMetadata(jsonData);
+                }
+              } catch (err) {
+                console.error('Error parsing metadata:', err);
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching NFT details:', err);
+      }
+      
       onMintSuccess?.();
 
     } catch (error: any) {
@@ -309,10 +437,10 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSu
 
   if (isLoading) {
     return (
-      <div className="bg-gray-900 border border-cyan-500/30 rounded-xl p-6">
+      <div className="bg-black/60 border border-cyan-500/30 rounded-lg p-4">
         <div className="flex items-center justify-center gap-3">
-          <div className="w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-cyan-400 font-mono text-sm">CHECKING_NFT_STATUS...</span>
+          <div className="w-3 h-3 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-cyan-400 font-mono text-[10px] tracking-wider">LOADING...</span>
         </div>
       </div>
     );
@@ -321,273 +449,224 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSu
   // Already has NFT
   if (alreadyHasNFT && status === 'minted' && !mintTxHash) {
     return (
-      <div className="bg-gray-900 border border-green-500/30 rounded-xl p-6 space-y-4">
+      <div className="bg-black/60 border border-green-500/40 rounded-lg p-4 space-y-3">
         <div className="flex items-center gap-3">
-          <span className="text-4xl">✅</span>
+          <div className="w-3 h-3 bg-green-500 rounded-full shadow-lg shadow-green-500/50"></div>
           <div>
-            <h2 className="text-xl font-bold text-green-400 font-mono">VERIFIED_HUMAN</h2>
-            <p className="text-gray-500 text-sm font-mono">You have a ZKPassport NFT on {getNetworkName(chainId)}</p>
+            <h2 className="text-sm font-bold text-green-400 font-mono tracking-wide">VERIFIED</h2>
+            <p className="text-gray-600 text-[10px] font-mono">{getNetworkName(chainId).toUpperCase()}</p>
           </div>
-        </div>
-
-        <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
-          <p className="text-green-400 font-mono text-sm">
-            Your soulbound NFT proves you&apos;re a unique verified human. You can now claim from the faucet!
-          </p>
         </div>
 
         <Link
           href="/faucet"
-          className="block w-full py-3 bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 rounded-lg text-white font-mono font-bold text-center transition-all"
+          className="block w-full py-2.5 bg-green-500/20 hover:bg-green-500/30 border border-green-500/40 rounded text-green-400 font-mono text-xs font-bold text-center transition-all"
         >
-          GO_TO_FAUCET →
+          CLAIM_FAUCET →
         </Link>
       </div>
     );
   }
 
   return (
-    <div className="bg-gray-900 border border-cyan-500/30 rounded-xl p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <span className="text-3xl">🛡️</span>
-        <div>
-          <h2 className="text-xl font-bold text-cyan-400 font-mono">SYBIL_VERIFICATION</h2>
-          <p className="text-gray-500 text-sm font-mono">Prove you&apos;re a unique human</p>
-        </div>
+    <div className="bg-black/60 border border-cyan-500/30 rounded-lg p-4 space-y-4">
+      {/* Minimal Header */}
+      <div className="flex items-center gap-2">
+        <div className="w-2 h-2 bg-cyan-500 rounded-full"></div>
+        <h2 className="text-xs font-bold text-cyan-400 font-mono tracking-wider">VERIFY_IDENTITY</h2>
       </div>
 
       {/* Idle State */}
       {status === 'idle' && (
-        <div className="space-y-4">
-          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-            <p className="text-sm text-blue-400 font-mono font-bold mb-2">HOW_IT_WORKS:</p>
-            <ol className="list-decimal list-inside space-y-1 text-xs text-blue-300 font-mono">
-              <li>Click &quot;Start Verification&quot;</li>
-              <li>Scan QR code with ZKPassport app</li>
-              <li>Scan your passport NFC chip</li>
-              <li>Complete face verification</li>
-              <li>Review your NFT traits and mint!</li>
-            </ol>
-          </div>
-
-          <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
-            <p className="text-sm text-purple-400 font-mono font-bold mb-2">🎨 NFT_TRAITS:</p>
-            <ul className="space-y-1 text-xs text-purple-300 font-mono">
-              <li>• <span className="text-purple-400">Unique ID</span> - Your anonymous identity hash</li>
-              <li>• <span className="text-purple-400">Face Match</span> - Biometric verification status</li>
-              <li>• <span className="text-purple-400">Personhood</span> - Proof you&apos;re a real human</li>
-            </ul>
+        <div className="space-y-3">
+          {/* Compact Steps */}
+          <div className="grid grid-cols-4 gap-1 text-[9px] font-mono text-gray-500">
+            <div className="text-center p-2 bg-gray-900/50 rounded">
+              <div className="text-cyan-500 text-lg mb-1">1</div>
+              <span>SCAN</span>
+            </div>
+            <div className="text-center p-2 bg-gray-900/50 rounded">
+              <div className="text-cyan-500 text-lg mb-1">2</div>
+              <span>NFC</span>
+            </div>
+            <div className="text-center p-2 bg-gray-900/50 rounded">
+              <div className="text-cyan-500 text-lg mb-1">3</div>
+              <span>FACE</span>
+            </div>
+            <div className="text-center p-2 bg-gray-900/50 rounded">
+              <div className="text-cyan-500 text-lg mb-1">4</div>
+              <span>MINT</span>
+            </div>
           </div>
 
           <button
             onClick={startVerification}
             disabled={!isClient}
-            className="w-full py-4 bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 rounded-lg text-white font-mono font-bold text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/50 rounded text-cyan-400 font-mono font-bold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {!isClient ? 'LOADING...' : 'START_VERIFICATION'}
+            {!isClient ? 'INIT...' : 'START →'}
           </button>
         </div>
       )}
 
       {/* QR Code */}
       {status === 'awaiting_scan' && verificationUrl && (
-        <div className="space-y-4">
-          <div className="bg-gray-800 rounded-lg p-6 text-center">
-            <p className="text-cyan-400 font-mono text-sm mb-4">SCAN_WITH_ZKPASSPORT_APP</p>
-            <div className="bg-white p-4 rounded-lg inline-block">
-              <QRCodeSVG 
-                value={verificationUrl} 
-                size={200}
+        <div className="space-y-3">
+          <div className="bg-black/40 rounded p-4 text-center">
+            <p className="text-[10px] text-gray-500 font-mono mb-3 tracking-wider">SCAN_QR</p>
+            <div className="bg-white p-3 rounded inline-block">
+              <QRCodeSVG
+                value={verificationUrl}
+                size={160}
                 level="H"
-                includeMargin={true}
+                includeMargin={false}
               />
             </div>
-            <p className="text-xs text-gray-500 font-mono mt-4">
-              Waiting for scan...
-            </p>
-            <a 
+            <div className="flex items-center justify-center gap-2 mt-3">
+              <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-pulse"></div>
+              <span className="text-[10px] text-gray-600 font-mono">WAITING...</span>
+            </div>
+            <a
               href={verificationUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs text-cyan-400 hover:underline font-mono mt-2 block"
+              className="text-[10px] text-cyan-500/70 hover:text-cyan-400 font-mono mt-2 block"
             >
-              Open in ZKPassport app
+              open_app →
             </a>
           </div>
-          
+
           <button
             onClick={resetVerification}
-            className="w-full py-2 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-lg text-gray-400 font-mono text-sm"
+            className="w-full py-2 bg-gray-900/50 hover:bg-gray-800 border border-gray-700 rounded text-gray-500 font-mono text-[10px]"
           >
-            Cancel
+            CANCEL
           </button>
         </div>
       )}
 
       {/* Progress States */}
       {(['request_received', 'generating_proof'].includes(status)) && (
-        <div className="bg-gray-800 rounded-lg p-4">
-          <div className="space-y-3">
+        <div className="bg-black/40 rounded p-4">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-4 h-4 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-[10px] text-cyan-400 font-mono tracking-wider">PROCESSING</span>
+          </div>
+          <div className="space-y-2 text-[10px] font-mono">
             <div className="flex items-center gap-2">
-              <span className={requestReceived ? 'text-green-400' : 'text-gray-500'}>
-                {requestReceived ? '✓' : '○'}
-              </span>
-              <span className={`text-sm font-mono ${requestReceived ? 'text-green-400' : 'text-gray-400'}`}>
-                Request received
-              </span>
+              <div className={`w-1.5 h-1.5 rounded-full ${requestReceived ? 'bg-green-500' : 'bg-gray-600'}`}></div>
+              <span className={requestReceived ? 'text-green-400' : 'text-gray-600'}>REQUEST</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className={generatingProof ? 'text-green-400' : 'text-gray-500'}>
-                {generatingProof ? '✓' : '○'}
-              </span>
-              <span className={`text-sm font-mono ${generatingProof ? 'text-green-400' : 'text-gray-400'}`}>
-                Generating proofs {proofsGenerated > 0 && `(${proofsGenerated}/4)`}
+              <div className={`w-1.5 h-1.5 rounded-full ${generatingProof ? 'bg-cyan-500 animate-pulse' : 'bg-gray-600'}`}></div>
+              <span className={generatingProof ? 'text-cyan-400' : 'text-gray-600'}>
+                PROOF {proofsGenerated > 0 && `[${proofsGenerated}/4]`}
               </span>
             </div>
           </div>
-
-          {generatingProof && (
-            <div className="flex items-center justify-center mt-4 gap-3">
-              <div className="w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
-              <span className="text-cyan-400 font-mono text-sm">Verifying...</span>
-            </div>
-          )}
         </div>
       )}
 
       {/* Verified - Show NFT Preview & Mint Button */}
       {status === 'verified' && uniqueIdentifier && (
-        <div className="space-y-4">
-          {/* Success Banner */}
-          <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-2xl">✓</span>
-              <h3 className="text-green-400 font-mono font-bold">VERIFICATION_COMPLETE!</h3>
-            </div>
-            <p className="text-green-300 font-mono text-sm">
-              Your identity has been verified. Review your NFT traits below and mint!
-            </p>
+        <div className="space-y-3">
+          {/* Success Badge */}
+          <div className="flex items-center gap-2 p-2 bg-green-500/10 border border-green-500/30 rounded">
+            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+            <span className="text-[10px] text-green-400 font-mono tracking-wider">VERIFIED</span>
           </div>
 
-          {/* NFT Preview Card */}
-          <div className="bg-gradient-to-br from-purple-900/50 to-cyan-900/50 border border-purple-500/30 rounded-xl p-5">
-            <div className="text-center mb-4">
-              <span className="text-5xl">🪪</span>
-              <h3 className="text-xl font-bold text-white font-mono mt-2">ZKPassport NFT</h3>
-              <p className="text-gray-400 text-xs font-mono">Soulbound Identity Token</p>
-            </div>
+          {/* NFT Preview - Compact */}
+          <div className="bg-gradient-to-br from-purple-900/30 to-cyan-900/30 border border-purple-500/20 rounded p-3">
+            <div className="text-[10px] text-gray-500 font-mono mb-2 tracking-wider">NFT_TRAITS</div>
 
-            {/* NFT Traits */}
-            <div className="space-y-3 bg-black/30 rounded-lg p-4">
-              <p className="text-xs text-gray-500 font-mono uppercase tracking-wider mb-3">NFT Traits (On-Chain Metadata)</p>
-              
-              <div className="flex justify-between items-center py-2 border-b border-gray-700">
-                <span className="text-gray-400 font-mono text-sm">Unique ID</span>
-                <span className="text-cyan-400 font-mono text-sm font-bold">
-                  {maskIdentifier(uniqueIdentifier)}
+            <div className="space-y-1.5 text-[11px] font-mono">
+              <div className="flex justify-between items-center py-1.5 border-b border-gray-800">
+                <span className="text-gray-500">uid</span>
+                <span className="text-cyan-400">{maskIdentifier(uniqueIdentifier)}</span>
+              </div>
+              <div className="flex justify-between items-center py-1.5 border-b border-gray-800">
+                <span className="text-gray-500">face</span>
+                <span className={faceMatchPassed ? 'text-green-400' : 'text-gray-600'}>
+                  {faceMatchPassed ? 'PASS' : 'N/A'}
                 </span>
               </div>
-              
-              <div className="flex justify-between items-center py-2 border-b border-gray-700">
-                <span className="text-gray-400 font-mono text-sm">Face Match</span>
-                <span className={`font-mono text-sm font-bold ${faceMatchPassed ? 'text-green-400' : 'text-yellow-400'}`}>
-                  {faceMatchPassed ? '✓ PASSED' : '○ NOT VERIFIED'}
-                </span>
-              </div>
-              
-              <div className="flex justify-between items-center py-2">
-                <span className="text-gray-400 font-mono text-sm">Personhood</span>
-                <span className={`font-mono text-sm font-bold ${personhoodVerified ? 'text-green-400' : 'text-yellow-400'}`}>
-                  {personhoodVerified ? '✓ VERIFIED' : '○ NOT VERIFIED'}
+              <div className="flex justify-between items-center py-1.5">
+                <span className="text-gray-500">human</span>
+                <span className={personhoodVerified ? 'text-green-400' : 'text-gray-600'}>
+                  {personhoodVerified ? 'TRUE' : 'FALSE'}
                 </span>
               </div>
             </div>
 
-            {/* Network Badge */}
-            <div className="mt-4 text-center">
-              <span className="inline-block px-3 py-1 bg-cyan-500/20 border border-cyan-500/30 rounded-full text-cyan-400 font-mono text-xs">
-                {getNetworkName(chainId).toUpperCase()} NETWORK
+            <div className="mt-2 pt-2 border-t border-gray-800">
+              <span className="text-[9px] text-gray-600 font-mono">
+                {getNetworkName(chainId).toUpperCase()} • SOULBOUND
               </span>
             </div>
           </div>
 
-          {/* Error Message */}
+          {/* Error */}
           {errorMessage && (
-            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
-              <p className="text-red-400 font-mono text-xs">{errorMessage}</p>
+            <div className="text-[10px] text-red-400 font-mono p-2 bg-red-500/10 border border-red-500/20 rounded">
+              {errorMessage}
             </div>
           )}
-
-          {/* Gas Notice */}
-          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
-            <p className="text-yellow-400 font-mono text-xs">
-              ⛽ A small amount of ETH is required for the mint transaction gas fee.
-            </p>
-          </div>
 
           {/* Mint Button */}
           <button
             onClick={mintNFT}
             disabled={isMinting}
-            className="w-full py-4 bg-gradient-to-r from-green-500 to-cyan-500 hover:from-green-600 hover:to-cyan-600 rounded-lg text-white font-mono font-bold text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 rounded text-green-400 font-mono font-bold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isMinting ? (
               <span className="flex items-center justify-center gap-2">
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-3 h-3 border-2 border-green-400 border-t-transparent rounded-full animate-spin"></div>
                 MINTING...
               </span>
             ) : (
-              '🎨 MINT_MY_NFT'
+              'MINT →'
             )}
           </button>
 
           <button
             onClick={resetVerification}
             disabled={isMinting}
-            className="w-full py-2 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-lg text-gray-400 font-mono text-sm disabled:opacity-50"
+            className="w-full py-2 text-[10px] text-gray-600 hover:text-gray-400 font-mono disabled:opacity-50"
           >
-            Start Over
+            RESTART
           </button>
         </div>
       )}
 
       {/* Minting */}
       {status === 'minting' && (
-        <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-6 text-center">
-          <div className="w-12 h-12 border-3 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-cyan-400 font-mono font-bold">MINTING_NFT...</p>
-          <p className="text-xs text-gray-500 font-mono mt-2">
-            Confirm the transaction in your wallet
-          </p>
+        <div className="bg-black/40 rounded p-4 text-center">
+          <div className="flex items-center justify-center gap-3">
+            <div className="w-4 h-4 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-[10px] text-cyan-400 font-mono tracking-wider">MINTING...</span>
+          </div>
+          <p className="text-[9px] text-gray-600 font-mono mt-2">CONFIRM_TX</p>
         </div>
       )}
 
       {/* Minted Success */}
       {status === 'minted' && mintTxHash && (
-        <div className="space-y-4">
-          <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
+        <div className="space-y-3">
+          <div className="bg-green-500/10 border border-green-500/30 rounded p-3">
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-3xl">🎉</span>
-              <h3 className="text-green-400 font-mono font-bold">NFT_MINTED!</h3>
+              <div className="w-2 h-2 bg-green-500 rounded-full shadow-lg shadow-green-500/50"></div>
+              <span className="text-[10px] text-green-400 font-mono tracking-wider">MINTED</span>
             </div>
-            <p className="text-green-300 font-mono text-sm mb-3">
-              You are now a verified human with a soulbound ZKPassport NFT!
-            </p>
-            
-            {/* Show final traits */}
-            <div className="bg-black/20 rounded-lg p-3 mb-3">
-              <div className="flex justify-between text-xs font-mono">
-                <span className="text-gray-400">Unique ID:</span>
+
+            <div className="space-y-1 text-[10px] font-mono mb-2">
+              <div className="flex justify-between">
+                <span className="text-gray-600">uid</span>
                 <span className="text-cyan-400">{uniqueIdentifier ? maskIdentifier(uniqueIdentifier) : '***'}</span>
               </div>
-              <div className="flex justify-between text-xs font-mono mt-1">
-                <span className="text-gray-400">Face Match:</span>
-                <span className="text-green-400">{faceMatchPassed ? 'Passed' : 'N/A'}</span>
-              </div>
-              <div className="flex justify-between text-xs font-mono mt-1">
-                <span className="text-gray-400">Personhood:</span>
-                <span className="text-green-400">Verified</span>
+              <div className="flex justify-between">
+                <span className="text-gray-600">status</span>
+                <span className="text-green-400">VERIFIED_HUMAN</span>
               </div>
             </div>
 
@@ -595,68 +674,61 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSu
               href={getExplorerUrl(chainId, mintTxHash)}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs text-green-400 font-mono hover:underline break-all"
+              className="text-[9px] text-gray-500 hover:text-cyan-400 font-mono"
             >
-              View transaction →
+              tx: {mintTxHash.slice(0, 10)}...{mintTxHash.slice(-6)} →
             </a>
           </div>
 
           <Link
             href="/faucet"
-            className="block w-full py-3 bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 rounded-lg text-white font-mono font-bold text-center transition-all"
+            className="block w-full py-2.5 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 rounded text-cyan-400 font-mono text-xs font-bold text-center transition-all"
           >
-            CLAIM_FROM_FAUCET →
+            CLAIM_FAUCET →
           </Link>
         </div>
       )}
 
       {/* Duplicate */}
       {status === 'duplicate' && (
-        <div className="space-y-4">
-          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-2xl">⚠️</span>
-              <h3 className="text-yellow-400 font-mono font-bold">ALREADY_REGISTERED</h3>
+        <div className="space-y-3">
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+              <span className="text-[10px] text-yellow-400 font-mono tracking-wider">DUPLICATE</span>
             </div>
-            <p className="text-yellow-300 font-mono text-sm">
-              {errorMessage || 'This identity already has an NFT on this network.'}
+            <p className="text-[10px] text-yellow-400/70 font-mono">
+              {uniqueIdentifier && `ID: ${maskIdentifier(uniqueIdentifier)}`}
             </p>
-            {uniqueIdentifier && (
-              <p className="text-yellow-400/60 font-mono text-xs mt-2">
-                ID: {maskIdentifier(uniqueIdentifier)}
-              </p>
-            )}
           </div>
-
           <button
             onClick={resetVerification}
-            className="w-full py-2 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-lg text-gray-300 font-mono text-sm transition-all"
+            className="w-full py-2 text-[10px] text-gray-500 hover:text-gray-400 font-mono"
           >
-            TRY_AGAIN
+            RETRY
           </button>
         </div>
       )}
 
       {/* Failed/Rejected */}
       {(['failed', 'rejected'].includes(status)) && (
-        <div className="space-y-4">
-          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-2xl">❌</span>
-              <h3 className="text-red-400 font-mono font-bold">
-                {status === 'rejected' ? 'REJECTED' : 'FAILED'}
-              </h3>
+        <div className="space-y-3">
+          <div className="bg-red-500/10 border border-red-500/30 rounded p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+              <span className="text-[10px] text-red-400 font-mono tracking-wider">
+                {status === 'rejected' ? 'REJECTED' : 'ERROR'}
+              </span>
             </div>
-            <p className="text-red-300 font-mono text-sm">
-              {errorMessage || 'Something went wrong.'}
-            </p>
+            {errorMessage && (
+              <p className="text-[9px] text-red-400/70 font-mono">{errorMessage}</p>
+            )}
           </div>
-
           <button
             onClick={resetVerification}
-            className="w-full py-3 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/50 rounded-lg text-cyan-400 font-mono font-bold transition-all"
+            className="w-full py-2.5 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 rounded text-cyan-400 font-mono text-[10px] font-bold transition-all"
           >
-            TRY_AGAIN
+            RETRY →
           </button>
         </div>
       )}
