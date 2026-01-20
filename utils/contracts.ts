@@ -100,6 +100,11 @@ export async function hasNFTByAddress(chainId: number, userAddress: string): Pro
   const addresses = getContractAddresses(chainId);
   const abi = getContractABI('ZKPassportNFT');
 
+  if (!addresses.ZKPassportNFT) {
+    console.error(`No ZKPassportNFT address for chainId ${chainId}`);
+    return false;
+  }
+
   try {
     const result = await readContract(client, addresses.ZKPassportNFT, abi, 'hasNFTByAddress', [userAddress]);
     return Boolean(result);

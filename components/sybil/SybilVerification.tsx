@@ -111,6 +111,7 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSu
 
       try {
         const hasToken = await hasNFTByAddress(chainId, userWallet.address);
+        console.log(`NFT check result: ${hasToken} for chainId ${chainId}`);
         setAlreadyHasNFT(hasToken);
         if (hasToken) {
           setStatus('minted');
@@ -464,7 +465,7 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSu
       );
     }
 
-    if (alreadyHasNFT && (tokenId || tokenData || nftMetadata)) {
+    if (alreadyHasNFT) {
       return (
         <div className="bg-black/60 border border-green-500/40 rounded-lg p-4 space-y-3">
           <div className="flex items-center gap-3 mb-3">
