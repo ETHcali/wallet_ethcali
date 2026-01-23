@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useVaultWhitelist, useIsWhitelisted } from '../../hooks/useFaucetAdmin';
+import { useVaultWhitelist, useIsWhitelisted } from '../../hooks/faucet';
 import { Vault } from '../../types/faucet';
 import { useWallets } from '@privy-io/react-auth';
 
@@ -9,8 +9,7 @@ interface VaultWhitelistManagerProps {
 }
 
 export function VaultWhitelistManager({ vault, onSuccess }: VaultWhitelistManagerProps) {
-  const { wallets } = useWallets();
-  const activeWallet = wallets?.[0];
+  const { wallets: _wallets } = useWallets();
   const [addressInput, setAddressInput] = useState('');
   const [batchInput, setBatchInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);

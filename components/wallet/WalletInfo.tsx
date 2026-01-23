@@ -2,7 +2,6 @@ import Image from 'next/image';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Wallet, TokenBalance } from '../../types/index';
-import Button from '../../components/shared/Button';
 import Loading from '../../components/shared/Loading';
 import { getTokenLogoUrl, formatTokenBalance } from '../../utils/tokenUtils';
 import { usePrivy, useWallets, useSendTransaction, useFundWallet } from '@privy-io/react-auth';
@@ -16,6 +15,7 @@ import { getTokenAddresses } from '../../utils/network';
 import ReceiveModal from './ReceiveModal';
 import { useUserNFTs } from '../../hooks/useUserNFTs';
 import { NFTCard } from './NFTCard';
+import { logger } from '../../utils/logger';
 
 interface WalletInfoProps {
   wallet: Wallet;
@@ -37,11 +37,11 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
   const { sendTransaction } = useSendTransaction();
   const { fundWallet } = useFundWallet();
   const { getPriceForToken } = useTokenPrices();
-  const { wallet: activeWallet, canUseSponsoredGas, isEmbeddedWallet, walletClientType } = useActiveWallet();
+  const { wallet: activeWallet, isEmbeddedWallet } = useActiveWallet();
 
   // States for send token modal
   const [isSendModalOpen, setIsSendModalOpen] = useState(false);
-  const [selectedToken, setSelectedToken] = useState<'ETH' | 'USDC'>('ETH');
+  const [_selectedToken, setSelectedToken] = useState<'ETH' | 'USDC'>('ETH');
   const [isSendingTx, setIsSendingTx] = useState(false);
   const [txHash, setTxHash] = useState<string | null>(null);
 
@@ -120,7 +120,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
     try {
       await exportWallet({ address: wallet.address });
     } catch (error) {
-      console.error("Error exporting wallet:", error);
+      logger.error('Error exporting wallet', error);
     }
   };
 
@@ -148,7 +148,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
         // amount defaults to Dashboard configured amount
       });
     } catch (error) {
-      console.error('Error funding wallet:', error);
+      logger.error('Error funding wallet', error);
     } finally {
       setIsFunding(false);
     }
@@ -192,17 +192,16 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
     const walletToUse = activeWallet || privyWallet;
     
     if (!walletToUse) {
-      console.error("No wallet found");
+      logger.error('No wallet found');
       return;
     }
     
     const walletIsEmbedded = walletToUse.walletClientType === 'privy';
     
-    console.log('Sending transaction:', {
-      address: walletToUse.address,
-      type: walletToUse.walletClientType,
-      isEmbedded: walletIsEmbedded,
-      willSponsorGas: walletIsEmbedded // Sponsorship only for embedded
+    logger.tx('Sending transaction', {
+      hash: undefined,
+      chainId,
+      status: walletIsEmbedded ? 'sponsored' : 'user-pays-gas'
     });
     
     setIsSendingTx(true);
@@ -306,7 +305,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
       onRefresh();
       
     } catch (error) {
-      console.error("Error sending transaction:", error);
+      logger.error('Error sending transaction', error);
       throw error;
     } finally {
       setIsSendingTx(false);

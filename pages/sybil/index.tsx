@@ -12,15 +12,14 @@ import { useZKPassportNFT } from '../../hooks/useZKPassportNFT';
 export default function SybilPage() {
   const router = useRouter();
   const { ready, authenticated } = usePrivy();
-  const { wallets } = useWallets();
+  const { wallets: _wallets } = useWallets();
   const [currentChainId, setCurrentChainId] = useState(8453);
-  const [verificationStatus, setVerificationStatus] = useState<'idle' | 'verified' | 'minting' | 'minted' | 'failed' | 'rejected' | 'duplicate'>('idle');
-  const [uniqueIdentifier, setUniqueIdentifier] = useState<string | null>(null);
-  const [faceMatchPassed, setFaceMatchPassed] = useState(false);
-  const [personhoodVerified, setPersonhoodVerified] = useState(false);
+  const [_verificationStatus, setVerificationStatus] = useState<'idle' | 'verified' | 'minting' | 'minted' | 'failed' | 'rejected' | 'duplicate'>('idle');
+  const [_uniqueIdentifier, setUniqueIdentifier] = useState<string | null>(null);
+  const [_faceMatchPassed, setFaceMatchPassed] = useState(false);
+  const [_personhoodVerified, setPersonhoodVerified] = useState(false);
 
-  const userWallet = wallets?.[0];
-  const addresses = getContractAddresses(currentChainId);
+    const addresses = getContractAddresses(currentChainId);
   
   // Get NFT data - simple hook like swag page
   const {

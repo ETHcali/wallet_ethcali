@@ -3,6 +3,7 @@ import { createPublicClient, http, formatUnits } from 'viem';
 import { base, mainnet, optimism } from 'viem/chains';
 import { TokenBalance } from '../types/index';
 import { getChainRpc } from '../config/networks';
+import { logger } from '../utils/logger';
 
 // Chain IDs
 const CHAIN_IDS = {
@@ -86,7 +87,7 @@ export function useTokenBalances(address: string | undefined, chainId: number = 
   const fetchBalances = useCallback(async () => {
     if (!address) return;
 
-    console.log(`Fetching balances for ${getChainName(chainId)}`);
+    logger.debug(`Fetching balances for ${getChainName(chainId)}`);
 
     setIsLoading(true);
     setError(null);
@@ -119,7 +120,7 @@ export function useTokenBalances(address: string | undefined, chainId: number = 
           });
           usdcBalance = result as bigint;
         } catch (err) {
-          console.error('Error fetching USDC balance:', err);
+          logger.error('Error fetching USDC balance', err);
         }
       }
 
@@ -135,7 +136,7 @@ export function useTokenBalances(address: string | undefined, chainId: number = 
           });
           eurcBalance = result as bigint;
         } catch (err) {
-          console.error('Error fetching EURC balance:', err);
+          logger.error('Error fetching EURC balance', err);
         }
       }
 
@@ -151,7 +152,7 @@ export function useTokenBalances(address: string | undefined, chainId: number = 
           });
           usdtBalance = result as bigint;
         } catch (err) {
-          console.error('Error fetching USDT balance:', err);
+          logger.error('Error fetching USDT balance', err);
         }
       }
 
@@ -163,11 +164,11 @@ export function useTokenBalances(address: string | undefined, chainId: number = 
         usdtBalance: formatUnits(usdtBalance, 6),
       };
 
-      console.log(`Balances fetched for ${getChainName(chainId)}:`, formattedBalances);
+      logger.debug(`Balances fetched for ${getChainName(chainId)}`);
       setBalances(formattedBalances);
 
     } catch (err) {
-      console.error('Error fetching token balances:', err);
+      logger.error('Error fetching token balances', err);
       setError('Failed to fetch token balances');
 
       setBalances({

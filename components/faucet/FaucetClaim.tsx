@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useWallets, useSendTransaction } from '@privy-io/react-auth';
 import { formatEther } from 'viem';
+import { logger } from '../../utils/logger';
 import {
   hasNFTByAddress,
   isFaucetPaused,
@@ -79,7 +80,7 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
         setVaultEligibility(eligibilityMap);
       }
     } catch (err) {
-      console.error('Error loading faucet data:', err);
+      logger.error('Error loading faucet data:', err);
       setError('LOAD_ERROR');
     } finally {
       setIsLoading(false);
@@ -170,7 +171,7 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
       }, 3000);
 
     } catch (err: any) {
-      console.error('Claim error:', err);
+      logger.error('Claim error:', err);
       setError(err.message || 'CLAIM_FAILED');
     } finally {
       setIsClaiming(false);

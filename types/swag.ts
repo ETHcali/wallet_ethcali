@@ -7,6 +7,7 @@ export interface ProductTraits {
   style: string;
 }
 
+// Legacy - may be removed if not used
 export interface ProductFormData {
   name: string;
   description: string;
@@ -29,10 +30,39 @@ export interface Swag1155Metadata {
   attributes?: Swag1155MetadataAttribute[];
 }
 
-export interface VariantState {
-  price: bigint;
-  maxSupply: bigint;
+// Design-based architecture types
+export interface DesignInfo {
+  name: string;
+  description: string;
+  imageUrl: string;
+  website: string;
+  paymentToken: string;
+  pricePerUnit: bigint;
+  totalSupply: bigint;
   minted: bigint;
   active: boolean;
-  uri: string;
+  gender: string;
+  color: string;
+  style: string;
+}
+
+export enum DiscountType {
+  PERCENTAGE = 0,
+  FIXED_AMOUNT = 1,
+}
+
+export interface DiscountConfig {
+  smartContractEnabled: boolean;
+  smartContractAddress: string;
+  smartContractDiscount: bigint;
+  poapEnabled: boolean;
+  poapEventId: bigint;
+  poapDiscount: bigint;
+  discountType: DiscountType;
+}
+
+export enum RedemptionStatus {
+  NotRedeemed = 0,
+  PendingFulfillment = 1,
+  Fulfilled = 2,
 }

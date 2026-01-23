@@ -6,11 +6,12 @@ import Loading from '../components/shared/Loading';
 import Navigation from '../components/Navigation';
 import FaucetClaim from '../components/faucet/FaucetClaim';
 import { getNetworkName, getContractAddresses, getAddressExplorerUrl } from '../utils/contracts';
+import { logger } from '../utils/logger';
 
 export default function FaucetPage() {
   const router = useRouter();
   const { ready, authenticated } = usePrivy();
-  const { wallets } = useWallets();
+  const { wallets: _wallets } = useWallets();
   const [currentChainId, setCurrentChainId] = useState(8453);
 
   const addresses = getContractAddresses(currentChainId);
@@ -55,7 +56,7 @@ export default function FaucetPage() {
             key={`claim-${currentChainId}`}
             chainId={currentChainId}
             onClaimSuccess={() => {
-              console.log('Claim successful!');
+              logger.info('Faucet claim successful');
             }}
           />
 

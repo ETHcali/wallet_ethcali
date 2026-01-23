@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import PinataSDK from '@pinata/sdk';
 
+import { logger } from '../../../utils/logger';
 const PINATA_JWT = process.env.PINATA_JWT;
 
 const pinata = PINATA_JWT
@@ -33,7 +34,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
     return res.status(200).json({ uri: `ipfs://${result.IpfsHash}` });
   } catch (error) {
-    console.error('Pinata pinJSONToIPFS failed', error);
+    logger.error('Pinata pinJSONToIPFS failed', error);
     return res.status(500).json({ error: 'Failed to pin metadata. See server logs for details.' });
   }
 }

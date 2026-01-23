@@ -2,8 +2,8 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useState } from 'react';
 import { useSwagAddresses } from '../../utils/network';
 import { useWallets } from '@privy-io/react-auth';
-import { RedemptionStatus } from '../../hooks/useSwagAdmin';
 
+import { logger } from '../../utils/logger';
 interface NFTQRModalProps {
   tokenId: bigint;
   nftName: string;
@@ -33,7 +33,7 @@ export function NFTQRModal({ tokenId, nftName, onClose }: NFTQRModalProps) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error('Failed to copy:', err);
+      logger.error('Failed to copy:', err);
     }
   };
 

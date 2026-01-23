@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 
+import { logger } from '../../../utils/logger';
 type ResponseData = {
   registered: boolean;
   error?: string;
@@ -26,7 +27,7 @@ export default async function handler(
     
     return res.status(200).json({ registered: false });
   } catch (error) {
-    console.error('Error checking unique identifier:', error);
+    logger.error('Error checking unique identifier:', error);
     return res.status(500).json({ registered: false, error: 'Internal server error' });
   }
 }

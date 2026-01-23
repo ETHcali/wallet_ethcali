@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { formatEther } from 'viem';
-import { useAllVaults } from '../../hooks/useFaucetAdmin';
+import { useAllVaults } from '../../hooks/faucet';
 import { Vault, VaultType } from '../../types/faucet';
 import { VaultEditModal } from './VaultEditModal';
 import { VaultDepositWithdraw } from './VaultDepositWithdraw';

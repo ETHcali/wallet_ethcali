@@ -1,5 +1,5 @@
 // Auto-generated multi-network contract addresses and types
-// Generated: 2026-01-20T15:23:18.024Z
+// Generated: 2026-01-21T23:49:27.174Z
 export const CONTRACTS = {
   "networks": {
     "base": {
@@ -7,7 +7,7 @@ export const CONTRACTS = {
       "chainId": 8453,
       "contracts": {
         "ZKPassportNFT": {
-          "address": "0xa383758265f147f90d24938f5c72c4b0851014ea",
+          "address": "0x9f0da2f66a0aa01bf4469a257f75fab088130b40",
           "abi": [
             {
               "inputs": [
@@ -350,37 +350,6 @@ export const CONTRACTS = {
               "type": "event"
             },
             {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "string",
-                  "name": "uniqueIdentifier",
-                  "type": "string"
-                },
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "userAddress",
-                  "type": "address"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "bool",
-                  "name": "faceMatchPassed",
-                  "type": "bool"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "bool",
-                  "name": "personhoodVerified",
-                  "type": "bool"
-                }
-              ],
-              "name": "VerificationApproved",
-              "type": "event"
-            },
-            {
               "inputs": [
                 {
                   "internalType": "address",
@@ -396,68 +365,6 @@ export const CONTRACTS = {
               "name": "approve",
               "outputs": [],
               "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "string",
-                  "name": "uniqueIdentifier",
-                  "type": "string"
-                },
-                {
-                  "internalType": "address",
-                  "name": "userAddress",
-                  "type": "address"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "faceMatchPassed",
-                  "type": "bool"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "personhoodVerified",
-                  "type": "bool"
-                }
-              ],
-              "name": "approveVerification",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "string",
-                  "name": "",
-                  "type": "string"
-                }
-              ],
-              "name": "approvedVerifications",
-              "outputs": [
-                {
-                  "internalType": "address",
-                  "name": "userAddress",
-                  "type": "address"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "faceMatchPassed",
-                  "type": "bool"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "personhoodVerified",
-                  "type": "bool"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "isApproved",
-                  "type": "bool"
-                }
-              ],
-              "stateMutability": "view",
               "type": "function"
             },
             {
@@ -501,6 +408,52 @@ export const CONTRACTS = {
             {
               "inputs": [
                 {
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                }
+              ],
+              "name": "getNFTDataByOwner",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "string",
+                      "name": "uniqueIdentifier",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "faceMatchPassed",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "personhoodVerified",
+                      "type": "bool"
+                    }
+                  ],
+                  "internalType": "struct ZKPassportNFT.TokenData",
+                  "name": "tokenDataResult",
+                  "type": "tuple"
+                },
+                {
+                  "internalType": "string",
+                  "name": "tokenURIResult",
+                  "type": "string"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
                   "internalType": "uint256",
                   "name": "tokenId",
                   "type": "uint256"
@@ -529,6 +482,25 @@ export const CONTRACTS = {
                   "internalType": "struct ZKPassportNFT.TokenData",
                   "name": "",
                   "type": "tuple"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                }
+              ],
+              "name": "getTokenIdByOwner",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
                 }
               ],
               "stateMutability": "view",
@@ -602,19 +574,6 @@ export const CONTRACTS = {
                   "internalType": "string",
                   "name": "uniqueIdentifier",
                   "type": "string"
-                }
-              ],
-              "name": "mint",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "string",
-                  "name": "uniqueIdentifier",
-                  "type": "string"
                 },
                 {
                   "internalType": "bool",
@@ -627,7 +586,7 @@ export const CONTRACTS = {
                   "type": "bool"
                 }
               ],
-              "name": "mintWithVerification",
+              "name": "mint",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -975,7 +934,7 @@ export const CONTRACTS = {
           ]
         },
         "FaucetManager": {
-          "address": "0xf232208df1e7feaed1128cfaeecd554b175efeb3",
+          "address": "0xbd532043af9f2e8090ad9b1fa14e45a5aaaef102",
           "abi": [
             {
               "inputs": [
@@ -2424,19 +2383,76 @@ export const CONTRACTS = {
           ]
         },
         "Swag1155": {
-          "address": "0xe78d15ee71c07e455c592a58e8b2b076842dc246",
+          "address": "0x9c2944f38156f6dfc922a825eba727a38895958e",
           "abi": [
             {
               "inputs": [
                 {
-                  "internalType": "string",
-                  "name": "baseURI",
-                  "type": "string"
-                },
-                {
-                  "internalType": "address",
-                  "name": "_usdc",
-                  "type": "address"
+                  "components": [
+                    {
+                      "internalType": "string",
+                      "name": "name",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "description",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "imageUrl",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "website",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "paymentToken",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "pricePerUnit",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "totalSupply",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "minted",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "active",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "gender",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "color",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "style",
+                      "type": "string"
+                    }
+                  ],
+                  "internalType": "struct Swag1155.DesignInfo",
+                  "name": "_designInfo",
+                  "type": "tuple"
                 },
                 {
                   "internalType": "address",
@@ -2445,7 +2461,7 @@ export const CONTRACTS = {
                 },
                 {
                   "internalType": "address",
-                  "name": "initialAdmin",
+                  "name": "_initialAdmin",
                   "type": "address"
                 }
               ],
@@ -2635,6 +2651,144 @@ export const CONTRACTS = {
               "anonymous": false,
               "inputs": [
                 {
+                  "indexed": false,
+                  "internalType": "bool",
+                  "name": "active",
+                  "type": "bool"
+                }
+              ],
+              "name": "DesignActiveStatusChanged",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "bool",
+                      "name": "smartContractEnabled",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "smartContractAddress",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "smartContractDiscount",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "poapEnabled",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "poapEventId",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "poapDiscount",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "enum Swag1155.DiscountType",
+                      "name": "discountType",
+                      "type": "uint8"
+                    }
+                  ],
+                  "indexed": false,
+                  "internalType": "struct Swag1155.DiscountConfig",
+                  "name": "config",
+                  "type": "tuple"
+                }
+              ],
+              "name": "DesignDiscountConfigUpdated",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "string",
+                      "name": "name",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "description",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "imageUrl",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "website",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "paymentToken",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "pricePerUnit",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "totalSupply",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "minted",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "active",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "gender",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "color",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "style",
+                      "type": "string"
+                    }
+                  ],
+                  "indexed": false,
+                  "internalType": "struct Swag1155.DesignInfo",
+                  "name": "info",
+                  "type": "tuple"
+                }
+              ],
+              "name": "DesignInfoUpdated",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
                   "indexed": true,
                   "internalType": "address",
                   "name": "buyer",
@@ -2648,24 +2802,24 @@ export const CONTRACTS = {
                 },
                 {
                   "indexed": false,
-                  "internalType": "uint256",
-                  "name": "quantity",
-                  "type": "uint256"
+                  "internalType": "string",
+                  "name": "size",
+                  "type": "string"
                 },
                 {
                   "indexed": false,
                   "internalType": "uint256",
-                  "name": "unitPrice",
+                  "name": "price",
                   "type": "uint256"
                 },
                 {
                   "indexed": false,
-                  "internalType": "uint256",
-                  "name": "totalPrice",
-                  "type": "uint256"
+                  "internalType": "bool",
+                  "name": "hadDiscount",
+                  "type": "bool"
                 }
               ],
-              "name": "Purchased",
+              "name": "DesignMinted",
               "type": "event"
             },
             {
@@ -2685,9 +2839,9 @@ export const CONTRACTS = {
                 },
                 {
                   "indexed": false,
-                  "internalType": "uint256[]",
-                  "name": "quantities",
-                  "type": "uint256[]"
+                  "internalType": "string[]",
+                  "name": "sizes",
+                  "type": "string[]"
                 },
                 {
                   "indexed": false,
@@ -2696,7 +2850,46 @@ export const CONTRACTS = {
                   "type": "uint256"
                 }
               ],
-              "name": "PurchasedBatch",
+              "name": "DesignMintedBatch",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "newToken",
+                  "type": "address"
+                }
+              ],
+              "name": "DesignPaymentTokenUpdated",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "newPrice",
+                  "type": "uint256"
+                }
+              ],
+              "name": "DesignPriceUpdated",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "newSupply",
+                  "type": "uint256"
+                }
+              ],
+              "name": "DesignTotalSupplyUpdated",
               "type": "event"
             },
             {
@@ -2721,7 +2914,7 @@ export const CONTRACTS = {
                   "type": "address"
                 }
               ],
-              "name": "RedemptionFulfilled",
+              "name": "PhysicalRedemptionFulfilled",
               "type": "event"
             },
             {
@@ -2740,7 +2933,7 @@ export const CONTRACTS = {
                   "type": "uint256"
                 }
               ],
-              "name": "RedemptionRequested",
+              "name": "PhysicalRedemptionRequested",
               "type": "event"
             },
             {
@@ -2823,6 +3016,25 @@ export const CONTRACTS = {
               "inputs": [
                 {
                   "indexed": true,
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "string",
+                  "name": "uri",
+                  "type": "string"
+                }
+              ],
+              "name": "TokenURISet",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
                   "internalType": "address",
                   "name": "operator",
                   "type": "address"
@@ -2896,19 +3108,6 @@ export const CONTRACTS = {
               "anonymous": false,
               "inputs": [
                 {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "newTreasury",
-                  "type": "address"
-                }
-              ],
-              "name": "TreasuryUpdated",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
                   "indexed": false,
                   "internalType": "string",
                   "name": "value",
@@ -2922,69 +3121,6 @@ export const CONTRACTS = {
                 }
               ],
               "name": "URI",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "newUSDC",
-                  "type": "address"
-                }
-              ],
-              "name": "USDCUpdated",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "uint256",
-                  "name": "tokenId",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "string",
-                  "name": "uri",
-                  "type": "string"
-                }
-              ],
-              "name": "VariantURISet",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "uint256",
-                  "name": "tokenId",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "price",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "maxSupply",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "bool",
-                  "name": "active",
-                  "type": "bool"
-                }
-              ],
-              "name": "VariantUpdated",
               "type": "event"
             },
             {
@@ -3075,39 +3211,276 @@ export const CONTRACTS = {
               "type": "function"
             },
             {
-              "inputs": [
+              "inputs": [],
+              "name": "designInfo",
+              "outputs": [
+                {
+                  "internalType": "string",
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "description",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "imageUrl",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "website",
+                  "type": "string"
+                },
+                {
+                  "internalType": "address",
+                  "name": "paymentToken",
+                  "type": "address"
+                },
                 {
                   "internalType": "uint256",
-                  "name": "tokenId",
+                  "name": "pricePerUnit",
                   "type": "uint256"
                 },
                 {
                   "internalType": "uint256",
-                  "name": "quantity",
+                  "name": "totalSupply",
                   "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "minted",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "active",
+                  "type": "bool"
+                },
+                {
+                  "internalType": "string",
+                  "name": "gender",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "color",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "style",
+                  "type": "string"
                 }
               ],
-              "name": "buy",
-              "outputs": [],
-              "stateMutability": "nonpayable",
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "discountConfig",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "smartContractEnabled",
+                  "type": "bool"
+                },
+                {
+                  "internalType": "address",
+                  "name": "smartContractAddress",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "smartContractDiscount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "poapEnabled",
+                  "type": "bool"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "poapEventId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "poapDiscount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "enum Swag1155.DiscountType",
+                  "name": "discountType",
+                  "type": "uint8"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "getDesignDiscountConfig",
+              "outputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "bool",
+                      "name": "smartContractEnabled",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "smartContractAddress",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "smartContractDiscount",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "poapEnabled",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "poapEventId",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "poapDiscount",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "enum Swag1155.DiscountType",
+                      "name": "discountType",
+                      "type": "uint8"
+                    }
+                  ],
+                  "internalType": "struct Swag1155.DiscountConfig",
+                  "name": "",
+                  "type": "tuple"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "getDesignInfo",
+              "outputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "string",
+                      "name": "name",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "description",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "imageUrl",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "website",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "paymentToken",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "pricePerUnit",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "totalSupply",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "minted",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "active",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "gender",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "color",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "style",
+                      "type": "string"
+                    }
+                  ],
+                  "internalType": "struct Swag1155.DesignInfo",
+                  "name": "",
+                  "type": "tuple"
+                }
+              ],
+              "stateMutability": "view",
               "type": "function"
             },
             {
               "inputs": [
                 {
-                  "internalType": "uint256[]",
-                  "name": "tokenIds",
-                  "type": "uint256[]"
+                  "internalType": "address",
+                  "name": "user",
+                  "type": "address"
                 },
                 {
-                  "internalType": "uint256[]",
-                  "name": "quantities",
-                  "type": "uint256[]"
+                  "internalType": "bool",
+                  "name": "hasPoap",
+                  "type": "bool"
                 }
               ],
-              "name": "buyBatch",
-              "outputs": [],
-              "stateMutability": "nonpayable",
+              "name": "getDesignPriceWithDiscounts",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "getDesignRemainingSupply",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
               "type": "function"
             },
             {
@@ -3123,12 +3496,65 @@ export const CONTRACTS = {
                   "type": "address"
                 }
               ],
-              "name": "getRedemptionStatus",
+              "name": "getDesignTokenRedemptionStatus",
               "outputs": [
                 {
                   "internalType": "enum Swag1155.RedemptionStatus",
                   "name": "",
                   "type": "uint8"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                }
+              ],
+              "name": "getDesignTokenSize",
+              "outputs": [
+                {
+                  "internalType": "string",
+                  "name": "",
+                  "type": "string"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                }
+              ],
+              "name": "getDesignTokenTraits",
+              "outputs": [
+                {
+                  "internalType": "string",
+                  "name": "size",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "gender",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "color",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "style",
+                  "type": "string"
                 }
               ],
               "stateMutability": "view",
@@ -3148,47 +3574,6 @@ export const CONTRACTS = {
                   "internalType": "bytes32",
                   "name": "",
                   "type": "bytes32"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "tokenId",
-                  "type": "uint256"
-                }
-              ],
-              "name": "getVariant",
-              "outputs": [
-                {
-                  "components": [
-                    {
-                      "internalType": "uint256",
-                      "name": "price",
-                      "type": "uint256"
-                    },
-                    {
-                      "internalType": "uint256",
-                      "name": "maxSupply",
-                      "type": "uint256"
-                    },
-                    {
-                      "internalType": "uint256",
-                      "name": "minted",
-                      "type": "uint256"
-                    },
-                    {
-                      "internalType": "bool",
-                      "name": "active",
-                      "type": "bool"
-                    }
-                  ],
-                  "internalType": "struct Swag1155.Variant",
-                  "name": "",
-                  "type": "tuple"
                 }
               ],
               "stateMutability": "view",
@@ -3299,19 +3684,6 @@ export const CONTRACTS = {
               "type": "function"
             },
             {
-              "inputs": [],
-              "name": "listTokenIds",
-              "outputs": [
-                {
-                  "internalType": "uint256[]",
-                  "name": "",
-                  "type": "uint256[]"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
               "inputs": [
                 {
                   "internalType": "uint256",
@@ -3324,7 +3696,7 @@ export const CONTRACTS = {
                   "type": "address"
                 }
               ],
-              "name": "markFulfilled",
+              "name": "markRedemptionFulfilled",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -3332,12 +3704,35 @@ export const CONTRACTS = {
             {
               "inputs": [
                 {
-                  "internalType": "uint256",
-                  "name": "tokenId",
-                  "type": "uint256"
+                  "internalType": "string",
+                  "name": "size",
+                  "type": "string"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "hasPoapDiscount",
+                  "type": "bool"
                 }
               ],
-              "name": "redeem",
+              "name": "mintDesign",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "string[]",
+                  "name": "sizes",
+                  "type": "string[]"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "hasPoapDiscount",
+                  "type": "bool"
+                }
+              ],
+              "name": "mintDesignBatch",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -3361,25 +3756,6 @@ export const CONTRACTS = {
                   "internalType": "enum Swag1155.RedemptionStatus",
                   "name": "",
                   "type": "uint8"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "tokenId",
-                  "type": "uint256"
-                }
-              ],
-              "name": "remaining",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "",
-                  "type": "uint256"
                 }
               ],
               "stateMutability": "view",
@@ -3412,6 +3788,19 @@ export const CONTRACTS = {
                 }
               ],
               "name": "renounceRole",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                }
+              ],
+              "name": "requestPhysicalRedemption",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -3521,12 +3910,137 @@ export const CONTRACTS = {
             {
               "inputs": [
                 {
-                  "internalType": "string",
-                  "name": "newURI",
-                  "type": "string"
+                  "internalType": "bool",
+                  "name": "active",
+                  "type": "bool"
                 }
               ],
-              "name": "setBaseURI",
+              "name": "setDesignActive",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "bool",
+                      "name": "smartContractEnabled",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "smartContractAddress",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "smartContractDiscount",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "poapEnabled",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "poapEventId",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "poapDiscount",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "enum Swag1155.DiscountType",
+                      "name": "discountType",
+                      "type": "uint8"
+                    }
+                  ],
+                  "internalType": "struct Swag1155.DiscountConfig",
+                  "name": "config",
+                  "type": "tuple"
+                }
+              ],
+              "name": "setDesignDiscountConfig",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "string",
+                      "name": "name",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "description",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "imageUrl",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "website",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "paymentToken",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "pricePerUnit",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "totalSupply",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "minted",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "active",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "gender",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "color",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "style",
+                      "type": "string"
+                    }
+                  ],
+                  "internalType": "struct Swag1155.DesignInfo",
+                  "name": "info",
+                  "type": "tuple"
+                }
+              ],
+              "name": "setDesignInfo",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -3535,11 +4049,11 @@ export const CONTRACTS = {
               "inputs": [
                 {
                   "internalType": "address",
-                  "name": "newTreasury",
+                  "name": "token",
                   "type": "address"
                 }
               ],
-              "name": "setTreasury",
+              "name": "setDesignPaymentToken",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -3547,12 +4061,25 @@ export const CONTRACTS = {
             {
               "inputs": [
                 {
-                  "internalType": "address",
-                  "name": "newUSDC",
-                  "type": "address"
+                  "internalType": "uint256",
+                  "name": "newPrice",
+                  "type": "uint256"
                 }
               ],
-              "name": "setUSDC",
+              "name": "setDesignPrice",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "newSupply",
+                  "type": "uint256"
+                }
+              ],
+              "name": "setDesignTotalSupply",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -3563,49 +4090,6 @@ export const CONTRACTS = {
                   "internalType": "uint256",
                   "name": "tokenId",
                   "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "price",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "maxSupply",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "active",
-                  "type": "bool"
-                }
-              ],
-              "name": "setVariant",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "tokenId",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "price",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "maxSupply",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "active",
-                  "type": "bool"
                 },
                 {
                   "internalType": "string",
@@ -3613,7 +4097,7 @@ export const CONTRACTS = {
                   "type": "string"
                 }
               ],
-              "name": "setVariantWithURI",
+              "name": "setTokenURI",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -3664,53 +4148,6 @@ export const CONTRACTS = {
                   "internalType": "string",
                   "name": "",
                   "type": "string"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [],
-              "name": "usdc",
-              "outputs": [
-                {
-                  "internalType": "address",
-                  "name": "",
-                  "type": "address"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "",
-                  "type": "uint256"
-                }
-              ],
-              "name": "variants",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "price",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "maxSupply",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "minted",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "active",
-                  "type": "bool"
                 }
               ],
               "stateMutability": "view",
@@ -3725,7 +4162,7 @@ export const CONTRACTS = {
       "chainId": 1,
       "contracts": {
         "ZKPassportNFT": {
-          "address": "0x607003f188c49ed6e0553805734b9990393402df",
+          "address": "0x94b9f649f8825d5d797e37d04dfc66d612750b10",
           "abi": [
             {
               "inputs": [
@@ -4068,37 +4505,6 @@ export const CONTRACTS = {
               "type": "event"
             },
             {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "string",
-                  "name": "uniqueIdentifier",
-                  "type": "string"
-                },
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "userAddress",
-                  "type": "address"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "bool",
-                  "name": "faceMatchPassed",
-                  "type": "bool"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "bool",
-                  "name": "personhoodVerified",
-                  "type": "bool"
-                }
-              ],
-              "name": "VerificationApproved",
-              "type": "event"
-            },
-            {
               "inputs": [
                 {
                   "internalType": "address",
@@ -4114,68 +4520,6 @@ export const CONTRACTS = {
               "name": "approve",
               "outputs": [],
               "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "string",
-                  "name": "uniqueIdentifier",
-                  "type": "string"
-                },
-                {
-                  "internalType": "address",
-                  "name": "userAddress",
-                  "type": "address"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "faceMatchPassed",
-                  "type": "bool"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "personhoodVerified",
-                  "type": "bool"
-                }
-              ],
-              "name": "approveVerification",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "string",
-                  "name": "",
-                  "type": "string"
-                }
-              ],
-              "name": "approvedVerifications",
-              "outputs": [
-                {
-                  "internalType": "address",
-                  "name": "userAddress",
-                  "type": "address"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "faceMatchPassed",
-                  "type": "bool"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "personhoodVerified",
-                  "type": "bool"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "isApproved",
-                  "type": "bool"
-                }
-              ],
-              "stateMutability": "view",
               "type": "function"
             },
             {
@@ -4219,6 +4563,52 @@ export const CONTRACTS = {
             {
               "inputs": [
                 {
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                }
+              ],
+              "name": "getNFTDataByOwner",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "string",
+                      "name": "uniqueIdentifier",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "faceMatchPassed",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "personhoodVerified",
+                      "type": "bool"
+                    }
+                  ],
+                  "internalType": "struct ZKPassportNFT.TokenData",
+                  "name": "tokenDataResult",
+                  "type": "tuple"
+                },
+                {
+                  "internalType": "string",
+                  "name": "tokenURIResult",
+                  "type": "string"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
                   "internalType": "uint256",
                   "name": "tokenId",
                   "type": "uint256"
@@ -4247,6 +4637,25 @@ export const CONTRACTS = {
                   "internalType": "struct ZKPassportNFT.TokenData",
                   "name": "",
                   "type": "tuple"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                }
+              ],
+              "name": "getTokenIdByOwner",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
                 }
               ],
               "stateMutability": "view",
@@ -4320,19 +4729,6 @@ export const CONTRACTS = {
                   "internalType": "string",
                   "name": "uniqueIdentifier",
                   "type": "string"
-                }
-              ],
-              "name": "mint",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "string",
-                  "name": "uniqueIdentifier",
-                  "type": "string"
                 },
                 {
                   "internalType": "bool",
@@ -4345,7 +4741,7 @@ export const CONTRACTS = {
                   "type": "bool"
                 }
               ],
-              "name": "mintWithVerification",
+              "name": "mint",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -4693,7 +5089,7 @@ export const CONTRACTS = {
           ]
         },
         "FaucetManager": {
-          "address": "0x2940e286b41d279b61e484b98a08498e355e4778",
+          "address": "0xb24295ffc0bd22b0b173b73a0ff5b42564986fd1",
           "abi": [
             {
               "inputs": [
@@ -6142,19 +6538,76 @@ export const CONTRACTS = {
           ]
         },
         "Swag1155": {
-          "address": "0xd9663db045850171850fd1298a2176b329a67928",
+          "address": "0xeb27e63799ec91fb81617629b7f98d26af3f9686",
           "abi": [
             {
               "inputs": [
                 {
-                  "internalType": "string",
-                  "name": "baseURI",
-                  "type": "string"
-                },
-                {
-                  "internalType": "address",
-                  "name": "_usdc",
-                  "type": "address"
+                  "components": [
+                    {
+                      "internalType": "string",
+                      "name": "name",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "description",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "imageUrl",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "website",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "paymentToken",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "pricePerUnit",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "totalSupply",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "minted",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "active",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "gender",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "color",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "style",
+                      "type": "string"
+                    }
+                  ],
+                  "internalType": "struct Swag1155.DesignInfo",
+                  "name": "_designInfo",
+                  "type": "tuple"
                 },
                 {
                   "internalType": "address",
@@ -6163,7 +6616,7 @@ export const CONTRACTS = {
                 },
                 {
                   "internalType": "address",
-                  "name": "initialAdmin",
+                  "name": "_initialAdmin",
                   "type": "address"
                 }
               ],
@@ -6353,6 +6806,144 @@ export const CONTRACTS = {
               "anonymous": false,
               "inputs": [
                 {
+                  "indexed": false,
+                  "internalType": "bool",
+                  "name": "active",
+                  "type": "bool"
+                }
+              ],
+              "name": "DesignActiveStatusChanged",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "bool",
+                      "name": "smartContractEnabled",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "smartContractAddress",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "smartContractDiscount",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "poapEnabled",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "poapEventId",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "poapDiscount",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "enum Swag1155.DiscountType",
+                      "name": "discountType",
+                      "type": "uint8"
+                    }
+                  ],
+                  "indexed": false,
+                  "internalType": "struct Swag1155.DiscountConfig",
+                  "name": "config",
+                  "type": "tuple"
+                }
+              ],
+              "name": "DesignDiscountConfigUpdated",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "string",
+                      "name": "name",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "description",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "imageUrl",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "website",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "paymentToken",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "pricePerUnit",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "totalSupply",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "minted",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "active",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "gender",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "color",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "style",
+                      "type": "string"
+                    }
+                  ],
+                  "indexed": false,
+                  "internalType": "struct Swag1155.DesignInfo",
+                  "name": "info",
+                  "type": "tuple"
+                }
+              ],
+              "name": "DesignInfoUpdated",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
                   "indexed": true,
                   "internalType": "address",
                   "name": "buyer",
@@ -6366,24 +6957,24 @@ export const CONTRACTS = {
                 },
                 {
                   "indexed": false,
-                  "internalType": "uint256",
-                  "name": "quantity",
-                  "type": "uint256"
+                  "internalType": "string",
+                  "name": "size",
+                  "type": "string"
                 },
                 {
                   "indexed": false,
                   "internalType": "uint256",
-                  "name": "unitPrice",
+                  "name": "price",
                   "type": "uint256"
                 },
                 {
                   "indexed": false,
-                  "internalType": "uint256",
-                  "name": "totalPrice",
-                  "type": "uint256"
+                  "internalType": "bool",
+                  "name": "hadDiscount",
+                  "type": "bool"
                 }
               ],
-              "name": "Purchased",
+              "name": "DesignMinted",
               "type": "event"
             },
             {
@@ -6403,9 +6994,9 @@ export const CONTRACTS = {
                 },
                 {
                   "indexed": false,
-                  "internalType": "uint256[]",
-                  "name": "quantities",
-                  "type": "uint256[]"
+                  "internalType": "string[]",
+                  "name": "sizes",
+                  "type": "string[]"
                 },
                 {
                   "indexed": false,
@@ -6414,7 +7005,46 @@ export const CONTRACTS = {
                   "type": "uint256"
                 }
               ],
-              "name": "PurchasedBatch",
+              "name": "DesignMintedBatch",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "newToken",
+                  "type": "address"
+                }
+              ],
+              "name": "DesignPaymentTokenUpdated",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "newPrice",
+                  "type": "uint256"
+                }
+              ],
+              "name": "DesignPriceUpdated",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "newSupply",
+                  "type": "uint256"
+                }
+              ],
+              "name": "DesignTotalSupplyUpdated",
               "type": "event"
             },
             {
@@ -6439,7 +7069,7 @@ export const CONTRACTS = {
                   "type": "address"
                 }
               ],
-              "name": "RedemptionFulfilled",
+              "name": "PhysicalRedemptionFulfilled",
               "type": "event"
             },
             {
@@ -6458,7 +7088,7 @@ export const CONTRACTS = {
                   "type": "uint256"
                 }
               ],
-              "name": "RedemptionRequested",
+              "name": "PhysicalRedemptionRequested",
               "type": "event"
             },
             {
@@ -6541,6 +7171,25 @@ export const CONTRACTS = {
               "inputs": [
                 {
                   "indexed": true,
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "string",
+                  "name": "uri",
+                  "type": "string"
+                }
+              ],
+              "name": "TokenURISet",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
                   "internalType": "address",
                   "name": "operator",
                   "type": "address"
@@ -6614,19 +7263,6 @@ export const CONTRACTS = {
               "anonymous": false,
               "inputs": [
                 {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "newTreasury",
-                  "type": "address"
-                }
-              ],
-              "name": "TreasuryUpdated",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
                   "indexed": false,
                   "internalType": "string",
                   "name": "value",
@@ -6640,69 +7276,6 @@ export const CONTRACTS = {
                 }
               ],
               "name": "URI",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "newUSDC",
-                  "type": "address"
-                }
-              ],
-              "name": "USDCUpdated",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "uint256",
-                  "name": "tokenId",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "string",
-                  "name": "uri",
-                  "type": "string"
-                }
-              ],
-              "name": "VariantURISet",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "uint256",
-                  "name": "tokenId",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "price",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "maxSupply",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "bool",
-                  "name": "active",
-                  "type": "bool"
-                }
-              ],
-              "name": "VariantUpdated",
               "type": "event"
             },
             {
@@ -6793,39 +7366,276 @@ export const CONTRACTS = {
               "type": "function"
             },
             {
-              "inputs": [
+              "inputs": [],
+              "name": "designInfo",
+              "outputs": [
+                {
+                  "internalType": "string",
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "description",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "imageUrl",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "website",
+                  "type": "string"
+                },
+                {
+                  "internalType": "address",
+                  "name": "paymentToken",
+                  "type": "address"
+                },
                 {
                   "internalType": "uint256",
-                  "name": "tokenId",
+                  "name": "pricePerUnit",
                   "type": "uint256"
                 },
                 {
                   "internalType": "uint256",
-                  "name": "quantity",
+                  "name": "totalSupply",
                   "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "minted",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "active",
+                  "type": "bool"
+                },
+                {
+                  "internalType": "string",
+                  "name": "gender",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "color",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "style",
+                  "type": "string"
                 }
               ],
-              "name": "buy",
-              "outputs": [],
-              "stateMutability": "nonpayable",
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "discountConfig",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "smartContractEnabled",
+                  "type": "bool"
+                },
+                {
+                  "internalType": "address",
+                  "name": "smartContractAddress",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "smartContractDiscount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "poapEnabled",
+                  "type": "bool"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "poapEventId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "poapDiscount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "enum Swag1155.DiscountType",
+                  "name": "discountType",
+                  "type": "uint8"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "getDesignDiscountConfig",
+              "outputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "bool",
+                      "name": "smartContractEnabled",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "smartContractAddress",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "smartContractDiscount",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "poapEnabled",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "poapEventId",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "poapDiscount",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "enum Swag1155.DiscountType",
+                      "name": "discountType",
+                      "type": "uint8"
+                    }
+                  ],
+                  "internalType": "struct Swag1155.DiscountConfig",
+                  "name": "",
+                  "type": "tuple"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "getDesignInfo",
+              "outputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "string",
+                      "name": "name",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "description",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "imageUrl",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "website",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "paymentToken",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "pricePerUnit",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "totalSupply",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "minted",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "active",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "gender",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "color",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "style",
+                      "type": "string"
+                    }
+                  ],
+                  "internalType": "struct Swag1155.DesignInfo",
+                  "name": "",
+                  "type": "tuple"
+                }
+              ],
+              "stateMutability": "view",
               "type": "function"
             },
             {
               "inputs": [
                 {
-                  "internalType": "uint256[]",
-                  "name": "tokenIds",
-                  "type": "uint256[]"
+                  "internalType": "address",
+                  "name": "user",
+                  "type": "address"
                 },
                 {
-                  "internalType": "uint256[]",
-                  "name": "quantities",
-                  "type": "uint256[]"
+                  "internalType": "bool",
+                  "name": "hasPoap",
+                  "type": "bool"
                 }
               ],
-              "name": "buyBatch",
-              "outputs": [],
-              "stateMutability": "nonpayable",
+              "name": "getDesignPriceWithDiscounts",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "getDesignRemainingSupply",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
               "type": "function"
             },
             {
@@ -6841,12 +7651,65 @@ export const CONTRACTS = {
                   "type": "address"
                 }
               ],
-              "name": "getRedemptionStatus",
+              "name": "getDesignTokenRedemptionStatus",
               "outputs": [
                 {
                   "internalType": "enum Swag1155.RedemptionStatus",
                   "name": "",
                   "type": "uint8"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                }
+              ],
+              "name": "getDesignTokenSize",
+              "outputs": [
+                {
+                  "internalType": "string",
+                  "name": "",
+                  "type": "string"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                }
+              ],
+              "name": "getDesignTokenTraits",
+              "outputs": [
+                {
+                  "internalType": "string",
+                  "name": "size",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "gender",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "color",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "style",
+                  "type": "string"
                 }
               ],
               "stateMutability": "view",
@@ -6866,47 +7729,6 @@ export const CONTRACTS = {
                   "internalType": "bytes32",
                   "name": "",
                   "type": "bytes32"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "tokenId",
-                  "type": "uint256"
-                }
-              ],
-              "name": "getVariant",
-              "outputs": [
-                {
-                  "components": [
-                    {
-                      "internalType": "uint256",
-                      "name": "price",
-                      "type": "uint256"
-                    },
-                    {
-                      "internalType": "uint256",
-                      "name": "maxSupply",
-                      "type": "uint256"
-                    },
-                    {
-                      "internalType": "uint256",
-                      "name": "minted",
-                      "type": "uint256"
-                    },
-                    {
-                      "internalType": "bool",
-                      "name": "active",
-                      "type": "bool"
-                    }
-                  ],
-                  "internalType": "struct Swag1155.Variant",
-                  "name": "",
-                  "type": "tuple"
                 }
               ],
               "stateMutability": "view",
@@ -7017,19 +7839,6 @@ export const CONTRACTS = {
               "type": "function"
             },
             {
-              "inputs": [],
-              "name": "listTokenIds",
-              "outputs": [
-                {
-                  "internalType": "uint256[]",
-                  "name": "",
-                  "type": "uint256[]"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
               "inputs": [
                 {
                   "internalType": "uint256",
@@ -7042,7 +7851,7 @@ export const CONTRACTS = {
                   "type": "address"
                 }
               ],
-              "name": "markFulfilled",
+              "name": "markRedemptionFulfilled",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -7050,12 +7859,35 @@ export const CONTRACTS = {
             {
               "inputs": [
                 {
-                  "internalType": "uint256",
-                  "name": "tokenId",
-                  "type": "uint256"
+                  "internalType": "string",
+                  "name": "size",
+                  "type": "string"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "hasPoapDiscount",
+                  "type": "bool"
                 }
               ],
-              "name": "redeem",
+              "name": "mintDesign",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "string[]",
+                  "name": "sizes",
+                  "type": "string[]"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "hasPoapDiscount",
+                  "type": "bool"
+                }
+              ],
+              "name": "mintDesignBatch",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -7079,25 +7911,6 @@ export const CONTRACTS = {
                   "internalType": "enum Swag1155.RedemptionStatus",
                   "name": "",
                   "type": "uint8"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "tokenId",
-                  "type": "uint256"
-                }
-              ],
-              "name": "remaining",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "",
-                  "type": "uint256"
                 }
               ],
               "stateMutability": "view",
@@ -7130,6 +7943,19 @@ export const CONTRACTS = {
                 }
               ],
               "name": "renounceRole",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                }
+              ],
+              "name": "requestPhysicalRedemption",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -7239,12 +8065,137 @@ export const CONTRACTS = {
             {
               "inputs": [
                 {
-                  "internalType": "string",
-                  "name": "newURI",
-                  "type": "string"
+                  "internalType": "bool",
+                  "name": "active",
+                  "type": "bool"
                 }
               ],
-              "name": "setBaseURI",
+              "name": "setDesignActive",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "bool",
+                      "name": "smartContractEnabled",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "smartContractAddress",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "smartContractDiscount",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "poapEnabled",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "poapEventId",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "poapDiscount",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "enum Swag1155.DiscountType",
+                      "name": "discountType",
+                      "type": "uint8"
+                    }
+                  ],
+                  "internalType": "struct Swag1155.DiscountConfig",
+                  "name": "config",
+                  "type": "tuple"
+                }
+              ],
+              "name": "setDesignDiscountConfig",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "string",
+                      "name": "name",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "description",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "imageUrl",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "website",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "paymentToken",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "pricePerUnit",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "totalSupply",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "minted",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "active",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "gender",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "color",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "style",
+                      "type": "string"
+                    }
+                  ],
+                  "internalType": "struct Swag1155.DesignInfo",
+                  "name": "info",
+                  "type": "tuple"
+                }
+              ],
+              "name": "setDesignInfo",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -7253,11 +8204,11 @@ export const CONTRACTS = {
               "inputs": [
                 {
                   "internalType": "address",
-                  "name": "newTreasury",
+                  "name": "token",
                   "type": "address"
                 }
               ],
-              "name": "setTreasury",
+              "name": "setDesignPaymentToken",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -7265,12 +8216,25 @@ export const CONTRACTS = {
             {
               "inputs": [
                 {
-                  "internalType": "address",
-                  "name": "newUSDC",
-                  "type": "address"
+                  "internalType": "uint256",
+                  "name": "newPrice",
+                  "type": "uint256"
                 }
               ],
-              "name": "setUSDC",
+              "name": "setDesignPrice",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "newSupply",
+                  "type": "uint256"
+                }
+              ],
+              "name": "setDesignTotalSupply",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -7281,49 +8245,6 @@ export const CONTRACTS = {
                   "internalType": "uint256",
                   "name": "tokenId",
                   "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "price",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "maxSupply",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "active",
-                  "type": "bool"
-                }
-              ],
-              "name": "setVariant",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "tokenId",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "price",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "maxSupply",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "active",
-                  "type": "bool"
                 },
                 {
                   "internalType": "string",
@@ -7331,7 +8252,7 @@ export const CONTRACTS = {
                   "type": "string"
                 }
               ],
-              "name": "setVariantWithURI",
+              "name": "setTokenURI",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -7382,53 +8303,6 @@ export const CONTRACTS = {
                   "internalType": "string",
                   "name": "",
                   "type": "string"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [],
-              "name": "usdc",
-              "outputs": [
-                {
-                  "internalType": "address",
-                  "name": "",
-                  "type": "address"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "",
-                  "type": "uint256"
-                }
-              ],
-              "name": "variants",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "price",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "maxSupply",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "minted",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "active",
-                  "type": "bool"
                 }
               ],
               "stateMutability": "view",
@@ -7443,7 +8317,7 @@ export const CONTRACTS = {
       "chainId": 130,
       "contracts": {
         "ZKPassportNFT": {
-          "address": "0x2779ff3db5cb32178dc85a8a81cf6a49c20a16c1",
+          "address": "0x12b5d5796556f0202fa241085409e2b357450d70",
           "abi": [
             {
               "inputs": [
@@ -7786,37 +8660,6 @@ export const CONTRACTS = {
               "type": "event"
             },
             {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "string",
-                  "name": "uniqueIdentifier",
-                  "type": "string"
-                },
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "userAddress",
-                  "type": "address"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "bool",
-                  "name": "faceMatchPassed",
-                  "type": "bool"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "bool",
-                  "name": "personhoodVerified",
-                  "type": "bool"
-                }
-              ],
-              "name": "VerificationApproved",
-              "type": "event"
-            },
-            {
               "inputs": [
                 {
                   "internalType": "address",
@@ -7832,68 +8675,6 @@ export const CONTRACTS = {
               "name": "approve",
               "outputs": [],
               "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "string",
-                  "name": "uniqueIdentifier",
-                  "type": "string"
-                },
-                {
-                  "internalType": "address",
-                  "name": "userAddress",
-                  "type": "address"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "faceMatchPassed",
-                  "type": "bool"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "personhoodVerified",
-                  "type": "bool"
-                }
-              ],
-              "name": "approveVerification",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "string",
-                  "name": "",
-                  "type": "string"
-                }
-              ],
-              "name": "approvedVerifications",
-              "outputs": [
-                {
-                  "internalType": "address",
-                  "name": "userAddress",
-                  "type": "address"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "faceMatchPassed",
-                  "type": "bool"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "personhoodVerified",
-                  "type": "bool"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "isApproved",
-                  "type": "bool"
-                }
-              ],
-              "stateMutability": "view",
               "type": "function"
             },
             {
@@ -7937,6 +8718,52 @@ export const CONTRACTS = {
             {
               "inputs": [
                 {
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                }
+              ],
+              "name": "getNFTDataByOwner",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "string",
+                      "name": "uniqueIdentifier",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "faceMatchPassed",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "personhoodVerified",
+                      "type": "bool"
+                    }
+                  ],
+                  "internalType": "struct ZKPassportNFT.TokenData",
+                  "name": "tokenDataResult",
+                  "type": "tuple"
+                },
+                {
+                  "internalType": "string",
+                  "name": "tokenURIResult",
+                  "type": "string"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
                   "internalType": "uint256",
                   "name": "tokenId",
                   "type": "uint256"
@@ -7965,6 +8792,25 @@ export const CONTRACTS = {
                   "internalType": "struct ZKPassportNFT.TokenData",
                   "name": "",
                   "type": "tuple"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                }
+              ],
+              "name": "getTokenIdByOwner",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
                 }
               ],
               "stateMutability": "view",
@@ -8038,19 +8884,6 @@ export const CONTRACTS = {
                   "internalType": "string",
                   "name": "uniqueIdentifier",
                   "type": "string"
-                }
-              ],
-              "name": "mint",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "string",
-                  "name": "uniqueIdentifier",
-                  "type": "string"
                 },
                 {
                   "internalType": "bool",
@@ -8063,7 +8896,7 @@ export const CONTRACTS = {
                   "type": "bool"
                 }
               ],
-              "name": "mintWithVerification",
+              "name": "mint",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -8411,7 +9244,7 @@ export const CONTRACTS = {
           ]
         },
         "FaucetManager": {
-          "address": "0xb591bf0854dd2b891b2455cff271f1bd018849bf",
+          "address": "0x246a2b1d53384e2972272a0f6bd017ecafdb3063",
           "abi": [
             {
               "inputs": [
@@ -9860,19 +10693,76 @@ export const CONTRACTS = {
           ]
         },
         "Swag1155": {
-          "address": "0x68fac84fe7d2abdeddc364f81aedaf48ed432ce4",
+          "address": "0x71fdedc946fe8177a36216300fd5f3cb5d887587",
           "abi": [
             {
               "inputs": [
                 {
-                  "internalType": "string",
-                  "name": "baseURI",
-                  "type": "string"
-                },
-                {
-                  "internalType": "address",
-                  "name": "_usdc",
-                  "type": "address"
+                  "components": [
+                    {
+                      "internalType": "string",
+                      "name": "name",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "description",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "imageUrl",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "website",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "paymentToken",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "pricePerUnit",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "totalSupply",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "minted",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "active",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "gender",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "color",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "style",
+                      "type": "string"
+                    }
+                  ],
+                  "internalType": "struct Swag1155.DesignInfo",
+                  "name": "_designInfo",
+                  "type": "tuple"
                 },
                 {
                   "internalType": "address",
@@ -9881,7 +10771,7 @@ export const CONTRACTS = {
                 },
                 {
                   "internalType": "address",
-                  "name": "initialAdmin",
+                  "name": "_initialAdmin",
                   "type": "address"
                 }
               ],
@@ -10071,6 +10961,144 @@ export const CONTRACTS = {
               "anonymous": false,
               "inputs": [
                 {
+                  "indexed": false,
+                  "internalType": "bool",
+                  "name": "active",
+                  "type": "bool"
+                }
+              ],
+              "name": "DesignActiveStatusChanged",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "bool",
+                      "name": "smartContractEnabled",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "smartContractAddress",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "smartContractDiscount",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "poapEnabled",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "poapEventId",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "poapDiscount",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "enum Swag1155.DiscountType",
+                      "name": "discountType",
+                      "type": "uint8"
+                    }
+                  ],
+                  "indexed": false,
+                  "internalType": "struct Swag1155.DiscountConfig",
+                  "name": "config",
+                  "type": "tuple"
+                }
+              ],
+              "name": "DesignDiscountConfigUpdated",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "string",
+                      "name": "name",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "description",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "imageUrl",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "website",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "paymentToken",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "pricePerUnit",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "totalSupply",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "minted",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "active",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "gender",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "color",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "style",
+                      "type": "string"
+                    }
+                  ],
+                  "indexed": false,
+                  "internalType": "struct Swag1155.DesignInfo",
+                  "name": "info",
+                  "type": "tuple"
+                }
+              ],
+              "name": "DesignInfoUpdated",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
                   "indexed": true,
                   "internalType": "address",
                   "name": "buyer",
@@ -10084,24 +11112,24 @@ export const CONTRACTS = {
                 },
                 {
                   "indexed": false,
-                  "internalType": "uint256",
-                  "name": "quantity",
-                  "type": "uint256"
+                  "internalType": "string",
+                  "name": "size",
+                  "type": "string"
                 },
                 {
                   "indexed": false,
                   "internalType": "uint256",
-                  "name": "unitPrice",
+                  "name": "price",
                   "type": "uint256"
                 },
                 {
                   "indexed": false,
-                  "internalType": "uint256",
-                  "name": "totalPrice",
-                  "type": "uint256"
+                  "internalType": "bool",
+                  "name": "hadDiscount",
+                  "type": "bool"
                 }
               ],
-              "name": "Purchased",
+              "name": "DesignMinted",
               "type": "event"
             },
             {
@@ -10121,9 +11149,9 @@ export const CONTRACTS = {
                 },
                 {
                   "indexed": false,
-                  "internalType": "uint256[]",
-                  "name": "quantities",
-                  "type": "uint256[]"
+                  "internalType": "string[]",
+                  "name": "sizes",
+                  "type": "string[]"
                 },
                 {
                   "indexed": false,
@@ -10132,7 +11160,46 @@ export const CONTRACTS = {
                   "type": "uint256"
                 }
               ],
-              "name": "PurchasedBatch",
+              "name": "DesignMintedBatch",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "newToken",
+                  "type": "address"
+                }
+              ],
+              "name": "DesignPaymentTokenUpdated",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "newPrice",
+                  "type": "uint256"
+                }
+              ],
+              "name": "DesignPriceUpdated",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "newSupply",
+                  "type": "uint256"
+                }
+              ],
+              "name": "DesignTotalSupplyUpdated",
               "type": "event"
             },
             {
@@ -10157,7 +11224,7 @@ export const CONTRACTS = {
                   "type": "address"
                 }
               ],
-              "name": "RedemptionFulfilled",
+              "name": "PhysicalRedemptionFulfilled",
               "type": "event"
             },
             {
@@ -10176,7 +11243,7 @@ export const CONTRACTS = {
                   "type": "uint256"
                 }
               ],
-              "name": "RedemptionRequested",
+              "name": "PhysicalRedemptionRequested",
               "type": "event"
             },
             {
@@ -10259,6 +11326,25 @@ export const CONTRACTS = {
               "inputs": [
                 {
                   "indexed": true,
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "string",
+                  "name": "uri",
+                  "type": "string"
+                }
+              ],
+              "name": "TokenURISet",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
                   "internalType": "address",
                   "name": "operator",
                   "type": "address"
@@ -10332,19 +11418,6 @@ export const CONTRACTS = {
               "anonymous": false,
               "inputs": [
                 {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "newTreasury",
-                  "type": "address"
-                }
-              ],
-              "name": "TreasuryUpdated",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
                   "indexed": false,
                   "internalType": "string",
                   "name": "value",
@@ -10358,69 +11431,6 @@ export const CONTRACTS = {
                 }
               ],
               "name": "URI",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "newUSDC",
-                  "type": "address"
-                }
-              ],
-              "name": "USDCUpdated",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "uint256",
-                  "name": "tokenId",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "string",
-                  "name": "uri",
-                  "type": "string"
-                }
-              ],
-              "name": "VariantURISet",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "uint256",
-                  "name": "tokenId",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "price",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "maxSupply",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "bool",
-                  "name": "active",
-                  "type": "bool"
-                }
-              ],
-              "name": "VariantUpdated",
               "type": "event"
             },
             {
@@ -10511,39 +11521,276 @@ export const CONTRACTS = {
               "type": "function"
             },
             {
-              "inputs": [
+              "inputs": [],
+              "name": "designInfo",
+              "outputs": [
+                {
+                  "internalType": "string",
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "description",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "imageUrl",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "website",
+                  "type": "string"
+                },
+                {
+                  "internalType": "address",
+                  "name": "paymentToken",
+                  "type": "address"
+                },
                 {
                   "internalType": "uint256",
-                  "name": "tokenId",
+                  "name": "pricePerUnit",
                   "type": "uint256"
                 },
                 {
                   "internalType": "uint256",
-                  "name": "quantity",
+                  "name": "totalSupply",
                   "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "minted",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "active",
+                  "type": "bool"
+                },
+                {
+                  "internalType": "string",
+                  "name": "gender",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "color",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "style",
+                  "type": "string"
                 }
               ],
-              "name": "buy",
-              "outputs": [],
-              "stateMutability": "nonpayable",
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "discountConfig",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "smartContractEnabled",
+                  "type": "bool"
+                },
+                {
+                  "internalType": "address",
+                  "name": "smartContractAddress",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "smartContractDiscount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "poapEnabled",
+                  "type": "bool"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "poapEventId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "poapDiscount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "enum Swag1155.DiscountType",
+                  "name": "discountType",
+                  "type": "uint8"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "getDesignDiscountConfig",
+              "outputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "bool",
+                      "name": "smartContractEnabled",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "smartContractAddress",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "smartContractDiscount",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "poapEnabled",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "poapEventId",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "poapDiscount",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "enum Swag1155.DiscountType",
+                      "name": "discountType",
+                      "type": "uint8"
+                    }
+                  ],
+                  "internalType": "struct Swag1155.DiscountConfig",
+                  "name": "",
+                  "type": "tuple"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "getDesignInfo",
+              "outputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "string",
+                      "name": "name",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "description",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "imageUrl",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "website",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "paymentToken",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "pricePerUnit",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "totalSupply",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "minted",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "active",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "gender",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "color",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "style",
+                      "type": "string"
+                    }
+                  ],
+                  "internalType": "struct Swag1155.DesignInfo",
+                  "name": "",
+                  "type": "tuple"
+                }
+              ],
+              "stateMutability": "view",
               "type": "function"
             },
             {
               "inputs": [
                 {
-                  "internalType": "uint256[]",
-                  "name": "tokenIds",
-                  "type": "uint256[]"
+                  "internalType": "address",
+                  "name": "user",
+                  "type": "address"
                 },
                 {
-                  "internalType": "uint256[]",
-                  "name": "quantities",
-                  "type": "uint256[]"
+                  "internalType": "bool",
+                  "name": "hasPoap",
+                  "type": "bool"
                 }
               ],
-              "name": "buyBatch",
-              "outputs": [],
-              "stateMutability": "nonpayable",
+              "name": "getDesignPriceWithDiscounts",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "getDesignRemainingSupply",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
               "type": "function"
             },
             {
@@ -10559,12 +11806,65 @@ export const CONTRACTS = {
                   "type": "address"
                 }
               ],
-              "name": "getRedemptionStatus",
+              "name": "getDesignTokenRedemptionStatus",
               "outputs": [
                 {
                   "internalType": "enum Swag1155.RedemptionStatus",
                   "name": "",
                   "type": "uint8"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                }
+              ],
+              "name": "getDesignTokenSize",
+              "outputs": [
+                {
+                  "internalType": "string",
+                  "name": "",
+                  "type": "string"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                }
+              ],
+              "name": "getDesignTokenTraits",
+              "outputs": [
+                {
+                  "internalType": "string",
+                  "name": "size",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "gender",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "color",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "style",
+                  "type": "string"
                 }
               ],
               "stateMutability": "view",
@@ -10584,47 +11884,6 @@ export const CONTRACTS = {
                   "internalType": "bytes32",
                   "name": "",
                   "type": "bytes32"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "tokenId",
-                  "type": "uint256"
-                }
-              ],
-              "name": "getVariant",
-              "outputs": [
-                {
-                  "components": [
-                    {
-                      "internalType": "uint256",
-                      "name": "price",
-                      "type": "uint256"
-                    },
-                    {
-                      "internalType": "uint256",
-                      "name": "maxSupply",
-                      "type": "uint256"
-                    },
-                    {
-                      "internalType": "uint256",
-                      "name": "minted",
-                      "type": "uint256"
-                    },
-                    {
-                      "internalType": "bool",
-                      "name": "active",
-                      "type": "bool"
-                    }
-                  ],
-                  "internalType": "struct Swag1155.Variant",
-                  "name": "",
-                  "type": "tuple"
                 }
               ],
               "stateMutability": "view",
@@ -10735,19 +11994,6 @@ export const CONTRACTS = {
               "type": "function"
             },
             {
-              "inputs": [],
-              "name": "listTokenIds",
-              "outputs": [
-                {
-                  "internalType": "uint256[]",
-                  "name": "",
-                  "type": "uint256[]"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
               "inputs": [
                 {
                   "internalType": "uint256",
@@ -10760,7 +12006,7 @@ export const CONTRACTS = {
                   "type": "address"
                 }
               ],
-              "name": "markFulfilled",
+              "name": "markRedemptionFulfilled",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -10768,12 +12014,35 @@ export const CONTRACTS = {
             {
               "inputs": [
                 {
-                  "internalType": "uint256",
-                  "name": "tokenId",
-                  "type": "uint256"
+                  "internalType": "string",
+                  "name": "size",
+                  "type": "string"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "hasPoapDiscount",
+                  "type": "bool"
                 }
               ],
-              "name": "redeem",
+              "name": "mintDesign",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "string[]",
+                  "name": "sizes",
+                  "type": "string[]"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "hasPoapDiscount",
+                  "type": "bool"
+                }
+              ],
+              "name": "mintDesignBatch",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -10797,25 +12066,6 @@ export const CONTRACTS = {
                   "internalType": "enum Swag1155.RedemptionStatus",
                   "name": "",
                   "type": "uint8"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "tokenId",
-                  "type": "uint256"
-                }
-              ],
-              "name": "remaining",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "",
-                  "type": "uint256"
                 }
               ],
               "stateMutability": "view",
@@ -10848,6 +12098,19 @@ export const CONTRACTS = {
                 }
               ],
               "name": "renounceRole",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                }
+              ],
+              "name": "requestPhysicalRedemption",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -10957,12 +12220,137 @@ export const CONTRACTS = {
             {
               "inputs": [
                 {
-                  "internalType": "string",
-                  "name": "newURI",
-                  "type": "string"
+                  "internalType": "bool",
+                  "name": "active",
+                  "type": "bool"
                 }
               ],
-              "name": "setBaseURI",
+              "name": "setDesignActive",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "bool",
+                      "name": "smartContractEnabled",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "smartContractAddress",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "smartContractDiscount",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "poapEnabled",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "poapEventId",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "poapDiscount",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "enum Swag1155.DiscountType",
+                      "name": "discountType",
+                      "type": "uint8"
+                    }
+                  ],
+                  "internalType": "struct Swag1155.DiscountConfig",
+                  "name": "config",
+                  "type": "tuple"
+                }
+              ],
+              "name": "setDesignDiscountConfig",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "string",
+                      "name": "name",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "description",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "imageUrl",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "website",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "paymentToken",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "pricePerUnit",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "totalSupply",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "minted",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "active",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "gender",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "color",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "style",
+                      "type": "string"
+                    }
+                  ],
+                  "internalType": "struct Swag1155.DesignInfo",
+                  "name": "info",
+                  "type": "tuple"
+                }
+              ],
+              "name": "setDesignInfo",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -10971,11 +12359,11 @@ export const CONTRACTS = {
               "inputs": [
                 {
                   "internalType": "address",
-                  "name": "newTreasury",
+                  "name": "token",
                   "type": "address"
                 }
               ],
-              "name": "setTreasury",
+              "name": "setDesignPaymentToken",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -10983,12 +12371,25 @@ export const CONTRACTS = {
             {
               "inputs": [
                 {
-                  "internalType": "address",
-                  "name": "newUSDC",
-                  "type": "address"
+                  "internalType": "uint256",
+                  "name": "newPrice",
+                  "type": "uint256"
                 }
               ],
-              "name": "setUSDC",
+              "name": "setDesignPrice",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "newSupply",
+                  "type": "uint256"
+                }
+              ],
+              "name": "setDesignTotalSupply",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -10999,49 +12400,6 @@ export const CONTRACTS = {
                   "internalType": "uint256",
                   "name": "tokenId",
                   "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "price",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "maxSupply",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "active",
-                  "type": "bool"
-                }
-              ],
-              "name": "setVariant",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "tokenId",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "price",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "maxSupply",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "active",
-                  "type": "bool"
                 },
                 {
                   "internalType": "string",
@@ -11049,7 +12407,7 @@ export const CONTRACTS = {
                   "type": "string"
                 }
               ],
-              "name": "setVariantWithURI",
+              "name": "setTokenURI",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -11100,53 +12458,6 @@ export const CONTRACTS = {
                   "internalType": "string",
                   "name": "",
                   "type": "string"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [],
-              "name": "usdc",
-              "outputs": [
-                {
-                  "internalType": "address",
-                  "name": "",
-                  "type": "address"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "",
-                  "type": "uint256"
-                }
-              ],
-              "name": "variants",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "price",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "maxSupply",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "minted",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "active",
-                  "type": "bool"
                 }
               ],
               "stateMutability": "view",
@@ -11164,25 +12475,25 @@ export const ADDRESSES = {
   "base": {
     "chainId": 8453,
     "addresses": {
-      "ZKPassportNFT": "0xa383758265f147f90d24938f5c72c4b0851014ea",
-      "FaucetManager": "0xf232208df1e7feaed1128cfaeecd554b175efeb3",
-      "Swag1155": "0xe78d15ee71c07e455c592a58e8b2b076842dc246"
+      "ZKPassportNFT": "0x9f0da2f66a0aa01bf4469a257f75fab088130b40",
+      "FaucetManager": "0xbd532043af9f2e8090ad9b1fa14e45a5aaaef102",
+      "Swag1155": "0x9c2944f38156f6dfc922a825eba727a38895958e"
     }
   },
   "ethereum": {
     "chainId": 1,
     "addresses": {
-      "ZKPassportNFT": "0x607003f188c49ed6e0553805734b9990393402df",
-      "FaucetManager": "0x2940e286b41d279b61e484b98a08498e355e4778",
-      "Swag1155": "0xd9663db045850171850fd1298a2176b329a67928"
+      "ZKPassportNFT": "0x94b9f649f8825d5d797e37d04dfc66d612750b10",
+      "FaucetManager": "0xb24295ffc0bd22b0b173b73a0ff5b42564986fd1",
+      "Swag1155": "0xeb27e63799ec91fb81617629b7f98d26af3f9686"
     }
   },
   "unichain": {
     "chainId": 130,
     "addresses": {
-      "ZKPassportNFT": "0x2779ff3db5cb32178dc85a8a81cf6a49c20a16c1",
-      "FaucetManager": "0xb591bf0854dd2b891b2455cff271f1bd018849bf",
-      "Swag1155": "0x68fac84fe7d2abdeddc364f81aedaf48ed432ce4"
+      "ZKPassportNFT": "0x12b5d5796556f0202fa241085409e2b357450d70",
+      "FaucetManager": "0x246a2b1d53384e2972272a0f6bd017ecafdb3063",
+      "Swag1155": "0x71fdedc946fe8177a36216300fd5f3cb5d887587"
     }
   }
 } as const;

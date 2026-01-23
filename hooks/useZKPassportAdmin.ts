@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSendTransaction, useWallets } from '@privy-io/react-auth';
 import { createPublicClient, http, encodeFunctionData } from 'viem';
 import ZKPassportNFTABI from '../frontend/abis/ZKPassportNFT.json';
-import { useSwagAddresses } from '../utils/network';
+import { useSwagAddresses, getChainConfig } from '../utils/network';
 import { getChainRpc } from '../config/networks';
 
 export interface ZKPassportMetadata {
@@ -14,12 +14,20 @@ export interface ZKPassportMetadata {
 
 /**
  * Hook to check if the connected wallet is the owner of ZKPassportNFT contract
+ * @param overrideChainId - Optional chain ID to override the wallet's detected chain
  */
-export function useZKPassportAdmin() {
+export function useZKPassportAdmin(overrideChainId?: number) {
   const { wallets } = useWallets();
-  const { zkpassport, chainId } = useSwagAddresses();
+  const swagAddresses = useSwagAddresses();
   const activeWallet = wallets?.[0];
   const walletAddress = activeWallet?.address;
+
+  // Use override chainId if provided, otherwise use detected chain
+  const chainId = overrideChainId || swagAddresses.chainId;
+
+  // Get contract address for the specific chain
+  const config = getChainConfig(chainId);
+  const zkpassport = config.zkpassport;
 
   const query = useQuery({
     queryKey: ['zkpassport-admin', zkpassport, chainId, walletAddress],
@@ -242,51 +250,3 @@ export function useUpdateZKPassportMetadata() {
   };
 }
 
-/**
- * Hook to approve a verification (owner only)
- */
-export function useApproveVerification() {
-  const { zkpassport, chainId } = useSwagAddresses();
-  const { wallets } = useWallets();
-  const { sendTransaction } = useSendTransaction();
-
-  const activeWallet = wallets?.[0];
-  const isEmbedded = activeWallet?.walletClientType === 'privy';
-
-  const approveVerification = async (
-    uniqueIdentifier: string,
-    userAddress: string,
-    faceMatchPassed: boolean,
-    personhoodVerified: boolean
-  ) => {
-    if (!zkpassport || !chainId) {
-      throw new Error('Missing contract address');
-    }
-
-    if (!activeWallet) {
-      throw new Error('Wallet not connected');
-    }
-
-    const txData = encodeFunctionData({
-      abi: ZKPassportNFTABI as any,
-      functionName: 'approveVerification',
-      args: [uniqueIdentifier, userAddress as `0x${string}`, faceMatchPassed, personhoodVerified],
-    });
-
-    const result = await sendTransaction({
-      to: zkpassport as `0x${string}`,
-      data: txData,
-      chainId,
-    }, {
-      address: activeWallet.address,
-      sponsor: isEmbedded,
-    } as any);
-
-    return result;
-  };
-
-  return {
-    approveVerification,
-    canApprove: Boolean(zkpassport && activeWallet),
-  };
-}

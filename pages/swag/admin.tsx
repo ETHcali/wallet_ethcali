@@ -4,24 +4,24 @@ import { isAddress } from 'viem';
 import { useRouter } from 'next/router';
 import Navigation from '../../components/Navigation';
 import Layout from '../../components/shared/Layout';
-import { AdminProductForm } from '../../components/swag/AdminProductForm';
 import { AdminProductList } from '../../components/swag/AdminProductList';
 import { AdminMintedNFTs } from '../../components/swag/AdminMintedNFTs';
 import { AdminManagement } from '../../components/swag/AdminManagement';
 import { useSwagAddresses } from '../../utils/network';
 import { useContractAdmin } from '../../hooks/useContractAdmin';
-import { useContractSettings, useSetUSDC, useSetTreasury } from '../../hooks/useSwagAdmin';
+import { useContractSettings, useSetDesignPaymentToken } from '../../hooks/swag';
 
-type TabId = 'create' | 'products' | 'minted' | 'admins' | 'settings';
+type TabId = 'products' | 'minted' | 'admins' | 'settings';
 
 export default function SwagAdminPage() {
   const router = useRouter();
   const { chainId, swag1155, explorerUrl } = useSwagAddresses();
   const { ready } = useWallets();
   const { isAdmin, isLoading: isCheckingAdmin, walletAddress } = useContractAdmin();
-  const { usdc, treasury, isLoading: isLoadingSettings, refetch: refetchSettings } = useContractSettings();
-  const { setUSDC, canSetUSDC } = useSetUSDC();
-  const { setTreasury, canSetTreasury } = useSetTreasury();
+  // Use swag1155 as Design address
+  const designAddress = swag1155 || '';
+  const { paymentToken, treasury, isLoading: isLoadingSettings, refetch: refetchSettings } = useContractSettings(designAddress, chainId);
+  const { setPaymentToken, canSet: canSetPaymentToken } = useSetDesignPaymentToken(designAddress, chainId);
   
   // Read URL parameters for NFT fulfillment
   const urlTokenId = router.query.tokenId as string | undefined;
@@ -30,13 +30,11 @@ export default function SwagAdminPage() {
   
   // Determine initial tab - if URL params exist, start with 'minted' tab
   const [activeTab, setActiveTab] = useState<TabId>(
-    urlTokenId && urlOwner ? 'minted' : 'create'
+    urlTokenId && urlOwner ? 'minted' : 'products'
   );
   
-  const [usdcAddress, setUsdcAddress] = useState('');
-  const [treasuryAddress, setTreasuryAddress] = useState('');
-  const [isSettingUSDC, setIsSettingUSDC] = useState(false);
-  const [isSettingTreasury, setIsSettingTreasury] = useState(false);
+  const [paymentTokenAddress, setPaymentTokenAddress] = useState('');
+  const [isSettingPaymentToken, setIsSettingPaymentToken] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // When URL params change, switch to minted tab if needed
@@ -132,23 +130,23 @@ export default function SwagAdminPage() {
               <span className="text-pink-400">removeAdmin</span>(addr)
             </div>
             <div className="text-gray-600">
-              <span className="text-pink-400">setTreasury</span>(addr)
+              <span className="text-pink-400">setDesignPaymentToken</span>(addr)
             </div>
             <div className="text-gray-600">
-              <span className="text-pink-400">setUSDC</span>(addr)
+              <span className="text-pink-400">setDesignInfo</span>(...)
             </div>
             <div className="text-gray-600">
-              <span className="text-pink-400">setVariantWithURI</span>(...)
+              <span className="text-pink-400">setDesignDiscountConfig</span>(...)
             </div>
             <div className="text-gray-600">
-              <span className="text-pink-400">markFulfilled</span>(id, owner)
+              <span className="text-pink-400">markRedemptionFulfilled</span>(id, owner)
             </div>
           </div>
         </div>
 
         {/* Tabs */}
         <div className="flex gap-1 mb-4 flex-wrap">
-          {(['create', 'products', 'minted', 'admins', 'settings'] as TabId[]).map((tab) => (
+          {(['products', 'minted', 'admins', 'settings'] as TabId[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -165,10 +163,6 @@ export default function SwagAdminPage() {
 
         {/* Tab Content */}
         <div className="space-y-4">
-          {activeTab === 'create' && (
-            <AdminProductForm />
-          )}
-
           {activeTab === 'products' && (
             <AdminProductList />
           )}
@@ -198,14 +192,14 @@ export default function SwagAdminPage() {
               )}
 
               {/* Current Settings */}
-              {!isLoadingSettings && (usdc || treasury) && (
+              {!isLoadingSettings && (paymentToken || treasury) && (
                 <div className="bg-black/60 border border-gray-800 rounded p-4">
                   <p className="text-[9px] text-gray-500 font-mono tracking-wider mb-3">CURRENT_SETTINGS</p>
                   <div className="space-y-2 text-[10px] font-mono">
-                    {usdc && (
+                    {paymentToken && (
                       <div className="flex justify-between">
-                        <span className="text-gray-600">USDC</span>
-                        <span className="text-cyan-400">{usdc.slice(0, 10)}...{usdc.slice(-8)}</span>
+                        <span className="text-gray-600">PAYMENT_TOKEN</span>
+                        <span className="text-cyan-400">{paymentToken.slice(0, 10)}...{paymentToken.slice(-8)}</span>
                       </div>
                     )}
                     {treasury && (
@@ -214,99 +208,56 @@ export default function SwagAdminPage() {
                         <span className="text-cyan-400">{treasury.slice(0, 10)}...{treasury.slice(-8)}</span>
                       </div>
                     )}
+                    {treasury && (
+                      <p className="text-[9px] text-gray-600 font-mono mt-2">Treasury is set in constructor and cannot be changed</p>
+                    )}
                   </div>
                 </div>
               )}
 
-              {/* Treasury Settings */}
+              {/* Payment Token Settings */}
               <div className="bg-black/60 border border-gray-800 rounded p-4">
-                <p className="text-[9px] text-gray-500 font-mono tracking-wider mb-3">TREASURY</p>
+                <p className="text-[9px] text-gray-500 font-mono tracking-wider mb-3">PAYMENT_TOKEN</p>
                 <div className="space-y-3">
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      value={treasuryAddress}
-                      onChange={(e) => setTreasuryAddress(e.target.value)}
-                      placeholder={treasury || "0x... treasury address"}
+                      value={paymentTokenAddress}
+                      onChange={(e) => setPaymentTokenAddress(e.target.value)}
+                      placeholder={paymentToken || "0x... payment token address"}
                       className="flex-1 bg-black/40 border border-gray-700 rounded px-3 py-2 text-[10px] font-mono text-gray-300 placeholder-gray-600 focus:border-pink-500/50 focus:outline-none"
-                      disabled={isSettingTreasury}
+                      disabled={isSettingPaymentToken}
                     />
                     <button
                       onClick={async () => {
-                        if (!treasuryAddress.trim()) {
-                          setMessage({ type: 'error', text: 'Please enter treasury address' });
+                        if (!paymentTokenAddress.trim()) {
+                          setMessage({ type: 'error', text: 'Please enter payment token address' });
                           return;
                         }
-                        if (!isAddress(treasuryAddress)) {
+                        if (!isAddress(paymentTokenAddress)) {
                           setMessage({ type: 'error', text: 'Invalid address format' });
                           return;
                         }
-                        setIsSettingTreasury(true);
+                        setIsSettingPaymentToken(true);
                         setMessage(null);
                         try {
-                          await setTreasury(treasuryAddress);
-                          setMessage({ type: 'success', text: 'Treasury address updated!' });
-                          setTreasuryAddress('');
+                          await setPaymentToken(paymentTokenAddress);
+                          setMessage({ type: 'success', text: 'Payment token address updated!' });
+                          setPaymentTokenAddress('');
                           refetchSettings();
                         } catch (error) {
-                          setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to set treasury' });
+                          setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to set payment token' });
                         } finally {
-                          setIsSettingTreasury(false);
+                          setIsSettingPaymentToken(false);
                         }
                       }}
-                      disabled={isSettingTreasury || !canSetTreasury}
+                      disabled={isSettingPaymentToken || !canSetPaymentToken}
                       className="px-4 py-2 bg-pink-500/10 border border-pink-500/30 rounded text-pink-400 text-[10px] font-mono hover:bg-pink-500/20 transition disabled:opacity-50"
                     >
-                      {isSettingTreasury ? 'SETTING...' : 'SET'}
+                      {isSettingPaymentToken ? 'SETTING...' : 'SET'}
                     </button>
                   </div>
-                  <p className="text-[9px] text-gray-600 font-mono">USDC payments are sent here</p>
-                </div>
-              </div>
-
-              {/* USDC Contract */}
-              <div className="bg-black/60 border border-gray-800 rounded p-4">
-                <p className="text-[9px] text-gray-500 font-mono tracking-wider mb-3">USDC_CONTRACT</p>
-                <div className="space-y-3">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={usdcAddress}
-                      onChange={(e) => setUsdcAddress(e.target.value)}
-                      placeholder={usdc || "0x... USDC address"}
-                      className="flex-1 bg-black/40 border border-gray-700 rounded px-3 py-2 text-[10px] font-mono text-gray-300 placeholder-gray-600 focus:border-pink-500/50 focus:outline-none"
-                      disabled={isSettingUSDC}
-                    />
-                    <button
-                      onClick={async () => {
-                        if (!usdcAddress.trim()) {
-                          setMessage({ type: 'error', text: 'Please enter USDC address' });
-                          return;
-                        }
-                        if (!isAddress(usdcAddress)) {
-                          setMessage({ type: 'error', text: 'Invalid address format' });
-                          return;
-                        }
-                        setIsSettingUSDC(true);
-                        setMessage(null);
-                        try {
-                          await setUSDC(usdcAddress);
-                          setMessage({ type: 'success', text: 'USDC address updated!' });
-                          setUsdcAddress('');
-                          refetchSettings();
-                        } catch (error) {
-                          setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to set USDC' });
-                        } finally {
-                          setIsSettingUSDC(false);
-                        }
-                      }}
-                      disabled={isSettingUSDC || !canSetUSDC}
-                      className="px-4 py-2 bg-pink-500/10 border border-pink-500/30 rounded text-pink-400 text-[10px] font-mono hover:bg-pink-500/20 transition disabled:opacity-50"
-                    >
-                      {isSettingUSDC ? 'SETTING...' : 'SET'}
-                    </button>
-                  </div>
-                  <p className="text-[9px] text-gray-600 font-mono">ERC20 token used for payments</p>
+                  <p className="text-[9px] text-gray-600 font-mono">ERC20 token used for payments (e.g., USDC)</p>
                 </div>
               </div>
 

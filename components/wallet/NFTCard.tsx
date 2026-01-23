@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import Image from 'next/image';
+import { useWallets } from '@privy-io/react-auth';
 import { UserNFT } from '../../hooks/useUserNFTs';
-import { RedemptionStatus } from '../../hooks/useSwagAdmin';
+import { RedemptionStatus } from '../../types/swag';
 import { NFTQRModal } from './NFTQRModal';
 import { useRedeem } from '../../hooks/useRedemption';
+import { useDesignTokenTraits } from '../../hooks/useSwagStore';
 import { getIPFSGatewayUrl } from '../../lib/pinata';
+import { useSwagAddresses } from '../../utils/network';
+import { logger } from '../../utils/logger';
 
 interface NFTCardProps {
   nft: UserNFT;
@@ -26,10 +30,30 @@ const statusColors: Record<RedemptionStatus, string> = {
 export function NFTCard({ nft, onRedeemSuccess }: NFTCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
-  const { redeem, canRedeem } = useRedeem();
+  const { wallets: _wallets } = useWallets();
+  const { chainId: defaultChainId } = useSwagAddresses();
+  
+  // Use designAddress and chainId from NFT, or fallback to defaults
+  const designAddress = nft.designAddress;
+  const chainId = nft.chainId || defaultChainId;
+  
+  // Fetch token traits if we have designAddress
+  const { traits, isLoading: isLoadingTraits } = useDesignTokenTraits(
+    nft.tokenId,
+    designAddress || '',
+    chainId
+  );
+  
+  // Only initialize useRedeem if we have designAddress
+  const { redeem, canRedeem } = useRedeem(designAddress || '', chainId);
   const [isRedeeming, setIsRedeeming] = useState(false);
 
   const handleRedeem = async () => {
+    if (!designAddress) {
+      alert('Design address not available for this NFT');
+      return;
+    }
+    
     if (!canRedeem || nft.redemptionStatus !== RedemptionStatus.NotRedeemed) {
       return;
     }
@@ -42,7 +66,7 @@ export function NFTCard({ nft, onRedeemSuccess }: NFTCardProps) {
         onRedeemSuccess?.();
       }, 2000);
     } catch (error) {
-      console.error('Error redeeming NFT:', error);
+      logger.error('Error redeeming NFT:', error);
       alert(error instanceof Error ? error.message : 'Failed to redeem NFT');
       setIsRedeeming(false);
     }
@@ -84,10 +108,10 @@ export function NFTCard({ nft, onRedeemSuccess }: NFTCardProps) {
           {nft.redemptionStatus === RedemptionStatus.NotRedeemed && (
             <button
               onClick={handleRedeem}
-              disabled={!canRedeem || isRedeeming}
+              disabled={!canRedeem || isRedeeming || !designAddress}
               className="action-btn redeem-btn"
             >
-              {isRedeeming ? 'Processing...' : 'Redeem Physical Item'}
+              {isRedeeming ? 'Processing...' : !designAddress ? 'Design Address Missing' : 'Redeem Physical Item'}
             </button>
           )}
 
@@ -115,7 +139,33 @@ export function NFTCard({ nft, onRedeemSuccess }: NFTCardProps) {
               <span className="detail-value font-mono">#{nft.tokenId.toString()}</span>
             </div>
 
-            {nft.attributes && nft.attributes.length > 0 && (
+            {/* Show traits from Design contract if available */}
+            {traits && !isLoadingTraits && (
+              <div className="nft-attributes">
+                <div className="attributes-header">Traits</div>
+                <div className="attributes-grid">
+                  <div className="attribute-item">
+                    <span className="attribute-type">Size:</span>
+                    <span className="attribute-value">{traits.size}</span>
+                  </div>
+                  <div className="attribute-item">
+                    <span className="attribute-type">Gender:</span>
+                    <span className="attribute-value">{traits.gender}</span>
+                  </div>
+                  <div className="attribute-item">
+                    <span className="attribute-type">Color:</span>
+                    <span className="attribute-value">{traits.color}</span>
+                  </div>
+                  <div className="attribute-item">
+                    <span className="attribute-type">Style:</span>
+                    <span className="attribute-value">{traits.style}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Fallback to metadata attributes if traits not available */}
+            {(!traits || isLoadingTraits) && nft.attributes && nft.attributes.length > 0 && (
               <div className="nft-attributes">
                 <div className="attributes-header">Attributes</div>
                 <div className="attributes-grid">

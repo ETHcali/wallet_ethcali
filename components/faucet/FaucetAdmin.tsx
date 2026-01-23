@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useWallets } from '@privy-io/react-auth';
+import { logger } from '../../utils/logger';
 import {
   getFaucetBalance,
   isFaucetPaused,
@@ -16,7 +17,6 @@ import {
   getContractAddresses,
   isAdmin,
 } from '../../utils/contracts';
-import { parseEther } from 'viem';
 
 interface FaucetAdminProps {
   chainId: number;
@@ -66,7 +66,7 @@ const FaucetAdmin: React.FC<FaucetAdminProps> = ({ chainId }) => {
       setClaimAmount(amount);
       setLinkedNFTContract(nftContract);
     } catch (err) {
-      console.error('Error loading admin data:', err);
+      logger.error('Error loading admin data:', err);
       setError('Failed to load contract data');
     } finally {
       setIsLoading(false);
@@ -107,7 +107,7 @@ const FaucetAdmin: React.FC<FaucetAdminProps> = ({ chainId }) => {
       setTimeout(loadAdminData, 3000);
 
     } catch (err: any) {
-      console.error('Transaction error:', err);
+      logger.error('Transaction error:', err);
       setError(err.message || 'Transaction failed');
     } finally {
       setIsProcessing(false);

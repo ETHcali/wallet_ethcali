@@ -6,7 +6,7 @@ import { VaultList } from '../../components/faucet/VaultList';
 import { CreateVaultForm } from '../../components/faucet/CreateVaultForm';
 import { VaultWhitelistManager } from '../../components/faucet/VaultWhitelistManager';
 import { useSwagAddresses } from '../../utils/network';
-import { useFaucetManagerAdmin, useFaucetPaused, useFaucetPause, useAllVaults } from '../../hooks/useFaucetAdmin';
+import { useFaucetManagerAdmin, useFaucetPaused, useAllVaults, useFaucetPause } from '../../hooks/faucet';
 import { formatEther } from 'viem';
 
 type AdminTab = 'vaults' | 'create' | 'whitelist' | 'settings';

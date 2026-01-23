@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 
+import { logger } from '../../utils/logger';
 interface ReceiveModalProps {
   address: string;
   onClose: () => void;
@@ -19,7 +20,7 @@ const ReceiveModal: React.FC<ReceiveModalProps> = ({ address, onClose, onScanQR 
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error('Failed to copy:', err);
+      logger.error('Failed to copy:', err);
     }
   };
 

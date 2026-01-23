@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { COINGECKO_IDS } from '../utils/tokenUtils';
+import { logger } from '../utils/logger';
 
 interface TokenPrices {
   [key: string]: {
@@ -37,7 +38,7 @@ export function useTokenPrices() {
       const data = await response.json();
       setPrices(data);
     } catch (err) {
-      console.error('Error fetching token prices:', err);
+      logger.error('Error fetching token prices:', err);
       setError('Failed to fetch token prices');
       
       // Set fallback prices

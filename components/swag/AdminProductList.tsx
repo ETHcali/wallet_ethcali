@@ -1,153 +1,196 @@
 import { useState } from 'react';
 import Image from 'next/image';
-import { useAllVariants, AdminVariant } from '../../hooks/useSwagAdmin';
+import { useDesignInfo, useDesignDiscountConfig, useDesignRemainingSupply } from '../../hooks/useSwagStore';
+import { useSetDesignActive } from '../../hooks/swag';
 import { AdminProductEditModal } from './AdminProductEditModal';
 import { getIPFSGatewayUrl } from '../../lib/pinata';
+import { logger } from '../../utils/logger';
+import { useSwagAddresses } from '../../utils/network';
 
 export function AdminProductList() {
-  const { variants, isLoading, error, refetch } = useAllVariants();
-  const [editingVariant, setEditingVariant] = useState<AdminVariant | null>(null);
+  const { swag1155, chainId } = useSwagAddresses();
+  const { designInfo, isLoading: isDesignLoading, refetch: refetchDesign } = useDesignInfo(swag1155 || '', chainId);
+  const { discountConfig, isLoading: isDiscountLoading } = useDesignDiscountConfig(swag1155 || '', chainId);
+  const { remaining, isLoading: isSupplyLoading } = useDesignRemainingSupply(swag1155 || '', chainId);
+  const { setDesignActive, canSet } = useSetDesignActive(swag1155 || '', chainId);
+  const [editingDesign, setEditingDesign] = useState(false);
+  const [isToggling, setIsToggling] = useState(false);
+
+  const isLoading = isDesignLoading || isDiscountLoading || isSupplyLoading;
+
+  const handleToggleActive = async () => {
+    if (!designInfo || !canSet) return;
+    
+    setIsToggling(true);
+    try {
+      await setDesignActive(!designInfo.active);
+      await refetchDesign();
+    } catch (error) {
+      logger.error('Error toggling Design active status:', error);
+      alert(error instanceof Error ? error.message : 'Failed to update Design status');
+    } finally {
+      setIsToggling(false);
+    }
+  };
 
   if (isLoading) {
     return (
       <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
         <div className="flex items-center justify-center py-8">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-cyan-400 border-t-transparent" />
-          <span className="ml-3 text-slate-400">Loading products...</span>
+          <span className="ml-3 text-slate-400">Loading Design...</span>
         </div>
       </div>
     );
   }
 
-  if (error) {
+  if (!designInfo) {
     return (
       <div className="rounded-2xl border border-red-500/40 bg-red-500/10 p-6">
-        <p className="text-red-300">Error loading products: {error}</p>
-        <button
-          onClick={() => refetch()}
-          className="mt-3 text-sm text-cyan-400 hover:text-cyan-300"
-        >
-          Retry
-        </button>
+        <p className="text-red-300">No Design found at this address.</p>
+        <p className="text-red-200 text-sm mt-2">Design Address: {swag1155}</p>
       </div>
     );
   }
 
-  if (variants.length === 0) {
-    return (
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
-        <p className="text-center text-slate-400">No products found. Create your first product above.</p>
-      </div>
-    );
-  }
+  const imageUrl = getIPFSGatewayUrl(designInfo.imageUrl || '') || '/logo_eth_cali.png';
+  const minted = Number(designInfo.minted);
+  const totalSupply = Number(designInfo.totalSupply);
+  const price = Number(designInfo.pricePerUnit) / 1_000_000; // Assuming 6 decimals
 
   return (
     <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-white">Manage Products</h2>
+        <h2 className="text-xl font-semibold text-white">Manage Design</h2>
         <button
-          onClick={() => refetch()}
+          onClick={() => refetchDesign()}
           className="text-sm text-cyan-400 hover:text-cyan-300 transition"
         >
           Refresh
         </button>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="border-b border-slate-700 text-xs uppercase tracking-wider text-slate-500">
-              <th className="px-4 py-3">Token ID</th>
-              <th className="px-4 py-3">Product</th>
-              <th className="px-4 py-3">Price (USDC)</th>
-              <th className="px-4 py-3">Supply</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-800">
-            {variants.map((variant) => (
-              <tr key={variant.tokenId.toString()} className="hover:bg-slate-800/50 transition">
-                <td className="px-4 py-3">
-                  <span className="font-mono text-sm text-slate-400">
-                    #{variant.tokenId.toString().slice(-6)}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    {variant.metadata?.image && (
-                      <div className="h-10 w-10 rounded-lg overflow-hidden border border-slate-700">
-                        <Image
-                          src={getIPFSGatewayUrl(variant.metadata.image)}
-                          alt={variant.metadata?.name || 'Product'}
-                          width={40}
-                          height={40}
-                          className="h-full w-full object-cover"
-                          unoptimized
-                        />
-                      </div>
-                    )}
-                    <div>
-                      <p className="text-white font-medium">
-                        {variant.metadata?.name || `Token ${variant.tokenId.toString().slice(-6)}`}
-                      </p>
-                      {variant.metadata?.attributes?.find(a => a.trait_type === 'Size') && (
-                        <span className="text-xs text-slate-500">
-                          Size: {variant.metadata.attributes.find(a => a.trait_type === 'Size')?.value}
-                        </span>
-                      )}
-                    </div>
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* Design Image */}
+        <div className="space-y-4">
+          <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-slate-800 bg-slate-900">
+            <Image
+              src={imageUrl}
+              alt={designInfo.name}
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 400px"
+              unoptimized={imageUrl.startsWith('https://gateway.pinata.cloud')}
+            />
+          </div>
+        </div>
+
+        {/* Design Info */}
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-lg font-semibold text-white mb-2">{designInfo.name}</h3>
+            <p className="text-sm text-slate-400">{designInfo.description}</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs text-slate-500 mb-1">Price</p>
+              <p className="text-green-400 font-mono">${price.toFixed(2)} USDC</p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-500 mb-1">Status</p>
+              {designInfo.active ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2 py-1 text-xs font-medium text-green-400">
+                  <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
+                  Active
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2 py-1 text-xs font-medium text-red-400">
+                  <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
+                  Inactive
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-xs text-slate-500 mb-1">Supply</p>
+            <div className="text-sm">
+              <span className="text-white">{minted}</span>
+              <span className="text-slate-500"> / {totalSupply}</span>
+            </div>
+            <div className="w-full h-2 bg-slate-700 rounded-full mt-2">
+              <div
+                className="h-full bg-cyan-500 rounded-full"
+                style={{ width: `${totalSupply > 0 ? (minted / totalSupply) * 100 : 0}%` }}
+              />
+            </div>
+            <p className="text-xs text-slate-500 mt-1">{remaining} remaining</p>
+          </div>
+
+          <div>
+            <p className="text-xs text-slate-500 mb-2">Traits</p>
+            <div className="flex flex-wrap gap-2">
+              <span className="rounded-full border border-slate-800 px-3 py-1 text-xs text-slate-300">
+                Gender: {designInfo.gender}
+              </span>
+              <span className="rounded-full border border-slate-800 px-3 py-1 text-xs text-slate-300">
+                Color: {designInfo.color}
+              </span>
+              <span className="rounded-full border border-slate-800 px-3 py-1 text-xs text-slate-300">
+                Style: {designInfo.style}
+              </span>
+            </div>
+          </div>
+
+          {discountConfig && (discountConfig.poapEnabled || discountConfig.smartContractEnabled) && (
+            <div>
+              <p className="text-xs text-slate-500 mb-2">Discounts</p>
+              <div className="space-y-1">
+                {discountConfig.poapEnabled && (
+                  <div className="text-xs text-slate-300">
+                    POAP: Event #{discountConfig.poapEventId.toString()} - {discountConfig.discountType === 0 ? `${Number(discountConfig.poapDiscount) / 100}%` : `${Number(discountConfig.poapDiscount) / 1_000_000} USDC`}
                   </div>
-                </td>
-                <td className="px-4 py-3">
-                  <span className="text-green-400 font-mono">${variant.price.toFixed(2)}</span>
-                </td>
-                <td className="px-4 py-3">
-                  <div className="text-sm">
-                    <span className="text-white">{variant.minted}</span>
-                    <span className="text-slate-500"> / {variant.maxSupply}</span>
+                )}
+                {discountConfig.smartContractEnabled && (
+                  <div className="text-xs text-slate-300">
+                    Contract: {discountConfig.smartContractAddress.slice(0, 10)}... - {discountConfig.discountType === 0 ? `${Number(discountConfig.smartContractDiscount) / 100}%` : `${Number(discountConfig.smartContractDiscount) / 1_000_000} USDC`}
                   </div>
-                  <div className="w-24 h-1.5 bg-slate-700 rounded-full mt-1">
-                    <div
-                      className="h-full bg-cyan-500 rounded-full"
-                      style={{ width: `${(variant.minted / variant.maxSupply) * 100}%` }}
-                    />
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  {variant.active ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2 py-1 text-xs font-medium text-green-400">
-                      <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
-                      Active
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2 py-1 text-xs font-medium text-red-400">
-                      <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
-                      Inactive
-                    </span>
-                  )}
-                </td>
-                <td className="px-4 py-3">
-                  <button
-                    onClick={() => setEditingVariant(variant)}
-                    className="rounded-lg border border-slate-600 bg-slate-800 px-3 py-1.5 text-xs text-white hover:bg-slate-700 transition"
-                  >
-                    Edit
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-2 pt-4 border-t border-slate-800">
+            <button
+              onClick={() => setEditingDesign(true)}
+              className="flex-1 rounded-lg border border-slate-600 bg-slate-800 px-4 py-2 text-sm text-white hover:bg-slate-700 transition"
+            >
+              Edit Design
+            </button>
+            <button
+              onClick={handleToggleActive}
+              disabled={!canSet || isToggling}
+              className={`flex-1 rounded-lg border px-4 py-2 text-sm transition ${
+                designInfo.active
+                  ? 'border-red-600 bg-red-500/10 text-red-400 hover:bg-red-500/20'
+                  : 'border-green-600 bg-green-500/10 text-green-400 hover:bg-green-500/20'
+              } disabled:opacity-50`}
+            >
+              {isToggling ? 'Updating...' : designInfo.active ? 'Deactivate' : 'Activate'}
+            </button>
+          </div>
+        </div>
       </div>
 
-      {editingVariant && (
+      {editingDesign && swag1155 && (
         <AdminProductEditModal
-          variant={editingVariant}
-          onClose={() => setEditingVariant(null)}
+          designAddress={swag1155}
+          chainId={chainId}
+          onClose={() => setEditingDesign(false)}
           onSuccess={() => {
-            setEditingVariant(null);
-            refetch();
+            setEditingDesign(false);
+            refetchDesign();
           }}
         />
       )}

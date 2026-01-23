@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useCreateVault } from '../../hooks/useFaucetAdmin';
+import { useCreateVault } from '../../hooks/faucet';
 import { VaultType, VaultFormData } from '../../types/faucet';
 
 interface CreateVaultFormProps {

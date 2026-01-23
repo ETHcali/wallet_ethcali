@@ -1,20 +1,24 @@
 import { createPublicClient, http, parseEther, formatEther, encodeFunctionData, type Chain } from 'viem';
 import { base, mainnet } from 'viem/chains';
-import { CONTRACTS, ADDRESSES, getContracts, getAddresses } from '../frontend/contracts';
+import { CONTRACTS, getAddresses } from '../frontend/contracts';
 import { getChainRpc } from '../config/networks';
+import { ADMIN_ADDRESS, CHAIN_IDS, DEFAULT_RPC_URLS } from '../config/constants';
+import { getExplorerUrl, getAddressExplorerUrl } from './explorer';
+import { logger } from './logger';
 
-// Admin address for faucet management
-export const ADMIN_ADDRESS = process.env.NEXT_PUBLIC_ADMIN_ADDRESS || '0x3B89Ad8CC39900778aBCdcc22bc83cAC031A415B'; 
+// Re-export for backward compatibility
+export { ADMIN_ADDRESS };
+export { getExplorerUrl, getAddressExplorerUrl }; 
 
 // Unichain definition (not in viem by default)
 export const unichain: Chain = {
-  id: 130,
+  id: CHAIN_IDS.UNICHAIN,
   name: 'Unichain',
   network: 'unichain',
   nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
   rpcUrls: {
-    default: { http: ['https://rpc.unichain.org'] },
-    public: { http: ['https://rpc.unichain.org'] },
+    default: { http: [DEFAULT_RPC_URLS[CHAIN_IDS.UNICHAIN]] },
+    public: { http: [DEFAULT_RPC_URLS[CHAIN_IDS.UNICHAIN]] },
   },
   blockExplorers: {
     default: { name: 'Uniscan', url: 'https://unichain.blockscout.com' },
@@ -24,11 +28,11 @@ export const unichain: Chain = {
 // Get chain config by chainId
 export function getChainConfig(chainId: number): Chain {
   switch (chainId) {
-    case 8453:
+    case CHAIN_IDS.BASE:
       return base;
-    case 130:
+    case CHAIN_IDS.UNICHAIN:
       return unichain;
-    case 1:
+    case CHAIN_IDS.ETHEREUM:
       return mainnet;
     default:
       return base;
@@ -38,11 +42,11 @@ export function getChainConfig(chainId: number): Chain {
 // Get network name from chainId
 export function getNetworkName(chainId: number): string {
   switch (chainId) {
-    case 1:
+    case CHAIN_IDS.ETHEREUM:
       return 'ethereum';
-    case 130:
+    case CHAIN_IDS.UNICHAIN:
       return 'unichain';
-    case 8453:
+    case CHAIN_IDS.BASE:
     default:
       return 'base';
   }
@@ -103,7 +107,7 @@ export async function hasNFTByAddress(chainId: number, userAddress: string): Pro
   const abi = getContractABI('ZKPassportNFT');
 
   if (!addresses.ZKPassportNFT) {
-    console.error(`No ZKPassportNFT address for chainId ${chainId}`);
+    logger.error(`No ZKPassportNFT address for chainId ${chainId}`);
     return false;
   }
 
@@ -119,7 +123,7 @@ export async function hasNFTByAddress(chainId: number, userAddress: string): Pro
     } catch (fallbackError: any) {
       // If both fail, log but don't spam console with RPC rate limit errors
       if (!fallbackError?.message?.includes('429') && !fallbackError?.message?.includes('503')) {
-        console.error('Error checking NFT ownership:', fallbackError);
+        logger.error('Error checking NFT ownership:', fallbackError);
       }
       return false;
     }
@@ -135,7 +139,7 @@ export async function hasNFT(chainId: number, uniqueIdentifier: string): Promise
     const result = await readContract(client, addresses.ZKPassportNFT, abi, 'hasNFT', [uniqueIdentifier]);
     return Boolean(result);
   } catch (error) {
-    console.error('Error checking NFT by identifier:', error);
+    logger.error('Error checking NFT by identifier:', error);
     return false;
   }
 }
@@ -146,7 +150,6 @@ export async function hasNFT(chainId: number, uniqueIdentifier: string): Promise
 export async function getTokenIdByAddress(chainId: number, userAddress: string): Promise<bigint | null> {
   const client = getPublicClient(chainId);
   const addresses = getContractAddresses(chainId);
-  const abi = getContractABI('ZKPassportNFT');
 
   try {
     // Get NFTMinted events for this address
@@ -171,8 +174,8 @@ export async function getTokenIdByAddress(chainId: number, userAddress: string):
 
     if (events && events.length > 0) {
       // Get the most recent tokenId
-      const latestEvent = events[events.length - 1];
-      const args = latestEvent.args as any;
+      const latestEvent = events[events.length - 1] as any;
+      const args = latestEvent?.args;
       return args?.tokenId ? BigInt(args.tokenId) : null;
     }
 
@@ -180,7 +183,7 @@ export async function getTokenIdByAddress(chainId: number, userAddress: string):
   } catch (error: any) {
     // Silent fail - RPC may be down/rate limited, not critical
     if (error?.message && !error.message.includes('503') && !error.message.includes('429')) {
-      console.warn('Error getting tokenId:', error.message);
+      logger.warn('Error getting tokenId:', error.message);
     }
     return null;
   }
@@ -206,7 +209,7 @@ export async function getTokenData(chainId: number, tokenId: bigint): Promise<{
       personhoodVerified: boolean;
     };
   } catch (error) {
-    console.error('Error getting token data:', error);
+    logger.error('Error getting token data:', error);
     return null;
   }
 }
@@ -223,7 +226,7 @@ export async function getTokenURI(chainId: number, tokenId: bigint): Promise<str
     const uri = await readContract(client, addresses.ZKPassportNFT, abi, 'tokenURI', [tokenId]);
     return uri as string;
   } catch (error) {
-    console.error('Error getting token URI:', error);
+    logger.error('Error getting token URI:', error);
     return null;
   }
 }
@@ -241,7 +244,7 @@ export async function getFaucetBalance(chainId: number): Promise<string> {
     const result = await readContract(client, addresses.FaucetManager, abi, 'getBalance');
     return formatEther(result as bigint);
   } catch (error) {
-    console.error('Error getting faucet balance:', error);
+    logger.error('Error getting faucet balance:', error);
     return '0';
   }
 }
@@ -255,7 +258,7 @@ export async function getClaimAmount(chainId: number): Promise<string> {
     const result = await readContract(client, addresses.FaucetManager, abi, 'claimAmount');
     return formatEther(result as bigint);
   } catch (error) {
-    console.error('Error getting claim amount:', error);
+    logger.error('Error getting claim amount:', error);
     return '0';
   }
 }
@@ -269,7 +272,7 @@ export async function hasClaimed(chainId: number, userAddress: string): Promise<
     const result = await readContract(client, addresses.FaucetManager, abi, 'hasClaimed', [userAddress]);
     return Boolean(result);
   } catch (error) {
-    console.error('Error checking claim status:', error);
+    logger.error('Error checking claim status:', error);
     return false;
   }
 }
@@ -283,7 +286,7 @@ export async function isFaucetPaused(chainId: number): Promise<boolean> {
     const result = await readContract(client, addresses.FaucetManager, abi, 'paused');
     return Boolean(result);
   } catch (error) {
-    console.error('Error checking faucet paused status:', error);
+    logger.error('Error checking faucet paused status:', error);
     return false;
   }
 }
@@ -298,7 +301,7 @@ export async function getFaucetNFTContract(chainId: number): Promise<string> {
     const result = await readContract(client, addresses.FaucetManager, abi, 'nftContract');
     return String(result);
   } catch (error) {
-    console.error('Error getting faucet NFT contract:', error);
+    logger.error('Error getting faucet NFT contract:', error);
     return '';
   }
 }
@@ -340,7 +343,7 @@ export async function getActiveVaults(chainId: number): Promise<any[]> {
       createdAt: Number(vault.createdAt),
     }));
   } catch (error) {
-    console.error('Error getting active vaults:', error);
+    logger.error('Error getting active vaults:', error);
     return [];
   }
 }
@@ -355,7 +358,7 @@ export async function canUserClaim(chainId: number, vaultId: number, userAddress
     const result = await readContract(client, addresses.FaucetManager, abi, 'canUserClaim', [vaultId, userAddress]);
     return result as { canClaim: boolean; reason: string };
   } catch (error) {
-    console.error('Error checking user claim eligibility:', error);
+    logger.error('Error checking user claim eligibility:', error);
     return { canClaim: false, reason: 'Error checking eligibility' };
   }
 }
@@ -377,7 +380,7 @@ export async function getClaimInfo(chainId: number, vaultId: number, userAddress
       returnedAt: Number(result.returnedAt),
     };
   } catch (error) {
-    console.error('Error getting claim info:', error);
+    logger.error('Error getting claim info:', error);
     return null;
   }
 }
@@ -443,19 +446,5 @@ export function getSetNFTContractTxData(chainId: number, newContractAddress: str
   };
 }
 
-// Get explorer URL for transaction
-export function getExplorerUrl(chainId: number, txHash: string): string {
-  if (chainId === 130) {
-    return `https://unichain.blockscout.com/tx/${txHash}`;
-  }
-  return `https://basescan.org/tx/${txHash}`;
-}
-
-// Get explorer URL for address
-export function getAddressExplorerUrl(chainId: number, address: string): string {
-  if (chainId === 130) {
-    return `https://unichain.blockscout.com/address/${address}`;
-  }
-  return `https://basescan.org/address/${address}`;
-}
-
+// Explorer URL functions are now in utils/explorer.ts
+// Re-exported above for backward compatibility

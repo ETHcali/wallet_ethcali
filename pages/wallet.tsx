@@ -13,7 +13,7 @@ import { useActiveWallet } from '../hooks/useActiveWallet';
 export default function WalletPage() {
   const router = useRouter();
   const { ready, authenticated } = usePrivy();
-  const { wallet: activeWallet, isEmbeddedWallet, isExternalWallet, canUseSponsoredGas } = useActiveWallet();
+  const { wallet: activeWallet } = useActiveWallet();
   const [currentChainId, setCurrentChainId] = useState(8453); // Default to Base
 
   // Redirect to home if not authenticated

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { logger } from '../../utils/logger';
 import Image from 'next/image';
 import { useBuyVariant, useVariantMetadata, useVariantState } from '../../hooks/useSwagStore';
 import { getIPFSGatewayUrl } from '../../lib/pinata';
@@ -76,7 +77,7 @@ function SizeButton({
   );
 }
 
-export function ProductGroup({ tokenIds, productName }: ProductGroupProps) {
+export function ProductGroup({ tokenIds }: ProductGroupProps) {
   // Get data for the first token to display main info
   const firstVariant = useVariantData(tokenIds[0]);
   const { buy, canBuy } = useBuyVariant();
@@ -111,7 +112,7 @@ export function ProductGroup({ tokenIds, productName }: ProductGroupProps) {
     try {
       await buy(selectedVariant.tokenId, quantity, selectedVariant.price);
     } catch (err: any) {
-      console.error('Buy error:', err);
+      logger.error('Buy error:', err);
       setError(err?.message || 'Transaction failed');
     } finally {
       setPending(false);

@@ -83,7 +83,7 @@ const NFTCard: React.FC<NFTCardProps> = ({
         <>
           {/* NFT Details - Always show something */}
           <div className="space-y-1.5 text-[10px] font-mono">
-            {tokenId && (
+            {tokenId !== null && tokenId !== undefined && (
               <div className="flex justify-between py-1 border-b border-gray-800">
                 <span className="text-gray-600">token_id</span>
                 <span className="text-cyan-400">#{tokenId.toString()}</span>

@@ -340,37 +340,6 @@
     "type": "event"
   },
   {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "string",
-        "name": "uniqueIdentifier",
-        "type": "string"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "userAddress",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "bool",
-        "name": "faceMatchPassed",
-        "type": "bool"
-      },
-      {
-        "indexed": false,
-        "internalType": "bool",
-        "name": "personhoodVerified",
-        "type": "bool"
-      }
-    ],
-    "name": "VerificationApproved",
-    "type": "event"
-  },
-  {
     "inputs": [
       {
         "internalType": "address",
@@ -386,68 +355,6 @@
     "name": "approve",
     "outputs": [],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "uniqueIdentifier",
-        "type": "string"
-      },
-      {
-        "internalType": "address",
-        "name": "userAddress",
-        "type": "address"
-      },
-      {
-        "internalType": "bool",
-        "name": "faceMatchPassed",
-        "type": "bool"
-      },
-      {
-        "internalType": "bool",
-        "name": "personhoodVerified",
-        "type": "bool"
-      }
-    ],
-    "name": "approveVerification",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "name": "approvedVerifications",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "userAddress",
-        "type": "address"
-      },
-      {
-        "internalType": "bool",
-        "name": "faceMatchPassed",
-        "type": "bool"
-      },
-      {
-        "internalType": "bool",
-        "name": "personhoodVerified",
-        "type": "bool"
-      },
-      {
-        "internalType": "bool",
-        "name": "isApproved",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -491,6 +398,52 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "getNFTDataByOwner",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "components": [
+          {
+            "internalType": "string",
+            "name": "uniqueIdentifier",
+            "type": "string"
+          },
+          {
+            "internalType": "bool",
+            "name": "faceMatchPassed",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "personhoodVerified",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct ZKPassportNFT.TokenData",
+        "name": "tokenDataResult",
+        "type": "tuple"
+      },
+      {
+        "internalType": "string",
+        "name": "tokenURIResult",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint256",
         "name": "tokenId",
         "type": "uint256"
@@ -519,6 +472,25 @@
         "internalType": "struct ZKPassportNFT.TokenData",
         "name": "",
         "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "getTokenIdByOwner",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -592,19 +564,6 @@
         "internalType": "string",
         "name": "uniqueIdentifier",
         "type": "string"
-      }
-    ],
-    "name": "mint",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "uniqueIdentifier",
-        "type": "string"
       },
       {
         "internalType": "bool",
@@ -617,7 +576,7 @@
         "type": "bool"
       }
     ],
-    "name": "mintWithVerification",
+    "name": "mint",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

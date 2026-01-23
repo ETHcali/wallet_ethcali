@@ -3,185 +3,298 @@ import { useSendTransaction, usePrivy, useWallets } from '@privy-io/react-auth';
 import { createPublicClient, http, encodeFunctionData, getAddress, isAddress } from 'viem';
 import ERC20ABI from '../frontend/abis/ERC20.json';
 import Swag1155ABI from '../frontend/abis/Swag1155.json';
-import type { Swag1155Metadata } from '../types/swag';
-import { getIPFSGatewayUrl } from '../lib/pinata';
+import type { DesignInfo, DiscountConfig, SizeOption } from '../types/swag';
 import { baseUnitsToPrice } from '../utils/tokenGeneration';
-import { useSwagAddresses } from '../utils/network';
 import { getChainRpc } from '../config/networks';
 import { getChainConfig } from '../utils/network';
+import { logger } from '../utils/logger';
 
-export function useActiveTokenIds() {
-  const { swag1155, chainId } = useSwagAddresses();
-
+/**
+ * Hook to fetch Design information
+ */
+export function useDesignInfo(designAddress: string, chainId: number) {
   const query = useQuery({
-    queryKey: ['swag-token-ids', swag1155, chainId],
+    queryKey: ['design-info', designAddress, chainId],
     queryFn: async () => {
-      if (!swag1155 || !chainId) throw new Error('Missing contract address or chain ID');
+      if (!designAddress || !chainId) throw new Error('Missing design address or chain ID');
 
       const rpcUrl = getChainRpc(chainId);
       const client = createPublicClient({
         transport: http(rpcUrl),
       });
 
-      const tokenIds = await (client.readContract as any)({
-        address: swag1155 as `0x${string}`,
+      const designInfo = await client.readContract({
+        address: designAddress as `0x${string}`,
         abi: Swag1155ABI as any,
-        functionName: 'listTokenIds',
+        functionName: 'getDesignInfo',
+        args: [],
       });
 
-      return tokenIds as bigint[];
+      // Handle both array and object return formats
+      if (Array.isArray(designInfo)) {
+        const [
+          name,
+          description,
+          imageUrl,
+          website,
+          paymentToken,
+          pricePerUnit,
+          totalSupply,
+          minted,
+          active,
+          gender,
+          color,
+          style,
+        ] = designInfo as [string, string, string, string, string, bigint, bigint, bigint, boolean, string, string, string];
+
+        return {
+          name,
+          description,
+          imageUrl,
+          website,
+          paymentToken,
+          pricePerUnit,
+          totalSupply,
+          minted,
+          active,
+          gender,
+          color,
+          style,
+        } as DesignInfo;
+      }
+
+      return designInfo as DesignInfo;
     },
-    enabled: Boolean(swag1155 && chainId),
-    staleTime: 0,
-    gcTime: 1000 * 60 * 5,
+    enabled: Boolean(designAddress && chainId),
+    staleTime: 1000 * 60, // 1 minute
+    gcTime: 1000 * 60 * 5, // 5 minutes
   });
 
   return {
-    tokenIds: (query.data || []) as bigint[],
+    designInfo: query.data,
     isLoading: query.isLoading,
     error: query.error instanceof Error ? query.error.message : null,
     refetch: query.refetch,
   };
 }
 
-export function useVariantState(tokenId: bigint) {
-  const { swag1155, chainId } = useSwagAddresses();
-  const tokenIdStr = tokenId.toString();
-
+/**
+ * Hook to fetch Design discount configuration
+ */
+export function useDesignDiscountConfig(designAddress: string, chainId: number) {
   const query = useQuery({
-    queryKey: ['swag-variant-state', swag1155, chainId, tokenIdStr],
+    queryKey: ['design-discount-config', designAddress, chainId],
     queryFn: async () => {
-      if (!swag1155 || !chainId) throw new Error('Missing contract address or chain ID');
+      if (!designAddress || !chainId) throw new Error('Missing design address or chain ID');
 
       const rpcUrl = getChainRpc(chainId);
       const client = createPublicClient({
         transport: http(rpcUrl),
       });
 
-      const variantData = await client.readContract({
-        address: swag1155 as `0x${string}`,
+      const discountConfig = await client.readContract({
+        address: designAddress as `0x${string}`,
         abi: Swag1155ABI as any,
-        functionName: 'variants',
-        args: [tokenId],
+        functionName: 'getDesignDiscountConfig',
+        args: [],
       });
 
-      // Handle both object and array return formats from viem
-      let price: bigint, maxSupply: bigint, minted: bigint, active: boolean;
-      if (Array.isArray(variantData)) {
-        [price, maxSupply, minted, active] = variantData as [bigint, bigint, bigint, boolean];
-      } else {
-        // Struct returned as object with named properties
-        const variant = variantData as { price: bigint; maxSupply: bigint; minted: bigint; active: boolean };
-        price = variant.price;
-        maxSupply = variant.maxSupply;
-        minted = variant.minted;
-        active = variant.active;
+      // Handle both array and object return formats
+      if (Array.isArray(discountConfig)) {
+        const [
+          smartContractEnabled,
+          smartContractAddress,
+          smartContractDiscount,
+          poapEnabled,
+          poapEventId,
+          poapDiscount,
+          discountType,
+        ] = discountConfig as [boolean, string, bigint, boolean, bigint, bigint, number];
+
+        return {
+          smartContractEnabled,
+          smartContractAddress,
+          smartContractDiscount,
+          poapEnabled,
+          poapEventId,
+          poapDiscount,
+          discountType: discountType as 0 | 1,
+        } as DiscountConfig;
       }
-      return { price, maxSupply, minted, active };
+
+      return discountConfig as DiscountConfig;
     },
-    enabled: Boolean(swag1155 && chainId),
-    staleTime: 0, // Always refetch on chain change
-    gcTime: 1000 * 60 * 5,
+    enabled: Boolean(designAddress && chainId),
+    staleTime: 1000 * 60, // 1 minute
+    gcTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  const data = query.data || { price: 0n, maxSupply: 0n, minted: 0n, active: false };
-
   return {
-    price: baseUnitsToPrice(data.price),
-    maxSupply: Number(data.maxSupply),
-    minted: Number(data.minted),
-    available: Number(data.maxSupply - data.minted),
-    active: data.active,
+    discountConfig: query.data,
     isLoading: query.isLoading,
     error: query.error instanceof Error ? query.error.message : null,
+    refetch: query.refetch,
   };
 }
 
-export function useVariantMetadata(tokenId: bigint) {
-  const { swag1155, chainId } = useSwagAddresses();
-  const tokenIdStr = tokenId.toString();
-
-  const uriQuery = useQuery({
-    queryKey: ['swag-variant-uri', swag1155, chainId, tokenIdStr],
+/**
+ * Hook to fetch remaining supply for a Design
+ */
+export function useDesignRemainingSupply(designAddress: string, chainId: number) {
+  const query = useQuery({
+    queryKey: ['design-remaining-supply', designAddress, chainId],
     queryFn: async () => {
-      if (!swag1155 || !chainId) throw new Error('Missing contract address or chain ID');
+      if (!designAddress || !chainId) throw new Error('Missing design address or chain ID');
 
       const rpcUrl = getChainRpc(chainId);
       const client = createPublicClient({
         transport: http(rpcUrl),
       });
 
-      const uri = await (client.readContract as any)({
-        address: swag1155 as `0x${string}`,
+      const remaining = await client.readContract({
+        address: designAddress as `0x${string}`,
         abi: Swag1155ABI as any,
-        functionName: 'uri',
-        args: [tokenId],
+        functionName: 'getDesignRemainingSupply',
+        args: [],
       });
 
-      return uri as unknown as string;
+      return Number(remaining as unknown as bigint);
     },
-    enabled: Boolean(swag1155 && chainId),
-    staleTime: 0,
-    gcTime: 1000 * 60 * 5,
-  });
-
-  const gatewayUrl = uriQuery.data ? getIPFSGatewayUrl(uriQuery.data) : '';
-
-  const metadataQuery = useQuery({
-    queryKey: ['swag-metadata', chainId, tokenIdStr, gatewayUrl],
-    queryFn: async () => {
-      if (!gatewayUrl) return null;
-
-      // Add timeout to prevent hanging requests
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-      try {
-        const response = await fetch(gatewayUrl, {
-          signal: controller.signal,
-          headers: {
-            'Accept': 'application/json',
-          },
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch metadata: ${response.status} ${response.statusText}`);
-        }
-
-        const data = await response.json();
-
-        // Validate response has required fields
-        if (!data || typeof data !== 'object') {
-          throw new Error('Invalid metadata format');
-        }
-
-        return data;
-      } catch (err: any) {
-        clearTimeout(timeoutId);
-        if (err.name === 'AbortError') {
-          throw new Error('Request timeout - IPFS gateway took too long');
-        }
-        throw err;
-      }
-    },
-    enabled: Boolean(gatewayUrl),
-    staleTime: 1000 * 60 * 30,
-    gcTime: 1000 * 60 * 60,
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
+    enabled: Boolean(designAddress && chainId),
+    staleTime: 0, // Always refetch
+    gcTime: 1000 * 60 * 2, // 2 minutes
   });
 
   return {
-    uri: uriQuery.data,
-    metadata: metadataQuery.data as Swag1155Metadata | null,
-    isLoading: uriQuery.isLoading || metadataQuery.isLoading,
-    error: metadataQuery.error instanceof Error ? metadataQuery.error.message : null,
+    remaining: query.data || 0,
+    isLoading: query.isLoading,
+    error: query.error instanceof Error ? query.error.message : null,
+    refetch: query.refetch,
   };
 }
 
-export function useBuyVariant() {
+/**
+ * Hook to calculate price with discounts applied
+ */
+export function useDesignPriceWithDiscounts(
+  designAddress: string,
+  chainId: number,
+  userAddress?: string,
+  hasPoap?: boolean
+) {
+  const query = useQuery({
+    queryKey: ['design-price-with-discounts', designAddress, chainId, userAddress, hasPoap],
+    queryFn: async () => {
+      if (!designAddress || !chainId || !userAddress) throw new Error('Missing design address, chain ID, or user address');
+
+      const rpcUrl = getChainRpc(chainId);
+      const client = createPublicClient({
+        transport: http(rpcUrl),
+      });
+
+      const price = await client.readContract({
+        address: designAddress as `0x${string}`,
+        abi: Swag1155ABI as any,
+        functionName: 'getDesignPriceWithDiscounts',
+        args: [userAddress as `0x${string}`, hasPoap || false],
+      });
+
+      return price as unknown as bigint;
+    },
+    enabled: Boolean(designAddress && chainId && userAddress),
+    staleTime: 1000 * 30, // 30 seconds
+    gcTime: 1000 * 60 * 2, // 2 minutes
+  });
+
+  return {
+    price: query.data || 0n,
+    priceDisplay: query.data ? baseUnitsToPrice(query.data) : 0,
+    isLoading: query.isLoading,
+    error: query.error instanceof Error ? query.error.message : null,
+    refetch: query.refetch,
+  };
+}
+
+/**
+ * Hook to get size trait for a specific token
+ */
+export function useDesignTokenSize(tokenId: bigint, designAddress: string, chainId: number) {
+  const query = useQuery({
+    queryKey: ['design-token-size', designAddress, chainId, tokenId.toString()],
+    queryFn: async () => {
+      if (!designAddress || !chainId || !tokenId) throw new Error('Missing design address, chain ID, or token ID');
+
+      const rpcUrl = getChainRpc(chainId);
+      const client = createPublicClient({
+        transport: http(rpcUrl),
+      });
+
+      const size = await client.readContract({
+        address: designAddress as `0x${string}`,
+        abi: Swag1155ABI as any,
+        functionName: 'getDesignTokenSize',
+        args: [tokenId],
+      });
+
+      return size as unknown as string;
+    },
+    enabled: Boolean(designAddress && chainId && tokenId),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  return {
+    size: query.data as SizeOption | undefined,
+    isLoading: query.isLoading,
+    error: query.error instanceof Error ? query.error.message : null,
+    refetch: query.refetch,
+  };
+}
+
+/**
+ * Hook to get all traits for a specific token
+ */
+export function useDesignTokenTraits(tokenId: bigint, designAddress: string, chainId: number) {
+  const query = useQuery({
+    queryKey: ['design-token-traits', designAddress, chainId, tokenId.toString()],
+    queryFn: async () => {
+      if (!designAddress || !chainId || !tokenId) throw new Error('Missing design address, chain ID, or token ID');
+
+      const rpcUrl = getChainRpc(chainId);
+      const client = createPublicClient({
+        transport: http(rpcUrl),
+      });
+
+      const traits = await client.readContract({
+        address: designAddress as `0x${string}`,
+        abi: Swag1155ABI as any,
+        functionName: 'getDesignTokenTraits',
+        args: [tokenId],
+      });
+
+      // Handle both array and object return formats
+      if (Array.isArray(traits)) {
+        const [size, gender, color, style] = traits as [string, string, string, string];
+        return { size, gender, color, style };
+      }
+
+      return traits as { size: string; gender: string; color: string; style: string };
+    },
+    enabled: Boolean(designAddress && chainId && tokenId),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  return {
+    traits: query.data,
+    isLoading: query.isLoading,
+    error: query.error instanceof Error ? query.error.message : null,
+    refetch: query.refetch,
+  };
+}
+
+/**
+ * Hook to mint a Design NFT
+ */
+export function useMintDesign() {
   const { user } = usePrivy();
   const { wallets } = useWallets();
   const { sendTransaction } = useSendTransaction();
@@ -199,7 +312,12 @@ export function useBuyVariant() {
     return activeWallet.chainId;
   };
 
-  const buy = async (tokenId: bigint, quantity: number, price: number) => {
+  const mint = async (
+    designAddress: string,
+    size: SizeOption,
+    hasPoapDiscount: boolean,
+    price: bigint
+  ) => {
     if (!user || !activeWallet) {
       throw new Error('Connect your wallet to continue');
     }
@@ -207,52 +325,203 @@ export function useBuyVariant() {
     // Get fresh chainId from wallet at transaction time
     const walletChainId = getWalletChainId();
     const config = getChainConfig(walletChainId);
-    const { swag1155, usdc } = config;
     const chainId = config.id;
 
-    if (!swag1155 || !usdc) {
-      throw new Error(`Missing contract addresses for chain ${chainId}. Please ensure SWAG1155 is deployed on this network.`);
+    // Validate design address
+    if (!isAddress(designAddress)) {
+      throw new Error(`Invalid design address: ${designAddress}`);
     }
 
-    // Validate and checksum addresses
-    if (!isAddress(usdc)) {
-      throw new Error(`Invalid USDC address for chain ${chainId}: ${usdc}`);
-    }
-    if (!isAddress(swag1155)) {
-      throw new Error(`Invalid Swag1155 address for chain ${chainId}: ${swag1155}`);
-    }
-    
-    const usdcAddress = getAddress(usdc);
-    const swag1155Address = getAddress(swag1155);
+    const designAddressChecksummed = getAddress(designAddress);
 
-    const totalPrice = BigInt(Math.round(price * quantity * 1_000_000));
-
-    // Create public client with correct chain RPC from env vars
+    // Get payment token from design info
     const rpcUrl = getChainRpc(chainId);
-    console.log(`[Swag Buy] Using RPC for chain ${chainId}:`, rpcUrl.includes('infura') ? 'Infura' : rpcUrl.substring(0, 30) + '...');
-
     const publicClient = createPublicClient({
       transport: http(rpcUrl),
     });
 
-    // Step 1: Check current allowance first (with error handling)
+    // Fetch design info to get payment token
+    const designInfo = await publicClient.readContract({
+      address: designAddressChecksummed,
+      abi: Swag1155ABI as any,
+      functionName: 'getDesignInfo',
+      args: [],
+    });
+
+    // Extract payment token from design info
+    let paymentTokenAddress: string;
+    if (Array.isArray(designInfo)) {
+      paymentTokenAddress = designInfo[4] as string; // paymentToken is 5th element
+    } else {
+      paymentTokenAddress = (designInfo as DesignInfo).paymentToken;
+    }
+
+    if (!isAddress(paymentTokenAddress)) {
+      throw new Error(`Invalid payment token address: ${paymentTokenAddress}`);
+    }
+
+    const paymentTokenChecksummed = getAddress(paymentTokenAddress);
+
+    // Step 1: Check and approve payment token
+    const walletAddress = getAddress(activeWallet.address);
     let currentAllowance = 0n;
     try {
-      const walletAddress = getAddress(activeWallet.address);
       const allowanceResult = await publicClient.readContract({
-        address: usdcAddress,
+        address: paymentTokenChecksummed,
         abi: ERC20ABI as any,
         functionName: 'allowance',
-        args: [walletAddress, swag1155Address],
+        args: [walletAddress, designAddressChecksummed],
       });
-      // Handle case where result might be undefined or "0x"
       if (allowanceResult !== undefined && allowanceResult !== null) {
         currentAllowance = BigInt(allowanceResult.toString());
       }
     } catch (error: any) {
-      // If allowance check fails (RPC error, contract doesn't exist, etc.),
-      // assume no allowance and proceed with approval
-      console.warn('Failed to check allowance, assuming 0:', error?.message || error);
+      logger.warn('Failed to check allowance, assuming 0:', error?.message || error);
+      currentAllowance = 0n;
+    }
+
+    // Only approve if current allowance is less than needed
+    if (currentAllowance < price) {
+      const approveData = encodeFunctionData({
+        abi: ERC20ABI as any,
+        functionName: 'approve',
+        args: [designAddressChecksummed, price],
+      });
+
+      const approveResult = await sendTransaction({
+        to: paymentTokenChecksummed,
+        data: approveData,
+        chainId,
+      }, {
+        address: activeWallet.address,
+        sponsor: isEmbedded,
+      } as any);
+
+      // Wait for approval transaction to be confirmed
+      if (approveResult?.hash) {
+        await publicClient.waitForTransactionReceipt({
+          hash: approveResult.hash as `0x${string}`,
+          confirmations: 1,
+        });
+      } else {
+        // If no hash returned, wait a bit
+        await new Promise(resolve => setTimeout(resolve, 3000));
+      }
+    }
+
+    // Step 2: Mint Design NFT
+    const mintData = encodeFunctionData({
+      abi: Swag1155ABI as any,
+      functionName: 'mintDesign',
+      args: [size, hasPoapDiscount],
+    });
+
+    return sendTransaction({
+      to: designAddressChecksummed,
+      data: mintData,
+      chainId,
+    }, {
+      address: activeWallet.address,
+      sponsor: isEmbedded,
+    } as any);
+  };
+
+  return {
+    mint,
+    canMint: Boolean(user && activeWallet),
+  };
+}
+
+/**
+ * Hook to mint multiple Design NFTs in a batch
+ */
+export function useMintDesignBatch() {
+  const { user } = usePrivy();
+  const { wallets } = useWallets();
+  const { sendTransaction } = useSendTransaction();
+
+  const activeWallet = wallets?.[0];
+  const isEmbedded = activeWallet?.walletClientType === 'privy';
+
+  // Helper to get chainId from wallet
+  const getWalletChainId = (): number => {
+    if (!activeWallet?.chainId) return 8453; // fallback to Base
+    if (typeof activeWallet.chainId === 'string') {
+      const parts = activeWallet.chainId.split(':');
+      return parseInt(parts[parts.length - 1], 10);
+    }
+    return activeWallet.chainId;
+  };
+
+  const mintBatch = async (
+    designAddress: string,
+    sizes: SizeOption[],
+    hasPoapDiscount: boolean,
+    totalPrice: bigint
+  ) => {
+    if (!user || !activeWallet) {
+      throw new Error('Connect your wallet to continue');
+    }
+
+    if (sizes.length === 0) {
+      throw new Error('Select at least one size');
+    }
+
+    // Get fresh chainId from wallet at transaction time
+    const walletChainId = getWalletChainId();
+    const config = getChainConfig(walletChainId);
+    const chainId = config.id;
+
+    // Validate design address
+    if (!isAddress(designAddress)) {
+      throw new Error(`Invalid design address: ${designAddress}`);
+    }
+
+    const designAddressChecksummed = getAddress(designAddress);
+
+    // Get payment token from design info
+    const rpcUrl = getChainRpc(chainId);
+    const publicClient = createPublicClient({
+      transport: http(rpcUrl),
+    });
+
+    // Fetch design info to get payment token
+    const designInfo = await publicClient.readContract({
+      address: designAddressChecksummed,
+      abi: Swag1155ABI as any,
+      functionName: 'getDesignInfo',
+      args: [],
+    });
+
+    // Extract payment token from design info
+    let paymentTokenAddress: string;
+    if (Array.isArray(designInfo)) {
+      paymentTokenAddress = designInfo[4] as string; // paymentToken is 5th element
+    } else {
+      paymentTokenAddress = (designInfo as DesignInfo).paymentToken;
+    }
+
+    if (!isAddress(paymentTokenAddress)) {
+      throw new Error(`Invalid payment token address: ${paymentTokenAddress}`);
+    }
+
+    const paymentTokenChecksummed = getAddress(paymentTokenAddress);
+
+    // Step 1: Check and approve payment token
+    const walletAddress = getAddress(activeWallet.address);
+    let currentAllowance = 0n;
+    try {
+      const allowanceResult = await publicClient.readContract({
+        address: paymentTokenChecksummed,
+        abi: ERC20ABI as any,
+        functionName: 'allowance',
+        args: [walletAddress, designAddressChecksummed],
+      });
+      if (allowanceResult !== undefined && allowanceResult !== null) {
+        currentAllowance = BigInt(allowanceResult.toString());
+      }
+    } catch (error: any) {
+      logger.warn('Failed to check allowance, assuming 0:', error?.message || error);
       currentAllowance = 0n;
     }
 
@@ -261,11 +530,11 @@ export function useBuyVariant() {
       const approveData = encodeFunctionData({
         abi: ERC20ABI as any,
         functionName: 'approve',
-        args: [swag1155Address, totalPrice],
+        args: [designAddressChecksummed, totalPrice],
       });
 
       const approveResult = await sendTransaction({
-        to: usdcAddress,
+        to: paymentTokenChecksummed,
         data: approveData,
         chainId,
       }, {
@@ -273,50 +542,28 @@ export function useBuyVariant() {
         sponsor: isEmbedded,
       } as any);
 
-      // Wait for approval transaction to be confirmed before proceeding
+      // Wait for approval transaction to be confirmed
       if (approveResult?.hash) {
         await publicClient.waitForTransactionReceipt({
           hash: approveResult.hash as `0x${string}`,
           confirmations: 1,
         });
       } else {
-        // If no hash returned, wait a bit and verify allowance was set
+        // If no hash returned, wait a bit
         await new Promise(resolve => setTimeout(resolve, 3000));
-        
-        try {
-          const walletAddress = getAddress(activeWallet.address);
-          const allowanceResult = await publicClient.readContract({
-            address: usdcAddress,
-            abi: ERC20ABI as any,
-            functionName: 'allowance',
-            args: [walletAddress, swag1155Address],
-          });
-          
-          const newAllowance = allowanceResult !== undefined && allowanceResult !== null 
-            ? BigInt(allowanceResult.toString()) 
-            : 0n;
-
-          if (newAllowance < totalPrice) {
-            throw new Error('Approval failed - please try again');
-          }
-        } catch (error: any) {
-          // If we can't verify allowance, log warning but proceed
-          // (approval transaction was sent, so it should have worked)
-          console.warn('Could not verify allowance after approval:', error?.message || error);
-        }
       }
     }
 
-    // Step 2: Buy tokens (only after approval is confirmed)
-    const buyData = encodeFunctionData({
+    // Step 2: Mint Design NFTs in batch
+    const mintBatchData = encodeFunctionData({
       abi: Swag1155ABI as any,
-      functionName: 'buy',
-      args: [tokenId, BigInt(quantity)],
+      functionName: 'mintDesignBatch',
+      args: [sizes, hasPoapDiscount],
     });
 
     return sendTransaction({
-      to: swag1155Address,
-      data: buyData,
+      to: designAddressChecksummed,
+      data: mintBatchData,
       chainId,
     }, {
       address: activeWallet.address,
@@ -324,12 +571,39 @@ export function useBuyVariant() {
     } as any);
   };
 
-  // Check if buy is possible based on wallet connection
-  const walletChainId = getWalletChainId();
-  const currentConfig = getChainConfig(walletChainId);
-
   return {
-    buy,
-    canBuy: Boolean(user && activeWallet && currentConfig.swag1155 && currentConfig.usdc),
+    mintBatch,
+    canMint: Boolean(user && activeWallet),
   };
+}
+
+/**
+ * Stub hooks for ProductGroup (variant-based UI).
+ * ProductGroup is not currently used; the app uses ProductCard + design-based hooks.
+ * These return safe defaults so ProductGroup compiles. Replace with real impl when needed.
+ */
+export function useVariantState(_tokenId: bigint) {
+  return { price: 0, available: 0, active: false, isLoading: false };
+}
+
+export function useVariantMetadata(_tokenId: bigint) {
+  const metadata: import('../types/swag').Swag1155Metadata = {
+    name: 'Unknown',
+    description: '',
+    image: '/logo_eth_cali.png',
+    attributes: [],
+  };
+  return { metadata, isLoading: false };
+}
+
+export function useBuyVariant() {
+  const { user } = usePrivy();
+  const { wallets } = useWallets();
+  const activeWallet = wallets?.[0];
+  const canBuy = Boolean(user && activeWallet);
+  const buy = async (_tokenId: bigint, _quantity: number, _price: number) => {
+    if (!canBuy) throw new Error('Connect your wallet to continue');
+    // No-op stub; ProductGroup not used with real variant flow yet.
+  };
+  return { buy, canBuy };
 }

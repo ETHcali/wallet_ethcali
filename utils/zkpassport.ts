@@ -3,6 +3,7 @@
  * Client-side only implementation
  */
 
+import { logger } from './logger';
 // Dynamic import to avoid SSR issues
 const getZKPassportSDK = async () => {
   if (typeof window === 'undefined') {
@@ -64,7 +65,7 @@ export const checkUniqueIdentifier = async (uniqueIdentifier: string): Promise<b
     const data = await response.json();
     return data.registered || false;
   } catch (error) {
-    console.error('Error checking unique identifier:', error);
+    logger.error('Error checking unique identifier:', error);
     return false;
   }
 };
@@ -82,7 +83,7 @@ export const registerUniqueIdentifier = async (uniqueIdentifier: string, email?:
     const data = await response.json();
     return data.success || false;
   } catch (error) {
-    console.error('Error registering unique identifier:', error);
+    logger.error('Error registering unique identifier:', error);
     return false;
   }
 };

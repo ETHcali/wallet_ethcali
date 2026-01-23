@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import Image from 'next/image';
-import { MintedNFT, RedemptionStatus } from '../../hooks/useSwagAdmin';
+import { RedemptionStatus } from '../../hooks/swag';
+import type { MintedNFT } from '../../hooks/swag';
+import { logger } from '../../utils/logger';
 import { getIPFSGatewayUrl } from '../../lib/pinata';
 
 interface AdminNFTFulfillmentModalProps {
@@ -41,7 +43,7 @@ export function AdminNFTFulfillmentModal({
       await onFulfill(nft.tokenId, nft.owner);
       // Modal will be closed by parent component after successful fulfillment
     } catch (error) {
-      console.error('Error fulfilling NFT:', error);
+      logger.error('Error fulfilling NFT:', error);
       setIsConfirming(false);
     }
   };
@@ -96,6 +98,13 @@ export function AdminNFTFulfillmentModal({
                 <span className="detail-label">Balance:</span>
                 <span className="detail-value">{nft.balance}</span>
               </div>
+              
+              {nft.size && (
+                <div className="detail-item">
+                  <span className="detail-label">Size:</span>
+                  <span className="detail-value">{nft.size}</span>
+                </div>
+              )}
               
               <div className="detail-item">
                 <span className="detail-label">Status:</span>

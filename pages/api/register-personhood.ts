@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { logger } from '../../utils/logger';
 
 type ResponseData = {
   success: boolean;
@@ -23,16 +24,15 @@ export default async function handler(
   try {
     // TODO: Replace with actual database insert
     // Example: await db.users.create({ uniqueIdentifier, email, verifiedAt: new Date() });
-    
-    console.log('Registering personhood:', {
+
+    logger.info('Registering personhood', {
       uniqueIdentifier: uniqueIdentifier.substring(0, 20) + '...',
       email,
-      timestamp: new Date().toISOString(),
     });
-    
+
     return res.status(200).json({ success: true, message: 'Successfully registered' });
   } catch (error) {
-    console.error('Error registering unique identifier:', error);
+    logger.error('Error registering unique identifier', error);
     return res.status(500).json({ success: false, error: 'Internal server error' });
   }
 }

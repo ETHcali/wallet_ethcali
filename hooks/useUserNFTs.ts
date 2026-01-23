@@ -5,7 +5,8 @@ import { useSwagAddresses, getChainConfig } from '../utils/network';
 import { getChainRpc } from '../config/networks';
 import { getIPFSGatewayUrl } from '../lib/pinata';
 import Swag1155ABI from '../frontend/abis/Swag1155.json';
-import { RedemptionStatus } from './useSwagAdmin';
+import { RedemptionStatus } from './swag';
+import { logger } from '../utils/logger';
 
 export interface UserNFT {
   tokenId: bigint;
@@ -15,22 +16,48 @@ export interface UserNFT {
   image: string;
   attributes: Array<{ trait_type: string; value: string }>;
   redemptionStatus: RedemptionStatus;
+  designAddress?: string; // Design contract address (required for new Design-based system)
+  chainId?: number; // Chain ID where the NFT exists
 }
 
-// Fetch all token IDs from the contract
+// Fetch all token IDs from DesignMinted events (listTokenIds no longer exists)
 async function fetchTokenIds(swag1155: string, chainId: number): Promise<bigint[]> {
   const rpcUrl = getChainRpc(chainId);
   const client = createPublicClient({ transport: http(rpcUrl) });
 
   try {
-    const result = await (client.readContract as any)({
+    // Query DesignMinted events to get all minted token IDs
+    const designMintedEvent = {
+      anonymous: false,
+      inputs: [
+        { indexed: true, name: 'buyer', type: 'address' },
+        { indexed: true, name: 'tokenId', type: 'uint256' },
+        { indexed: false, name: 'size', type: 'string' },
+        { indexed: false, name: 'price', type: 'uint256' },
+        { indexed: false, name: 'hadDiscount', type: 'bool' },
+      ],
+      name: 'DesignMinted',
+      type: 'event',
+    } as const;
+
+    const logs = await client.getLogs({
       address: swag1155 as `0x${string}`,
-      abi: Swag1155ABI,
-      functionName: 'listTokenIds',
+      event: designMintedEvent,
+      fromBlock: 0n,
+      toBlock: 'latest' as const,
     });
-    return result as bigint[];
+
+    // Extract unique token IDs from events
+    const tokenIds = new Set<bigint>();
+    for (const log of logs) {
+      if (log.args.tokenId) {
+        tokenIds.add(log.args.tokenId as bigint);
+      }
+    }
+
+    return Array.from(tokenIds).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
   } catch (error) {
-    console.error('Error fetching token IDs:', error);
+    logger.error('Error fetching token IDs from events', error);
     return [];
   }
 }
@@ -69,7 +96,7 @@ async function fetchUserBalances(
 
     return balanceMap;
   } catch (error) {
-    console.error('Error fetching user balances:', error);
+    logger.error('Error fetching user balances', error);
     return new Map();
   }
 }
@@ -105,7 +132,7 @@ async function fetchTokenMetadata(
       attributes: metadata.attributes || [],
     };
   } catch (error) {
-    console.error('Error fetching token metadata:', error);
+    logger.error('Error fetching token metadata', error);
     return null;
   }
 }
@@ -125,20 +152,20 @@ export function useUserNFTs(overrideChainId?: number) {
     queryKey: ['user-nfts', userAddress, chainId, swag1155],
     queryFn: async (): Promise<UserNFT[]> => {
       if (!userAddress || !swag1155 || !chainId) {
-        console.log('[useUserNFTs] Missing required data:', { userAddress, swag1155, chainId });
+        logger.debug('Missing required data for NFT fetch', { hasAddress: !!userAddress, hasContract: !!swag1155, chainId });
         return [];
       }
 
-      console.log('[useUserNFTs] Fetching NFTs for:', { userAddress, swag1155, chainId });
+      logger.debug('Fetching NFTs', { userAddress: userAddress.substring(0, 10), chainId });
 
       // Step 1: Get all token IDs from the contract
       const tokenIds = await fetchTokenIds(swag1155, chainId);
-      console.log('[useUserNFTs] Token IDs found:', tokenIds.length);
+      logger.debug('Token IDs found', { count: tokenIds.length });
       if (tokenIds.length === 0) return [];
 
       // Step 2: Get user's balances for all tokens
       const balanceMap = await fetchUserBalances(swag1155, chainId, userAddress, tokenIds);
-      console.log('[useUserNFTs] User owns tokens:', balanceMap.size);
+      logger.debug('User owns tokens', { count: balanceMap.size });
       if (balanceMap.size === 0) return [];
 
       // Step 3: Fetch metadata and redemption status for tokens the user owns
@@ -155,7 +182,7 @@ export function useUserNFTs(overrideChainId?: number) {
         // Both should be resilient to failures - we still show NFT even if metadata fails
         const [metadata, redemptionStatus] = await Promise.all([
           fetchTokenMetadata(swag1155, chainId, tokenId).catch((error) => {
-            console.error(`[useUserNFTs] Error fetching metadata for token ${tokenId}:`, error);
+            logger.error(`Error fetching metadata for token ${tokenId}`, error);
             return null;
           }),
           (async () => {
@@ -163,12 +190,12 @@ export function useUserNFTs(overrideChainId?: number) {
               const status = await (client.readContract as any)({
                 address: swag1155 as `0x${string}`,
                 abi: Swag1155ABI,
-                functionName: 'getRedemptionStatus',
+                functionName: 'getDesignTokenRedemptionStatus',
                 args: [tokenId, userAddress as `0x${string}`],
               });
               return Number(status) as RedemptionStatus;
             } catch (error) {
-              console.error(`[useUserNFTs] Error fetching redemption status for token ${tokenId}:`, error);
+              logger.error(`Error fetching redemption status for token ${tokenId}`, error);
               return RedemptionStatus.NotRedeemed;
             }
           })(),
@@ -184,14 +211,12 @@ export function useUserNFTs(overrideChainId?: number) {
           image: metadata?.image || '/logo_eth_cali.png',
           attributes: metadata?.attributes || [],
           redemptionStatus,
+          designAddress: swag1155, // Include Design address for new system
+          chainId, // Include chain ID
         });
       }
 
-      console.log('[useUserNFTs] Final NFTs:', nfts.length, nfts.map(n => ({
-        tokenId: n.tokenId.toString(),
-        name: n.name,
-        status: n.redemptionStatus
-      })));
+      logger.debug('Final NFTs loaded', { count: nfts.length });
       return nfts;
     },
     enabled: Boolean(userAddress && swag1155 && chainId),

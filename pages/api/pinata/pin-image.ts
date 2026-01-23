@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 
+import { logger } from '../../../utils/logger';
 export const config = {
   api: {
     bodyParser: {
@@ -49,7 +50,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Pinata upload failed:', errorText);
+      logger.error('Pinata upload failed:', errorText);
       return res.status(500).json({ error: 'Failed to upload to IPFS' });
     }
 
@@ -61,7 +62,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       gateway: `${PINATA_GATEWAY}/ipfs/${ipfsHash}`,
     });
   } catch (error) {
-    console.error('Image upload failed', error);
+    logger.error('Image upload failed', error);
     return res.status(500).json({ error: 'Failed to upload image. See server logs for details.' });
   }
 }

@@ -1,4 +1,4 @@
-import { useWallets, ConnectedWallet } from '@privy-io/react-auth';
+import { useWallets } from '@privy-io/react-auth';
 import { useMemo } from 'react';
 
 /**

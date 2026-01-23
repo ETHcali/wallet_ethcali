@@ -1,172 +1,195 @@
-import { Network } from '../types/index';
+/**
+ * Network configuration
+ * Uses centralized constants from config/constants.ts
+ */
+import {
+  CHAIN_IDS,
+  EXPLORER_URLS,
+  NETWORK_NAMES,
+  NETWORK_COLORS,
+  TOKEN_ADDRESSES,
+  getRpcUrl,
+  DEFAULT_CHAIN_ID,
+  type ChainId,
+} from './constants';
 import { getNetworkLogoUrl, getTokenLogoUrl } from '../utils/tokenUtils';
 
-// RPC URL getters - using functions to ensure env vars are read at runtime
-const getRpcUrl = (chainId: number): string => {
-  switch (chainId) {
-    case 1:
-      return process.env.NEXT_PUBLIC_MAINNET_RPC_URL || 'https://eth.llamarpc.com';
-    case 8453:
-      return process.env.NEXT_PUBLIC_BASE_RPC_URL || 'https://mainnet.base.org';
-    case 10:
-      return process.env.NEXT_PUBLIC_OPTIMISM_RPC_URL || 'https://mainnet.optimism.io';
-    case 130:
-      return process.env.NEXT_PUBLIC_UNICHAIN_RPC_URL || 'https://rpc.unichain.org';
-    default:
-      return process.env.NEXT_PUBLIC_BASE_RPC_URL || 'https://mainnet.base.org';
-  }
-};
+// Re-export constants for backward compatibility
+export { CHAIN_IDS, DEFAULT_CHAIN_ID };
 
-// Ethereum Mainnet configuration
+// Network interface
+export interface Network {
+  id: number;
+  name: string;
+  shortName: string;
+  icon: string;
+  explorerUrl: string;
+  rpcUrl: string;
+  testnet: boolean;
+  color: string;
+}
+
+// Token interface
+export interface TokenConfig {
+  symbol: string;
+  name: string;
+  decimals: number;
+  icon: string;
+  address?: string;
+}
+
+// Build network configurations from constants
 export const ETHEREUM: Network = {
-  id: 1,
+  id: CHAIN_IDS.ETHEREUM,
   name: 'Ethereum Mainnet',
-  shortName: 'Ethereum',
-  icon: getNetworkLogoUrl(1),
-  explorerUrl: 'https://etherscan.io',
-  rpcUrl: getRpcUrl(1),
+  shortName: NETWORK_NAMES[CHAIN_IDS.ETHEREUM],
+  icon: getNetworkLogoUrl(CHAIN_IDS.ETHEREUM),
+  explorerUrl: EXPLORER_URLS[CHAIN_IDS.ETHEREUM],
+  rpcUrl: getRpcUrl(CHAIN_IDS.ETHEREUM),
   testnet: false,
-  color: '#627EEA'
+  color: NETWORK_COLORS[CHAIN_IDS.ETHEREUM],
 };
 
-// Base Mainnet configuration
 export const BASE: Network = {
-  id: 8453,
+  id: CHAIN_IDS.BASE,
   name: 'Base Mainnet',
-  shortName: 'Base',
-  icon: getNetworkLogoUrl(8453),
-  explorerUrl: 'https://basescan.org',
-  rpcUrl: getRpcUrl(8453),
+  shortName: NETWORK_NAMES[CHAIN_IDS.BASE],
+  icon: getNetworkLogoUrl(CHAIN_IDS.BASE),
+  explorerUrl: EXPLORER_URLS[CHAIN_IDS.BASE],
+  rpcUrl: getRpcUrl(CHAIN_IDS.BASE),
   testnet: false,
-  color: '#0052FF'
+  color: NETWORK_COLORS[CHAIN_IDS.BASE],
 };
 
-// Optimism network configuration
 export const OPTIMISM: Network = {
-  id: 10,
+  id: CHAIN_IDS.OPTIMISM,
   name: 'Optimism Mainnet',
-  shortName: 'Optimism',
-  icon: getNetworkLogoUrl(10),
-  explorerUrl: 'https://optimistic.etherscan.io',
-  rpcUrl: getRpcUrl(10),
+  shortName: NETWORK_NAMES[CHAIN_IDS.OPTIMISM],
+  icon: getNetworkLogoUrl(CHAIN_IDS.OPTIMISM),
+  explorerUrl: EXPLORER_URLS[CHAIN_IDS.OPTIMISM],
+  rpcUrl: getRpcUrl(CHAIN_IDS.OPTIMISM),
   testnet: false,
-  color: '#FF0B51'
+  color: NETWORK_COLORS[CHAIN_IDS.OPTIMISM],
 };
 
-// Unichain network configuration
 export const UNICHAIN: Network = {
-  id: 130,
+  id: CHAIN_IDS.UNICHAIN,
   name: 'Unichain Mainnet',
-  shortName: 'Unichain',
-  icon: getNetworkLogoUrl(130),
-  explorerUrl: 'https://unichain.blockscout.com',
-  rpcUrl: getRpcUrl(130),
+  shortName: NETWORK_NAMES[CHAIN_IDS.UNICHAIN],
+  icon: getNetworkLogoUrl(CHAIN_IDS.UNICHAIN),
+  explorerUrl: EXPLORER_URLS[CHAIN_IDS.UNICHAIN],
+  rpcUrl: getRpcUrl(CHAIN_IDS.UNICHAIN),
   testnet: false,
-  color: '#00FF00'
+  color: NETWORK_COLORS[CHAIN_IDS.UNICHAIN],
+};
+
+// Network lookup map
+const NETWORKS: Record<ChainId, Network> = {
+  [CHAIN_IDS.ETHEREUM]: ETHEREUM,
+  [CHAIN_IDS.BASE]: BASE,
+  [CHAIN_IDS.OPTIMISM]: OPTIMISM,
+  [CHAIN_IDS.UNICHAIN]: UNICHAIN,
 };
 
 // Default network
 export const DEFAULT_NETWORK = BASE;
 
-// Get network by chain ID
+/**
+ * Get network configuration by chain ID
+ */
 export function getNetworkById(chainId: number): Network {
-  switch (chainId) {
-    case 1:
-      return ETHEREUM;
-    case 8453:
-      return BASE;
-    case 10:
-      return OPTIMISM;
-    case 130:
-      return UNICHAIN;
-    default:
-      return DEFAULT_NETWORK;
-  }
+  return NETWORKS[chainId as ChainId] || DEFAULT_NETWORK;
 }
 
-// Token configurations
-export const TOKENS = {
-  // Ethereum tokens
-  [ETHEREUM.id]: {
-    ETH: {
-      symbol: 'ETH',
-      name: 'Ethereum',
-      decimals: 18,
-      icon: getTokenLogoUrl('ETH')
-    },
-    USDC: {
-      symbol: 'USDC',
-      name: 'USD Coin',
-      decimals: 6,
-      address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-      icon: getTokenLogoUrl('USDC')
-    },
-    EURC: {
-      symbol: 'EURC',
-      name: 'Euro Coin',
-      decimals: 6,
-      address: '0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c',
-      icon: getTokenLogoUrl('EURC')
-    }
-  },
-  // Base tokens
-  [BASE.id]: {
-    ETH: {
-      symbol: 'ETH',
-      name: 'Ethereum',
-      decimals: 18,
-      icon: getTokenLogoUrl('ETH')
-    },
-    USDC: {
-      symbol: 'USDC',
-      name: 'USD Coin',
-      decimals: 6,
-      address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
-      icon: getTokenLogoUrl('USDC')
-    },
-    EURC: {
-      symbol: 'EURC',
-      name: 'Euro Coin',
-      decimals: 6,
-      address: '0x60a3E35Cc302bFA44Cb288Bc5a4F316Fdb1adb42',
-      icon: getTokenLogoUrl('EURC')
-    }
-  },
-  // Optimism tokens
-  [OPTIMISM.id]: {
-    ETH: {
-      symbol: 'ETH',
-      name: 'Ethereum',
-      decimals: 18,
-      icon: getTokenLogoUrl('ETH')
-    },
-    USDC: {
-      symbol: 'USDC',
-      name: 'USD Coin',
-      decimals: 6,
-      address: '0x7F5c764cBc14f9669B88837ca1490cCa17c31607',
-      icon: getTokenLogoUrl('USDC')
-    }
-  },
-  // Unichain tokens
-  [UNICHAIN.id]: {
-    ETH: {
-      symbol: 'ETH',
-      name: 'Ethereum',
-      decimals: 18,
-      icon: getTokenLogoUrl('ETH')
-    },
-    USDC: {
-      symbol: 'USDC',
-      name: 'USD Coin',
-      decimals: 6,
-      address: '0x078D782b760474a361dDA0AF3839290b0EF57AD6',
-      icon: getTokenLogoUrl('USDC')
-    }
-  }
-};
+/**
+ * Get all supported networks
+ */
+export function getSupportedNetworks(): Network[] {
+  return Object.values(NETWORKS);
+}
 
-// Helper function to get RPC URL by chain ID - always reads fresh from env
+/**
+ * Get RPC URL by chain ID
+ * @deprecated Use getRpcUrl from config/constants.ts instead
+ */
 export function getChainRpc(chainId: number): string {
-  return getRpcUrl(chainId);
+  return getRpcUrl(chainId as ChainId);
 }
+
+// Token configurations by chain
+export const TOKENS: Record<number, Record<string, TokenConfig>> = {
+  [CHAIN_IDS.ETHEREUM]: {
+    ETH: {
+      symbol: 'ETH',
+      name: 'Ethereum',
+      decimals: 18,
+      icon: getTokenLogoUrl('ETH'),
+    },
+    USDC: {
+      symbol: 'USDC',
+      name: 'USD Coin',
+      decimals: 6,
+      address: TOKEN_ADDRESSES[CHAIN_IDS.ETHEREUM].USDC,
+      icon: getTokenLogoUrl('USDC'),
+    },
+    EURC: {
+      symbol: 'EURC',
+      name: 'Euro Coin',
+      decimals: 6,
+      address: TOKEN_ADDRESSES[CHAIN_IDS.ETHEREUM].EURC,
+      icon: getTokenLogoUrl('EURC'),
+    },
+  },
+  [CHAIN_IDS.BASE]: {
+    ETH: {
+      symbol: 'ETH',
+      name: 'Ethereum',
+      decimals: 18,
+      icon: getTokenLogoUrl('ETH'),
+    },
+    USDC: {
+      symbol: 'USDC',
+      name: 'USD Coin',
+      decimals: 6,
+      address: TOKEN_ADDRESSES[CHAIN_IDS.BASE].USDC,
+      icon: getTokenLogoUrl('USDC'),
+    },
+    EURC: {
+      symbol: 'EURC',
+      name: 'Euro Coin',
+      decimals: 6,
+      address: TOKEN_ADDRESSES[CHAIN_IDS.BASE].EURC,
+      icon: getTokenLogoUrl('EURC'),
+    },
+  },
+  [CHAIN_IDS.OPTIMISM]: {
+    ETH: {
+      symbol: 'ETH',
+      name: 'Ethereum',
+      decimals: 18,
+      icon: getTokenLogoUrl('ETH'),
+    },
+    USDC: {
+      symbol: 'USDC',
+      name: 'USD Coin',
+      decimals: 6,
+      address: TOKEN_ADDRESSES[CHAIN_IDS.OPTIMISM].USDC,
+      icon: getTokenLogoUrl('USDC'),
+    },
+  },
+  [CHAIN_IDS.UNICHAIN]: {
+    ETH: {
+      symbol: 'ETH',
+      name: 'Ethereum',
+      decimals: 18,
+      icon: getTokenLogoUrl('ETH'),
+    },
+    USDC: {
+      symbol: 'USDC',
+      name: 'USD Coin',
+      decimals: 6,
+      address: TOKEN_ADDRESSES[CHAIN_IDS.UNICHAIN].USDC,
+      icon: getTokenLogoUrl('USDC'),
+    },
+  },
+};

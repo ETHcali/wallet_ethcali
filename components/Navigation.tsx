@@ -5,8 +5,9 @@ import { useRouter } from 'next/router';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { getChainRpc } from '../config/networks';
 import { useContractAdmin } from '../hooks/useContractAdmin';
-import { useFaucetManagerAdmin } from '../hooks/useFaucetAdmin';
+import { useFaucetManagerAdmin } from '../hooks/faucet';
 import { useZKPassportAdmin } from '../hooks/useZKPassportAdmin';
+import { logger } from '../utils/logger';
 
 const SUPPORTED_CHAINS = [
   { id: 8453, name: 'Base', logo: '/chains/base_logo.svg' },
@@ -27,7 +28,7 @@ const Navigation: React.FC<NavigationProps> = ({
   onChainChange
 }) => {
   const router = useRouter();
-  const { authenticated, logout, user } = usePrivy();
+  const { authenticated, logout } = usePrivy();
   const { wallets } = useWallets();
   const [displayChainId, setDisplayChainId] = useState(currentChainId);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -63,9 +64,24 @@ const Navigation: React.FC<NavigationProps> = ({
   const userWallet = wallets?.[0];
 
   // Check if user is admin/owner on the current chain's contracts
-  const { isAdmin: isSwagAdmin } = useContractAdmin();
-  const { isAdmin: isFaucetAdmin, isSuperAdmin: isFaucetSuperAdmin } = useFaucetManagerAdmin();
-  const { isOwner: isZKPassportOwner } = useZKPassportAdmin();
+  // Pass displayChainId to ensure hooks check the currently selected chain
+  const { isAdmin: isSwagAdmin, walletAddress: swagWalletAddress } = useContractAdmin(displayChainId);
+  const { isAdmin: isFaucetAdmin, isSuperAdmin: isFaucetSuperAdmin, walletAddress: faucetWalletAddress } = useFaucetManagerAdmin(displayChainId);
+  const { isOwner: isZKPassportOwner, walletAddress: zkWalletAddress } = useZKPassportAdmin(displayChainId);
+
+  // Debug logging for admin status
+  useEffect(() => {
+    if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
+      logger.info('[Navigation] Admin status check', {
+        displayChainId,
+        walletAddress: userWallet?.address?.slice(0, 10),
+        swagAdmin: isSwagAdmin,
+        faucetAdmin: isFaucetAdmin,
+        faucetSuperAdmin: isFaucetSuperAdmin,
+        zkOwner: isZKPassportOwner,
+      });
+    }
+  }, [displayChainId, userWallet?.address, isSwagAdmin, isFaucetAdmin, isFaucetSuperAdmin, isZKPassportOwner]);
 
   const navItems = [
     { href: '/wallet', label: 'WALLET' },
@@ -154,7 +170,7 @@ const Navigation: React.FC<NavigationProps> = ({
         } catch (addError: any) {
           // Ignore if chain already exists (some wallets throw, some don't)
           if (addError.code !== 4001) {
-            console.log('Chain add attempt:', addError.message);
+            logger.debug('Chain add attempt', { message: addError.message });
           }
         }
       }
@@ -195,7 +211,7 @@ const Navigation: React.FC<NavigationProps> = ({
       onChainChange?.(chainId);
 
     } catch (error: any) {
-      console.error('Error switching chain:', error);
+      logger.error('Error switching chain', error);
       // Only show alert for non-user-rejected errors
       if (error.code !== 4001) {
         const chainName = SUPPORTED_CHAINS.find(c => c.id === chainId)?.name || `Chain ${chainId}`;

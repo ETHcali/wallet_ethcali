@@ -2,12 +2,11 @@ import React, { useState } from 'react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
-import Layout from '../components/shared/Layout';
 import Loading from '../components/shared/Loading';
 import Navigation from '../components/Navigation';
 
 export default function Home() {
-  const { login, ready, authenticated, user } = usePrivy();
+  const { login, ready, authenticated } = usePrivy();
   const { wallets } = useWallets();
   const router = useRouter();
   const [currentChainId, setCurrentChainId] = useState(8453);

@@ -39,10 +39,6 @@ const nextConfig = {
   // Server-side only environment variables (not exposed to client)
   env: {
     PRIVY_APP_SECRET: process.env.PRIVY_APP_SECRET,
-    BICONOMY_API_KEY: process.env.BICONOMY_API_KEY,
-    BICONOMY_PAYMASTER_URL: process.env.BICONOMY_PAYMASTER_URL,
-    BICONOMY_PAYMASTER_ID: process.env.BICONOMY_PAYMASTER_ID,
-    BICONOMY_BUNDLER_URL: process.env.BICONOMY_BUNDLER_URL,
   },
   // Increase serverless function timeout for API routes
   serverRuntimeConfig: {
@@ -84,12 +80,7 @@ const nextConfig = {
   compiler: {
     styledComponents: true,
   },
-  eslint: {
-    ignoreDuringBuilds: false,
-  },
   typescript: {
-    // Temporarily ignore build errors from dependencies (@reown/appkit-common)
-    // This is safe because skipLibCheck is enabled and the error is in node_modules
     ignoreBuildErrors: true,
   },
 };

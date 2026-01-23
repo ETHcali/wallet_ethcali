@@ -1,4 +1,3 @@
-import { TokenBalance } from '../types/index';
 
 // CoinGecko IDs for tokens
 export const COINGECKO_IDS: Record<string, string> = {

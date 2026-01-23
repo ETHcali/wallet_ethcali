@@ -1,10 +1,12 @@
 import { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
-import { useAllMintedNFTs, useMarkFulfilled, MintedNFT, RedemptionStatus } from '../../hooks/useSwagAdmin';
+import { useAllMintedNFTs, useMarkRedemptionFulfilled, RedemptionStatus } from '../../hooks/swag';
+import type { MintedNFT } from '../../hooks/swag';
 import { getIPFSGatewayUrl } from '../../lib/pinata';
 import { useSwagAddresses } from '../../utils/network';
 import { AdminQRScanner } from './AdminQRScanner';
 import { AdminNFTFulfillmentModal } from './AdminNFTFulfillmentModal';
+import { logger } from '../../utils/logger';
 
 type FilterStatus = 'all' | 'pending' | 'fulfilled' | 'not-redeemed';
 
@@ -31,9 +33,13 @@ export function AdminMintedNFTs({
   urlOwner, 
   urlChainId 
 }: AdminMintedNFTsProps = {}) {
-  const { mintedNFTs, isLoading, error, refetch } = useAllMintedNFTs();
-  const { markFulfilled, canMarkFulfilled } = useMarkFulfilled();
   const { explorerUrl, chainId: currentChainId, swag1155 } = useSwagAddresses();
+  // Use swag1155 as the Design address (in new system, each Design is a separate contract)
+  const designAddress = swag1155 || '';
+  const chainId = urlChainId || currentChainId;
+  
+  const { mintedNFTs, isLoading, error, refetch } = useAllMintedNFTs(designAddress, chainId);
+  const { markRedemptionFulfilled, canMarkFulfilled } = useMarkRedemptionFulfilled(designAddress, chainId);
 
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
   const [searchOwner, setSearchOwner] = useState('');
@@ -75,7 +81,7 @@ export function AdminMintedNFTs({
     if (urlTokenId && urlOwner && !fulfillmentModalNft && mintedNFTs.length > 0) {
       // Validate chain ID if provided
       if (urlChainId && urlChainId !== currentChainId) {
-        console.warn('[AdminMintedNFTs] Chain ID mismatch:', { urlChainId, currentChainId });
+        logger.warn('Chain ID mismatch', { urlChainId, currentChainId });
         // Still try to find the NFT, but warn about chain mismatch
       }
 
@@ -90,14 +96,14 @@ export function AdminMintedNFTs({
       );
 
       if (matchingNFT) {
-        console.log('[AdminMintedNFTs] Found matching NFT from URL params:', matchingNFT);
+        logger.debug('Found matching NFT from URL params', { tokenId: matchingNFT.tokenId.toString(), owner: matchingNFT.owner });
         setFulfillmentModalNft(matchingNFT);
         // Auto-filter to pending for better visibility
         if (matchingNFT.redemptionStatus === RedemptionStatus.PendingFulfillment) {
           setFilterStatus('pending');
         }
       } else {
-        console.warn('[AdminMintedNFTs] No matching NFT found for URL params:', { urlTokenId, urlOwner });
+        logger.warn('No matching NFT found for URL params', { urlTokenId: urlTokenId?.toString(), urlOwner });
       }
     }
   }, [urlTokenId, urlOwner, urlChainId, mintedNFTs, currentChainId, fulfillmentModalNft, refetch]);
@@ -107,12 +113,12 @@ export function AdminMintedNFTs({
     setProcessingIds((prev) => new Set(prev).add(key));
 
     try {
-      await markFulfilled(nft.tokenId, nft.owner);
+      await markRedemptionFulfilled(nft.tokenId, nft.owner);
       refetch();
       setScannedData(null);
       setFulfillmentModalNft(null); // Close modal after fulfillment
     } catch (err) {
-      console.error('Failed to mark fulfilled:', err);
+      logger.error('Failed to mark fulfilled', err);
       alert(err instanceof Error ? err.message : 'Failed to mark as fulfilled');
     } finally {
       setProcessingIds((prev) => {
@@ -123,25 +129,25 @@ export function AdminMintedNFTs({
     }
   };
 
-  const handleModalFulfill = async (tokenId: bigint, owner: string) => {
+  const handleModalFulfill = async (_tokenId: bigint, _owner: string) => {
     const nft = fulfillmentModalNft;
     if (!nft) return;
-    
+
     await handleMarkFulfilled(nft);
   };
 
   const handleQRScan = async (data: string) => {
-    console.log('[AdminMintedNFTs] Received QR scan data:', data);
-    
+    logger.debug('Received QR scan data', { data: data?.substring(0, 100) });
+
     if (!data || typeof data !== 'string') {
-      console.error('[AdminMintedNFTs] Invalid scan data:', data);
+      logger.error('Invalid scan data', { data });
       alert('Invalid QR code format.');
       return;
     }
 
     // Check if it's a URL
     if (data.startsWith('http://') || data.startsWith('https://') || data.startsWith('/')) {
-      console.log('[AdminMintedNFTs] QR code contains URL, navigating:', data);
+      logger.debug('QR code contains URL, navigating', { url: data });
       setIsQRScannerOpen(false);
       
       // Extract relative path if it's a full URL
@@ -151,7 +157,7 @@ export function AdminMintedNFTs({
           const urlObj = new URL(data);
           url = urlObj.pathname + urlObj.search;
         } catch (e) {
-          console.error('[AdminMintedNFTs] Invalid URL:', e);
+          logger.error('Invalid URL in QR code', e);
           alert('Invalid URL in QR code.');
           return;
         }
@@ -165,7 +171,7 @@ export function AdminMintedNFTs({
     // Otherwise, try to parse as JSON (backward compatibility)
     try {
       const parsed = JSON.parse(data);
-      console.log('[AdminMintedNFTs] Parsed QR data as JSON:', parsed);
+      logger.debug('Parsed QR data as JSON', { tokenId: parsed.tokenId, owner: parsed.owner });
       
       if (
         parsed.tokenId &&
@@ -193,7 +199,7 @@ export function AdminMintedNFTs({
 
           if (matchingNFT) {
             if (matchingNFT.redemptionStatus === RedemptionStatus.PendingFulfillment) {
-              console.log('[AdminMintedNFTs] Found matching NFT from JSON QR, showing modal:', matchingNFT);
+              logger.debug('Found matching NFT from JSON QR, showing modal', { tokenId: matchingNFT.tokenId.toString() });
               setFulfillmentModalNft(matchingNFT);
             } else {
               const statusText = matchingNFT.redemptionStatus === RedemptionStatus.Fulfilled 
@@ -202,27 +208,27 @@ export function AdminMintedNFTs({
               alert(`This NFT is ${statusText}. Current status: ${statusLabels[matchingNFT.redemptionStatus]}`);
             }
           } else {
-            console.warn('[AdminMintedNFTs] No matching NFT found:', { 
-              tokenId: parsed.tokenId, 
+            logger.warn('No matching NFT found from QR scan', {
+              tokenId: parsed.tokenId,
               owner: parsed.owner,
-              availableNFTs: mintedNFTs.length 
+              availableNFTs: mintedNFTs.length
             });
             alert(`NFT with Token ID ${parsed.tokenId} and owner ${parsed.owner.slice(0, 6)}... not found. Please refresh the page.`);
           }
         } else {
-          console.warn('[AdminMintedNFTs] Chain/contract mismatch:', {
-            scanned: { chainId: parsed.chainId, contract: parsed.contract },
-            current: { chainId: currentChainId, contract: swag1155 }
+          logger.warn('Chain/contract mismatch in QR code', {
+            scannedChainId: parsed.chainId,
+            currentChainId
           });
           alert('QR code is for a different contract or chain. Please ensure you are on the correct network.');
         }
       } else {
-        console.warn('[AdminMintedNFTs] Invalid QR code format:', parsed);
+        logger.warn('Invalid QR code format', { parsed });
         alert('Invalid redemption QR code format. Expected JSON with tokenId, owner, chainId, contract, and status.');
       }
     } catch (err) {
       // Not valid JSON or URL
-      console.error('[AdminMintedNFTs] Parse error:', err, 'Data:', data);
+      logger.error('QR parse error', { error: err, dataPreview: data?.substring(0, 50) });
       alert(`Invalid QR code format. Expected a URL or JSON data. Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   };
@@ -330,6 +336,7 @@ export function AdminMintedNFTs({
               <tr className="border-b border-slate-700 text-xs uppercase tracking-wider text-slate-500">
                 <th className="px-4 py-3">Token</th>
                 <th className="px-4 py-3">Owner</th>
+                <th className="px-4 py-3">Size</th>
                 <th className="px-4 py-3">Balance</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Actions</th>
@@ -375,6 +382,9 @@ export function AdminMintedNFTs({
                       >
                         {truncateAddress(nft.owner)}
                       </a>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-white font-medium">{nft.size || 'N/A'}</span>
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-white">{nft.balance}</span>

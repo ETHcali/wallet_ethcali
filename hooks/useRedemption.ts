@@ -2,13 +2,12 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useSendTransaction, useWallets } from '@privy-io/react-auth';
 import { encodeFunctionData } from 'viem';
 import Swag1155ABI from '../frontend/abis/Swag1155.json';
-import { useSwagAddresses } from '../utils/network';
 
 /**
  * Hook to redeem an NFT (request physical item fulfillment)
+ * Updated to use requestPhysicalRedemption() function
  */
-export function useRedeem() {
-  const { swag1155, chainId } = useSwagAddresses();
+export function useRedeem(designAddress: string, chainId: number) {
   const { wallets } = useWallets();
   const { sendTransaction } = useSendTransaction();
   const queryClient = useQueryClient();
@@ -17,8 +16,8 @@ export function useRedeem() {
   const isEmbedded = activeWallet?.walletClientType === 'privy';
 
   const redeem = async (tokenId: bigint) => {
-    if (!swag1155 || !chainId) {
-      throw new Error('Missing contract address');
+    if (!designAddress || !chainId) {
+      throw new Error('Missing design address or chain ID');
     }
 
     if (!activeWallet) {
@@ -27,12 +26,12 @@ export function useRedeem() {
 
     const data = encodeFunctionData({
       abi: Swag1155ABI as any,
-      functionName: 'redeem',
+      functionName: 'requestPhysicalRedemption',
       args: [tokenId],
     });
 
     const result = await sendTransaction({
-      to: swag1155 as `0x${string}`,
+      to: designAddress as `0x${string}`,
       data,
       chainId,
     }, {
@@ -49,6 +48,6 @@ export function useRedeem() {
 
   return {
     redeem,
-    canRedeem: Boolean(swag1155 && activeWallet),
+    canRedeem: Boolean(designAddress && activeWallet),
   };
 }
