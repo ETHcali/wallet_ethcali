@@ -128,7 +128,7 @@ async function fetchTokenMetadata(
     return {
       name: metadata.name || `Token #${tokenId}`,
       description: metadata.description || '',
-      image: getIPFSGatewayUrl(metadata.image || '') || '/logo_eth_cali.png',
+      image: metadata.image || '', // Store raw image URL, process in component like ProductCard
       attributes: metadata.attributes || [],
     };
   } catch (error) {
@@ -208,7 +208,7 @@ export function useUserNFTs(overrideChainId?: number) {
           balance,
           name: metadata?.name || `Token #${tokenId}`,
           description: metadata?.description || '',
-          image: metadata?.image || '/logo_eth_cali.png',
+          image: metadata?.image || '',
           attributes: metadata?.attributes || [],
           redemptionStatus,
           designAddress: swag1155, // Include Design address for new system

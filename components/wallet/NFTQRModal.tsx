@@ -64,7 +64,7 @@ export function NFTQRModal({ tokenId, nftName, onClose }: NFTQRModalProps) {
               </div>
               <QRCodeSVG
                 value={fullUrl}
-                size={300}
+                size={260}
                 level="H"
                 includeMargin={true}
                 bgColor="#0a0a0a"
@@ -112,7 +112,9 @@ export function NFTQRModal({ tokenId, nftName, onClose }: NFTQRModalProps) {
           backdrop-filter: blur(4px);
           display: flex;
           justify-content: center;
-          align-items: center;
+          align-items: flex-start;
+          padding: 1rem;
+          overflow-y: auto;
           z-index: 1000;
         }
 
@@ -121,7 +123,11 @@ export function NFTQRModal({ tokenId, nftName, onClose }: NFTQRModalProps) {
           border: 1px solid rgba(34, 211, 238, 0.3);
           border-radius: 12px;
           width: 90%;
-          max-width: 450px;
+          max-width: 400px;
+          max-height: 90vh;
+          overflow-y: auto;
+          margin-top: 2rem;
+          margin-bottom: 2rem;
           box-shadow: 
             0 0 30px rgba(34, 211, 238, 0.2),
             0 10px 40px rgba(0, 0, 0, 0.5);
@@ -168,7 +174,7 @@ export function NFTQRModal({ tokenId, nftName, onClose }: NFTQRModalProps) {
         }
 
         .modal-body {
-          padding: 1.5rem;
+          padding: 1rem 1.5rem;
         }
 
         .nft-info-section {
@@ -197,7 +203,7 @@ export function NFTQRModal({ tokenId, nftName, onClose }: NFTQRModalProps) {
 
         .qr-wrapper {
           background: #ffffff;
-          padding: 1.5rem;
+          padding: 1rem;
           border: 2px solid rgba(34, 211, 238, 0.4);
           border-radius: 12px;
           display: inline-block;
@@ -205,8 +211,8 @@ export function NFTQRModal({ tokenId, nftName, onClose }: NFTQRModalProps) {
             0 0 20px rgba(34, 211, 238, 0.2),
             inset 0 0 20px rgba(34, 211, 238, 0.05);
           position: relative;
-          min-width: 320px;
-          min-height: 320px;
+          min-width: 280px;
+          min-height: 280px;
           display: flex;
           align-items: center;
           justify-content: center;

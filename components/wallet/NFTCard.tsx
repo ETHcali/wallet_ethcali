@@ -5,7 +5,7 @@ import { UserNFT } from '../../hooks/useUserNFTs';
 import { RedemptionStatus } from '../../types/swag';
 import { NFTQRModal } from './NFTQRModal';
 import { useRedeem } from '../../hooks/useRedemption';
-import { useDesignTokenTraits } from '../../hooks/useSwagStore';
+import { useDesignTokenTraits, useDesignInfo } from '../../hooks/useSwagStore';
 import { getIPFSGatewayUrl } from '../../lib/pinata';
 import { useSwagAddresses } from '../../utils/network';
 import { logger } from '../../utils/logger';
@@ -36,6 +36,9 @@ export function NFTCard({ nft, onRedeemSuccess }: NFTCardProps) {
   // Use designAddress and chainId from NFT, or fallback to defaults
   const designAddress = nft.designAddress;
   const chainId = nft.chainId || defaultChainId;
+  
+  // Fetch design info to get the image URL from contract (same as ProductCard)
+  const { designInfo } = useDesignInfo(designAddress || '', chainId);
   
   // Fetch token traits if we have designAddress
   const { traits, isLoading: isLoadingTraits } = useDesignTokenTraits(
@@ -72,24 +75,35 @@ export function NFTCard({ nft, onRedeemSuccess }: NFTCardProps) {
     }
   };
 
-  const imageUrl = getIPFSGatewayUrl(nft.image);
+  // Use image from designInfo (contract) like ProductCard does, fallback to metadata image
+  const imageUrl = designInfo?.imageUrl 
+    ? getIPFSGatewayUrl(designInfo.imageUrl) || designInfo.imageUrl
+    : (nft.image ? getIPFSGatewayUrl(nft.image) || nft.image : '');
+
+  // Use name and description from designInfo (contract) like ProductCard, fallback to metadata
+  const displayName = designInfo?.name || nft.name;
+  const displayDescription = designInfo?.description || nft.description;
 
   return (
     <>
       <div className="nft-card">
         <div className="nft-card-header">
           <div className="nft-image-wrapper">
-            <Image
-              src={imageUrl}
-              alt={nft.name}
-              width={120}
-              height={120}
-              className="nft-image"
-              unoptimized={nft.image.startsWith('ipfs://')}
-            />
+            {imageUrl ? (
+              <Image
+                src={imageUrl}
+                alt={displayName}
+                fill
+                className="nft-image"
+                sizes="120px"
+                unoptimized={imageUrl.startsWith('https://gateway.pinata.cloud')}
+              />
+            ) : (
+              <div className="nft-image-placeholder" />
+            )}
           </div>
           <div className="nft-header-info">
-            <h3 className="nft-name">{nft.name}</h3>
+            <h3 className="nft-name">{displayName}</h3>
             <div className="nft-balance">
               <span className="balance-label">Balance:</span>
               <span className="balance-value">{nft.balance}</span>
@@ -100,8 +114,8 @@ export function NFTCard({ nft, onRedeemSuccess }: NFTCardProps) {
           </div>
         </div>
 
-        {nft.description && (
-          <p className="nft-description">{nft.description}</p>
+        {displayDescription && (
+          <p className="nft-description">{displayDescription}</p>
         )}
 
         <div className="nft-actions">
@@ -185,7 +199,7 @@ export function NFTCard({ nft, onRedeemSuccess }: NFTCardProps) {
       {showQRModal && (
         <NFTQRModal
           tokenId={nft.tokenId}
-          nftName={nft.name}
+          nftName={displayName}
           onClose={() => setShowQRModal(false)}
         />
       )}
@@ -218,12 +232,22 @@ export function NFTCard({ nft, onRedeemSuccess }: NFTCardProps) {
           overflow: hidden;
           border: 1px solid rgba(75, 85, 99, 0.3);
           background: rgba(0, 0, 0, 0.3);
+          position: relative;
         }
 
         .nft-image {
+          width: 100% !important;
+          height: 100% !important;
+          object-fit: cover;
+        }
+
+        .nft-image-placeholder {
           width: 100%;
           height: 100%;
-          object-fit: cover;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
 
         .nft-header-info {
