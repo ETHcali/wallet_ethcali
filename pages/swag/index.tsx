@@ -29,11 +29,6 @@ export default function SwagStorePage() {
         <div className="mb-8">
           <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">ETH CALI Swag Store</h1>
           <p className="text-slate-400 text-sm">Official merchandise - Pay with USDC</p>
-          {swag1155 && (
-            <p className="text-xs text-slate-500 mt-2 font-mono">
-              Contract: {swag1155.slice(0, 6)}...{swag1155.slice(-4)} (Chain ID: {chainId})
-            </p>
-          )}
         </div>
 
         {/* Empty State - No Contract Deployed */}

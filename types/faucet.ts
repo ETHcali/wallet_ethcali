@@ -31,6 +31,7 @@ export interface VaultFormData {
   description: string;
   claimAmount: string; // ETH amount as string for form input
   vaultType: VaultType;
+  whitelistEnabled: boolean;
 }
 
 export interface VaultUpdateData {

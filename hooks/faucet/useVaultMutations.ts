@@ -34,7 +34,7 @@ export function useCreateVault() {
     const txData = encodeFunctionData({
       abi: FaucetManagerABI as any,
       functionName: 'createVault',
-      args: [data.name, data.description, claimAmountWei, data.vaultType],
+      args: [data.name, data.description, claimAmountWei, data.vaultType, data.whitelistEnabled],
     });
 
     const result = await sendTransaction({

@@ -17,6 +17,7 @@ export function CreateVaultForm({ onSuccess }: CreateVaultFormProps) {
     description: '',
     claimAmount: '0.01',
     vaultType: VaultType.NonReturnable,
+    whitelistEnabled: false,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -45,6 +46,7 @@ export function CreateVaultForm({ onSuccess }: CreateVaultFormProps) {
         description: '',
         claimAmount: '0.01',
         vaultType: VaultType.NonReturnable,
+        whitelistEnabled: false,
       });
       onSuccess?.();
     } catch (err) {
@@ -170,6 +172,22 @@ export function CreateVaultForm({ onSuccess }: CreateVaultFormProps) {
             </div>
           </label>
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <label className="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={form.whitelistEnabled}
+            onChange={(e) => setForm({ ...form, whitelistEnabled: e.target.checked })}
+            className="h-4 w-4 rounded border-slate-700 bg-slate-800 text-cyan-500 focus:ring-cyan-400 focus:ring-offset-slate-900"
+            disabled={isSubmitting}
+          />
+          <div>
+            <p className="font-medium text-white">Enable Whitelist</p>
+            <p className="text-xs text-slate-500">Restrict claims to whitelisted addresses only</p>
+          </div>
+        </label>
       </div>
 
       {error && (
