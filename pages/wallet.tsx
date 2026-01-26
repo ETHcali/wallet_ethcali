@@ -56,14 +56,14 @@ export default function WalletPage() {
         <div className="space-y-6">
           {userWallet ? (
             <div className="space-y-6" key={currentChainId}>
-              <WalletInfo 
-                wallet={userWallet as unknown as Wallet} 
+              <WalletInfo
+                wallet={userWallet as unknown as Wallet}
                 balances={balances}
                 isLoading={isBalanceLoading}
                 onRefresh={refreshBalances}
                 chainId={currentChainId}
               />
-              
+
               {/* Quick Access to Other Services */}
               <div className="bg-gray-900/50 border border-gray-700 rounded-xl p-6">
                 <h3 className="text-lg font-bold text-white mb-4">ETH CALI Services</h3>

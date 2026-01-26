@@ -147,3 +147,15 @@ export const SUPPORTED_CHAIN_IDS: ChainId[] = [
 export function isSupportedChain(chainId: number): chainId is ChainId {
   return SUPPORTED_CHAIN_IDS.includes(chainId as ChainId);
 }
+
+// =============================================================================
+// ENS CONFIGURATION
+// =============================================================================
+export const ENS_CONFIG = {
+  parentName: 'ethcali.eth',
+  chainId: CHAIN_IDS.BASE,
+} as const;
+
+export const ENS_REGISTRAR_ADDRESSES: Partial<Record<ChainId, string>> = {
+  [CHAIN_IDS.BASE]: '0x7103595fc32b4072b775e9f6b438921c8cf532ed',
+} as const;
