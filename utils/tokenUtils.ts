@@ -51,7 +51,7 @@ export function getNetworkLogoUrl(networkId: number): string {
     case 1: // Ethereum Mainnet
       return '/chains/ethereum.png';
     case 8453: // Base Mainnet
-      return '/chains/base logo.svg';
+      return '/chains/base.jpeg';
     case 10: // Optimism Mainnet
       return '/chains/op mainnet.png';
     default:

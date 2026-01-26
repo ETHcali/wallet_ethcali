@@ -180,6 +180,17 @@ export default function Home() {
                     Sybil-resistant identity with zero-knowledge proofs.
                   </p>
                 </div>
+
+                <div className="bg-gray-900/50 border border-gray-700 rounded-xl p-4 sm:p-8 text-center">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-purple-500/10 rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                    <Image src="/infraused/ens.png" alt="Ethereum Name Service" width={40} height={40} className="w-8 h-8 sm:w-10 sm:h-10" unoptimized />
+                  </div>
+                  <h3 className="text-base sm:text-xl font-bold text-purple-400 mb-2 sm:mb-3">ENS</h3>
+                  <p className="text-gray-500 text-xs sm:text-sm">
+                    Decentralized naming on Ethereum and Internet.
+                  </p>
+                </div>
+
               </div>
             </div>
 
@@ -192,7 +203,7 @@ export default function Home() {
                 </p>
               </div>
               <div className="flex justify-center items-center gap-4 sm:gap-12 flex-wrap px-4">
-                <Image src="/chains/base logo.svg" alt="Base" width={64} height={64} className="h-10 sm:h-16 w-auto" unoptimized />
+                <Image src="/chains/base.jpeg" alt="Base" width={64} height={64} className="h-10 sm:h-16 w-auto" unoptimized />
                 <Image src="/chains/ethereum.png" alt="Ethereum" width={64} height={64} className="h-10 sm:h-16 w-auto" unoptimized />
                 <Image src="/chains/op mainnet.png" alt="Optimism" width={64} height={64} className="h-10 sm:h-16 w-auto" unoptimized />
                 <Image src="/chains/unichain.png" alt="Unichain" width={64} height={64} className="h-10 sm:h-16 w-auto" unoptimized />

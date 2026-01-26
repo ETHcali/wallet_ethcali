@@ -55,7 +55,7 @@ function MyApp({ Component, pageProps }: AppProps) {
       <PrivyProvider
         appId={PRIVY_APP_ID}
         config={{
-          loginMethods: ['email', 'passkey'],
+          loginMethods: ['email', 'passkey', ],
           appearance: {
             theme: 'dark',
             accentColor: '#06b6d4',

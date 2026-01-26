@@ -10,7 +10,7 @@ import { useZKPassportAdmin } from '../hooks/useZKPassportAdmin';
 import { logger } from '../utils/logger';
 
 const SUPPORTED_CHAINS = [
-  { id: 8453, name: 'Base', logo: '/chains/base_logo.svg' },
+  { id: 8453, name: 'Base', logo: '/chains/base.jpeg' },
   { id: 1, name: 'Ethereum', logo: '/chains/ethereum.png' },
   { id: 10, name: 'Optimism', logo: '/chains/op mainnet.png' },
   { id: 130, name: 'Unichain', logo: '/chains/unichain.png' },
