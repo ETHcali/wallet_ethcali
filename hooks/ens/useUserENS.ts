@@ -41,13 +41,17 @@ export function useUserENS(address: string | undefined): UserENSResult {
         }
 
         // Query NameRegistered events for this owner
+        // Use a recent block range to avoid RPC limits (most RPCs limit to ~50k blocks)
+        const currentBlock = await client.getBlockNumber();
+        const fromBlock = currentBlock > 45000n ? currentBlock - 45000n : 0n;
+
         const logs = await client.getLogs({
           address: registrarAddress as `0x${string}`,
           event: parseAbiItem('event NameRegistered(string indexed label, address indexed owner)'),
           args: {
             owner: address as `0x${string}`,
           },
-          fromBlock: 'earliest',
+          fromBlock,
           toBlock: 'latest',
         });
 

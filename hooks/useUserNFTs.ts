@@ -40,10 +40,14 @@ async function fetchTokenIds(swag1155: string, chainId: number): Promise<bigint[
       type: 'event',
     } as const;
 
+    // Use a recent block range to avoid RPC limits (most RPCs limit to ~50k blocks)
+    const currentBlock = await client.getBlockNumber();
+    const fromBlock = currentBlock > 45000n ? currentBlock - 45000n : 0n;
+
     const logs = await client.getLogs({
       address: swag1155 as `0x${string}`,
       event: designMintedEvent,
-      fromBlock: 0n,
+      fromBlock,
       toBlock: 'latest' as const,
     });
 

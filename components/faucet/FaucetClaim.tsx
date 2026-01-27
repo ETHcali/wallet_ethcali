@@ -38,7 +38,7 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
   const [vaultClaimInfo, setVaultClaimInfo] = useState<Record<number, any>>({});
   const [vaultEligibility, setVaultEligibility] = useState<Record<number, { canClaim: boolean; reason: string }>>({});
 
-  const networkName = getNetworkName(chainId);
+  const networkName = getNetworkName(chainId) || 'UNKNOWN';
 
   const loadFaucetData = useCallback(async () => {
     if (!userWallet?.address) return;
@@ -185,7 +185,8 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
     const eligibility = vaultEligibility[vault.id];
     if (eligibility) {
       if (!eligibility.canClaim) {
-        return { canClaim: false, code: eligibility.reason.toUpperCase().replace(/\s+/g, '_'), message: eligibility.reason };
+        const reason = eligibility.reason || 'Not eligible';
+        return { canClaim: false, code: reason.toUpperCase().replace(/\s+/g, '_'), message: reason };
       }
     }
 

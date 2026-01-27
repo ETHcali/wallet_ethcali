@@ -36,10 +36,14 @@ export function useAllMintedNFTs(designAddress: string, chainId: number) {
         'event DesignMinted(address indexed buyer, uint256 indexed tokenId, string size, uint256 price, bool hadDiscount)'
       );
 
+      // Use a recent block range to avoid RPC limits (most RPCs limit to ~50k blocks)
+      const currentBlock = await client.getBlockNumber();
+      const fromBlock = currentBlock > 45000n ? currentBlock - 45000n : 0n;
+
       const logs = await (client.getLogs as any)({
         address: designAddress as `0x${string}`,
         event: designMintedEvent,
-        fromBlock: 0n,
+        fromBlock,
         toBlock: 'latest',
       });
 
@@ -51,7 +55,7 @@ export function useAllMintedNFTs(designAddress: string, chainId: number) {
       const transferLogs = await (client.getLogs as any)({
         address: designAddress as `0x${string}`,
         event: transferSingleEvent,
-        fromBlock: 0n,
+        fromBlock,
         toBlock: 'latest',
       });
 

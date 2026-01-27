@@ -152,6 +152,10 @@ export async function getTokenIdByAddress(chainId: number, userAddress: string):
   const addresses = getContractAddresses(chainId);
 
   try {
+    // Use a recent block range to avoid RPC limits (most RPCs limit to ~50k blocks)
+    const currentBlock = await client.getBlockNumber();
+    const fromBlock = currentBlock > 45000n ? currentBlock - 45000n : 0n;
+
     // Get NFTMinted events for this address
     const events = await client.getLogs({
       address: addresses.ZKPassportNFT as `0x${string}`,
@@ -169,7 +173,7 @@ export async function getTokenIdByAddress(chainId: number, userAddress: string):
       args: {
         to: userAddress as `0x${string}`,
       } as any,
-      fromBlock: 0n,
+      fromBlock,
     });
 
     if (events && events.length > 0) {
@@ -356,7 +360,14 @@ export async function canUserClaim(chainId: number, vaultId: number, userAddress
 
   try {
     const result = await readContract(client, addresses.FaucetManager, abi, 'canUserClaim', [vaultId, userAddress]);
-    return result as { canClaim: boolean; reason: string };
+    // Handle both array and object return formats from contract
+    if (Array.isArray(result)) {
+      return { canClaim: Boolean(result[0]), reason: String(result[1] || '') };
+    }
+    return {
+      canClaim: Boolean((result as any).canClaim),
+      reason: String((result as any).reason || '')
+    };
   } catch (error) {
     logger.error('Error checking user claim eligibility:', error);
     return { canClaim: false, reason: 'Error checking eligibility' };
