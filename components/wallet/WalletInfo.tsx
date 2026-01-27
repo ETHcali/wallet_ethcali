@@ -216,11 +216,17 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
         type: 'function'
       }] as const;
 
+      // Ensure chainId is available for gas sponsorship
+      if (!chainId) {
+        throw new Error('Chain ID is required for transaction');
+      }
+
       if (tokenType === 'ETH') {
         const value = parseUnits(amount, 18);
         const result = await sendTransaction({
           to: recipient as `0x${string}`,
           value,
+          chainId,
         });
         setTxHash(result.hash);
       } else {
@@ -241,6 +247,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
         const result = await sendTransaction({
           to: tokenAddress as `0x${string}`,
           data,
+          chainId,
         });
         setTxHash(result.hash);
       }

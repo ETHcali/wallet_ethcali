@@ -57,6 +57,22 @@ export function useTokenTransfer(chainId?: number): UseTokenTransferResult {
       throw new Error('No wallet found');
     }
 
+    // Get chainId from wallet or use provided chainId
+    let txChainId = chainId;
+    if (!txChainId && wallet.chainId) {
+      // Handle both string format (eip155:8453) and number format
+      if (typeof wallet.chainId === 'string') {
+        const parts = wallet.chainId.split(':');
+        txChainId = parseInt(parts[parts.length - 1], 10);
+      } else {
+        txChainId = wallet.chainId;
+      }
+    }
+
+    if (!txChainId) {
+      throw new Error('Chain ID is required for transaction');
+    }
+
     setIsSending(true);
     setTxHash(null);
     setError(null);
@@ -69,6 +85,7 @@ export function useTokenTransfer(chainId?: number): UseTokenTransferResult {
         const result = await sendTransaction({
           to: recipient as `0x${string}`,
           value,
+          chainId: txChainId,
         });
         hash = result.hash;
       } else {
@@ -89,6 +106,7 @@ export function useTokenTransfer(chainId?: number): UseTokenTransferResult {
         const result = await sendTransaction({
           to: tokenAddress as `0x${string}`,
           data,
+          chainId: txChainId,
         });
         hash = result.hash;
       }
@@ -102,7 +120,7 @@ export function useTokenTransfer(chainId?: number): UseTokenTransferResult {
     } finally {
       setIsSending(false);
     }
-  }, [wallet, sendTransaction, getTokenAddress]);
+  }, [wallet, sendTransaction, getTokenAddress, chainId]);
 
   const clearTxHash = useCallback(() => {
     setTxHash(null);

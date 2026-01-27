@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useWallets } from '@privy-io/react-auth';
+import { useWallets, useSendTransaction } from '@privy-io/react-auth';
 import { logger } from '../../utils/logger';
 import {
   getFaucetBalance,
@@ -24,6 +24,7 @@ interface FaucetAdminProps {
 
 const FaucetAdmin: React.FC<FaucetAdminProps> = ({ chainId }) => {
   const { wallets } = useWallets();
+  const { sendTransaction } = useSendTransaction();
   const userWallet = wallets?.[0];
 
   const [isLoading, setIsLoading] = useState(true);
@@ -85,24 +86,16 @@ const FaucetAdmin: React.FC<FaucetAdminProps> = ({ chainId }) => {
     setTxHash(null);
 
     try {
-      const provider = await userWallet.getEthereumProvider();
-
-      const params: any = {
-        from: userWallet.address,
+      // Use Privy's sendTransaction for gas sponsorship support
+      const result = await sendTransaction({
         to: txData.to,
-        chainId: chainId,
-      };
-
-      if (txData.data) params.data = txData.data;
-      if (txData.value) params.value = `0x${txData.value.toString(16)}`;
-
-      const tx = await provider.request({
-        method: 'eth_sendTransaction',
-        params: [params],
+        data: txData.data,
+        value: txData.value,
+        chainId, // Required for gas sponsorship
       });
 
-      setTxHash(tx as string);
-      
+      setTxHash(result.transactionHash);
+
       // Refresh data after delay
       setTimeout(loadAdminData, 3000);
 

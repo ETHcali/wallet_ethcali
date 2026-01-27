@@ -247,6 +247,7 @@ export function useZKPassportVerification(chainId: number, onMintSuccess?: () =>
       const result = await sendTransaction({
         to: nftContractAddress as `0x${string}`,
         data: mintTxData,
+        chainId,
       });
 
       setMintTxHash(result.hash);
