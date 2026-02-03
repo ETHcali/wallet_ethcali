@@ -1,14 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
 import { useWallets } from '@privy-io/react-auth';
-import { createPublicClient, http } from 'viem';
+import { createPublicClient, http, parseAbiItem } from 'viem';
 import ZKPassportNFTABI from '../frontend/abis/ZKPassportNFT.json';
 import { getChainRpc } from '../config/networks';
 import { logger } from '../utils/logger';
 import { getContractAddresses } from '../utils/network';
-import type { NFTData, TokenData } from '../types/zkpassport';
+import type { TokenData } from '../types/zkpassport';
 
 /**
- * Hook to fetch ZKPassport NFT data using unified getNFTDataByOwner() function
+ * Hook to fetch ZKPassport NFT data
+ * - Checks if user has NFT via hasNFTByAddress()
+ * - Reads global metadata via nftImageURI(), nftDescription(), nftExternalURL()
+ * - Queries NFTMinted event to get tokenId and verification data
  */
 export function useZKPassportNFT(chainId: number) {
   const { wallets } = useWallets();
@@ -27,11 +30,13 @@ export function useZKPassportNFT(chainId: number) {
         transport: http(rpcUrl),
       });
 
+      const contractAddress = addresses.zkpassport as `0x${string}`;
+
       try {
-        // First check if user has NFT
+        // 1. Check if user has NFT
         const raw = await client.readContract({
-          address: addresses.zkpassport as `0x${string}`,
-          abi: ZKPassportNFTABI as any,
+          address: contractAddress,
+          abi: ZKPassportNFTABI,
           functionName: 'hasNFTByAddress',
           args: [userWallet.address as `0x${string}`],
         });
@@ -41,106 +46,74 @@ export function useZKPassportNFT(chainId: number) {
           return null;
         }
 
-        // Get all NFT data in one call
-        const nftData = await client.readContract({
-          address: addresses.zkpassport as `0x${string}`,
-          abi: ZKPassportNFTABI as any,
-          functionName: 'getNFTDataByOwner',
-          args: [userWallet.address as `0x${string}`],
-        });
+        // 2. Read global metadata from contract
+        const [imageURI, description, externalURL] = await Promise.all([
+          client.readContract({
+            address: contractAddress,
+            abi: ZKPassportNFTABI,
+            functionName: 'nftImageURI',
+            args: [],
+          }),
+          client.readContract({
+            address: contractAddress,
+            abi: ZKPassportNFTABI,
+            functionName: 'nftDescription',
+            args: [],
+          }),
+          client.readContract({
+            address: contractAddress,
+            abi: ZKPassportNFTABI,
+            functionName: 'nftExternalURL',
+            args: [],
+          }),
+        ]);
 
-        // Handle both array and object return formats
-        let tokenId: bigint;
-        let tokenData: TokenData;
-        let tokenURI: string;
+        // 3. Try to get tokenId and verification data from NFTMinted event
+        let tokenId: bigint | null = null;
+        let tokenData: TokenData | null = null;
 
-        if (Array.isArray(nftData)) {
-          [tokenId, tokenData, tokenURI] = nftData as [bigint, TokenData, string];
-        } else {
-          const data = nftData as { tokenId: bigint; tokenDataResult: TokenData; tokenURIResult: string };
-          tokenId = data.tokenId;
-          tokenData = data.tokenDataResult;
-          tokenURI = data.tokenURIResult;
-        }
+        try {
+          const logs = await client.getLogs({
+            address: contractAddress,
+            event: parseAbiItem('event NFTMinted(address indexed to, uint256 indexed tokenId, string uniqueIdentifier, bool faceMatchPassed, bool personhoodVerified)'),
+            args: {
+              to: userWallet.address as `0x${string}`,
+            },
+            fromBlock: 'earliest',
+            toBlock: 'latest',
+          });
 
-        // Parse token URI to get metadata
-        let nftMetadata: any = null;
-        if (tokenURI) {
-          try {
-            if (tokenURI.startsWith('data:application/json;base64,')) {
-              const base64Data = tokenURI.split(',')[1];
-              nftMetadata = JSON.parse(atob(base64Data));
-            } else if (tokenURI.startsWith('http')) {
-              const response = await fetch(tokenURI);
-              nftMetadata = await response.json();
-            } else if (tokenURI.startsWith('ipfs://')) {
-              // Handle IPFS URIs for tokenURI
-              const ipfsUrl = `https://gateway.pinata.cloud/ipfs/${tokenURI.replace('ipfs://', '')}`;
-              const response = await fetch(ipfsUrl);
-              nftMetadata = await response.json();
-            }
-          } catch (err) {
-            // Silent fail - metadata not critical
-            logger.warn('Failed to parse token URI:', err);
+          if (logs.length > 0) {
+            const latestLog = logs[logs.length - 1];
+            tokenId = latestLog.args.tokenId ?? null;
+            tokenData = {
+              uniqueIdentifier: latestLog.args.uniqueIdentifier ?? '',
+              faceMatchPassed: latestLog.args.faceMatchPassed ?? false,
+              personhoodVerified: latestLog.args.personhoodVerified ?? false,
+            };
           }
+        } catch (eventErr) {
+          // Events might fail on some RPCs, continue without tokenId/tokenData
+          logger.warn('Could not fetch NFTMinted event:', eventErr);
         }
 
-        // Fallback: fetch raw metadata directly from contract storage if tokenURI parsing failed
-        if (!nftMetadata?.image) {
-          try {
-            const [rawImageURI, rawDescription, rawExternalURL] = await Promise.all([
-              client.readContract({
-                address: addresses.zkpassport as `0x${string}`,
-                abi: ZKPassportNFTABI as any,
-                functionName: 'nftImageURI',
-                args: [],
-              }),
-              client.readContract({
-                address: addresses.zkpassport as `0x${string}`,
-                abi: ZKPassportNFTABI as any,
-                functionName: 'nftDescription',
-                args: [],
-              }),
-              client.readContract({
-                address: addresses.zkpassport as `0x${string}`,
-                abi: ZKPassportNFTABI as any,
-                functionName: 'nftExternalURL',
-                args: [],
-              }),
-            ]);
-
-            // Create metadata from direct contract reads if we don't have parsed metadata
-            if (!nftMetadata) {
-              nftMetadata = {};
-            }
-
-            // Use direct values as fallback
-            if (!nftMetadata.image && rawImageURI) {
-              nftMetadata.image = String(rawImageURI);
-            }
-            if (!nftMetadata.description && rawDescription) {
-              nftMetadata.description = String(rawDescription);
-            }
-            if (!nftMetadata.external_url && rawExternalURL) {
-              nftMetadata.external_url = String(rawExternalURL);
-            }
-            if (!nftMetadata.name) {
-              nftMetadata.name = 'ZKPassport NFT';
-            }
-          } catch (fallbackErr) {
-            logger.warn('Failed to fetch fallback metadata:', fallbackErr);
-          }
-        }
+        // Build metadata object
+        const nftMetadata = {
+          name: 'ZKPassport NFT',
+          description: String(description || ''),
+          image: String(imageURI || ''),
+          external_url: String(externalURL || ''),
+        };
 
         return {
           tokenId,
           tokenData,
-          tokenURI,
+          tokenURI: null,
           nftMetadata,
-        } as NFTData & { nftMetadata: any };
-      } catch (error: any) {
-        // If RPC is rate limited or down, don't crash
-        logger.error('Error fetching ZKPassport NFT (RPC may be rate limited):', error?.message || error);
+        };
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logger.error('Error fetching ZKPassport NFT:', errorMessage);
         return null;
       }
     },
@@ -150,7 +123,6 @@ export function useZKPassportNFT(chainId: number) {
     retry: 2,
   });
 
-  // Only consider hasNFT true when we have actual data (not undefined during loading)
   const hasNFT = Boolean(query.data);
 
   return {

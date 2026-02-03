@@ -16,6 +16,7 @@ import { useUserNFTs } from '../../hooks/useUserNFTs';
 import { NFTCard } from './NFTCard';
 import { logger } from '../../utils/logger';
 import ENSSection from '../ens/ENSSection';
+import SwapModal from './SwapModal';
 
 interface WalletInfoProps {
   wallet: Wallet;
@@ -57,6 +58,9 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
 
   // Fund wallet state
   const [isFunding, setIsFunding] = useState(false);
+
+  // Swap modal state
+  const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
 
   // NFTs for collectibles tab - pass chainId to ensure correct chain on refresh
   const { data: nfts = [], isLoading: isLoadingNFTs, refetch: refetchNFTs } = useUserNFTs(chainId);
@@ -346,6 +350,17 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
                 </svg>
               </div>
               <span>{isFunding ? 'Loading...' : 'Buy'}</span>
+            </button>
+            <button
+              className="quick-action-btn swap-btn"
+              onClick={() => setIsSwapModalOpen(true)}
+            >
+              <div className="action-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                </svg>
+              </div>
+              <span>Swap</span>
             </button>
             <button
               className="quick-action-btn send-btn"
@@ -682,7 +697,20 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           }}
         />
       )}
-      
+
+      {/* Swap Modal */}
+      {isSwapModalOpen && (
+        <SwapModal
+          userAddress={wallet.address}
+          chainId={chainId || 8453}
+          onClose={() => setIsSwapModalOpen(false)}
+          onSuccess={() => {
+            setIsSwapModalOpen(false);
+            onRefresh();
+          }}
+        />
+      )}
+
       <style jsx>{`
         .wallet-info {
           background: transparent;
@@ -1319,8 +1347,8 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
         /* Quick Actions - Professional Mobile UI */
         .quick-actions {
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 0.75rem;
+          grid-template-columns: repeat(5, 1fr);
+          gap: 0.5rem;
         }
 
         .quick-action-btn {
@@ -1376,6 +1404,15 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
 
         .quick-action-btn.fund-btn:hover:not(:disabled) .action-icon {
           background: linear-gradient(135deg, rgba(34, 197, 94, 0.3), rgba(16, 185, 129, 0.35));
+        }
+
+        .quick-action-btn.swap-btn .action-icon {
+          background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.25));
+          color: #fbbf24;
+        }
+
+        .quick-action-btn.swap-btn:hover:not(:disabled) .action-icon {
+          background: linear-gradient(135deg, rgba(251, 191, 36, 0.3), rgba(245, 158, 11, 0.35));
         }
 
         .quick-action-btn.send-btn .action-icon {
