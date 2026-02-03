@@ -33,7 +33,7 @@ export function useCreateVault() {
     const txData = encodeFunctionData({
       abi: FaucetManagerABI as any,
       functionName: 'createVault',
-      args: [data.name, data.description, claimAmountWei, data.vaultType, data.whitelistEnabled],
+      args: [data.name, data.description, claimAmountWei, data.vaultType, data.whitelistEnabled, data.zkPassportRequired, data.allowedToken],
     });
 
     const result = await sendTransaction(
@@ -274,5 +274,51 @@ export function useFaucetPause() {
     pause,
     unpause,
     canPause: Boolean(faucetManager && activeWallet),
+  };
+}
+
+/**
+ * Hook to update vault gating settings (zkPassport and token gating)
+ */
+export function useUpdateVaultGating() {
+  const { faucetManager, chainId } = useSwagAddresses();
+  const { wallets } = useWallets();
+  const { sendTransaction } = useSendTransaction();
+  const queryClient = useQueryClient();
+
+  const activeWallet = wallets?.[0];
+
+  const updateVaultGating = async (vaultId: number, zkPassportRequired: boolean, allowedToken: string) => {
+    if (!faucetManager || !chainId) {
+      throw new Error('Missing contract address');
+    }
+
+    if (!activeWallet) {
+      throw new Error('Wallet not connected');
+    }
+
+    const txData = encodeFunctionData({
+      abi: FaucetManagerABI as any,
+      functionName: 'updateVaultGating',
+      args: [vaultId, zkPassportRequired, allowedToken],
+    });
+
+    const result = await sendTransaction(
+      {
+        to: faucetManager as `0x${string}`,
+        data: txData,
+        chainId,
+      },
+      { sponsor: true }
+    );
+
+    queryClient.invalidateQueries({ queryKey: ['faucet-all-vaults'] });
+
+    return result;
+  };
+
+  return {
+    updateVaultGating,
+    canUpdateGating: Boolean(faucetManager && activeWallet),
   };
 }

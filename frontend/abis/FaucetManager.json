@@ -291,6 +291,18 @@
         "internalType": "bool",
         "name": "whitelistEnabled",
         "type": "bool"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "zkPassportRequired",
+        "type": "bool"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "allowedToken",
+        "type": "address"
       }
     ],
     "name": "VaultCreated",
@@ -319,6 +331,31 @@
       }
     ],
     "name": "VaultDeposit",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "vaultId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "zkPassportRequired",
+        "type": "bool"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "allowedToken",
+        "type": "address"
+      }
+    ],
+    "name": "VaultGatingUpdated",
     "type": "event"
   },
   {
@@ -594,6 +631,16 @@
         "internalType": "bool",
         "name": "whitelistEnabled",
         "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "zkPassportRequired",
+        "type": "bool"
+      },
+      {
+        "internalType": "address",
+        "name": "allowedToken",
+        "type": "address"
       }
     ],
     "name": "createVault",
@@ -677,6 +724,16 @@
             "type": "bool"
           },
           {
+            "internalType": "bool",
+            "name": "zkPassportRequired",
+            "type": "bool"
+          },
+          {
+            "internalType": "address",
+            "name": "allowedToken",
+            "type": "address"
+          },
+          {
             "internalType": "uint256",
             "name": "createdAt",
             "type": "uint256"
@@ -740,6 +797,16 @@
             "internalType": "bool",
             "name": "whitelistEnabled",
             "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "zkPassportRequired",
+            "type": "bool"
+          },
+          {
+            "internalType": "address",
+            "name": "allowedToken",
+            "type": "address"
           },
           {
             "internalType": "uint256",
@@ -961,6 +1028,16 @@
             "internalType": "bool",
             "name": "whitelistEnabled",
             "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "zkPassportRequired",
+            "type": "bool"
+          },
+          {
+            "internalType": "address",
+            "name": "allowedToken",
+            "type": "address"
           },
           {
             "internalType": "uint256",
@@ -1321,6 +1398,29 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "vaultId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "zkPassportRequired",
+        "type": "bool"
+      },
+      {
+        "internalType": "address",
+        "name": "allowedToken",
+        "type": "address"
+      }
+    ],
+    "name": "updateVaultGating",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "vaultCount",
     "outputs": [
@@ -1387,6 +1487,16 @@
         "internalType": "bool",
         "name": "whitelistEnabled",
         "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "zkPassportRequired",
+        "type": "bool"
+      },
+      {
+        "internalType": "address",
+        "name": "allowedToken",
+        "type": "address"
       },
       {
         "internalType": "uint256",

@@ -41,6 +41,8 @@ export function useAllVaults() {
         vaultType: vault.vaultType as VaultType,
         active: vault.active,
         whitelistEnabled: vault.whitelistEnabled,
+        zkPassportRequired: vault.zkPassportRequired,
+        allowedToken: vault.allowedToken,
         createdAt: Number(vault.createdAt),
       }));
 

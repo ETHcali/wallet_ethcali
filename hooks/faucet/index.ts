@@ -15,6 +15,7 @@ export {
   useVaultDeposit,
   useVaultWithdraw,
   useFaucetPause,
+  useUpdateVaultGating,
 } from './useVaultMutations';
 
 // Whitelist hooks

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
@@ -9,8 +9,6 @@ export default function Home() {
   const { login, ready, authenticated } = usePrivy();
   const { wallets } = useWallets();
   const router = useRouter();
-  const [currentChainId, setCurrentChainId] = useState(8453);
-
   const userWallet = wallets?.[0];
 
   // Auto-redirect authenticated users to wallet
@@ -55,10 +53,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-950">
       {authenticated && (
-        <Navigation 
-          currentChainId={currentChainId}
-          onChainChange={setCurrentChainId}
-        />
+        <Navigation />
       )}
       
       {!authenticated ? (
@@ -160,7 +155,7 @@ export default function Home() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 sm:gap-8">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-8">
                 <div className="bg-gray-900/50 border border-gray-700 rounded-xl p-4 sm:p-8 text-center">
                   <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-500/10 rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4">
                     <Image src="/infraused/privy.png" alt="Privy" width={40} height={40} className="w-8 h-8 sm:w-10 sm:h-10" unoptimized />
@@ -188,6 +183,16 @@ export default function Home() {
                   <h3 className="text-base sm:text-xl font-bold text-purple-400 mb-2 sm:mb-3">ENS</h3>
                   <p className="text-gray-500 text-xs sm:text-sm">
                     Decentralized naming on Ethereum and Internet.
+                  </p>
+                </div>
+
+                <div className="bg-gray-900/50 border border-gray-700 rounded-xl p-4 sm:p-8 text-center">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-purple-500/10 rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                    <Image src="/infraused/poaplogo.png" alt="POAP" width={40} height={40} className="w-8 h-8 sm:w-10 sm:h-10" unoptimized />
+                  </div>
+                  <h3 className="text-base sm:text-xl font-bold text-purple-400 mb-2 sm:mb-3">POAP</h3>
+                  <p className="text-gray-500 text-xs sm:text-sm">
+                    Proof of Attendance Protocol for event verification and discounts.
                   </p>
                 </div>
 

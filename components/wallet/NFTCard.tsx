@@ -5,10 +5,11 @@ import { UserNFT } from '../../hooks/useUserNFTs';
 import { RedemptionStatus } from '../../types/swag';
 import { NFTQRModal } from './NFTQRModal';
 import { useRedeem } from '../../hooks/useRedemption';
-import { useDesignTokenTraits, useDesignInfo } from '../../hooks/useSwagStore';
+import { useVariantUri } from '../../hooks/swag';
 import { getIPFSGatewayUrl } from '../../lib/pinata';
 import { useSwagAddresses } from '../../utils/network';
 import { logger } from '../../utils/logger';
+import type { Swag1155Metadata } from '../../types/swag';
 
 interface NFTCardProps {
   nft: UserNFT;
@@ -36,17 +37,21 @@ export function NFTCard({ nft, onRedeemSuccess }: NFTCardProps) {
   // Use designAddress and chainId from NFT, or fallback to defaults
   const designAddress = nft.designAddress;
   const chainId = nft.chainId || defaultChainId;
-  
-  // Fetch design info to get the image URL from contract (same as ProductCard)
-  const { designInfo } = useDesignInfo(designAddress || '', chainId);
-  
-  // Fetch token traits if we have designAddress
-  const { traits, isLoading: isLoadingTraits } = useDesignTokenTraits(
-    nft.tokenId,
-    designAddress || '',
-    chainId
-  );
-  
+
+  // Fetch metadata URI from contract
+  const { uri } = useVariantUri(designAddress || '', chainId, Number(nft.tokenId));
+  const [metadata, setMetadata] = useState<Swag1155Metadata | null>(null);
+  const [metadataLoaded, setMetadataLoaded] = useState(false);
+
+  if (uri && !metadataLoaded) {
+    setMetadataLoaded(true);
+    const url = getIPFSGatewayUrl(uri) || uri;
+    fetch(url)
+      .then(r => r.json())
+      .then(data => setMetadata(data as Swag1155Metadata))
+      .catch(() => {});
+  }
+
   // Only initialize useRedeem if we have designAddress
   const { redeem, canRedeem } = useRedeem(designAddress || '', chainId);
   const [isRedeeming, setIsRedeeming] = useState(false);
@@ -75,14 +80,14 @@ export function NFTCard({ nft, onRedeemSuccess }: NFTCardProps) {
     }
   };
 
-  // Use image from designInfo (contract) like ProductCard does, fallback to metadata image
-  const imageUrl = designInfo?.imageUrl 
-    ? getIPFSGatewayUrl(designInfo.imageUrl) || designInfo.imageUrl
+  // Use image from metadata URI, fallback to NFT metadata image
+  const imageUrl = metadata?.image
+    ? getIPFSGatewayUrl(metadata.image) || metadata.image
     : (nft.image ? getIPFSGatewayUrl(nft.image) || nft.image : '');
 
-  // Use name and description from designInfo (contract) like ProductCard, fallback to metadata
-  const displayName = designInfo?.name || nft.name;
-  const displayDescription = designInfo?.description || nft.description;
+  // Use name and description from metadata URI, fallback to NFT metadata
+  const displayName = metadata?.name || nft.name;
+  const displayDescription = metadata?.description || nft.description;
 
   return (
     <>
@@ -153,33 +158,23 @@ export function NFTCard({ nft, onRedeemSuccess }: NFTCardProps) {
               <span className="detail-value font-mono">#{nft.tokenId.toString()}</span>
             </div>
 
-            {/* Show traits from Design contract if available */}
-            {traits && !isLoadingTraits && (
+            {/* Show attributes from metadata URI if available */}
+            {metadata?.attributes && metadata.attributes.length > 0 && (
               <div className="nft-attributes">
-                <div className="attributes-header">Traits</div>
+                <div className="attributes-header">Attributes</div>
                 <div className="attributes-grid">
-                  <div className="attribute-item">
-                    <span className="attribute-type">Size:</span>
-                    <span className="attribute-value">{traits.size}</span>
-                  </div>
-                  <div className="attribute-item">
-                    <span className="attribute-type">Gender:</span>
-                    <span className="attribute-value">{traits.gender}</span>
-                  </div>
-                  <div className="attribute-item">
-                    <span className="attribute-type">Color:</span>
-                    <span className="attribute-value">{traits.color}</span>
-                  </div>
-                  <div className="attribute-item">
-                    <span className="attribute-type">Style:</span>
-                    <span className="attribute-value">{traits.style}</span>
-                  </div>
+                  {metadata.attributes.map((attr, idx) => (
+                    <div key={idx} className="attribute-item">
+                      <span className="attribute-type">{attr.trait_type}:</span>
+                      <span className="attribute-value">{attr.value}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
-            
-            {/* Fallback to metadata attributes if traits not available */}
-            {(!traits || isLoadingTraits) && nft.attributes && nft.attributes.length > 0 && (
+
+            {/* Fallback to NFT metadata attributes */}
+            {!metadata?.attributes && nft.attributes && nft.attributes.length > 0 && (
               <div className="nft-attributes">
                 <div className="attributes-header">Attributes</div>
                 <div className="attributes-grid">

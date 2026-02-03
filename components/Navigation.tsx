@@ -65,9 +65,9 @@ const Navigation: React.FC<NavigationProps> = ({
 
   // Check if user is admin/owner on the current chain's contracts
   // Pass displayChainId to ensure hooks check the currently selected chain
-  const { isAdmin: isSwagAdmin, walletAddress: swagWalletAddress } = useContractAdmin(displayChainId);
-  const { isAdmin: isFaucetAdmin, isSuperAdmin: isFaucetSuperAdmin, walletAddress: faucetWalletAddress } = useFaucetManagerAdmin(displayChainId);
-  const { isOwner: isZKPassportOwner, walletAddress: zkWalletAddress } = useZKPassportAdmin(displayChainId);
+  const { isAdmin: isSwagAdmin } = useContractAdmin(displayChainId);
+  const { isAdmin: isFaucetAdmin, isSuperAdmin: isFaucetSuperAdmin } = useFaucetManagerAdmin(displayChainId);
+  const { isOwner: isZKPassportOwner } = useZKPassportAdmin(displayChainId);
 
   // Debug logging for admin status
   useEffect(() => {

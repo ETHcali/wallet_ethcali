@@ -15,10 +15,10 @@ export default function SwagStorePage() {
 
   // Invalidate queries when chain changes to refresh data
   useEffect(() => {
-    queryClient.removeQueries({ queryKey: ['design-info'] });
-    queryClient.removeQueries({ queryKey: ['design-discount-config'] });
-    queryClient.removeQueries({ queryKey: ['design-remaining-supply'] });
-    queryClient.removeQueries({ queryKey: ['design-price-with-discounts'] });
+    queryClient.removeQueries({ queryKey: ['swag-token-ids'] });
+    queryClient.removeQueries({ queryKey: ['swag-variant'] });
+    queryClient.removeQueries({ queryKey: ['swag-variant-remaining'] });
+    queryClient.removeQueries({ queryKey: ['swag-discounted-price'] });
   }, [chainId, queryClient]);
 
   return (

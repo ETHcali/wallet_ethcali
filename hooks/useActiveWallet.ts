@@ -22,18 +22,3 @@ export function useActiveWallet() {
   };
 }
 
-/**
- * Helper to check if an address matches any connected wallet
- */
-export function useIsConnectedAddress(targetAddress: string | undefined) {
-  const { wallets, ready } = useWallets();
-
-  const isConnected = useMemo(() => {
-    if (!targetAddress || !wallets || wallets.length === 0) return false;
-    return wallets.some(
-      w => w.address?.toLowerCase() === targetAddress.toLowerCase()
-    );
-  }, [wallets, targetAddress]);
-
-  return { isConnected, ready };
-}

@@ -1,176 +1,129 @@
-import { useState, useEffect } from 'react';
-import Image from 'next/image';
-import {
-  useUpdateDesignInfo,
-  useUpdateDesignDiscountConfig,
-  useSetDesignPrice,
-  useSetDesignTotalSupply,
-} from '../../hooks/swag';
-import { useDesignInfo, useDesignDiscountConfig } from '../../hooks/useSwagStore';
-import { getIPFSGatewayUrl } from '../../lib/pinata';
-import type { DesignInfo, DiscountConfig, DiscountType } from '../../types/swag';
+import { useState } from 'react';
+import { useVariant, useVariantUri, useSetVariant, useSetVariantWithURI } from '../../hooks/swag';
+import { useRoyalties, useTotalRoyaltyBps, useAddRoyalty, useClearRoyalties } from '../../hooks/swag';
+import { usePoapDiscounts, useHolderDiscounts, useAddPoapDiscount, useRemovePoapDiscount, useAddHolderDiscount, useRemoveHolderDiscount } from '../../hooks/swag';
+import { DiscountType } from '../../types/swag';
 
 interface AdminProductEditModalProps {
-  designAddress: string;
+  tokenId: number;
+  contractAddress: string;
   chainId: number;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export function AdminProductEditModal({ designAddress, chainId, onClose, onSuccess }: AdminProductEditModalProps) {
-  const { designInfo, isLoading: isLoadingDesign } = useDesignInfo(designAddress, chainId);
-  const { discountConfig, isLoading: isLoadingDiscount } = useDesignDiscountConfig(designAddress, chainId);
-  const { updateDesignInfo, canUpdate: canUpdateInfo } = useUpdateDesignInfo(designAddress, chainId);
-  const { updateDiscountConfig, canUpdate: canUpdateDiscount } = useUpdateDesignDiscountConfig(designAddress, chainId);
-  const { setPrice, canSet: canSetPrice } = useSetDesignPrice(designAddress, chainId);
-  const { setTotalSupply, canSet: canSetSupply } = useSetDesignTotalSupply(designAddress, chainId);
+export function AdminProductEditModal({ tokenId, contractAddress, chainId, onClose, onSuccess }: AdminProductEditModalProps) {
+  const { variant, isLoading: isLoadingVariant } = useVariant(contractAddress, chainId, tokenId);
+  const { uri: currentUri } = useVariantUri(contractAddress, chainId, tokenId);
+  const { setVariant, canSet } = useSetVariant(contractAddress, chainId);
+  const { setVariantWithURI } = useSetVariantWithURI(contractAddress, chainId);
+  const { royalties, isLoading: isLoadingRoyalties, refetch: refetchRoyalties } = useRoyalties(contractAddress, chainId, tokenId);
+  const { totalBps, refetch: refetchBps } = useTotalRoyaltyBps(contractAddress, chainId, tokenId);
+  const { addRoyalty, canAdd } = useAddRoyalty(contractAddress, chainId);
+  const { clearRoyalties, canClear } = useClearRoyalties(contractAddress, chainId);
 
-  const [activeTab, setActiveTab] = useState<'info' | 'discount'>('info');
+  // Discount hooks
+  const { poapDiscounts, isLoading: isLoadingPoapDiscounts, refetch: refetchPoapDiscounts } = usePoapDiscounts(contractAddress, chainId, tokenId);
+  const { holderDiscounts, isLoading: isLoadingHolderDiscounts, refetch: refetchHolderDiscounts } = useHolderDiscounts(contractAddress, chainId, tokenId);
+  const { addPoapDiscount, canAdd: canAddPoap } = useAddPoapDiscount(contractAddress, chainId);
+  const { removePoapDiscount } = useRemovePoapDiscount(contractAddress, chainId);
+  const { addHolderDiscount, canAdd: canAddHolder } = useAddHolderDiscount(contractAddress, chainId);
+  const { removeHolderDiscount } = useRemoveHolderDiscount(contractAddress, chainId);
+
+  const [activeTab, setActiveTab] = useState<'variant' | 'royalties' | 'discounts'>('variant');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Design Info form state
-  const [designForm, setDesignForm] = useState<Partial<DesignInfo>>({});
-  // Discount form state
-  const [discountForm, setDiscountForm] = useState<Partial<DiscountConfig>>({});
+  // Variant form
+  const [priceInput, setPriceInput] = useState('');
+  const [maxSupplyInput, setMaxSupplyInput] = useState('');
+  const [activeInput, setActiveInput] = useState(true);
+  const [uriInput, setUriInput] = useState('');
+  const [formInitialized, setFormInitialized] = useState(false);
 
-  // Initialize forms when data loads
-  useEffect(() => {
-    if (designInfo) {
-      setDesignForm({
-        name: designInfo.name,
-        description: designInfo.description,
-        imageUrl: designInfo.imageUrl,
-        website: designInfo.website,
-        gender: designInfo.gender,
-        color: designInfo.color,
-        style: designInfo.style,
-      });
-    }
-  }, [designInfo]);
+  // Initialize form when variant data loads
+  if (variant && !formInitialized) {
+    setPriceInput((Number(variant.price) / 1e6).toFixed(2));
+    setMaxSupplyInput(Number(variant.maxSupply).toString());
+    setActiveInput(variant.active);
+    setUriInput(currentUri || '');
+    setFormInitialized(true);
+  }
 
-  useEffect(() => {
-    if (discountConfig) {
-      setDiscountForm({
-        smartContractEnabled: discountConfig.smartContractEnabled,
-        smartContractAddress: discountConfig.smartContractAddress,
-        smartContractDiscount: discountConfig.smartContractDiscount,
-        poapEnabled: discountConfig.poapEnabled,
-        poapEventId: discountConfig.poapEventId,
-        poapDiscount: discountConfig.poapDiscount,
-        discountType: discountConfig.discountType,
-      });
-    }
-  }, [discountConfig]);
+  // Royalty form
+  const [royaltyRecipient, setRoyaltyRecipient] = useState('');
+  const [royaltyPercentage, setRoyaltyPercentage] = useState('');
 
-  const handleUpdateDesignInfo = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!designInfo) return;
+  // POAP discount form
+  const [poapEventId, setPoapEventId] = useState('');
+  const [poapDiscountPct, setPoapDiscountPct] = useState('');
 
+  // Holder discount form
+  const [holderToken, setHolderToken] = useState('');
+  const [holderDiscountType, setHolderDiscountType] = useState<DiscountType>(DiscountType.Percentage);
+  const [holderValue, setHolderValue] = useState('');
+
+  const handleSaveVariant = async () => {
     setError(null);
-    setIsSubmitting(true);
-
-    try {
-      const updatedDesignInfo: DesignInfo = {
-        ...designInfo,
-        ...designForm,
-        name: designForm.name || designInfo.name,
-        description: designForm.description || designInfo.description,
-        imageUrl: designForm.imageUrl || designInfo.imageUrl,
-        website: designForm.website || designInfo.website,
-        gender: designForm.gender || designInfo.gender,
-        color: designForm.color || designInfo.color,
-        style: designForm.style || designInfo.style,
-      };
-
-      await updateDesignInfo(updatedDesignInfo);
-      onSuccess();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update Design info');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleUpdatePrice = async () => {
-    if (!designInfo) return;
-    const priceInput = (document.getElementById('price-input') as HTMLInputElement)?.value;
-    if (!priceInput) return;
-
     const price = parseFloat(priceInput);
-    if (isNaN(price) || price < 0) {
-      setError('Please enter a valid price');
-      return;
-    }
+    if (isNaN(price) || price < 0) { setError('Invalid price'); return; }
+    const maxSupply = parseInt(maxSupplyInput, 10);
+    if (isNaN(maxSupply) || maxSupply < 0) { setError('Invalid max supply'); return; }
 
-    setError(null);
     setIsSubmitting(true);
-
     try {
-      await setPrice(price);
+      const priceBigInt = BigInt(Math.round(price * 1e6));
+      const maxSupplyBigInt = BigInt(maxSupply);
+      if (uriInput && uriInput !== currentUri) {
+        await setVariantWithURI(tokenId, priceBigInt, maxSupplyBigInt, activeInput, uriInput);
+      } else {
+        await setVariant(tokenId, priceBigInt, maxSupplyBigInt, activeInput);
+      }
       onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update price');
+      setError(err instanceof Error ? err.message : 'Failed to update variant');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleUpdateSupply = async () => {
-    if (!designInfo) return;
-    const supplyInput = (document.getElementById('supply-input') as HTMLInputElement)?.value;
-    if (!supplyInput) return;
-
-    const supply = parseInt(supplyInput, 10);
-    const minted = Number(designInfo.minted);
-    if (isNaN(supply) || supply < minted) {
-      setError(`Supply must be at least ${minted} (already minted)`);
-      return;
-    }
-
+  const handleAddRoyalty = async () => {
     setError(null);
-    setIsSubmitting(true);
+    if (!royaltyRecipient.trim()) { setError('Enter recipient address'); return; }
+    const pct = parseFloat(royaltyPercentage);
+    if (isNaN(pct) || pct <= 0 || pct > 100) { setError('Percentage must be between 0 and 100'); return; }
+    const bps = Math.round(pct * 100); // 5% = 500 bps
 
+    setIsSubmitting(true);
     try {
-      await setTotalSupply(supply);
-      onSuccess();
+      await addRoyalty(tokenId, royaltyRecipient.trim(), bps);
+      setRoyaltyRecipient('');
+      setRoyaltyPercentage('');
+      refetchRoyalties();
+      refetchBps();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update supply');
+      setError(err instanceof Error ? err.message : 'Failed to add royalty');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleUpdateDiscount = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!discountConfig) return;
-
+  const handleClearRoyalties = async () => {
+    if (!confirm('Clear all royalties for this token?')) return;
     setError(null);
     setIsSubmitting(true);
-
     try {
-      const updatedDiscount: DiscountConfig = {
-        ...discountConfig,
-        ...discountForm,
-        smartContractEnabled: discountForm.smartContractEnabled ?? discountConfig.smartContractEnabled,
-        smartContractAddress: discountForm.smartContractAddress || discountConfig.smartContractAddress,
-        smartContractDiscount: discountForm.smartContractDiscount ?? discountConfig.smartContractDiscount,
-        poapEnabled: discountForm.poapEnabled ?? discountConfig.poapEnabled,
-        poapEventId: discountForm.poapEventId ?? discountConfig.poapEventId,
-        poapDiscount: discountForm.poapDiscount ?? discountConfig.poapDiscount,
-        discountType: discountForm.discountType ?? discountConfig.discountType,
-      };
-
-      await updateDiscountConfig(updatedDiscount);
-      onSuccess();
+      await clearRoyalties(tokenId);
+      refetchRoyalties();
+      refetchBps();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update discount config');
+      setError(err instanceof Error ? err.message : 'Failed to clear royalties');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (isLoadingDesign || isLoadingDiscount) {
+  if (isLoadingVariant) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
         <div className="text-white">Loading...</div>
@@ -178,40 +131,17 @@ export function AdminProductEditModal({ designAddress, chainId, onClose, onSucce
     );
   }
 
-  if (!designInfo) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-        <div className="text-red-300">Design not found</div>
-      </div>
-    );
-  }
-
-  const imageUrl = getIPFSGatewayUrl(designInfo.imageUrl || '') || '/logo_eth_cali.png';
-  const currentPrice = Number(designInfo.pricePerUnit) / 1_000_000;
+  const treasuryShare = 100 - totalBps / 100;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-xl">
+      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-xl">
         <div className="flex items-start justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <div className="relative h-16 w-16 rounded-lg overflow-hidden border border-slate-700">
-              <Image
-                src={imageUrl}
-                alt={designInfo.name}
-                fill
-                className="object-cover"
-                unoptimized
-              />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-white">{designInfo.name}</h2>
-              <p className="text-sm text-slate-500 font-mono">Design: {designAddress.slice(0, 10)}...</p>
-            </div>
+          <div>
+            <h2 className="text-xl font-semibold text-white">Edit Token #{tokenId}</h2>
+            <p className="text-sm text-slate-500 font-mono">{contractAddress.slice(0, 10)}...</p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-white transition"
-          >
+          <button onClick={onClose} className="text-slate-400 hover:text-white transition">
             <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -221,158 +151,70 @@ export function AdminProductEditModal({ designAddress, chainId, onClose, onSucce
         {/* Tabs */}
         <div className="flex gap-2 mb-6 border-b border-slate-700">
           <button
-            onClick={() => setActiveTab('info')}
+            onClick={() => setActiveTab('variant')}
             className={`px-4 py-2 text-sm font-medium transition ${
-              activeTab === 'info'
-                ? 'text-cyan-400 border-b-2 border-cyan-400'
-                : 'text-slate-400 hover:text-slate-300'
+              activeTab === 'variant' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-slate-400 hover:text-slate-300'
             }`}
           >
-            Design Info
+            Variant Info
           </button>
           <button
-            onClick={() => setActiveTab('discount')}
+            onClick={() => setActiveTab('royalties')}
             className={`px-4 py-2 text-sm font-medium transition ${
-              activeTab === 'discount'
-                ? 'text-cyan-400 border-b-2 border-cyan-400'
-                : 'text-slate-400 hover:text-slate-300'
+              activeTab === 'royalties' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-slate-400 hover:text-slate-300'
+            }`}
+          >
+            Royalties
+          </button>
+          <button
+            onClick={() => setActiveTab('discounts')}
+            className={`px-4 py-2 text-sm font-medium transition ${
+              activeTab === 'discounts' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-slate-400 hover:text-slate-300'
             }`}
           >
             Discounts
           </button>
         </div>
 
-        {activeTab === 'info' && (
-          <form onSubmit={handleUpdateDesignInfo} className="space-y-4">
+        {activeTab === 'variant' && (
+          <div className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="block text-sm text-slate-400">Name</label>
-                <input
-                  type="text"
-                  value={designForm.name || ''}
-                  onChange={(e) => setDesignForm({ ...designForm, name: e.target.value })}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800 p-3 text-white focus:border-cyan-400 focus:outline-none"
-                  disabled={isSubmitting}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-sm text-slate-400">Image URL</label>
-                <input
-                  type="text"
-                  value={designForm.imageUrl || ''}
-                  onChange={(e) => setDesignForm({ ...designForm, imageUrl: e.target.value })}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800 p-3 text-white focus:border-cyan-400 focus:outline-none"
-                  placeholder="ipfs://... or https://..."
-                  disabled={isSubmitting}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-sm text-slate-400">Description</label>
-              <textarea
-                value={designForm.description || ''}
-                onChange={(e) => setDesignForm({ ...designForm, description: e.target.value })}
-                rows={3}
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 p-3 text-white focus:border-cyan-400 focus:outline-none"
-                disabled={isSubmitting}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-sm text-slate-400">Website</label>
-              <input
-                type="text"
-                value={designForm.website || ''}
-                onChange={(e) => setDesignForm({ ...designForm, website: e.target.value })}
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 p-3 text-white focus:border-cyan-400 focus:outline-none"
-                placeholder="https://..."
-                disabled={isSubmitting}
-              />
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <label className="block text-sm text-slate-400">Gender</label>
-                <input
-                  type="text"
-                  value={designForm.gender || ''}
-                  onChange={(e) => setDesignForm({ ...designForm, gender: e.target.value })}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800 p-3 text-white focus:border-cyan-400 focus:outline-none"
-                  placeholder="Male, Female, Unisex"
-                  disabled={isSubmitting}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="block text-sm text-slate-400">Color</label>
-                <input
-                  type="text"
-                  value={designForm.color || ''}
-                  onChange={(e) => setDesignForm({ ...designForm, color: e.target.value })}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800 p-3 text-white focus:border-cyan-400 focus:outline-none"
-                  disabled={isSubmitting}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="block text-sm text-slate-400">Style</label>
-                <input
-                  type="text"
-                  value={designForm.style || ''}
-                  onChange={(e) => setDesignForm({ ...designForm, style: e.target.value })}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800 p-3 text-white focus:border-cyan-400 focus:outline-none"
-                  disabled={isSubmitting}
-                />
-              </div>
-            </div>
-
-            {/* Quick price and supply updates */}
-            <div className="grid md:grid-cols-2 gap-4 pt-4 border-t border-slate-700">
-              <div className="space-y-2">
                 <label className="block text-sm text-slate-400">Price (USDC)</label>
-                <div className="flex gap-2">
-                  <input
-                    id="price-input"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    defaultValue={currentPrice.toFixed(2)}
-                    className="flex-1 rounded-lg border border-slate-700 bg-slate-800 p-3 text-white focus:border-cyan-400 focus:outline-none"
-                    disabled={isSubmitting || !canSetPrice}
-                  />
-                  <button
-                    type="button"
-                    onClick={handleUpdatePrice}
-                    disabled={isSubmitting || !canSetPrice}
-                    className="px-4 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/20 transition disabled:opacity-50"
-                  >
-                    Update
-                  </button>
-                </div>
+                <input type="number" min="0" step="0.01" value={priceInput}
+                  onChange={(e) => setPriceInput(e.target.value)}
+                  className="w-full rounded-lg border border-slate-700 bg-slate-800 p-3 text-white focus:border-cyan-400 focus:outline-none"
+                  disabled={isSubmitting} />
               </div>
-
               <div className="space-y-2">
-                <label className="block text-sm text-slate-400">Total Supply</label>
-                <div className="flex gap-2">
-                  <input
-                    id="supply-input"
-                    type="number"
-                    min={Number(designInfo.minted)}
-                    defaultValue={Number(designInfo.totalSupply).toString()}
-                    className="flex-1 rounded-lg border border-slate-700 bg-slate-800 p-3 text-white focus:border-cyan-400 focus:outline-none"
-                    disabled={isSubmitting || !canSetSupply}
-                  />
-                  <button
-                    type="button"
-                    onClick={handleUpdateSupply}
-                    disabled={isSubmitting || !canSetSupply}
-                    className="px-4 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/20 transition disabled:opacity-50"
-                  >
-                    Update
-                  </button>
-                </div>
-                <p className="text-xs text-slate-500">{Number(designInfo.minted)} already minted</p>
+                <label className="block text-sm text-slate-400">Max Supply</label>
+                <input type="number" min="0" value={maxSupplyInput}
+                  onChange={(e) => setMaxSupplyInput(e.target.value)}
+                  className="w-full rounded-lg border border-slate-700 bg-slate-800 p-3 text-white focus:border-cyan-400 focus:outline-none"
+                  disabled={isSubmitting} />
+                {variant && <p className="text-xs text-slate-500">{Number(variant.minted)} already minted</p>}
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm text-slate-400">Metadata URI</label>
+              <input type="text" value={uriInput}
+                onChange={(e) => setUriInput(e.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 p-3 text-white font-mono text-sm focus:border-cyan-400 focus:outline-none"
+                placeholder="ipfs://... or https://..."
+                disabled={isSubmitting} />
+            </div>
+
+            <div className="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-800 p-4">
+              <div>
+                <p className="text-white font-medium">Active Status</p>
+                <p className="text-xs text-slate-500">{activeInput ? 'Available for purchase' : 'Not available'}</p>
+              </div>
+              <button type="button" onClick={() => setActiveInput(!activeInput)}
+                className={`relative h-6 w-11 rounded-full transition-colors ${activeInput ? 'bg-green-500' : 'bg-slate-600'}`}
+                disabled={isSubmitting}>
+                <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-md transition-transform ${activeInput ? 'translate-x-5' : 'translate-x-0.5'}`} />
+              </button>
             </div>
 
             {error && (
@@ -382,137 +224,294 @@ export function AdminProductEditModal({ designAddress, chainId, onClose, onSucce
             )}
 
             <div className="flex gap-3 pt-4">
-              <button
-                type="button"
-                onClick={onClose}
+              <button type="button" onClick={onClose}
                 className="flex-1 rounded-lg border border-slate-600 bg-slate-800 py-3 text-white hover:bg-slate-700 transition"
-                disabled={isSubmitting}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isSubmitting || !canUpdateInfo}
-                className="flex-1 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 py-3 font-medium text-white shadow-lg shadow-cyan-500/20 hover:opacity-90 disabled:opacity-50 transition"
-              >
-                {isSubmitting ? 'Updating...' : 'Save Design Info'}
+                disabled={isSubmitting}>Cancel</button>
+              <button onClick={handleSaveVariant} disabled={isSubmitting || !canSet}
+                className="flex-1 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 py-3 font-medium text-white shadow-lg shadow-cyan-500/20 hover:opacity-90 disabled:opacity-50 transition">
+                {isSubmitting ? 'Saving...' : 'Save Variant'}
               </button>
             </div>
-          </form>
+          </div>
         )}
 
-        {activeTab === 'discount' && discountConfig && (
-          <form onSubmit={handleUpdateDiscount} className="space-y-4">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="block text-sm text-slate-400">Discount Type</label>
-                <select
-                  value={discountForm.discountType ?? discountConfig.discountType}
-                  onChange={(e) => setDiscountForm({ ...discountForm, discountType: Number(e.target.value) as DiscountType })}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800 p-3 text-white focus:border-cyan-400 focus:outline-none"
-                  disabled={isSubmitting}
+        {activeTab === 'royalties' && (
+          <div className="space-y-4">
+            {/* Treasury share */}
+            <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-sm text-white font-medium">Treasury Share</p>
+                  <p className="text-xs text-slate-500">Remaining after royalty splits</p>
+                </div>
+                <p className="text-2xl font-mono text-green-400">{treasuryShare.toFixed(1)}%</p>
+              </div>
+            </div>
+
+            {/* Current royalties */}
+            <div className="space-y-2">
+              <p className="text-sm text-slate-400">Current Royalties</p>
+              {isLoadingRoyalties ? (
+                <p className="text-xs text-slate-500">Loading...</p>
+              ) : royalties.length === 0 ? (
+                <p className="text-xs text-slate-500">No royalties configured</p>
+              ) : (
+                <div className="space-y-2">
+                  {royalties.map((r, i) => (
+                    <div key={i} className="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-800 p-3">
+                      <span className="text-xs font-mono text-slate-300">{r.recipient.slice(0, 10)}...{r.recipient.slice(-6)}</span>
+                      <span className="text-sm font-mono text-cyan-400">{Number(r.percentage) / 100}%</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Add royalty form */}
+            <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4 space-y-3">
+              <p className="text-sm text-white font-medium">Add Royalty</p>
+              <div className="grid md:grid-cols-3 gap-3">
+                <div className="md:col-span-2 space-y-1">
+                  <label className="block text-xs text-slate-400">Recipient Address</label>
+                  <input type="text" value={royaltyRecipient}
+                    onChange={(e) => setRoyaltyRecipient(e.target.value)}
+                    className="w-full rounded-lg border border-slate-700 bg-slate-900 p-2 text-white text-sm font-mono focus:border-cyan-400 focus:outline-none"
+                    placeholder="0x..." disabled={isSubmitting} />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-xs text-slate-400">Percentage (%)</label>
+                  <input type="number" min="0" max="100" step="0.01" value={royaltyPercentage}
+                    onChange={(e) => setRoyaltyPercentage(e.target.value)}
+                    className="w-full rounded-lg border border-slate-700 bg-slate-900 p-2 text-white text-sm focus:border-cyan-400 focus:outline-none"
+                    placeholder="5" disabled={isSubmitting} />
+                </div>
+              </div>
+              <button onClick={handleAddRoyalty} disabled={isSubmitting || !canAdd}
+                className="w-full rounded-lg bg-cyan-500/10 border border-cyan-500/30 py-2 text-sm text-cyan-400 hover:bg-cyan-500/20 transition disabled:opacity-50">
+                {isSubmitting ? 'Adding...' : 'Add Royalty'}
+              </button>
+            </div>
+
+            {/* Clear all */}
+            {royalties.length > 0 && (
+              <button onClick={handleClearRoyalties} disabled={isSubmitting || !canClear}
+                className="w-full rounded-lg border border-red-500/30 bg-red-500/10 py-2 text-sm text-red-400 hover:bg-red-500/20 transition disabled:opacity-50">
+                {isSubmitting ? 'Clearing...' : 'Clear All Royalties'}
+              </button>
+            )}
+
+            {error && (
+              <div className="rounded-lg border border-red-500/40 bg-red-500/10 p-3">
+                <p className="text-sm text-red-300">{error}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'discounts' && (
+          <div className="space-y-6">
+            {/* POAP Discounts */}
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-white">POAP Discounts</p>
+              {isLoadingPoapDiscounts ? (
+                <p className="text-xs text-slate-500">Loading...</p>
+              ) : poapDiscounts.length === 0 ? (
+                <p className="text-xs text-slate-500">No POAP discounts configured</p>
+              ) : (
+                <div className="space-y-2">
+                  {poapDiscounts.map((d, i) => (
+                    <div key={i} className="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-800 p-3">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-mono text-slate-300">Event #{d.eventId.toString()}</span>
+                        <span className="text-sm font-mono text-cyan-400">{Number(d.discountBps) / 100}%</span>
+                        <span className={`text-xs px-2 py-0.5 rounded ${d.active ? 'bg-green-500/20 text-green-400' : 'bg-slate-600/20 text-slate-500'}`}>
+                          {d.active ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          setIsSubmitting(true);
+                          setError(null);
+                          try {
+                            await removePoapDiscount(tokenId, i);
+                            refetchPoapDiscounts();
+                          } catch (err) {
+                            setError(err instanceof Error ? err.message : 'Failed to remove');
+                          } finally {
+                            setIsSubmitting(false);
+                          }
+                        }}
+                        disabled={isSubmitting}
+                        className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Add POAP discount form */}
+              <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4 space-y-3">
+                <p className="text-sm text-white font-medium">Add POAP Discount</p>
+                <div className="grid md:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="block text-xs text-slate-400">Event ID</label>
+                    <input type="number" min="0" value={poapEventId}
+                      onChange={(e) => setPoapEventId(e.target.value)}
+                      className="w-full rounded-lg border border-slate-700 bg-slate-900 p-2 text-white text-sm font-mono focus:border-cyan-400 focus:outline-none"
+                      placeholder="12345" disabled={isSubmitting} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-xs text-slate-400">Discount (%)</label>
+                    <input type="number" min="0" max="100" step="0.01" value={poapDiscountPct}
+                      onChange={(e) => setPoapDiscountPct(e.target.value)}
+                      className="w-full rounded-lg border border-slate-700 bg-slate-900 p-2 text-white text-sm focus:border-cyan-400 focus:outline-none"
+                      placeholder="10" disabled={isSubmitting} />
+                  </div>
+                </div>
+                <button
+                  onClick={async () => {
+                    setError(null);
+                    const eventId = parseInt(poapEventId, 10);
+                    if (isNaN(eventId) || eventId < 0) { setError('Enter a valid event ID'); return; }
+                    const pct = parseFloat(poapDiscountPct);
+                    if (isNaN(pct) || pct <= 0 || pct > 100) { setError('Discount must be between 0 and 100'); return; }
+                    const bps = BigInt(Math.round(pct * 100));
+                    setIsSubmitting(true);
+                    try {
+                      await addPoapDiscount(tokenId, BigInt(eventId), bps);
+                      setPoapEventId('');
+                      setPoapDiscountPct('');
+                      refetchPoapDiscounts();
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : 'Failed to add POAP discount');
+                    } finally {
+                      setIsSubmitting(false);
+                    }
+                  }}
+                  disabled={isSubmitting || !canAddPoap}
+                  className="w-full rounded-lg bg-cyan-500/10 border border-cyan-500/30 py-2 text-sm text-cyan-400 hover:bg-cyan-500/20 transition disabled:opacity-50"
                 >
-                  <option value={0}>Percentage (basis points)</option>
-                  <option value={1}>Fixed Amount</option>
-                </select>
+                  {isSubmitting ? 'Adding...' : 'Add POAP Discount'}
+                </button>
               </div>
+            </div>
 
-              {/* POAP Discount */}
-              <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-white">POAP Discount</label>
-                  <button
-                    type="button"
-                    onClick={() => setDiscountForm({ ...discountForm, poapEnabled: !discountForm.poapEnabled })}
-                    className={`relative h-6 w-11 rounded-full transition-colors ${
-                      discountForm.poapEnabled ?? discountConfig.poapEnabled ? 'bg-green-500' : 'bg-slate-600'
-                    }`}
-                    disabled={isSubmitting}
-                  >
-                    <span
-                      className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-md transition-transform ${
-                        discountForm.poapEnabled ?? discountConfig.poapEnabled ? 'translate-x-5' : 'translate-x-0.5'
-                      }`}
-                    />
-                  </button>
-                </div>
-                {(discountForm.poapEnabled ?? discountConfig.poapEnabled) && (
-                  <div className="grid md:grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <label className="block text-xs text-slate-400">POAP Event ID</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={discountForm.poapEventId?.toString() || discountConfig.poapEventId.toString()}
-                        onChange={(e) => setDiscountForm({ ...discountForm, poapEventId: BigInt(e.target.value) })}
-                        className="w-full rounded-lg border border-slate-700 bg-slate-900 p-2 text-white text-sm focus:border-cyan-400 focus:outline-none"
+            {/* Holder Discounts */}
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-white">Holder Discounts</p>
+              {isLoadingHolderDiscounts ? (
+                <p className="text-xs text-slate-500">Loading...</p>
+              ) : holderDiscounts.length === 0 ? (
+                <p className="text-xs text-slate-500">No holder discounts configured</p>
+              ) : (
+                <div className="space-y-2">
+                  {holderDiscounts.map((d, i) => (
+                    <div key={i} className="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-800 p-3">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-mono text-slate-300">{d.token.slice(0, 10)}...{d.token.slice(-6)}</span>
+                        <span className="text-sm font-mono text-cyan-400">
+                          {d.discountType === DiscountType.Percentage
+                            ? `${Number(d.value) / 100}%`
+                            : `$${(Number(d.value) / 1e6).toFixed(2)}`}
+                        </span>
+                        <span className="text-xs text-slate-400">
+                          {d.discountType === DiscountType.Percentage ? 'Pct' : 'Fixed'}
+                        </span>
+                        <span className={`text-xs px-2 py-0.5 rounded ${d.active ? 'bg-green-500/20 text-green-400' : 'bg-slate-600/20 text-slate-500'}`}>
+                          {d.active ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          setIsSubmitting(true);
+                          setError(null);
+                          try {
+                            await removeHolderDiscount(tokenId, i);
+                            refetchHolderDiscounts();
+                          } catch (err) {
+                            setError(err instanceof Error ? err.message : 'Failed to remove');
+                          } finally {
+                            setIsSubmitting(false);
+                          }
+                        }}
                         disabled={isSubmitting}
-                      />
+                        className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50"
+                      >
+                        Remove
+                      </button>
                     </div>
-                    <div className="space-y-2">
-                      <label className="block text-xs text-slate-400">
-                        Discount {discountForm.discountType === 0 ? '(basis points)' : '(USDC units)'}
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={discountForm.poapDiscount?.toString() || discountConfig.poapDiscount.toString()}
-                        onChange={(e) => setDiscountForm({ ...discountForm, poapDiscount: BigInt(e.target.value) })}
+                  ))}
+                </div>
+              )}
+
+              {/* Add Holder discount form */}
+              <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4 space-y-3">
+                <p className="text-sm text-white font-medium">Add Holder Discount</p>
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="block text-xs text-slate-400">Token Address</label>
+                    <input type="text" value={holderToken}
+                      onChange={(e) => setHolderToken(e.target.value)}
+                      className="w-full rounded-lg border border-slate-700 bg-slate-900 p-2 text-white text-sm font-mono focus:border-cyan-400 focus:outline-none"
+                      placeholder="0x..." disabled={isSubmitting} />
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="block text-xs text-slate-400">Type</label>
+                      <select
+                        value={holderDiscountType}
+                        onChange={(e) => setHolderDiscountType(Number(e.target.value) as DiscountType)}
                         className="w-full rounded-lg border border-slate-700 bg-slate-900 p-2 text-white text-sm focus:border-cyan-400 focus:outline-none"
                         disabled={isSubmitting}
-                      />
+                      >
+                        <option value={DiscountType.Percentage}>Percentage (%)</option>
+                        <option value={DiscountType.Fixed}>Fixed (USDC)</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-xs text-slate-400">
+                        {holderDiscountType === DiscountType.Percentage ? 'Discount (%)' : 'Discount (USDC)'}
+                      </label>
+                      <input type="number" min="0" step={holderDiscountType === DiscountType.Percentage ? '0.01' : '0.01'} value={holderValue}
+                        onChange={(e) => setHolderValue(e.target.value)}
+                        className="w-full rounded-lg border border-slate-700 bg-slate-900 p-2 text-white text-sm focus:border-cyan-400 focus:outline-none"
+                        placeholder={holderDiscountType === DiscountType.Percentage ? '10' : '1.00'}
+                        disabled={isSubmitting} />
                     </div>
                   </div>
-                )}
-              </div>
-
-              {/* Smart Contract Discount */}
-              <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-white">Smart Contract Discount</label>
-                  <button
-                    type="button"
-                    onClick={() => setDiscountForm({ ...discountForm, smartContractEnabled: !discountForm.smartContractEnabled })}
-                    className={`relative h-6 w-11 rounded-full transition-colors ${
-                      discountForm.smartContractEnabled ?? discountConfig.smartContractEnabled ? 'bg-green-500' : 'bg-slate-600'
-                    }`}
-                    disabled={isSubmitting}
-                  >
-                    <span
-                      className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-md transition-transform ${
-                        discountForm.smartContractEnabled ?? discountConfig.smartContractEnabled ? 'translate-x-5' : 'translate-x-0.5'
-                      }`}
-                    />
-                  </button>
                 </div>
-                {(discountForm.smartContractEnabled ?? discountConfig.smartContractEnabled) && (
-                  <div className="grid md:grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <label className="block text-xs text-slate-400">Contract Address</label>
-                      <input
-                        type="text"
-                        value={discountForm.smartContractAddress || discountConfig.smartContractAddress}
-                        onChange={(e) => setDiscountForm({ ...discountForm, smartContractAddress: e.target.value })}
-                        className="w-full rounded-lg border border-slate-700 bg-slate-900 p-2 text-white text-sm font-mono focus:border-cyan-400 focus:outline-none"
-                        placeholder="0x..."
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="block text-xs text-slate-400">
-                        Discount {discountForm.discountType === 0 ? '(basis points)' : '(USDC units)'}
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={discountForm.smartContractDiscount?.toString() || discountConfig.smartContractDiscount.toString()}
-                        onChange={(e) => setDiscountForm({ ...discountForm, smartContractDiscount: BigInt(e.target.value) })}
-                        className="w-full rounded-lg border border-slate-700 bg-slate-900 p-2 text-white text-sm focus:border-cyan-400 focus:outline-none"
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                  </div>
-                )}
+                <button
+                  onClick={async () => {
+                    setError(null);
+                    if (!holderToken.trim()) { setError('Enter token address'); return; }
+                    const val = parseFloat(holderValue);
+                    if (isNaN(val) || val <= 0) { setError('Enter a valid value'); return; }
+                    let onChainValue: bigint;
+                    if (holderDiscountType === DiscountType.Percentage) {
+                      if (val > 100) { setError('Percentage must be <= 100'); return; }
+                      onChainValue = BigInt(Math.round(val * 100)); // bps
+                    } else {
+                      onChainValue = BigInt(Math.round(val * 1e6)); // USDC base units
+                    }
+                    setIsSubmitting(true);
+                    try {
+                      await addHolderDiscount(tokenId, holderToken.trim(), holderDiscountType, onChainValue);
+                      setHolderToken('');
+                      setHolderValue('');
+                      refetchHolderDiscounts();
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : 'Failed to add holder discount');
+                    } finally {
+                      setIsSubmitting(false);
+                    }
+                  }}
+                  disabled={isSubmitting || !canAddHolder}
+                  className="w-full rounded-lg bg-cyan-500/10 border border-cyan-500/30 py-2 text-sm text-cyan-400 hover:bg-cyan-500/20 transition disabled:opacity-50"
+                >
+                  {isSubmitting ? 'Adding...' : 'Add Holder Discount'}
+                </button>
               </div>
             </div>
 
@@ -521,25 +520,7 @@ export function AdminProductEditModal({ designAddress, chainId, onClose, onSucce
                 <p className="text-sm text-red-300">{error}</p>
               </div>
             )}
-
-            <div className="flex gap-3 pt-4">
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 rounded-lg border border-slate-600 bg-slate-800 py-3 text-white hover:bg-slate-700 transition"
-                disabled={isSubmitting}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isSubmitting || !canUpdateDiscount}
-                className="flex-1 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 py-3 font-medium text-white shadow-lg shadow-cyan-500/20 hover:opacity-90 disabled:opacity-50 transition"
-              >
-                {isSubmitting ? 'Updating...' : 'Save Discount Config'}
-              </button>
-            </div>
-          </form>
+          </div>
         )}
       </div>
     </div>

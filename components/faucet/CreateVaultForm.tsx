@@ -18,6 +18,8 @@ export function CreateVaultForm({ onSuccess }: CreateVaultFormProps) {
     claimAmount: '0.01',
     vaultType: VaultType.NonReturnable,
     whitelistEnabled: false,
+    zkPassportRequired: false,
+    allowedToken: '0x0000000000000000000000000000000000000000',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -47,6 +49,8 @@ export function CreateVaultForm({ onSuccess }: CreateVaultFormProps) {
         claimAmount: '0.01',
         vaultType: VaultType.NonReturnable,
         whitelistEnabled: false,
+        zkPassportRequired: false,
+        allowedToken: '0x0000000000000000000000000000000000000000',
       });
       onSuccess?.();
     } catch (err) {
@@ -189,6 +193,37 @@ export function CreateVaultForm({ onSuccess }: CreateVaultFormProps) {
           </div>
         </label>
       </div>
+
+      <div className="space-y-2">
+        <label className="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={form.zkPassportRequired}
+            onChange={(e) => setForm({ ...form, zkPassportRequired: e.target.checked })}
+            className="h-4 w-4 rounded border-slate-700 bg-slate-800 text-orange-500 focus:ring-orange-400 focus:ring-offset-slate-900"
+            disabled={isSubmitting}
+          />
+          <div>
+            <p className="font-medium text-white">Require ZKPassport NFT</p>
+            <p className="text-xs text-slate-500">Only ZKPassport NFT holders can claim</p>
+          </div>
+        </label>
+      </div>
+
+      {(form.zkPassportRequired || form.allowedToken !== '0x0000000000000000000000000000000000000000') && (
+        <div className="space-y-2">
+          <label className="block text-sm text-slate-400">Required Token/NFT Address</label>
+          <input
+            type="text"
+            value={form.allowedToken}
+            onChange={(e) => setForm({ ...form, allowedToken: e.target.value })}
+            className="w-full rounded-lg border border-slate-700 bg-slate-800 p-3 text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none font-mono text-sm"
+            placeholder="0x..."
+            disabled={isSubmitting}
+          />
+          <p className="text-xs text-slate-500">Set to 0x0...0 to disable</p>
+        </div>
+      )}
 
       {error && (
         <div className="rounded-lg border border-red-500/40 bg-red-500/10 p-3">

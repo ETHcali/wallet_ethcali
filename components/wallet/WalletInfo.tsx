@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Wallet, TokenBalance } from '../../types/index';
 import Loading from '../../components/shared/Loading';
 import { getTokenLogoUrl, formatTokenBalance } from '../../utils/tokenUtils';
-import { usePrivy, useWallets, useSendTransaction, useFundWallet, User } from '@privy-io/react-auth';
+import { usePrivy, useWallets, useSendTransaction, useFundWallet } from '@privy-io/react-auth';
 import SendTokenModal from './SendTokenModal';
 import QRScanner from './QRScanner';
 import { parseUnits, encodeFunctionData } from 'viem';
@@ -142,11 +142,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
       // Privy fundWallet API - opens modal for Apple Pay / Google Pay
       // Pass address and chain - asset and amount default to Dashboard settings
       const viemChain = getViemChain();
-      await fundWallet(wallet.address, {
-        chain: viemChain,
-        // asset defaults to 'native-currency' (ETH)
-        // amount defaults to Dashboard configured amount
-      });
+      await fundWallet({ address: wallet.address, options: { chain: viemChain } });
     } catch (error) {
       logger.error('Error funding wallet', error);
     } finally {

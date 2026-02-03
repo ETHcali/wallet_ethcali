@@ -127,6 +127,18 @@ export function VaultList() {
                     Whitelist Enabled
                   </span>
                 )}
+                {vault.zkPassportRequired && (
+                  <span className="inline-flex items-center gap-1.5 text-xs text-orange-400">
+                    <span className="h-2 w-2 rounded-full bg-orange-400" />
+                    ZKPassport Required
+                  </span>
+                )}
+                {vault.allowedToken !== '0x0000000000000000000000000000000000000000' && (
+                  <span className="inline-flex items-center gap-1.5 text-xs text-cyan-400">
+                    <span className="h-2 w-2 rounded-full bg-cyan-400" />
+                    Token Gated
+                  </span>
+                )}
               </div>
               <div className="flex gap-2">
                 <button

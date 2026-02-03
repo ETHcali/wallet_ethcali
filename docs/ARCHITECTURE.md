@@ -19,7 +19,7 @@
 │                                   │                                      │
 │  ┌────────────────────────────────┴───────────────────────────────────┐ │
 │  │                          Utility Layer                              │ │
-│  │   contracts.ts, network.ts, explorer.ts, errorHandling.ts, logger │ │
+│  │       contracts.ts, network.ts, explorer.ts, logger.ts            │ │
 │  └────────────────────────────────┬───────────────────────────────────┘ │
 │                                   │                                      │
 │  ┌────────────────────────────────┴───────────────────────────────────┐ │
@@ -54,41 +54,70 @@ wallet_ethcali/
 │   │   ├── WalletInfo.tsx
 │   │   ├── SendTokenModal.tsx
 │   │   ├── ReceiveModal.tsx
+│   │   ├── QRScanner.tsx
 │   │   ├── NFTCard.tsx
-│   │   └── TokenRow.tsx
+│   │   ├── NFTGrid.tsx
+│   │   └── NFTQRModal.tsx
 │   ├── faucet/          # Faucet module components
 │   │   ├── FaucetClaim.tsx
 │   │   ├── FaucetAdmin.tsx
-│   │   └── VaultList.tsx
+│   │   ├── VaultList.tsx
+│   │   ├── CreateVaultForm.tsx
+│   │   ├── VaultDepositWithdraw.tsx
+│   │   ├── VaultEditModal.tsx
+│   │   └── VaultWhitelistManager.tsx
 │   ├── sybil/           # Identity verification components
 │   │   ├── SybilVerification.tsx
-│   │   └── NFTCard.tsx
+│   │   ├── NFTCard.tsx
+│   │   └── steps/       # Verification step sub-components
 │   ├── swag/            # Merchandise store components
 │   │   ├── ProductCard.tsx
-│   │   ├── ProductGroup.tsx
-│   │   └── AdminMintedNFTs.tsx
+│   │   ├── AdminProductList.tsx
+│   │   ├── AdminProductEditModal.tsx
+│   │   ├── AdminManagement.tsx
+│   │   ├── AdminMintedNFTs.tsx
+│   │   ├── AdminNFTFulfillmentModal.tsx
+│   │   └── AdminQRScanner.tsx
+│   ├── ens/             # ENS integration
+│   │   └── ENSSection.tsx
 │   └── Navigation.tsx   # Main navigation
 │
 ├── hooks/               # Custom React hooks
 │   ├── faucet/         # Faucet-specific hooks
+│   │   ├── index.ts
 │   │   ├── useFaucetManagerAdmin.ts
 │   │   ├── useVaults.ts
-│   │   └── useVaultClaims.ts
+│   │   ├── useVaultMutations.ts
+│   │   └── useVaultWhitelist.ts
 │   ├── swag/           # Swag-specific hooks
-│   │   ├── useVariants.ts
+│   │   ├── index.ts
+│   │   ├── useVariantQueries.ts
+│   │   ├── useVariantMutations.ts
+│   │   ├── useRoyalties.ts
+│   │   ├── useDiscounts.ts
+│   │   ├── useMintedNFTs.ts
 │   │   └── useNFTFulfillment.ts
-│   ├── useTokenBalances.ts
-│   ├── useTokenPrices.ts
+│   ├── ens/            # ENS hooks
 │   ├── useActiveWallet.ts
 │   ├── useContractAdmin.ts
-│   └── useZKPassportAdmin.ts
+│   ├── useFaucetAdmin.ts
+│   ├── useRedemption.ts
+│   ├── useSwagStore.ts
+│   ├── useTokenBalances.ts
+│   ├── useTokenPrices.ts
+│   ├── useTokenTransfer.ts
+│   ├── useUserNFTs.ts
+│   ├── useZKPassportAdmin.ts
+│   ├── useZKPassportNFT.ts
+│   └── useZKPassportVerification.ts
 │
 ├── utils/               # Utility functions
 │   ├── contracts.ts    # Contract interaction helpers
 │   ├── network.ts      # Network configuration
 │   ├── explorer.ts     # Block explorer URLs
 │   ├── tokenUtils.ts   # Token formatting
-│   ├── errorHandling.ts # Centralized error handling
+│   ├── tokenGeneration.ts # Token generation utilities
+│   ├── zkpassport.ts   # ZKPassport utilities
 │   └── logger.ts       # Logging utility
 │
 ├── config/              # Configuration
@@ -165,12 +194,7 @@ Single source of truth for:
 - Contract addresses: `frontend/addresses.json`
 - Token addresses: `config/constants.ts`
 
-### 3. Error Handling
-- Centralized in `utils/errorHandling.ts`
-- User-friendly error messages
-- Development vs production error details
-
-### 4. Logging
+### 3. Logging
 - Environment-aware logging via `utils/logger.ts`
 - Debug mode controlled by `NEXT_PUBLIC_DEBUG`
 - Specialized loggers for different contexts (tx, contract, wallet, api)

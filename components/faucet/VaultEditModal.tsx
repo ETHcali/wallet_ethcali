@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { formatEther } from 'viem';
-import { useUpdateVault } from '../../hooks/faucet';
+import { useUpdateVault, useUpdateVaultGating } from '../../hooks/faucet';
 import { Vault, VaultType } from '../../types/faucet';
 
 interface VaultEditModalProps {
@@ -16,8 +16,11 @@ const vaultTypeLabels: Record<VaultType, string> = {
 
 export function VaultEditModal({ vault, onClose, onSuccess }: VaultEditModalProps) {
   const { updateVault, canUpdate } = useUpdateVault();
+  const { updateVaultGating, canUpdateGating } = useUpdateVaultGating();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isGatingSubmitting, setIsGatingSubmitting] = useState(false);
+  const [gatingError, setGatingError] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     name: vault.name,
@@ -25,6 +28,25 @@ export function VaultEditModal({ vault, onClose, onSuccess }: VaultEditModalProp
     claimAmount: formatEther(vault.claimAmount),
     active: vault.active,
   });
+
+  const [gatingForm, setGatingForm] = useState({
+    zkPassportRequired: vault.zkPassportRequired,
+    allowedToken: vault.allowedToken,
+  });
+
+  const handleGatingSubmit = async () => {
+    setGatingError(null);
+    setIsGatingSubmitting(true);
+
+    try {
+      await updateVaultGating(vault.id, gatingForm.zkPassportRequired, gatingForm.allowedToken);
+      onSuccess();
+    } catch (err) {
+      setGatingError(err instanceof Error ? err.message : 'Failed to update gating');
+    } finally {
+      setIsGatingSubmitting(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -135,6 +157,60 @@ export function VaultEditModal({ vault, onClose, onSuccess }: VaultEditModalProp
                   form.active ? 'translate-x-5' : 'translate-x-0.5'
                 }`}
               />
+            </button>
+          </div>
+
+          {/* Gating Settings */}
+          <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4 space-y-4">
+            <p className="text-xs text-slate-500 uppercase tracking-wider">Gating Settings</p>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-white font-medium">Require ZKPassport</p>
+                <p className="text-xs text-slate-500">Only ZKPassport NFT holders can claim</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setGatingForm({ ...gatingForm, zkPassportRequired: !gatingForm.zkPassportRequired })}
+                className={`relative h-6 w-11 rounded-full transition-colors ${
+                  gatingForm.zkPassportRequired ? 'bg-orange-500' : 'bg-slate-600'
+                }`}
+                disabled={isGatingSubmitting}
+              >
+                <span
+                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-md transition-transform ${
+                    gatingForm.zkPassportRequired ? 'translate-x-5' : 'translate-x-0.5'
+                  }`}
+                />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm text-slate-400">Allowed Token/NFT Address</label>
+              <input
+                type="text"
+                value={gatingForm.allowedToken}
+                onChange={(e) => setGatingForm({ ...gatingForm, allowedToken: e.target.value })}
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 p-3 text-white font-mono text-sm focus:border-cyan-400 focus:outline-none"
+                placeholder="0x..."
+                disabled={isGatingSubmitting}
+              />
+              <p className="text-xs text-slate-500">Set to 0x0...0 to disable token gating</p>
+            </div>
+
+            {gatingError && (
+              <div className="rounded-lg border border-red-500/40 bg-red-500/10 p-3">
+                <p className="text-sm text-red-300">{gatingError}</p>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={handleGatingSubmit}
+              disabled={isGatingSubmitting || !canUpdateGating}
+              className="w-full rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 py-2.5 text-sm font-medium text-white shadow-lg shadow-orange-500/20 hover:opacity-90 disabled:opacity-50 transition"
+            >
+              {isGatingSubmitting ? 'Updating Gating...' : 'Save Gating'}
             </button>
           </div>
 

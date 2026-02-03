@@ -18,6 +18,22 @@ export async function pinMetadataToIPFS(metadata: Swag1155Metadata): Promise<str
   return payload.uri as string;
 }
 
+export async function pinImageToIPFS(base64: string, fileName?: string): Promise<string> {
+  const response = await fetch('/api/pinata/pin-image', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ file: base64, fileName }),
+  });
+
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || 'Failed to pin image to IPFS');
+  }
+
+  const payload = await response.json();
+  return payload.uri as string;
+}
+
 export function getIPFSGatewayUrl(ipfsUri: string): string {
   if (!ipfsUri) return '';
   if (ipfsUri.startsWith('http')) return ipfsUri;

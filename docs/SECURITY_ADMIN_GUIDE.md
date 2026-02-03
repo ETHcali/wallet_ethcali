@@ -82,8 +82,13 @@ ACCESS CONTROL (FaucetManager, Swag1155):
 │  ADMIN_ROLE (Operations)                                     │
 │  ├── createVault()       - Create new faucet                │
 │  ├── updateVault()       - Edit vault settings              │
+│  ├── updateVaultGating() - Update vault ZKPassport/token gating │
 │  ├── deposit()           - Add ETH to vault                 │
 │  ├── withdraw()          - Remove ETH from vault            │
+│  ├── addToWhitelist()    - Add address to vault whitelist   │
+│  ├── removeFromWhitelist() - Remove address from whitelist  │
+│  ├── addBatchToWhitelist() - Batch add to whitelist         │
+│  ├── removeBatchFromWhitelist() - Batch remove from whitelist │
 │  ├── pause()             - Emergency pause                  │
 │  └── unpause()           - Resume operations                │
 │                                                              │
@@ -109,7 +114,13 @@ ACCESS CONTROL (FaucetManager, Swag1155):
 │  ├── setVariant()        - Create/edit products             │
 │  ├── setVariantWithURI() - Create with metadata             │
 │  ├── setBaseURI()        - Set default metadata URI         │
-│  └── markFulfilled()     - Confirm shipment                 │
+│  ├── addRoyalty()        - Add royalty recipient for a product │
+│  ├── clearRoyalties()    - Remove all royalties for a product │
+│  ├── markFulfilled()     - Confirm shipment                 │
+│  ├── addPoapDiscount()   - Add POAP-based discount          │
+│  ├── removePoapDiscount() - Remove POAP discount            │
+│  ├── addHolderDiscount() - Add token holder discount        │
+│  └── removeHolderDiscount() - Remove holder discount        │
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -125,18 +136,16 @@ ACCESS CONTROL (FaucetManager, Swag1155):
 # ADMIN & TREASURY CONFIGURATION
 # ============================================================
 
-# Super Admin - Has full control, can add/remove other admins
-# SECURITY: Use a multisig or hardware wallet
-SUPER_ADMIN_ADDRESS=0x...
+# Contract Admins
+SWAG_ADMIN=0x...          # Admin for Swag1155 (can manage products, royalties, admins)
+FAUCET_ADMIN=0x...        # Admin for FaucetManager (can manage vaults, admins)
+ZK_PASSPORT_ADMIN=0x...   # Owner for ZKPassportNFT (can manage metadata)
 
-# ZKPassportNFT owner (can be same as super admin)
-ZKPASSPORT_OWNER_ADDRESS=0x...
+# Treasury
+SWAG_TREASURY_ADDRESS=0x...  # Receives USDC payments (remainder after royalties)
 
-# FaucetManager admin (can be same as super admin)
-FAUCET_ADMIN_ADDRESS=0x...
-
-# Treasury wallet for Swag1155 USDC payments
-SWAG_TREASURY_ADDRESS=0x...
+# POAP Contract (required for Swag1155)
+POAP_CONTRACT_ADDRESS=0x...  # POAP contract address (immutable after deployment)
 
 # Optional: NFT metadata (can be set post-deployment)
 NFT_IMAGE_URI=ipfs://...
@@ -150,15 +159,32 @@ NFT_EXTERNAL_URL=https://yoursite.com
 # Deploy to Base mainnet
 npx hardhat run scripts/deploy-all.ts --network base
 
+# Deploy to Ethereum mainnet
+npx hardhat run scripts/deploy-all.ts --network ethereum
+
+# Deploy to Optimism mainnet
+npx hardhat run scripts/deploy-all.ts --network optimism
+
+# Deploy to Unichain mainnet
+npx hardhat run scripts/deploy-all.ts --network unichain
+
 # Deploy to testnet first
 npx hardhat run scripts/deploy-all.ts --network sepolia
 ```
 
+### Supported Networks
+
+- **Base** (Chain ID: 8453)
+- **Ethereum** (Chain ID: 1)
+- **Optimism** (Chain ID: 10)
+- **Unichain** (Chain ID: 130)
+- **Sepolia** (Chain ID: 11155111) - Testnet
+
 ### What Happens During Deployment
 
-1. **ZKPassportNFT**: Deploys, then transfers ownership to `ZKPASSPORT_OWNER_ADDRESS`
-2. **FaucetManager**: Deploys, grants roles to `FAUCET_ADMIN_ADDRESS`
-3. **Swag1155**: Deploys with `SWAG_TREASURY_ADDRESS`, grants roles to `SUPER_ADMIN_ADDRESS`
+1. **ZKPassportNFT**: Deploys, then transfers ownership to `ZK_PASSPORT_ADMIN`
+2. **FaucetManager**: Deploys, grants admin roles to `FAUCET_ADMIN`
+3. **Swag1155**: Deploys with `SWAG_TREASURY_ADDRESS` and `POAP_CONTRACT_ADDRESS` (5th constructor parameter), grants admin roles to `SWAG_ADMIN`
 
 ---
 
@@ -236,6 +262,56 @@ await swag1155.write.setUSDC(['0xNewUSDC...']);
 const usdc = await swag1155.read.usdc();
 ```
 
+### Swag1155 - Manage POAP Discounts
+
+```typescript
+// Add POAP-based discount (admin only)
+// Parameters: tokenId, eventId, discountBps (basis points, e.g., 1000 = 10%)
+await swag1155.write.addPoapDiscount([
+  tokenId,        // Product token ID
+  eventId,        // POAP event ID
+  1000n           // 10% discount (1000 basis points)
+]);
+
+// Remove POAP discount by index (admin only)
+await swag1155.write.removePoapDiscount([
+  tokenId,        // Product token ID
+  index           // Index in the discount array
+]);
+
+// Get POAP discounts for a product
+const discounts = await swag1155.read.getPoapDiscounts([tokenId]);
+```
+
+**Security Note**: POAP contract address is set at deployment and cannot be changed.
+
+### Swag1155 - Manage Holder Discounts
+
+```typescript
+// Add token holder discount (admin only)
+// Parameters: tokenId, token, discountType, value
+await swag1155.write.addHolderDiscount([
+  tokenId,        // Product token ID
+  '0xToken...',   // Token contract address
+  0,              // Discount type: 0=ERC721, 1=ERC1155, 2=ERC20
+  1000n           // Discount value (basis points for ERC721/1155, threshold for ERC20)
+]);
+
+// Remove holder discount by index (admin only)
+await swag1155.write.removeHolderDiscount([
+  tokenId,        // Product token ID
+  index           // Index in the discount array
+]);
+
+// Get holder discounts for a product
+const discounts = await swag1155.read.getHolderDiscounts([tokenId]);
+```
+
+**Discount Types**:
+- `0` - ERC721: Holder gets discount (value in basis points)
+- `1` - ERC1155: Holder gets discount (value in basis points)
+- `2` - ERC20: Holder with balance >= value gets discount
+
 ---
 
 ## Security Best Practices
@@ -301,6 +377,48 @@ DON'T:
 ❌ Use treasury wallet for other purposes
 ❌ Share treasury private key
 ❌ Keep large amounts in hot wallet
+```
+
+### 5. Discount Security
+
+**CRITICAL**: Discounts are additive and can stack to 100% (free product).
+
+```
+DISCOUNT STACKING BEHAVIOR:
+- Multiple POAP discounts add together
+- Multiple holder discounts add together
+- POAP + holder discounts add together
+- Total discount can reach 10000 bps (100% = FREE)
+
+ADMIN RESPONSIBILITIES:
+✅ Calculate total possible discount before adding new ones
+✅ Monitor discount combinations per product
+✅ Consider maximum discount caps in your business logic
+✅ Review discount configurations regularly
+
+IMMUTABLE SETTINGS:
+⚠️  POAP contract address is set at deployment
+⚠️  Cannot change POAP contract after deployment
+⚠️  Must redeploy contract to use different POAP contract
+
+DISCOUNT SCOPE:
+- All discounts are per-product (tokenId)
+- Different products can have different discount rules
+- Discounts apply to all buyers meeting criteria
+```
+
+**Example Scenario**:
+```typescript
+// Product #1 has:
+// - POAP discount: 2000 bps (20%)
+// - Holder discount 1: 3000 bps (30%)
+// - Holder discount 2: 2000 bps (20%)
+//
+// A user with all three qualifications gets:
+// Total: 7000 bps (70% off)
+//
+// If admin adds another 3000 bps discount:
+// Total: 10000 bps (100% off = FREE)
 ```
 
 ---
@@ -407,5 +525,12 @@ const ADMIN_ROLE = keccak256(toBytes('ADMIN_ROLE'));
 | Change treasury | Swag1155 | `setTreasury()` | DEFAULT_ADMIN_ROLE |
 | Change owner | ZKPassportNFT | `transferOwnership()` | Owner |
 | Create vault | FaucetManager | `createVault()` | ADMIN_ROLE |
+| Update vault gating | FaucetManager | `updateVaultGating()` | ADMIN_ROLE |
 | Create product | Swag1155 | `setVariantWithURI()` | ADMIN_ROLE |
+| Add royalty | Swag1155 | `addRoyalty()` | ADMIN_ROLE |
+| Clear royalties | Swag1155 | `clearRoyalties()` | ADMIN_ROLE |
+| Add POAP discount | Swag1155 | `addPoapDiscount()` | ADMIN_ROLE |
+| Remove POAP discount | Swag1155 | `removePoapDiscount()` | ADMIN_ROLE |
+| Add holder discount | Swag1155 | `addHolderDiscount()` | ADMIN_ROLE |
+| Remove holder discount | Swag1155 | `removeHolderDiscount()` | ADMIN_ROLE |
 | Pause | FaucetManager | `pause()` | ADMIN_ROLE |

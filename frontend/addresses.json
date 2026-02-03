@@ -2,25 +2,33 @@
   "base": {
     "chainId": 8453,
     "addresses": {
-      "ZKPassportNFT": "0x9f0da2f66a0aa01bf4469a257f75fab088130b40",
-      "FaucetManager": "0xbd532043af9f2e8090ad9b1fa14e45a5aaaef102",
-      "Swag1155": "0x9c2944f38156f6dfc922a825eba727a38895958e"
+      "ZKPassportNFT": "0x458eb490bf5f56b6ada8605c56bcef3510d83ec8",
+      "FaucetManager": "0xbd7d12722008a6c2f89e3906a964cc2290131a92",
+      "Swag1155": "0xd4218995da2e92323d33a6e38adc8ef3a671b456"
     }
   },
   "ethereum": {
     "chainId": 1,
     "addresses": {
-      "ZKPassportNFT": "0x94b9f649f8825d5d797e37d04dfc66d612750b10",
-      "FaucetManager": "0xb24295ffc0bd22b0b173b73a0ff5b42564986fd1",
-      "Swag1155": "0xeb27e63799ec91fb81617629b7f98d26af3f9686"
+      "ZKPassportNFT": "0x607003f188c49ed6e0553805734b9990393402df",
+      "FaucetManager": "0x2940e286b41d279b61e484b98a08498e355e4778",
+      "Swag1155": "0xd9663db045850171850fd1298a2176b329a67928"
     }
   },
   "unichain": {
     "chainId": 130,
     "addresses": {
-      "ZKPassportNFT": "0x12b5d5796556f0202fa241085409e2b357450d70",
-      "FaucetManager": "0x246a2b1d53384e2972272a0f6bd017ecafdb3063",
-      "Swag1155": "0x71fdedc946fe8177a36216300fd5f3cb5d887587"
+      "ZKPassportNFT": "0x0499924492348159aa281385ace43539689e158b",
+      "FaucetManager": "0xf32e10560673668ee849c44596d74502493c7fb1",
+      "Swag1155": "0xb76a448715e3986a3a060e79598e9ffb78e792f6"
+    }
+  },
+  "optimism": {
+    "chainId": 10,
+    "addresses": {
+      "ZKPassportNFT": "0x25b43ce10ffd04cb90123d7582e6b5100b27f9cb",
+      "FaucetManager": "0x76235436cbd3f2ff12cc3610f2643654211efb3d",
+      "Swag1155": "0x9df46e1c221f8b067343f9b760f5cb2c4757fe2d"
     }
   }
 }

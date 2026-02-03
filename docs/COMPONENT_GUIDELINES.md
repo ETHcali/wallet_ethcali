@@ -180,7 +180,7 @@ export function useMyHook() {
         return result;
       } catch (error) {
         logger.error('Failed to fetch data', error);
-        throw handleError(error); // Use centralized error handling
+        throw error;
       }
     },
   });
@@ -201,8 +201,8 @@ const handleSubmit = async () => {
     await submitData();
     logger.info('Submission successful');
   } catch (error) {
-    const friendlyError = handleError(error);
-    setError(friendlyError.message);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    setError(message);
     logger.error('Submission failed', error);
   } finally {
     setIsLoading(false);
@@ -333,7 +333,7 @@ Reviewers should verify:
 - [ ] Follows naming conventions
 - [ ] Proper error handling
 - [ ] No code duplication
-- [ ] Uses centralized utilities (logger, errorHandling, explorer)
+- [ ] Uses centralized utilities (logger, explorer)
 - [ ] TypeScript types are correct
 - [ ] No hardcoded values
 - [ ] Imports are properly ordered

@@ -93,16 +93,19 @@ export function useZKPassportNFT(chainId: number) {
                 address: addresses.zkpassport as `0x${string}`,
                 abi: ZKPassportNFTABI as any,
                 functionName: 'nftImageURI',
+                args: [],
               }),
               client.readContract({
                 address: addresses.zkpassport as `0x${string}`,
                 abi: ZKPassportNFTABI as any,
                 functionName: 'nftDescription',
+                args: [],
               }),
               client.readContract({
                 address: addresses.zkpassport as `0x${string}`,
                 abi: ZKPassportNFTABI as any,
                 functionName: 'nftExternalURL',
+                args: [],
               }),
             ]);
 

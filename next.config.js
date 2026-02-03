@@ -40,11 +40,6 @@ const nextConfig = {
   env: {
     PRIVY_APP_SECRET: process.env.PRIVY_APP_SECRET,
   },
-  // Increase serverless function timeout for API routes
-  serverRuntimeConfig: {
-    // Will only be available on the server side
-    timeoutSeconds: 30,
-  },
   // Configure headers for security
   async headers() {
     return [
@@ -68,18 +63,8 @@ const nextConfig = {
       },
     ];
   },
-  // Configure webpack to handle BigInt literals
-  webpack: (config) => {
-    config.experiments = {
-      ...config.experiments,
-      topLevelAwait: true,
-    };
-    return config;
-  },
-  // Configure transpiler options for ES2020
-  compiler: {
-    styledComponents: true,
-  },
+  // Turbopack config (default bundler in Next 16)
+  turbopack: {},
   typescript: {
     ignoreBuildErrors: true,
   },

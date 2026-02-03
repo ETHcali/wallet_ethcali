@@ -34,7 +34,9 @@ FaucetManager is a **multi-vault faucet system** that allows admins to create an
 | **Multiple Vaults** | Create unlimited vaults for different events/purposes |
 | **Returnable Vaults** | Some vaults expect ETH to be returned (hackathon deposits) |
 | **Non-Returnable** | Other vaults are gifts/grants (no return expected) |
-| **Anti-Sybil** | All claims require ZKPassport NFT |
+| **Anti-Sybil** | Optional ZKPassport NFT gating per vault |
+| **Token/NFT Gating** | Restrict vaults to holders of specific tokens |
+| **Whitelist** | Optional whitelist per vault |
 | **Per-Vault Tracking** | Users can claim from multiple vaults (1 claim per vault) |
 | **Good Actor Tracking** | Track users who return funds |
 
@@ -130,6 +132,7 @@ FaucetManager is a **multi-vault faucet system** that allows admins to create an
 |-----------|-------------------|-------------|------------|
 | **[Create Vault]** | `createVault()` | Admin | name, description, claimAmount, vaultType |
 | **[Edit Vault]** | `updateVault()` | Admin | vaultId, name, description, claimAmount, active |
+| **[Update Gating]** | `updateVaultGating()` | Admin | vaultId, zkPassportRequired, allowedToken |
 | **[Deposit]** | `deposit()` | Admin | vaultId + ETH value |
 | **[Withdraw]** | `withdraw()` | Admin | vaultId, amount |
 | **[Toggle Active]** | `updateVault()` | Admin | vaultId, ..., active |
@@ -153,6 +156,8 @@ struct Vault {
     VaultType vaultType;    // 0=NonReturnable, 1=Returnable
     bool active;            // Accept claims?
     uint256 createdAt;      // Creation timestamp
+    bool zkPassportRequired;  // Whether ZKPassport NFT is required
+    address allowedToken;     // Token/NFT address required to claim (address(0) = disabled)
 }
 ```
 
@@ -168,6 +173,8 @@ interface Vault {
   vaultType: 0 | 1;         // 0=NonReturnable, 1=Returnable
   active: boolean;
   createdAt: bigint;        // timestamp
+  zkPassportRequired: boolean;  // Whether ZKPassport NFT is required
+  allowedToken: string;         // Token/NFT address required to claim (0x0 = disabled)
 }
 
 // Helper to format ETH
@@ -223,7 +230,10 @@ function createVault(
     string memory name,
     string memory description,
     uint256 claimAmount,
-    VaultType vaultType
+    VaultType vaultType,
+    bool whitelistEnabled,
+    bool zkPassportRequired,
+    address allowedToken
 ) external onlyRole(ADMIN_ROLE) returns (uint256 vaultId)
 ```
 
@@ -233,10 +243,13 @@ function createVault(
 | `description` | `string` | Purpose description | `"ETH for hackathon participation"` |
 | `claimAmount` | `uint256` | ETH per claim in wei | `100000000000000000` (0.1 ETH) |
 | `vaultType` | `VaultType` | 0=NonReturnable, 1=Returnable | `1` |
+| `whitelistEnabled` | `bool` | Enable whitelist for this vault | `false` |
+| `zkPassportRequired` | `bool` | Require ZKPassport NFT to claim | `true` |
+| `allowedToken` | `address` | Token/NFT address required (address(0) = disabled) | `0x0000000000000000000000000000000000000000` |
 
 **Returns:** `vaultId` - The ID of the created vault
 
-**Emits:** `VaultCreated(vaultId, name, vaultType, claimAmount)`
+**Emits:** `VaultCreated(vaultId, name, vaultType, claimAmount, whitelistEnabled, zkPassportRequired, allowedToken)`
 
 **Frontend:**
 ```typescript
@@ -253,6 +266,9 @@ const handleCreateVault = async () => {
       'Get ETH for hackathon participation. Please return after the event.',
       claimAmountWei,
       1, // Returnable
+      false, // whitelistEnabled
+      true, // zkPassportRequired
+      '0x0000000000000000000000000000000000000000', // allowedToken (disabled)
     ],
   });
 
@@ -321,6 +337,47 @@ const handleToggleActive = async (vaultId: number, currentActive: boolean) => {
       vault.description,
       vault.claimAmount,
       !currentActive, // Toggle
+    ],
+  });
+};
+```
+
+---
+
+### updateVaultGating
+
+**UI: [Update Gating] button on vault card**
+
+Update vault gating requirements (ZKPassport and token requirements).
+
+```solidity
+function updateVaultGating(
+    uint256 vaultId,
+    bool zkPassportRequired,
+    address allowedToken
+) external onlyRole(ADMIN_ROLE)
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `vaultId` | `uint256` | Vault ID to update |
+| `zkPassportRequired` | `bool` | Require ZKPassport NFT to claim |
+| `allowedToken` | `address` | Token/NFT address required (address(0) = disabled) |
+
+**Emits:** `VaultGatingUpdated(vaultId, zkPassportRequired, allowedToken)`
+
+**Frontend:**
+```typescript
+// Update Gating Button Handler
+const handleUpdateGating = async (vaultId: number) => {
+  await writeContractAsync({
+    address: FAUCET_MANAGER,
+    abi: FaucetManagerABI,
+    functionName: 'updateVaultGating',
+    args: [
+      BigInt(vaultId),
+      true, // zkPassportRequired
+      '0x1234567890123456789012345678901234567890', // allowedToken address (or address(0) to disable)
     ],
   });
 };
@@ -435,7 +492,8 @@ function claim(uint256 vaultId) external nonReentrant whenNotPaused
 - Vault must exist and be active
 - Vault must have sufficient balance
 - User must not have already claimed from this vault
-- User must own ZKPassport NFT
+- User must own ZKPassport NFT (if vault requires it)
+- User must hold required token/NFT (if allowedToken is set)
 
 **Emits:** `Claimed(vaultId, user, amount)`
 
@@ -616,6 +674,14 @@ if (claimInfo.hasClaimed) {
 function canUserClaim(uint256 vaultId, address user) external view returns (bool canClaim, string memory reason)
 ```
 
+**Possible Reasons:**
+- Vault does not exist
+- Vault is not active
+- Insufficient balance in vault
+- Already claimed from this vault
+- Must own ZKPassport NFT (if vault requires it)
+- Must hold required token (if allowedToken is set)
+
 **Frontend:**
 ```typescript
 const { data } = useReadContract({
@@ -717,6 +783,7 @@ const { data: isAdmin } = useReadContract({
 |-------|------------|-----------|
 | `VaultCreated` | `vaultId`, `name`, `vaultType`, `claimAmount` | Add vault to list |
 | `VaultUpdated` | `vaultId`, `name`, `description`, `claimAmount`, `active` | Update vault card |
+| `VaultGatingUpdated` | `vaultId`, `zkPassportRequired`, `allowedToken` | Update gating requirements |
 | `VaultDeposit` | `vaultId`, `depositor`, `amount` | Update balance display |
 | `VaultWithdraw` | `vaultId`, `to`, `amount` | Update balance display |
 | `Claimed` | `vaultId`, `user`, `amount` | Show success, update stats |
@@ -752,6 +819,7 @@ useWatchContractEvent({
 | `"FaucetManager: vault not active"` | Vault paused | "This faucet is currently closed" |
 | `"FaucetManager: already claimed from this vault"` | Double claim | "You've already claimed from this vault" |
 | `"FaucetManager: must own ZKPassport NFT"` | No ZKPassport | "Please verify with ZKPassport first" |
+| `"FaucetManager: must hold required token"` | User doesn't hold required token/NFT | "You must hold the required token to claim" |
 | `"FaucetManager: vault is not returnable"` | Wrong vault type | "This vault doesn't accept returns" |
 | `"FaucetManager: must claim first"` | Return without claim | "You haven't claimed from this vault" |
 | `"FaucetManager: already returned"` | Double return | "You've already returned funds" |
@@ -851,13 +919,24 @@ export function useCreateVault() {
     name: string,
     description: string,
     claimAmountEth: string,
-    vaultType: 0 | 1
+    vaultType: 0 | 1,
+    whitelistEnabled: boolean,
+    zkPassportRequired: boolean,
+    allowedToken: string
   ) => {
     return writeContractAsync({
       address: FAUCET_MANAGER,
       abi: FaucetManagerABI,
       functionName: 'createVault',
-      args: [name, description, parseEther(claimAmountEth), vaultType],
+      args: [
+        name,
+        description,
+        parseEther(claimAmountEth),
+        vaultType,
+        whitelistEnabled,
+        zkPassportRequired,
+        allowedToken,
+      ],
     });
   };
 
@@ -987,6 +1066,9 @@ export function AdminCreateVault() {
     description: '',
     claimAmount: '0.1',
     vaultType: 1 as 0 | 1,
+    whitelistEnabled: false,
+    zkPassportRequired: true,
+    allowedToken: '0x0000000000000000000000000000000000000000',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -996,10 +1078,21 @@ export function AdminCreateVault() {
         form.name,
         form.description,
         form.claimAmount,
-        form.vaultType
+        form.vaultType,
+        form.whitelistEnabled,
+        form.zkPassportRequired,
+        form.allowedToken
       );
       alert('Vault created!');
-      setForm({ name: '', description: '', claimAmount: '0.1', vaultType: 1 });
+      setForm({
+        name: '',
+        description: '',
+        claimAmount: '0.1',
+        vaultType: 1,
+        whitelistEnabled: false,
+        zkPassportRequired: true,
+        allowedToken: '0x0000000000000000000000000000000000000000',
+      });
     } catch (err) {
       alert('Failed to create vault');
     }
@@ -1050,6 +1143,26 @@ export function AdminCreateVault() {
           <option value={0}>Non-Returnable (grants, gifts)</option>
           <option value={1}>Returnable (hackathons, staking)</option>
         </select>
+      </label>
+
+      <label>
+        <input
+          type="checkbox"
+          checked={form.zkPassportRequired}
+          onChange={(e) => setForm({ ...form, zkPassportRequired: e.target.checked })}
+        />
+        Require ZKPassport NFT
+      </label>
+
+      <label>
+        Allowed Token Address (optional)
+        <input
+          type="text"
+          value={form.allowedToken}
+          onChange={(e) => setForm({ ...form, allowedToken: e.target.value })}
+          placeholder="0x0000000000000000000000000000000000000000"
+        />
+        <small>Leave as 0x0000... to disable token gating</small>
       </label>
 
       <button type="submit" disabled={isPending}>

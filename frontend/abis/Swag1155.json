@@ -2,71 +2,14 @@
   {
     "inputs": [
       {
-        "components": [
-          {
-            "internalType": "string",
-            "name": "name",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "description",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "imageUrl",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "website",
-            "type": "string"
-          },
-          {
-            "internalType": "address",
-            "name": "paymentToken",
-            "type": "address"
-          },
-          {
-            "internalType": "uint256",
-            "name": "pricePerUnit",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "totalSupply",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "minted",
-            "type": "uint256"
-          },
-          {
-            "internalType": "bool",
-            "name": "active",
-            "type": "bool"
-          },
-          {
-            "internalType": "string",
-            "name": "gender",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "color",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "style",
-            "type": "string"
-          }
-        ],
-        "internalType": "struct Swag1155.DesignInfo",
-        "name": "_designInfo",
-        "type": "tuple"
+        "internalType": "string",
+        "name": "baseURI",
+        "type": "string"
+      },
+      {
+        "internalType": "address",
+        "name": "_usdc",
+        "type": "address"
       },
       {
         "internalType": "address",
@@ -75,7 +18,12 @@
       },
       {
         "internalType": "address",
-        "name": "_initialAdmin",
+        "name": "initialAdmin",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_poap",
         "type": "address"
       }
     ],
@@ -265,138 +213,125 @@
     "anonymous": false,
     "inputs": [
       {
+        "indexed": true,
+        "internalType": "address",
+        "name": "buyer",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
         "indexed": false,
-        "internalType": "bool",
-        "name": "active",
-        "type": "bool"
+        "internalType": "uint256",
+        "name": "originalPrice",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "finalPrice",
+        "type": "uint256"
       }
     ],
-    "name": "DesignActiveStatusChanged",
+    "name": "DiscountApplied",
     "type": "event"
   },
   {
     "anonymous": false,
     "inputs": [
       {
-        "components": [
-          {
-            "internalType": "bool",
-            "name": "smartContractEnabled",
-            "type": "bool"
-          },
-          {
-            "internalType": "address",
-            "name": "smartContractAddress",
-            "type": "address"
-          },
-          {
-            "internalType": "uint256",
-            "name": "smartContractDiscount",
-            "type": "uint256"
-          },
-          {
-            "internalType": "bool",
-            "name": "poapEnabled",
-            "type": "bool"
-          },
-          {
-            "internalType": "uint256",
-            "name": "poapEventId",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "poapDiscount",
-            "type": "uint256"
-          },
-          {
-            "internalType": "enum Swag1155.DiscountType",
-            "name": "discountType",
-            "type": "uint8"
-          }
-        ],
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
         "indexed": false,
-        "internalType": "struct Swag1155.DiscountConfig",
-        "name": "config",
-        "type": "tuple"
+        "internalType": "enum Swag1155.DiscountType",
+        "name": "discountType",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "value",
+        "type": "uint256"
       }
     ],
-    "name": "DesignDiscountConfigUpdated",
+    "name": "HolderDiscountAdded",
     "type": "event"
   },
   {
     "anonymous": false,
     "inputs": [
       {
-        "components": [
-          {
-            "internalType": "string",
-            "name": "name",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "description",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "imageUrl",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "website",
-            "type": "string"
-          },
-          {
-            "internalType": "address",
-            "name": "paymentToken",
-            "type": "address"
-          },
-          {
-            "internalType": "uint256",
-            "name": "pricePerUnit",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "totalSupply",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "minted",
-            "type": "uint256"
-          },
-          {
-            "internalType": "bool",
-            "name": "active",
-            "type": "bool"
-          },
-          {
-            "internalType": "string",
-            "name": "gender",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "color",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "style",
-            "type": "string"
-          }
-        ],
-        "indexed": false,
-        "internalType": "struct Swag1155.DesignInfo",
-        "name": "info",
-        "type": "tuple"
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
       }
     ],
-    "name": "DesignInfoUpdated",
+    "name": "HolderDiscountRemoved",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "eventId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "discountBps",
+        "type": "uint256"
+      }
+    ],
+    "name": "PoapDiscountAdded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "eventId",
+        "type": "uint256"
+      }
+    ],
+    "name": "PoapDiscountRemoved",
     "type": "event"
   },
   {
@@ -416,24 +351,24 @@
       },
       {
         "indexed": false,
-        "internalType": "string",
-        "name": "size",
-        "type": "string"
-      },
-      {
-        "indexed": false,
         "internalType": "uint256",
-        "name": "price",
+        "name": "quantity",
         "type": "uint256"
       },
       {
         "indexed": false,
-        "internalType": "bool",
-        "name": "hadDiscount",
-        "type": "bool"
+        "internalType": "uint256",
+        "name": "unitPrice",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "totalPrice",
+        "type": "uint256"
       }
     ],
-    "name": "DesignMinted",
+    "name": "Purchased",
     "type": "event"
   },
   {
@@ -453,9 +388,9 @@
       },
       {
         "indexed": false,
-        "internalType": "string[]",
-        "name": "sizes",
-        "type": "string[]"
+        "internalType": "uint256[]",
+        "name": "quantities",
+        "type": "uint256[]"
       },
       {
         "indexed": false,
@@ -464,46 +399,7 @@
         "type": "uint256"
       }
     ],
-    "name": "DesignMintedBatch",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "newToken",
-        "type": "address"
-      }
-    ],
-    "name": "DesignPaymentTokenUpdated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "newPrice",
-        "type": "uint256"
-      }
-    ],
-    "name": "DesignPriceUpdated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "newSupply",
-        "type": "uint256"
-      }
-    ],
-    "name": "DesignTotalSupplyUpdated",
+    "name": "PurchasedBatch",
     "type": "event"
   },
   {
@@ -528,7 +424,7 @@
         "type": "address"
       }
     ],
-    "name": "PhysicalRedemptionFulfilled",
+    "name": "RedemptionFulfilled",
     "type": "event"
   },
   {
@@ -547,7 +443,7 @@
         "type": "uint256"
       }
     ],
-    "name": "PhysicalRedemptionRequested",
+    "name": "RedemptionRequested",
     "type": "event"
   },
   {
@@ -633,15 +529,34 @@
         "internalType": "uint256",
         "name": "tokenId",
         "type": "uint256"
+      }
+    ],
+    "name": "RoyaltiesCleared",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "recipient",
+        "type": "address"
       },
       {
         "indexed": false,
-        "internalType": "string",
-        "name": "uri",
-        "type": "string"
+        "internalType": "uint256",
+        "name": "percentage",
+        "type": "uint256"
       }
     ],
-    "name": "TokenURISet",
+    "name": "RoyaltyAdded",
     "type": "event"
   },
   {
@@ -722,6 +637,19 @@
     "anonymous": false,
     "inputs": [
       {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newTreasury",
+        "type": "address"
+      }
+    ],
+    "name": "TreasuryUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
         "indexed": false,
         "internalType": "string",
         "name": "value",
@@ -735,6 +663,69 @@
       }
     ],
     "name": "URI",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newUSDC",
+        "type": "address"
+      }
+    ],
+    "name": "USDCUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "uri",
+        "type": "string"
+      }
+    ],
+    "name": "VariantURISet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "price",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "maxSupply",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "active",
+        "type": "bool"
+      }
+    ],
+    "name": "VariantUpdated",
     "type": "event"
   },
   {
@@ -764,6 +755,32 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "POAP_CONTRACT",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "ROYALTY_DENOMINATOR",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -772,6 +789,80 @@
       }
     ],
     "name": "addAdmin",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "enum Swag1155.DiscountType",
+        "name": "discountType",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint256",
+        "name": "value",
+        "type": "uint256"
+      }
+    ],
+    "name": "addHolderDiscount",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "eventId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "discountBps",
+        "type": "uint256"
+      }
+    ],
+    "name": "addPoapDiscount",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "recipient",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "percentage",
+        "type": "uint256"
+      }
+    ],
+    "name": "addRoyalty",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -825,236 +916,73 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "designInfo",
-    "outputs": [
+    "inputs": [
       {
-        "internalType": "string",
-        "name": "name",
-        "type": "string"
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
       },
       {
-        "internalType": "string",
-        "name": "description",
-        "type": "string"
+        "internalType": "uint256",
+        "name": "quantity",
+        "type": "uint256"
+      }
+    ],
+    "name": "buy",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "tokenIds",
+        "type": "uint256[]"
       },
       {
-        "internalType": "string",
-        "name": "imageUrl",
-        "type": "string"
-      },
+        "internalType": "uint256[]",
+        "name": "quantities",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "buyBatch",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
       {
-        "internalType": "string",
-        "name": "website",
-        "type": "string"
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      }
+    ],
+    "name": "clearRoyalties",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
       },
       {
         "internalType": "address",
-        "name": "paymentToken",
+        "name": "buyer",
         "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "pricePerUnit",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "totalSupply",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "minted",
-        "type": "uint256"
-      },
-      {
-        "internalType": "bool",
-        "name": "active",
-        "type": "bool"
-      },
-      {
-        "internalType": "string",
-        "name": "gender",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "color",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "style",
-        "type": "string"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "discountConfig",
+    "name": "getDiscountedPrice",
     "outputs": [
       {
-        "internalType": "bool",
-        "name": "smartContractEnabled",
-        "type": "bool"
-      },
-      {
-        "internalType": "address",
-        "name": "smartContractAddress",
-        "type": "address"
-      },
-      {
         "internalType": "uint256",
-        "name": "smartContractDiscount",
+        "name": "finalPrice",
         "type": "uint256"
-      },
-      {
-        "internalType": "bool",
-        "name": "poapEnabled",
-        "type": "bool"
-      },
-      {
-        "internalType": "uint256",
-        "name": "poapEventId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "poapDiscount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "enum Swag1155.DiscountType",
-        "name": "discountType",
-        "type": "uint8"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getDesignDiscountConfig",
-    "outputs": [
-      {
-        "components": [
-          {
-            "internalType": "bool",
-            "name": "smartContractEnabled",
-            "type": "bool"
-          },
-          {
-            "internalType": "address",
-            "name": "smartContractAddress",
-            "type": "address"
-          },
-          {
-            "internalType": "uint256",
-            "name": "smartContractDiscount",
-            "type": "uint256"
-          },
-          {
-            "internalType": "bool",
-            "name": "poapEnabled",
-            "type": "bool"
-          },
-          {
-            "internalType": "uint256",
-            "name": "poapEventId",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "poapDiscount",
-            "type": "uint256"
-          },
-          {
-            "internalType": "enum Swag1155.DiscountType",
-            "name": "discountType",
-            "type": "uint8"
-          }
-        ],
-        "internalType": "struct Swag1155.DiscountConfig",
-        "name": "",
-        "type": "tuple"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getDesignInfo",
-    "outputs": [
-      {
-        "components": [
-          {
-            "internalType": "string",
-            "name": "name",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "description",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "imageUrl",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "website",
-            "type": "string"
-          },
-          {
-            "internalType": "address",
-            "name": "paymentToken",
-            "type": "address"
-          },
-          {
-            "internalType": "uint256",
-            "name": "pricePerUnit",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "totalSupply",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "minted",
-            "type": "uint256"
-          },
-          {
-            "internalType": "bool",
-            "name": "active",
-            "type": "bool"
-          },
-          {
-            "internalType": "string",
-            "name": "gender",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "color",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "style",
-            "type": "string"
-          }
-        ],
-        "internalType": "struct Swag1155.DesignInfo",
-        "name": "",
-        "type": "tuple"
       }
     ],
     "stateMutability": "view",
@@ -1063,35 +991,75 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "user",
-        "type": "address"
-      },
-      {
-        "internalType": "bool",
-        "name": "hasPoap",
-        "type": "bool"
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
       }
     ],
-    "name": "getDesignPriceWithDiscounts",
+    "name": "getHolderDiscounts",
     "outputs": [
       {
-        "internalType": "uint256",
+        "components": [
+          {
+            "internalType": "address",
+            "name": "token",
+            "type": "address"
+          },
+          {
+            "internalType": "enum Swag1155.DiscountType",
+            "name": "discountType",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint256",
+            "name": "value",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "active",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct Swag1155.HolderDiscount[]",
         "name": "",
-        "type": "uint256"
+        "type": "tuple[]"
       }
     ],
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "getDesignRemainingSupply",
-    "outputs": [
+    "inputs": [
       {
         "internalType": "uint256",
-        "name": "",
+        "name": "tokenId",
         "type": "uint256"
+      }
+    ],
+    "name": "getPoapDiscounts",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "eventId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "discountBps",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "active",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct Swag1155.PoapDiscount[]",
+        "name": "",
+        "type": "tuple[]"
       }
     ],
     "stateMutability": "view",
@@ -1110,65 +1078,12 @@
         "type": "address"
       }
     ],
-    "name": "getDesignTokenRedemptionStatus",
+    "name": "getRedemptionStatus",
     "outputs": [
       {
         "internalType": "enum Swag1155.RedemptionStatus",
         "name": "",
         "type": "uint8"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "tokenId",
-        "type": "uint256"
-      }
-    ],
-    "name": "getDesignTokenSize",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "tokenId",
-        "type": "uint256"
-      }
-    ],
-    "name": "getDesignTokenTraits",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "size",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "gender",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "color",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "style",
-        "type": "string"
       }
     ],
     "stateMutability": "view",
@@ -1188,6 +1103,78 @@
         "internalType": "bytes32",
         "name": "",
         "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getRoyalties",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "recipient",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "percentage",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct Swag1155.RoyaltyInfo[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getVariant",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "price",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "maxSupply",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "minted",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "active",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct Swag1155.Variant",
+        "name": "",
+        "type": "tuple"
       }
     ],
     "stateMutability": "view",
@@ -1229,6 +1216,45 @@
       {
         "internalType": "bool",
         "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "holderDiscounts",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "enum Swag1155.DiscountType",
+        "name": "discountType",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint256",
+        "name": "value",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "active",
         "type": "bool"
       }
     ],
@@ -1298,6 +1324,19 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "listTokenIds",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -1310,7 +1349,7 @@
         "type": "address"
       }
     ],
-    "name": "markRedemptionFulfilled",
+    "name": "markFulfilled",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1318,35 +1357,46 @@
   {
     "inputs": [
       {
-        "internalType": "string",
-        "name": "size",
-        "type": "string"
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "poapDiscounts",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "eventId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "discountBps",
+        "type": "uint256"
       },
       {
         "internalType": "bool",
-        "name": "hasPoapDiscount",
+        "name": "active",
         "type": "bool"
       }
     ],
-    "name": "mintDesign",
-    "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
       {
-        "internalType": "string[]",
-        "name": "sizes",
-        "type": "string[]"
-      },
-      {
-        "internalType": "bool",
-        "name": "hasPoapDiscount",
-        "type": "bool"
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
       }
     ],
-    "name": "mintDesignBatch",
+    "name": "redeem",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1378,12 +1428,67 @@
   {
     "inputs": [
       {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      }
+    ],
+    "name": "remaining",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "address",
         "name": "admin",
         "type": "address"
       }
     ],
     "name": "removeAdmin",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "index",
+        "type": "uint256"
+      }
+    ],
+    "name": "removeHolderDiscount",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "index",
+        "type": "uint256"
+      }
+    ],
+    "name": "removePoapDiscount",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1409,19 +1514,6 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "tokenId",
-        "type": "uint256"
-      }
-    ],
-    "name": "requestPhysicalRedemption",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "bytes32",
         "name": "role",
         "type": "bytes32"
@@ -1435,6 +1527,35 @@
     "name": "revokeRole",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "royaltyRecipients",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "recipient",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "percentage",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -1524,137 +1645,12 @@
   {
     "inputs": [
       {
-        "internalType": "bool",
-        "name": "active",
-        "type": "bool"
+        "internalType": "string",
+        "name": "newURI",
+        "type": "string"
       }
     ],
-    "name": "setDesignActive",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "components": [
-          {
-            "internalType": "bool",
-            "name": "smartContractEnabled",
-            "type": "bool"
-          },
-          {
-            "internalType": "address",
-            "name": "smartContractAddress",
-            "type": "address"
-          },
-          {
-            "internalType": "uint256",
-            "name": "smartContractDiscount",
-            "type": "uint256"
-          },
-          {
-            "internalType": "bool",
-            "name": "poapEnabled",
-            "type": "bool"
-          },
-          {
-            "internalType": "uint256",
-            "name": "poapEventId",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "poapDiscount",
-            "type": "uint256"
-          },
-          {
-            "internalType": "enum Swag1155.DiscountType",
-            "name": "discountType",
-            "type": "uint8"
-          }
-        ],
-        "internalType": "struct Swag1155.DiscountConfig",
-        "name": "config",
-        "type": "tuple"
-      }
-    ],
-    "name": "setDesignDiscountConfig",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "components": [
-          {
-            "internalType": "string",
-            "name": "name",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "description",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "imageUrl",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "website",
-            "type": "string"
-          },
-          {
-            "internalType": "address",
-            "name": "paymentToken",
-            "type": "address"
-          },
-          {
-            "internalType": "uint256",
-            "name": "pricePerUnit",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "totalSupply",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "minted",
-            "type": "uint256"
-          },
-          {
-            "internalType": "bool",
-            "name": "active",
-            "type": "bool"
-          },
-          {
-            "internalType": "string",
-            "name": "gender",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "color",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "style",
-            "type": "string"
-          }
-        ],
-        "internalType": "struct Swag1155.DesignInfo",
-        "name": "info",
-        "type": "tuple"
-      }
-    ],
-    "name": "setDesignInfo",
+    "name": "setBaseURI",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1663,11 +1659,11 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "token",
+        "name": "newTreasury",
         "type": "address"
       }
     ],
-    "name": "setDesignPaymentToken",
+    "name": "setTreasury",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1675,25 +1671,12 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "newPrice",
-        "type": "uint256"
+        "internalType": "address",
+        "name": "newUSDC",
+        "type": "address"
       }
     ],
-    "name": "setDesignPrice",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "newSupply",
-        "type": "uint256"
-      }
-    ],
-    "name": "setDesignTotalSupply",
+    "name": "setUSDC",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1706,12 +1689,55 @@
         "type": "uint256"
       },
       {
+        "internalType": "uint256",
+        "name": "price",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxSupply",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "active",
+        "type": "bool"
+      }
+    ],
+    "name": "setVariant",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "price",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxSupply",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "active",
+        "type": "bool"
+      },
+      {
         "internalType": "string",
         "name": "tokenURI",
         "type": "string"
       }
     ],
-    "name": "setTokenURI",
+    "name": "setVariantWithURI",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1730,6 +1756,25 @@
         "internalType": "bool",
         "name": "",
         "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "totalRoyaltyBps",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -1762,6 +1807,53 @@
         "internalType": "string",
         "name": "",
         "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "usdc",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "variants",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "price",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxSupply",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "minted",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "active",
+        "type": "bool"
       }
     ],
     "stateMutability": "view",

@@ -14,6 +14,8 @@ export interface Vault {
   vaultType: VaultType;
   active: boolean;
   whitelistEnabled: boolean;
+  zkPassportRequired: boolean;
+  allowedToken: string;
   createdAt: number;
 }
 
@@ -32,6 +34,8 @@ export interface VaultFormData {
   claimAmount: string; // ETH amount as string for form input
   vaultType: VaultType;
   whitelistEnabled: boolean;
+  zkPassportRequired: boolean;
+  allowedToken: string;
 }
 
 export interface VaultUpdateData {

@@ -5,14 +5,6 @@
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
-interface LogEntry {
-  level: LogLevel;
-  message: string;
-  data?: unknown;
-  timestamp: string;
-  component?: string;
-}
-
 const isDev = process.env.NODE_ENV === 'development';
 const isDebugEnabled = process.env.NEXT_PUBLIC_DEBUG === 'true';
 
