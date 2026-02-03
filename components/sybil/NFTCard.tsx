@@ -17,6 +17,7 @@ interface NFTCardProps {
     name?: string;
     description?: string;
     image?: string;
+    external_url?: string;
     attributes?: Array<{ trait_type: string; value: string }>;
   } | null;
   onRefresh?: () => void;
@@ -97,7 +98,52 @@ const NFTCard: React.FC<NFTCardProps> = ({
       {/* NFT Content - ALWAYS show when has NFT (even during refetch) */}
       {showNFTContent && (
         <>
-          {/* NFT Details - Always show something */}
+          {/* NFT Image */}
+          {nftMetadata?.image && (
+            <div className="mb-3 rounded-lg overflow-hidden border border-cyan-500/20 relative aspect-square bg-gray-900/50">
+              <Image
+                src={getIPFSImageUrl(nftMetadata.image)}
+                alt={nftMetadata?.name || 'ZKPassport NFT'}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 400px"
+                unoptimized={nftMetadata.image.includes('ipfs') || nftMetadata.image.includes('pinata')}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
+              />
+            </div>
+          )}
+
+          {/* NFT Name */}
+          {nftMetadata?.name && (
+            <div className="mb-2">
+              <h3 className="text-sm font-bold text-cyan-400 font-mono">{nftMetadata.name}</h3>
+            </div>
+          )}
+
+          {/* NFT Description */}
+          {nftMetadata?.description && (
+            <div className="mb-2">
+              <p className="text-[10px] text-gray-500 font-mono">{nftMetadata.description}</p>
+            </div>
+          )}
+
+          {/* External URL */}
+          {nftMetadata?.external_url && (
+            <div className="mb-3">
+              <a
+                href={nftMetadata.external_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[10px] text-cyan-400 hover:text-cyan-300 font-mono underline"
+              >
+                View on website →
+              </a>
+            </div>
+          )}
+
+          {/* NFT Details */}
           <div className="space-y-1.5 text-[10px] font-mono">
             {tokenId !== null && tokenId !== undefined && (
               <div className="flex justify-between py-1 border-b border-gray-800">
@@ -132,53 +178,13 @@ const NFTCard: React.FC<NFTCardProps> = ({
             )}
           </div>
 
-          {/* NFT Image */}
-          {nftMetadata?.image && (
-            <div className="mb-3 rounded-lg overflow-hidden border border-cyan-500/20 relative aspect-square bg-gray-900/50">
-              <Image
-                src={getIPFSImageUrl(nftMetadata.image)}
-                alt="ZKPassport NFT"
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, 400px"
-                unoptimized={nftMetadata.image.includes('ipfs') || nftMetadata.image.includes('pinata')}
-                onError={(e) => {
-                  // Hide broken image
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
-              />
-            </div>
-          )}
-
-          {/* Show image URL for debugging if no image displayed */}
-          {nftMetadata?.image && (
-            <div className="text-[8px] text-gray-700 font-mono truncate mb-2" title={nftMetadata.image}>
-              img: {nftMetadata.image.slice(0, 40)}...
-            </div>
-          )}
-
-          {/* NFT Name */}
-          {nftMetadata?.name && (
-            <div className="mb-2">
-              <h3 className="text-sm font-bold text-cyan-400 font-mono">{nftMetadata.name}</h3>
-            </div>
-          )}
-
-          {/* NFT Description */}
-          {nftMetadata?.description && (
-            <div className="mb-2">
-              <p className="text-[10px] text-gray-500 font-mono">{nftMetadata.description}</p>
-            </div>
-          )}
-
-
           {/* Attributes */}
           {nftMetadata?.attributes && nftMetadata.attributes.length > 0 && (
             <div className="mt-3 pt-3 border-t border-gray-800">
               <div className="text-[9px] text-gray-600 font-mono mb-2 tracking-wider">ATTRIBUTES</div>
               <div className="flex flex-wrap gap-1.5">
-                {nftMetadata.attributes.map((attr: any, idx: number) => (
-                  <div 
+                {nftMetadata.attributes.map((attr, idx) => (
+                  <div
                     key={idx}
                     className="px-2 py-1 bg-gray-900/50 border border-gray-800 rounded text-[9px] font-mono"
                   >
