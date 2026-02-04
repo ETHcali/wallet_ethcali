@@ -38,7 +38,7 @@ export function useMarkRedemptionFulfilled(designAddress: string, chainId: numbe
       const currentStatus = await (client.readContract as any)({
         address: designAddress as `0x${string}`,
         abi: Swag1155ABI,
-        functionName: 'getDesignTokenRedemptionStatus',
+        functionName: 'getRedemptionStatus',
         args: [tokenId, owner as `0x${string}`],
       });
 
@@ -67,7 +67,7 @@ export function useMarkRedemptionFulfilled(designAddress: string, chainId: numbe
 
     const data = encodeFunctionData({
       abi: Swag1155ABI as any,
-      functionName: 'markRedemptionFulfilled',
+      functionName: 'markFulfilled',
       args: [tokenId, owner as `0x${string}`],
     });
 

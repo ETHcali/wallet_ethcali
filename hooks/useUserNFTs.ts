@@ -167,7 +167,7 @@ export function useUserNFTs(overrideChainId?: number) {
               const status = await (client.readContract as any)({
                 address: swag1155 as `0x${string}`,
                 abi: Swag1155ABI,
-                functionName: 'getDesignTokenRedemptionStatus',
+                functionName: 'getRedemptionStatus',
                 args: [tokenId, userAddress as `0x${string}`],
               });
               return Number(status) as RedemptionStatus;

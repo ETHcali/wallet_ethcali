@@ -116,7 +116,7 @@ export function useAllMintedNFTs(designAddress: string, chainId: number) {
             const status = await (client.readContract as any)({
               address: designAddress as `0x${string}`,
               abi: Swag1155ABI,
-              functionName: 'getDesignTokenRedemptionStatus',
+              functionName: 'getRedemptionStatus',
               args: [tokenId, owner as `0x${string}`],
             });
             redemptionStatus = Number(status) as RedemptionStatus;
