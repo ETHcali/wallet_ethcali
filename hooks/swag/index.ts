@@ -2,6 +2,10 @@
  * Swag hooks - Re-export all swag-related hooks
  */
 
+// Grouped products hook (user-facing store)
+export { useGroupedProducts } from './useGroupedProducts';
+export type { ProductGroup, VariantSize } from './useGroupedProducts';
+
 // Variant query hooks
 export { useTokenIds, useVariant, useVariantUri, useVariantRemaining, useContractSettings } from './useVariantQueries';
 
