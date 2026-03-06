@@ -139,7 +139,7 @@ export const TOKEN_ADDRESSES: Record<ChainId, {
 // =============================================================================
 export const SUPPORTED_CHAIN_IDS: ChainId[] = [
   CHAIN_IDS.BASE,
-  CHAIN_IDS.ETHEREUM,
+  // CHAIN_IDS.ETHEREUM, // Hidden — re-add when new contracts are deployed on Ethereum mainnet
   CHAIN_IDS.OPTIMISM,
   CHAIN_IDS.UNICHAIN,
 ];

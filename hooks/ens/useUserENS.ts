@@ -84,67 +84,25 @@ export function useUserENS(address: string | undefined): UserENSResult {
         }
 
         // ============================================
-        // Layer 3: Query Base L2 events (fallback)
-        // Limited to recent ~45k blocks due to RPC limits
+        // Layer 3: Query OpenSea API for L2 subdomain NFT (fallback)
         // ============================================
-        const baseClient = createPublicClient({
-          chain: base,
-          transport: http(getRpcUrl(CHAIN_IDS.BASE)),
-        });
-
-        const registrarAddress = ENS_REGISTRAR_ADDRESSES[CHAIN_IDS.BASE];
-        if (!registrarAddress) {
-          logger.error('[useUserENS] No registrar address for Base');
-          setSubdomain(null);
-          return;
-        }
-
-        // Query recent blocks only (RPC limit ~50k blocks)
-        const currentBlock = await baseClient.getBlockNumber();
-        const fromBlock = currentBlock > 45000n ? currentBlock - 45000n : 0n;
-
-        const logs = await baseClient.getLogs({
-          address: registrarAddress as `0x${string}`,
-          event: parseAbiItem('event NameRegistered(string indexed label, address indexed owner)'),
-          args: {
-            owner: address as `0x${string}`,
-          },
-          fromBlock,
-          toBlock: 'latest',
-        });
-
-        if (logs.length > 0) {
-          // Get the most recent registration
-          const latestLog = logs[logs.length - 1];
-          const txHash = latestLog.transactionHash;
-
-          if (txHash) {
-            const tx = await baseClient.getTransaction({ hash: txHash });
-            if (tx && tx.input) {
+        try {
+          const res = await fetch(`/api/ens/lookup?address=${address}`);
+          if (res.ok) {
+            const { name } = await res.json();
+            if (name && name.endsWith(`.${ENS_CONFIG.parentName}`)) {
+              const label = name.replace(`.${ENS_CONFIG.parentName}`, '');
               try {
-                // Decode register(string label, address owner) call
-                const inputData = tx.input.slice(10);
-                const stringOffset = parseInt(inputData.slice(0, 64), 16);
-                const stringLengthHex = inputData.slice(stringOffset * 2, stringOffset * 2 + 64);
-                const stringLength = parseInt(stringLengthHex, 16);
-                const stringDataHex = inputData.slice(stringOffset * 2 + 64, stringOffset * 2 + 64 + stringLength * 2);
-                const label = Buffer.from(stringDataHex, 'hex').toString('utf8');
-
-                // Cache for future lookups
-                try {
-                  localStorage.setItem(cacheKey, label);
-                } catch {
-                  // Ignore storage errors
-                }
-
-                logger.info('[useUserENS] Layer 3: Found subdomain from Base events', { label });
-                setSubdomain(label);
-                return;
-              } catch (decodeError) {
-                logger.error('[useUserENS] Layer 3: Failed to decode label from tx', decodeError);
-              }
+                localStorage.setItem(cacheKey, label);
+              } catch {}
+              logger.info('[useUserENS] Layer 3: Found subdomain via OpenSea API', { label });
+              setSubdomain(label);
+              setIsLoading(false);
+              return;
             }
           }
+        } catch (osError) {
+          logger.error('[useUserENS] Layer 3: OpenSea API error', osError);
         }
 
         // No subdomain found in any layer

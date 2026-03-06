@@ -28,6 +28,7 @@ export type ChainConfig = {
   swag1155: string;
   faucetManager: string;
   zkpassport: string;
+  swagFactory: string;
   usdc: string;
   explorerUrl: string;
 };
@@ -52,6 +53,7 @@ const CHAIN_CONFIGS: Record<ChainLabel, ChainConfig> = {
     swag1155: ADDRESSES.base.addresses.Swag1155,
     faucetManager: ADDRESSES.base.addresses.FaucetManager,
     zkpassport: ADDRESSES.base.addresses.ZKPassportNFT,
+    swagFactory: (ADDRESSES.base.addresses as any).SwagFactory || '',
     usdc: TOKEN_ADDRESSES[CHAIN_IDS.BASE].USDC,
     explorerUrl: EXPLORER_URLS[CHAIN_IDS.BASE],
   },
@@ -62,6 +64,7 @@ const CHAIN_CONFIGS: Record<ChainLabel, ChainConfig> = {
     swag1155: ADDRESSES.ethereum.addresses.Swag1155,
     faucetManager: ADDRESSES.ethereum.addresses.FaucetManager,
     zkpassport: ADDRESSES.ethereum.addresses.ZKPassportNFT,
+    swagFactory: '', // No SwagFactory deployed on Ethereum yet
     usdc: TOKEN_ADDRESSES[CHAIN_IDS.ETHEREUM].USDC,
     explorerUrl: EXPLORER_URLS[CHAIN_IDS.ETHEREUM],
   },
@@ -72,6 +75,7 @@ const CHAIN_CONFIGS: Record<ChainLabel, ChainConfig> = {
     swag1155: ADDRESSES.unichain.addresses.Swag1155,
     faucetManager: ADDRESSES.unichain.addresses.FaucetManager,
     zkpassport: ADDRESSES.unichain.addresses.ZKPassportNFT,
+    swagFactory: (ADDRESSES.unichain.addresses as any).SwagFactory || '',
     usdc: TOKEN_ADDRESSES[CHAIN_IDS.UNICHAIN].USDC,
     explorerUrl: EXPLORER_URLS[CHAIN_IDS.UNICHAIN],
   },
@@ -79,9 +83,10 @@ const CHAIN_CONFIGS: Record<ChainLabel, ChainConfig> = {
     id: CHAIN_IDS.OPTIMISM,
     label: 'optimism',
     name: 'Optimism',
-    swag1155: '',
-    faucetManager: '',
-    zkpassport: '',
+    swag1155: ADDRESSES.optimism.addresses.Swag1155,
+    faucetManager: ADDRESSES.optimism.addresses.FaucetManager,
+    zkpassport: ADDRESSES.optimism.addresses.ZKPassportNFT,
+    swagFactory: (ADDRESSES.optimism.addresses as any).SwagFactory || '',
     usdc: TOKEN_ADDRESSES[CHAIN_IDS.OPTIMISM].USDC,
     explorerUrl: EXPLORER_URLS[CHAIN_IDS.OPTIMISM],
   },
@@ -160,6 +165,7 @@ export function getContractAddresses(chainId?: number) {
     swag1155: config.swag1155,
     faucetManager: config.faucetManager,
     zkpassport: config.zkpassport,
+    swagFactory: config.swagFactory,
     usdc: config.usdc,
   };
 }

@@ -20,18 +20,21 @@ const getZKPassportInstance = async () => {
 };
 
 /**
- * Request personhood verification
- * Returns unique identifier without revealing personal data
+ * Request personhood verification using ZK proofs suitable for on-chain minting.
+ * Requires mode "compressed-evm" for on-chain proof generation.
+ * Scope must match the deployed contract's scope value: "ethcali-verification".
+ * @param walletAddr - The connected wallet address to bind to the proof
  */
-export const requestPersonhoodVerification = async () => {
+export const requestPersonhoodVerification = async (walletAddr: `0x${string}` | string) => {
   const zkPassport = await getZKPassportInstance();
 
   const queryBuilder = await zkPassport.request({
     name: "ETH CALI Wallet",
     logo: "/logo_eth_cali.png",
-    purpose: "Prove your personhood",
-    scope: "personhood",
-  });
+    purpose: "Prove your personhood to access ETH CALI",
+    scope: "ethcali-verification",
+    mode: "compressed-evm",
+  } as any);
 
   const {
     url,
@@ -42,7 +45,12 @@ export const requestPersonhoodVerification = async () => {
     onResult,
     onReject,
     onError,
-  } = queryBuilder.facematch("strict").done();
+  } = queryBuilder
+    .gte("age", 18)
+    .disclose("nationality")
+    .disclose("document_type")
+    .bind("user_address", walletAddr as `0x${string}`)
+    .done();
 
   return {
     url,
@@ -53,6 +61,8 @@ export const requestPersonhoodVerification = async () => {
     onResult,
     onReject,
     onError,
+    // Return instance so the hook can call getSolidityVerifierParameters
+    zkPassport,
   };
 };
 

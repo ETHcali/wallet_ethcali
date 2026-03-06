@@ -25,6 +25,16 @@ export { useMarkRedemptionFulfilled } from './useNFTFulfillment';
 // Discount hooks
 export { usePoapDiscounts, useHolderDiscounts, useDiscountedPrice, useAddPoapDiscount, useRemovePoapDiscount, useAddHolderDiscount, useRemoveHolderDiscount } from './useDiscounts';
 
+// POAP whitelist hooks
+export { useIsPoapWhitelisted, useAddPoapWhitelist, useRemovePoapWhitelist, fetchPoapHolders } from './usePoapWhitelist';
+
+// Serial minted hooks
+export { useSerialMinted, useNextSerial } from './useSerialMinted';
+export type { SerialMintedEvent } from './useSerialMinted';
+
+// SwagFactory hooks
+export { useActiveCollections, useAllCollections, useSetCollectionActive } from './useSwagFactory';
+
 // Re-export types
 export { RedemptionStatus } from '../../types/swag';
 export type { Variant, RoyaltyInfo, PoapDiscount, HolderDiscount } from '../../types/swag';

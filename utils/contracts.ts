@@ -1,5 +1,5 @@
 import { createPublicClient, http, parseEther, formatEther, encodeFunctionData, type Chain } from 'viem';
-import { base, mainnet } from 'viem/chains';
+import { base, mainnet, optimism } from 'viem/chains';
 import { CONTRACTS, getAddresses } from '../frontend/contracts';
 import { getChainRpc } from '../config/networks';
 import { ADMIN_ADDRESS, CHAIN_IDS, DEFAULT_RPC_URLS } from '../config/constants';
@@ -34,6 +34,8 @@ export function getChainConfig(chainId: number): Chain {
       return unichain;
     case CHAIN_IDS.ETHEREUM:
       return mainnet;
+    case CHAIN_IDS.OPTIMISM:
+      return optimism;
     default:
       return base;
   }
@@ -46,6 +48,8 @@ export function getNetworkName(chainId: number): string {
       return 'ethereum';
     case CHAIN_IDS.UNICHAIN:
       return 'unichain';
+    case CHAIN_IDS.OPTIMISM:
+      return 'optimism';
     case CHAIN_IDS.BASE:
     default:
       return 'base';
@@ -145,6 +149,24 @@ export async function hasNFT(chainId: number, uniqueIdentifier: string): Promise
 }
 
 /**
+ * Check if a bytes32 unique identifier (scoped nullifier) already has an NFT.
+ * Uses the new hasNFTByIdentifier(bytes32) contract function.
+ */
+export async function hasNFTByIdentifier(chainId: number, uniqueIdentifier: `0x${string}` | string): Promise<boolean> {
+  const client = getPublicClient(chainId);
+  const addresses = getContractAddresses(chainId);
+  const abi = getContractABI('ZKPassportNFT');
+
+  try {
+    const result = await readContract(client, addresses.ZKPassportNFT, abi, 'hasNFTByIdentifier', [uniqueIdentifier]);
+    return Boolean(result);
+  } catch (error) {
+    logger.error('Error checking NFT by identifier:', error);
+    return false;
+  }
+}
+
+/**
  * Get tokenId for a user's address by checking NFTMinted events
  */
 export async function getTokenIdByAddress(chainId: number, userAddress: string): Promise<bigint | null> {
@@ -164,10 +186,10 @@ export async function getTokenIdByAddress(chainId: number, userAddress: string):
         name: 'NFTMinted',
         inputs: [
           { type: 'address', indexed: true, name: 'to' },
-          { type: 'uint256', indexed: false, name: 'tokenId' },
-          { type: 'string', indexed: false, name: 'uniqueIdentifier' },
-          { type: 'bool', indexed: false, name: 'faceMatchPassed' },
-          { type: 'bool', indexed: false, name: 'personhoodVerified' },
+          { type: 'uint256', indexed: true, name: 'tokenId' },
+          { type: 'bytes32', indexed: false, name: 'uniqueIdentifier' },
+          { type: 'bool', indexed: false, name: 'isOver18' },
+          { type: 'string', indexed: false, name: 'nationality' },
         ],
       } as any,
       args: {
@@ -197,9 +219,10 @@ export async function getTokenIdByAddress(chainId: number, userAddress: string):
  * Get token data for a tokenId
  */
 export async function getTokenData(chainId: number, tokenId: bigint): Promise<{
-  uniqueIdentifier: string;
-  faceMatchPassed: boolean;
+  uniqueIdentifier: `0x${string}`;
   personhoodVerified: boolean;
+  isOver18: boolean;
+  nationality: string;
 } | null> {
   const client = getPublicClient(chainId);
   const addresses = getContractAddresses(chainId);
@@ -207,10 +230,12 @@ export async function getTokenData(chainId: number, tokenId: bigint): Promise<{
 
   try {
     const result = await readContract(client, addresses.ZKPassportNFT, abi, 'getTokenData', [tokenId]);
-    return result as {
-      uniqueIdentifier: string;
-      faceMatchPassed: boolean;
-      personhoodVerified: boolean;
+    const raw = result as { uniqueIdentifier: string; personhoodVerified?: boolean; isOver18?: boolean; nationality?: string };
+    return {
+      uniqueIdentifier: raw.uniqueIdentifier as `0x${string}`,
+      personhoodVerified: raw.personhoodVerified ?? true,
+      isOver18: raw.isOver18 ?? false,
+      nationality: raw.nationality ?? '',
     };
   } catch (error) {
     logger.error('Error getting token data:', error);

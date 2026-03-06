@@ -249,3 +249,45 @@ export function useUpdateZKPassportMetadata() {
   };
 }
 
+export function useZKPassportContractSettings() {
+  const { zkpassport, chainId } = useSwagAddresses();
+  const { wallets } = useWallets();
+  const { sendTransaction } = useSendTransaction();
+  const queryClient = useQueryClient();
+  const activeWallet = wallets?.[0];
+
+  const setVerifier = async (verifierAddress: string) => {
+    if (!zkpassport || !activeWallet) throw new Error('Missing contract or wallet');
+    const txData = encodeFunctionData({
+      abi: ZKPassportNFTABI as any,
+      functionName: 'setVerifier',
+      args: [verifierAddress],
+    });
+    const result = await sendTransaction({ to: zkpassport as `0x${string}`, data: txData, chainId }, { sponsor: true });
+    queryClient.invalidateQueries({ queryKey: ['zkpassport-admin'] });
+    return result;
+  };
+
+  const setDomain = async (domain: string) => {
+    if (!zkpassport || !activeWallet) throw new Error('Missing contract or wallet');
+    const txData = encodeFunctionData({
+      abi: ZKPassportNFTABI as any,
+      functionName: 'setDomain',
+      args: [domain],
+    });
+    return sendTransaction({ to: zkpassport as `0x${string}`, data: txData, chainId }, { sponsor: true });
+  };
+
+  const setScope = async (scope: string) => {
+    if (!zkpassport || !activeWallet) throw new Error('Missing contract or wallet');
+    const txData = encodeFunctionData({
+      abi: ZKPassportNFTABI as any,
+      functionName: 'setScope',
+      args: [scope],
+    });
+    return sendTransaction({ to: zkpassport as `0x${string}`, data: txData, chainId }, { sponsor: true });
+  };
+
+  return { setVerifier, setDomain, setScope, canUpdate: Boolean(zkpassport && activeWallet) };
+}
+

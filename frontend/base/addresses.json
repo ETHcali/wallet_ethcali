@@ -1,0 +1,10 @@
+{
+  "network": "base",
+  "chainId": 8453,
+  "addresses": {
+    "ZKPassportNFT": "0xa3f1150a8414b0383244e7c7936119e3e24d106d",
+    "FaucetManager": "0x145d0d587bce7e390750cd67301e02478c51b48c",
+    "Swag1155": "0xfc87358e017ec814fe94139af82e6f25b293d5b8",
+    "SwagFactory": "0x89fb2a22bbb309703019b34439ae70b7e6d81e96"
+  }
+}

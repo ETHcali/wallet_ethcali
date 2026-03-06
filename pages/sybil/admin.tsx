@@ -4,15 +4,18 @@ import Navigation from '../../components/Navigation';
 import Layout from '../../components/shared/Layout';
 import { ZKPassportMetadataAdmin } from '../../components/zkpassport/ZKPassportMetadataAdmin';
 import { useSwagAddresses } from '../../utils/network';
-import { useZKPassportAdmin } from '../../hooks/useZKPassportAdmin';
+import { useZKPassportAdmin, useZKPassportContractSettings } from '../../hooks/useZKPassportAdmin';
 
-type AdminTab = 'metadata' | 'ownership';
+type AdminTab = 'metadata' | 'ownership' | 'settings' | 'holders';
 
 export default function IdentityAdminPage() {
   const { chainId, zkpassport, explorerUrl } = useSwagAddresses();
   const { ready } = useWallets();
   const { isOwner, owner, isLoading: isCheckingOwner, walletAddress } = useZKPassportAdmin();
+  const { setVerifier, setDomain, setScope } = useZKPassportContractSettings();
   const [activeTab, setActiveTab] = useState<AdminTab>('metadata');
+  const [settingsInput, setSettingsInput] = useState({ verifier: '', domain: '', scope: '' });
+  const [settingsTxStatus, setSettingsTxStatus] = useState<string | null>(null);
 
   if (!ready || isCheckingOwner) {
     return (
@@ -110,7 +113,7 @@ export default function IdentityAdminPage() {
 
         {/* Tabs */}
         <div className="flex gap-1 mb-4">
-          {(['metadata', 'ownership'] as AdminTab[]).map((tab) => (
+          {(['metadata', 'ownership', 'settings', 'holders'] as AdminTab[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -170,6 +173,112 @@ export default function IdentityAdminPage() {
                     <span className="text-green-400">OWNER</span>
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'settings' && (
+            <div className="space-y-4">
+              <div className="bg-black/60 border border-gray-800 rounded p-4">
+                <p className="text-[9px] text-gray-500 font-mono tracking-wider mb-3">CONTRACT_SETTINGS</p>
+                <div className="space-y-4">
+                  {/* setVerifier */}
+                  <div>
+                    <p className="text-[9px] text-gray-600 font-mono tracking-wider mb-1">SET_VERIFIER</p>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="0x... verifier address"
+                        value={settingsInput.verifier}
+                        onChange={(e) => setSettingsInput((s) => ({ ...s, verifier: e.target.value }))}
+                        className="flex-1 bg-black/40 border border-gray-700 rounded px-3 py-2 text-[10px] font-mono text-gray-300 placeholder-gray-600 focus:border-purple-500/50 focus:outline-none"
+                      />
+                      <button
+                        onClick={async () => {
+                          setSettingsTxStatus('pending...');
+                          try { await setVerifier(settingsInput.verifier); setSettingsTxStatus('✓ done'); }
+                          catch (e) { setSettingsTxStatus(`error: ${e instanceof Error ? e.message : 'unknown'}`); }
+                        }}
+                        className="px-3 py-2 bg-purple-500/20 text-purple-400 border border-purple-500/40 rounded text-[10px] font-mono hover:bg-purple-500/30"
+                      >
+                        SET
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* setDomain */}
+                  <div>
+                    <p className="text-[9px] text-gray-600 font-mono tracking-wider mb-1">SET_DOMAIN</p>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="e.g. wallet.ethcali.org"
+                        value={settingsInput.domain}
+                        onChange={(e) => setSettingsInput((s) => ({ ...s, domain: e.target.value }))}
+                        className="flex-1 bg-black/40 border border-gray-700 rounded px-3 py-2 text-[10px] font-mono text-gray-300 placeholder-gray-600 focus:border-purple-500/50 focus:outline-none"
+                      />
+                      <button
+                        onClick={async () => {
+                          setSettingsTxStatus('pending...');
+                          try { await setDomain(settingsInput.domain); setSettingsTxStatus('✓ done'); }
+                          catch (e) { setSettingsTxStatus(`error: ${e instanceof Error ? e.message : 'unknown'}`); }
+                        }}
+                        className="px-3 py-2 bg-purple-500/20 text-purple-400 border border-purple-500/40 rounded text-[10px] font-mono hover:bg-purple-500/30"
+                      >
+                        SET
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* setScope */}
+                  <div>
+                    <p className="text-[9px] text-gray-600 font-mono tracking-wider mb-1">SET_SCOPE</p>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="e.g. ethcali-verification"
+                        value={settingsInput.scope}
+                        onChange={(e) => setSettingsInput((s) => ({ ...s, scope: e.target.value }))}
+                        className="flex-1 bg-black/40 border border-gray-700 rounded px-3 py-2 text-[10px] font-mono text-gray-300 placeholder-gray-600 focus:border-purple-500/50 focus:outline-none"
+                      />
+                      <button
+                        onClick={async () => {
+                          setSettingsTxStatus('pending...');
+                          try { await setScope(settingsInput.scope); setSettingsTxStatus('✓ done'); }
+                          catch (e) { setSettingsTxStatus(`error: ${e instanceof Error ? e.message : 'unknown'}`); }
+                        }}
+                        className="px-3 py-2 bg-purple-500/20 text-purple-400 border border-purple-500/40 rounded text-[10px] font-mono hover:bg-purple-500/30"
+                      >
+                        SET
+                      </button>
+                    </div>
+                  </div>
+
+                  {settingsTxStatus && (
+                    <p className={`text-[10px] font-mono ${settingsTxStatus.startsWith('✓') ? 'text-green-400' : 'text-yellow-400'}`}>
+                      {settingsTxStatus}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'holders' && (
+            <div className="space-y-4">
+              <div className="bg-black/60 border border-gray-800 rounded p-4">
+                <p className="text-[9px] text-gray-500 font-mono tracking-wider mb-3">NFT_HOLDERS</p>
+                <p className="text-[10px] text-gray-600 font-mono mb-3">
+                  View all NFTMinted events on the block explorer for this contract.
+                </p>
+                <a
+                  href={`${explorerUrl}/address/${zkpassport}#events`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block px-3 py-2 bg-purple-500/20 text-purple-400 border border-purple-500/40 rounded text-[10px] font-mono hover:bg-purple-500/30"
+                >
+                  VIEW NFTMINTED EVENTS →
+                </a>
               </div>
             </div>
           )}

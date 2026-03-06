@@ -75,7 +75,7 @@ export function useZKPassportNFT(chainId: number) {
         try {
           const logs = await client.getLogs({
             address: contractAddress,
-            event: parseAbiItem('event NFTMinted(address indexed to, uint256 indexed tokenId, string uniqueIdentifier, bool faceMatchPassed, bool personhoodVerified)'),
+            event: parseAbiItem('event NFTMinted(address indexed to, uint256 indexed tokenId, bytes32 uniqueIdentifier, bool isOver18, string nationality)'),
             args: {
               to: userWallet.address as `0x${string}`,
             },
@@ -87,9 +87,10 @@ export function useZKPassportNFT(chainId: number) {
             const latestLog = logs[logs.length - 1];
             tokenId = latestLog.args.tokenId ?? null;
             tokenData = {
-              uniqueIdentifier: latestLog.args.uniqueIdentifier ?? '',
-              faceMatchPassed: latestLog.args.faceMatchPassed ?? false,
-              personhoodVerified: latestLog.args.personhoodVerified ?? false,
+              uniqueIdentifier: (latestLog.args.uniqueIdentifier ?? '0x') as `0x${string}`,
+              personhoodVerified: true, // always true — contract only mints with valid ZK proof
+              isOver18: latestLog.args.isOver18 ?? false,
+              nationality: latestLog.args.nationality ?? '',
             };
           }
         } catch (eventErr) {

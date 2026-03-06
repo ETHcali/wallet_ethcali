@@ -16,8 +16,8 @@ export default function SybilPage() {
   const [currentChainId, setCurrentChainId] = useState(8453);
   const [_verificationStatus, setVerificationStatus] = useState<'idle' | 'verified' | 'minting' | 'minted' | 'failed' | 'rejected' | 'duplicate'>('idle');
   const [_uniqueIdentifier, setUniqueIdentifier] = useState<string | null>(null);
-  const [_faceMatchPassed, setFaceMatchPassed] = useState(false);
-  const [_personhoodVerified, setPersonhoodVerified] = useState(false);
+  const [_isOver18, setIsOver18] = useState(false);
+  const [_nationality, setNationality] = useState<string | null>(null);
 
     const addresses = getContractAddresses(currentChainId);
   
@@ -88,8 +88,8 @@ export default function SybilPage() {
               setVerificationStatus(status);
               if (data) {
                 setUniqueIdentifier(data.uniqueIdentifier || null);
-                setFaceMatchPassed(data.faceMatchPassed || false);
-                setPersonhoodVerified(data.personhoodVerified || false);
+                setIsOver18(data.isOver18 || false);
+                setNationality(data.nationality || null);
               }
             }}
             onMintSuccess={() => {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { usePrivy, useWallets } from '@privy-io/react-auth';
+import { usePrivy } from '@privy-io/react-auth';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
 import Loading from '../components/shared/Loading';
@@ -7,16 +7,15 @@ import Navigation from '../components/Navigation';
 
 export default function Home() {
   const { login, ready, authenticated } = usePrivy();
-  const { wallets } = useWallets();
   const router = useRouter();
-  const userWallet = wallets?.[0];
 
-  // Auto-redirect authenticated users to wallet
+  // Auto-redirect authenticated users to wallet.
+  // The Privy session token alone is enough — no need to wait for a wallet object.
   React.useEffect(() => {
-    if (ready && authenticated && userWallet) {
+    if (ready && authenticated) {
       router.push('/wallet');
     }
-  }, [ready, authenticated, userWallet, router]);
+  }, [ready, authenticated, router]);
 
   // Loading timeout state
   const [loadingTimeout, setLoadingTimeout] = React.useState(false);
@@ -122,6 +121,25 @@ export default function Home() {
                   </p>
                 </div>
 
+                <div className="bg-gray-900/50 border border-gray-700 rounded-xl p-4 sm:p-8 text-center">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-indigo-500/10 rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                    <Image src="/infraused/opensea.png" alt="OpenSea" width={40} height={40} className="w-8 h-8 sm:w-10 sm:h-10" unoptimized />
+                  </div>
+                  <h3 className="text-base sm:text-xl font-bold text-indigo-400 mb-2 sm:mb-3">OpenSea</h3>
+                  <p className="text-gray-500 text-xs sm:text-sm">
+                    NFT marketplace integration for seamless digital asset management.
+                  </p>
+                </div>
+
+                <div className="bg-gray-900/50 border border-gray-700 rounded-xl p-4 sm:p-8 text-center">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-cyan-500/10 rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                    <Image src="/infraused/lifiprotocol.png" alt="LiFi" width={40} height={40} className="w-8 h-8 sm:w-10 sm:h-10" unoptimized />
+                  </div>
+                  <h3 className="text-base sm:text-xl font-bold text-cyan-400 mb-2 sm:mb-3">LiFi</h3>
+                  <p className="text-gray-500 text-xs sm:text-sm">
+                    Cross-chain bridging and swaps for maximum flexibility.
+                  </p>
+                </div>
                 <div className="bg-gray-900/50 border border-gray-700 rounded-xl p-4 sm:p-8 text-center">
                   <div className="w-12 h-12 sm:w-16 sm:h-16 bg-purple-500/10 rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4">
                     <Image src="/infraused/ens.png" alt="Ethereum Name Service" width={40} height={40} className="w-8 h-8 sm:w-10 sm:h-10" unoptimized />

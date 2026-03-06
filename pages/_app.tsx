@@ -56,17 +56,28 @@ function MyApp({ Component, pageProps }: AppProps) {
       <PrivyProvider
         appId={PRIVY_APP_ID}
         config={{
-          loginMethods: ['email', 'passkey', ],
+          // 'wallet' enables Sign-In With Ethereum (SIWE) for external wallets
+          loginMethods: ['email', 'passkey', 'wallet', 'google'],
           appearance: {
             theme: 'dark',
             accentColor: '#06b6d4',
             logo: '/logotethcali.png',
             walletChainType: 'ethereum-only',
             showWalletLoginFirst: false,
+            // Show detected browser extension wallets first, then common options
+            walletList: [
+              'detected_ethereum_wallets',
+              'metamask',
+              'wallet_connect',
+              'coinbase_wallet',
+              'rainbow',
+            ],
           },
           embeddedWallets: {
             ethereum: {
-              createOnLogin: 'all-users',
+              // Only create embedded wallets for email/passkey users;
+              // external-wallet users already have their own wallet.
+              createOnLogin: 'users-without-wallets',
             },
             showWalletUIs: true,
           },

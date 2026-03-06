@@ -5,9 +5,9 @@ import React from 'react';
 import { getNetworkName } from '../../../utils/contracts';
 
 interface VerifiedStepProps {
-  uniqueIdentifier: string;
-  faceMatchPassed: boolean;
-  personhoodVerified: boolean;
+  uniqueIdentifier: `0x${string}` | null;
+  isOver18: boolean;
+  nationality: string | null;
   chainId: number;
   isMinting: boolean;
   errorMessage: string | null;
@@ -23,8 +23,8 @@ const maskIdentifier = (uid: string): string => {
 
 export const VerifiedStep: React.FC<VerifiedStepProps> = ({
   uniqueIdentifier,
-  faceMatchPassed,
-  personhoodVerified,
+  isOver18,
+  nationality,
   chainId,
   isMinting,
   errorMessage,
@@ -46,18 +46,18 @@ export const VerifiedStep: React.FC<VerifiedStepProps> = ({
         <div className="space-y-1.5 text-[11px] font-mono">
           <div className="flex justify-between items-center py-1.5 border-b border-gray-800">
             <span className="text-gray-500">uid</span>
-            <span className="text-cyan-400">{maskIdentifier(uniqueIdentifier)}</span>
+            <span className="text-cyan-400">{maskIdentifier(uniqueIdentifier ?? '')}</span>
           </div>
           <div className="flex justify-between items-center py-1.5 border-b border-gray-800">
-            <span className="text-gray-500">face</span>
-            <span className={faceMatchPassed ? 'text-green-400' : 'text-gray-600'}>
-              {faceMatchPassed ? 'PASS' : 'N/A'}
+            <span className="text-gray-500">age</span>
+            <span className={isOver18 ? 'text-green-400' : 'text-gray-600'}>
+              {isOver18 ? '18+' : 'N/A'}
             </span>
           </div>
           <div className="flex justify-between items-center py-1.5">
-            <span className="text-gray-500">human</span>
-            <span className={personhoodVerified ? 'text-green-400' : 'text-gray-600'}>
-              {personhoodVerified ? 'TRUE' : 'FALSE'}
+            <span className="text-gray-500">nationality</span>
+            <span className={nationality ? 'text-green-400' : 'text-gray-600'}>
+              {nationality ?? 'N/A'}
             </span>
           </div>
         </div>

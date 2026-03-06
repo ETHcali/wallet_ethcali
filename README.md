@@ -30,10 +30,10 @@ A secure and easy-to-use Ethereum wallet application built with Next.js and Priv
 
 ### 🔗 **Network Support**
 - **Base Mainnet** (Chain ID: 8453) - Primary network with gas sponsorship
-- **Ethereum Mainnet** (Chain ID: 1) - Gas sponsorship enabled
 - **Optimism** (Chain ID: 10) - Gas sponsorship enabled  
 - **Unichain** (Chain ID: 130) - Gas sponsorship enabled
-- BaseScan, Etherscan, Optimistic Etherscan, and Blockscout explorer integration
+- ~~Ethereum Mainnet~~ *(hidden until new contracts are deployed — see [re-enable path](#-re-enabling-ethereum-mainnet))*
+- BaseScan, Optimistic Etherscan, and Blockscout explorer integration
 - Real-time price data from CoinGecko API
 
 ## 🚀 Quick Start
@@ -75,6 +75,13 @@ A secure and easy-to-use Ethereum wallet application built with Next.js and Priv
    
    # Optional: Admin Configuration
    NEXT_PUBLIC_ADMIN_ADDRESS=0x...
+
+   # Optional: POAP API key (server-side only — never NEXT_PUBLIC_)
+   # Set this in Vercel environment variables before going live
+   POAP_API_KEY=your_poap_api_key_here
+
+   # Optional: ZKPassport dev mode (set true to test with devnet proofs locally)
+   NEXT_PUBLIC_ZK_DEV_MODE=false
    ```
 
    **Note**: 
@@ -252,6 +259,8 @@ eth-cali-wallet/
 - `PINATA_JWT` (optional, for NFT metadata)
 - `NEXT_PUBLIC_PINATA_GATEWAY` (optional)
 - `NEXT_PUBLIC_ADMIN_ADDRESS` (optional, for admin features)
+- `POAP_API_KEY` (required for POAP whitelist admin — server-side only, never use `NEXT_PUBLIC_`)
+- `NEXT_PUBLIC_ZK_DEV_MODE` (set `false` in production; `true` only for local devnet testing)
 - Custom RPC URLs (optional, for better performance)
 
 **Gas Sponsorship Setup:**
@@ -304,6 +313,7 @@ The application includes several API endpoints for backend functionality:
 - `GET /api/check-personhood/[uniqueIdentifier]` - Check personhood status
 - `POST /api/pinata/pin-image` - Pin image to IPFS via Pinata
 - `POST /api/pinata/pin-json` - Pin JSON metadata to IPFS via Pinata
+- `GET /api/poap/holders?eventId=<id>` - Fetch POAP event holders (server-side, uses `POAP_API_KEY`)
 
 ## 📖 Documentation
 
@@ -314,6 +324,25 @@ Comprehensive documentation is available in the `docs/` directory:
 - [ZKPassport Contract Reference](./docs/ZKPASSPORT_CONTRACT_REFERENCE.md) - Identity NFT contract
 - [Security & Admin Guide](./docs/SECURITY_ADMIN_GUIDE.md) - Admin roles and security procedures
 - [Frontend Integration Guide](./docs/SWAG1155_FRONTEND.md) - Frontend integration examples
+
+## 🔁 Re-enabling Ethereum Mainnet
+
+Ethereum is currently hidden from the UI until new contracts are deployed on mainnet.
+
+To re-enable it:
+1. Deploy `FaucetManager`, `Swag1155`, `SwagFactory`, and `ZKPassportNFT` to Ethereum mainnet.
+2. Update `frontend/addresses.json` with the new addresses under the `"ethereum"` key.
+3. Uncomment `CHAIN_IDS.ETHEREUM` in the `SUPPORTED_CHAIN_IDS` array inside [`config/constants.ts`](config/constants.ts).
+
+## 🧪 ZKPassport Dev Mode
+
+To test ZKPassport verification locally using devnet proofs:
+
+```env
+NEXT_PUBLIC_ZK_DEV_MODE=true
+```
+
+This passes `devMode: true` to `getSolidityVerifierParameters()`, allowing test proofs from the ZKPassport simulator to pass verification. **Always `false` in production.**
 
 ## 🤝 Contributing
 

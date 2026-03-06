@@ -15,6 +15,16 @@
         "internalType": "address",
         "name": "initialOwner",
         "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "_domain",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_scope",
+        "type": "string"
       }
     ],
     "stateMutability": "nonpayable",
@@ -275,21 +285,21 @@
       },
       {
         "indexed": false,
-        "internalType": "string",
+        "internalType": "bytes32",
         "name": "uniqueIdentifier",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "isOver18",
+        "type": "bool"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "nationality",
         "type": "string"
-      },
-      {
-        "indexed": false,
-        "internalType": "bool",
-        "name": "faceMatchPassed",
-        "type": "bool"
-      },
-      {
-        "indexed": false,
-        "internalType": "bool",
-        "name": "personhoodVerified",
-        "type": "bool"
       }
     ],
     "name": "NFTMinted",
@@ -344,31 +354,26 @@
     "inputs": [
       {
         "indexed": true,
-        "internalType": "string",
-        "name": "uniqueIdentifier",
-        "type": "string"
-      },
-      {
-        "indexed": true,
         "internalType": "address",
-        "name": "userAddress",
+        "name": "newVerifier",
         "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "bool",
-        "name": "faceMatchPassed",
-        "type": "bool"
-      },
-      {
-        "indexed": false,
-        "internalType": "bool",
-        "name": "personhoodVerified",
-        "type": "bool"
       }
     ],
-    "name": "VerificationApproved",
+    "name": "VerifierUpdated",
     "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "ZKPASSPORT_VERIFIER_ADDRESS",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   },
   {
     "inputs": [
@@ -391,68 +396,6 @@
   {
     "inputs": [
       {
-        "internalType": "string",
-        "name": "uniqueIdentifier",
-        "type": "string"
-      },
-      {
-        "internalType": "address",
-        "name": "userAddress",
-        "type": "address"
-      },
-      {
-        "internalType": "bool",
-        "name": "faceMatchPassed",
-        "type": "bool"
-      },
-      {
-        "internalType": "bool",
-        "name": "personhoodVerified",
-        "type": "bool"
-      }
-    ],
-    "name": "approveVerification",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "name": "approvedVerifications",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "userAddress",
-        "type": "address"
-      },
-      {
-        "internalType": "bool",
-        "name": "faceMatchPassed",
-        "type": "bool"
-      },
-      {
-        "internalType": "bool",
-        "name": "personhoodVerified",
-        "type": "bool"
-      },
-      {
-        "internalType": "bool",
-        "name": "isApproved",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "address",
         "name": "owner",
         "type": "address"
@@ -464,6 +407,19 @@
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "domain",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
       }
     ],
     "stateMutability": "view",
@@ -501,43 +457,29 @@
       {
         "components": [
           {
-            "internalType": "string",
+            "internalType": "bytes32",
             "name": "uniqueIdentifier",
-            "type": "string"
-          },
-          {
-            "internalType": "bool",
-            "name": "faceMatchPassed",
-            "type": "bool"
+            "type": "bytes32"
           },
           {
             "internalType": "bool",
             "name": "personhoodVerified",
             "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "isOver18",
+            "type": "bool"
+          },
+          {
+            "internalType": "string",
+            "name": "nationality",
+            "type": "string"
           }
         ],
         "internalType": "struct ZKPassportNFT.TokenData",
         "name": "",
         "type": "tuple"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "uniqueIdentifier",
-        "type": "string"
-      }
-    ],
-    "name": "hasNFT",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
       }
     ],
     "stateMutability": "view",
@@ -552,6 +494,25 @@
       }
     ],
     "name": "hasNFTByAddress",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "uniqueIdentifier",
+        "type": "bytes32"
+      }
+    ],
+    "name": "hasNFTByIdentifier",
     "outputs": [
       {
         "internalType": "bool",
@@ -589,35 +550,78 @@
   {
     "inputs": [
       {
-        "internalType": "string",
-        "name": "uniqueIdentifier",
-        "type": "string"
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "version",
+            "type": "bytes32"
+          },
+          {
+            "components": [
+              {
+                "internalType": "bytes32",
+                "name": "vkeyHash",
+                "type": "bytes32"
+              },
+              {
+                "internalType": "bytes",
+                "name": "proof",
+                "type": "bytes"
+              },
+              {
+                "internalType": "bytes32[]",
+                "name": "publicInputs",
+                "type": "bytes32[]"
+              }
+            ],
+            "internalType": "struct ProofVerificationData",
+            "name": "proofVerificationData",
+            "type": "tuple"
+          },
+          {
+            "internalType": "bytes",
+            "name": "committedInputs",
+            "type": "bytes"
+          },
+          {
+            "components": [
+              {
+                "internalType": "uint256",
+                "name": "validityPeriodInSeconds",
+                "type": "uint256"
+              },
+              {
+                "internalType": "string",
+                "name": "domain",
+                "type": "string"
+              },
+              {
+                "internalType": "string",
+                "name": "scope",
+                "type": "string"
+              },
+              {
+                "internalType": "bool",
+                "name": "devMode",
+                "type": "bool"
+              }
+            ],
+            "internalType": "struct ServiceConfig",
+            "name": "serviceConfig",
+            "type": "tuple"
+          }
+        ],
+        "internalType": "struct ProofVerificationParams",
+        "name": "params",
+        "type": "tuple"
+      },
+      {
+        "internalType": "bool",
+        "name": "isIDCard",
+        "type": "bool"
       }
     ],
     "name": "mint",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "uniqueIdentifier",
-        "type": "string"
-      },
-      {
-        "internalType": "bool",
-        "name": "faceMatchPassed",
-        "type": "bool"
-      },
-      {
-        "internalType": "bool",
-        "name": "personhoodVerified",
-        "type": "bool"
-      }
-    ],
-    "name": "mintWithVerification",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -765,6 +769,19 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "scope",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -791,6 +808,19 @@
       }
     ],
     "name": "setDescription",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_domain",
+        "type": "string"
+      }
+    ],
+    "name": "setDomain",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -852,12 +882,38 @@
   {
     "inputs": [
       {
+        "internalType": "string",
+        "name": "_scope",
+        "type": "string"
+      }
+    ],
+    "name": "setScope",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "bool",
         "name": "useIPFS",
         "type": "bool"
       }
     ],
     "name": "setUseIPFSImage",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "verifierAddress",
+        "type": "address"
+      }
+    ],
+    "name": "setVerifier",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -957,6 +1013,19 @@
         "internalType": "bool",
         "name": "",
         "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "zkPassportVerifier",
+    "outputs": [
+      {
+        "internalType": "contract IZKPassportVerifier",
+        "name": "",
+        "type": "address"
       }
     ],
     "stateMutability": "view",

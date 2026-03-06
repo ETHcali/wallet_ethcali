@@ -20,11 +20,6 @@
         "internalType": "address",
         "name": "initialAdmin",
         "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_poap",
-        "type": "address"
       }
     ],
     "stateMutability": "nonpayable",
@@ -339,6 +334,37 @@
     "inputs": [
       {
         "indexed": true,
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "eventId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address[]",
+        "name": "addresses",
+        "type": "address[]"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "added",
+        "type": "bool"
+      }
+    ],
+    "name": "PoapWhitelistUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
         "internalType": "address",
         "name": "buyer",
         "type": "address"
@@ -565,6 +591,31 @@
       {
         "indexed": true,
         "internalType": "address",
+        "name": "buyer",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "serial",
+        "type": "uint256"
+      }
+    ],
+    "name": "SerialMinted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
         "name": "operator",
         "type": "address"
       },
@@ -756,19 +807,6 @@
   },
   {
     "inputs": [],
-    "name": "POAP_CONTRACT",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "ROYALTY_DENOMINATOR",
     "outputs": [
       {
@@ -840,6 +878,29 @@
       }
     ],
     "name": "addPoapDiscount",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "eventId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address[]",
+        "name": "addresses",
+        "type": "address[]"
+      }
+    ],
+    "name": "addPoapWhitelist",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1145,6 +1206,30 @@
         "internalType": "uint256",
         "name": "tokenId",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "serial",
+        "type": "uint256"
+      }
+    ],
+    "name": "getSerialOwner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
       }
     ],
     "name": "getVariant",
@@ -1307,6 +1392,35 @@
   {
     "inputs": [
       {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "eventId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "buyer",
+        "type": "address"
+      }
+    ],
+    "name": "isPoapWhitelisted",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "address",
         "name": "account",
         "type": "address"
@@ -1360,6 +1474,25 @@
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      }
+    ],
+    "name": "nextSerial",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       },
       {
         "internalType": "uint256",
@@ -1382,6 +1515,35 @@
       {
         "internalType": "bool",
         "name": "active",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "poapWhitelist",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
         "type": "bool"
       }
     ],
@@ -1489,6 +1651,29 @@
       }
     ],
     "name": "removePoapDiscount",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "eventId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address[]",
+        "name": "addresses",
+        "type": "address[]"
+      }
+    ],
+    "name": "removePoapWhitelist",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1622,6 +1807,30 @@
     "name": "safeTransferFrom",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "serialOwner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {

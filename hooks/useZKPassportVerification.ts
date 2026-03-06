@@ -1,17 +1,20 @@
 /**
  * useZKPassportVerification - Hook for managing ZKPassport verification flow
+ *
+ * Uses on-chain ZK proof verification (mode: "compressed-evm").
+ * The proof is passed directly to the contract's mint(ProofVerificationParams, isIDCard) function.
  */
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useWallets, useSendTransaction } from '@privy-io/react-auth';
 import { encodeFunctionData } from 'viem';
 import {
   hasNFTByAddress,
-  hasNFT,
+  hasNFTByIdentifier,
   getContractAddresses,
 } from '../utils/contracts';
 import ZKPassportNFTABI from '../frontend/abis/ZKPassportNFT.json';
 
-// Dynamic import for ZKPassport
+// Dynamic import for ZKPassport (browser-only)
 let requestPersonhoodVerification: any;
 
 export type VerificationStatus =
@@ -29,9 +32,9 @@ export type VerificationStatus =
 export interface VerificationState {
   status: VerificationStatus;
   verificationUrl: string | null;
-  uniqueIdentifier: string | null;
-  faceMatchPassed: boolean;
-  personhoodVerified: boolean;
+  uniqueIdentifier: `0x${string}` | null;
+  isOver18: boolean;
+  nationality: string | null;
   errorMessage: string | null;
   requestReceived: boolean;
   generatingProof: boolean;
@@ -52,12 +55,18 @@ export function useZKPassportVerification(chainId: number, onMintSuccess?: () =>
   const { sendTransaction } = useSendTransaction();
   const userWallet = wallets?.[0];
 
+  // Refs hold cross-callback data without triggering re-renders
+  const zkPassportRef = useRef<any>(null);
+  const proofRef = useRef<any>(null);
+  const verifierParamsRef = useRef<any>(null);
+  const isIDCardRef = useRef<boolean>(false);
+
   const [isClient, setIsClient] = useState(false);
   const [status, setStatus] = useState<VerificationStatus>('idle');
   const [verificationUrl, setVerificationUrl] = useState<string | null>(null);
-  const [uniqueIdentifier, setUniqueIdentifier] = useState<string | null>(null);
-  const [faceMatchPassed, setFaceMatchPassed] = useState(false);
-  const [personhoodVerified, setPersonhoodVerified] = useState(false);
+  const [uniqueIdentifier, setUniqueIdentifier] = useState<`0x${string}` | null>(null);
+  const [isOver18, setIsOver18] = useState(false);
+  const [nationality, setNationality] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [requestReceived, setRequestReceived] = useState(false);
   const [generatingProof, setGeneratingProof] = useState(false);
@@ -65,7 +74,7 @@ export function useZKPassportVerification(chainId: number, onMintSuccess?: () =>
   const [mintTxHash, setMintTxHash] = useState<string | null>(null);
   const [isMinting, setIsMinting] = useState(false);
 
-  // Load ZKPassport SDK
+  // Load ZKPassport SDK (browser-only)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setIsClient(true);
@@ -79,19 +88,27 @@ export function useZKPassportVerification(chainId: number, onMintSuccess?: () =>
     setStatus('idle');
     setVerificationUrl(null);
     setUniqueIdentifier(null);
-    setFaceMatchPassed(false);
-    setPersonhoodVerified(false);
+    setIsOver18(false);
+    setNationality(null);
     setErrorMessage(null);
     setRequestReceived(false);
     setGeneratingProof(false);
     setProofsGenerated(0);
     setMintTxHash(null);
     setIsMinting(false);
+    zkPassportRef.current = null;
+    proofRef.current = null;
+    verifierParamsRef.current = null;
+    isIDCardRef.current = false;
   }, []);
 
   const startVerification = useCallback(async () => {
     if (!isClient || !requestPersonhoodVerification) {
       setErrorMessage('Please wait for the page to load completely.');
+      return;
+    }
+    if (!userWallet?.address) {
+      setErrorMessage('Please connect your wallet first.');
       return;
     }
 
@@ -101,11 +118,13 @@ export function useZKPassportVerification(chainId: number, onMintSuccess?: () =>
     setGeneratingProof(false);
     setProofsGenerated(0);
     setUniqueIdentifier(null);
-    setFaceMatchPassed(false);
-    setPersonhoodVerified(false);
+    setIsOver18(false);
+    setNationality(null);
+    proofRef.current = null;
+    verifierParamsRef.current = null;
 
     try {
-      const result = await requestPersonhoodVerification();
+      const result = await requestPersonhoodVerification(userWallet.address);
 
       const {
         url,
@@ -115,8 +134,10 @@ export function useZKPassportVerification(chainId: number, onMintSuccess?: () =>
         onResult,
         onReject,
         onError,
+        zkPassport,
       } = result;
 
+      zkPassportRef.current = zkPassport;
       setVerificationUrl(url);
 
       onRequestReceived(() => {
@@ -129,19 +150,14 @@ export function useZKPassportVerification(chainId: number, onMintSuccess?: () =>
         setStatus('generating_proof');
       });
 
-      onProofGenerated(() => {
+      // Capture the raw ProofResult — required for getSolidityVerifierParameters
+      onProofGenerated((proof: any) => {
+        proofRef.current = proof;
         setProofsGenerated((prev) => prev + 1);
       });
 
       onResult(async (resultData: any) => {
-        const { verified, uniqueIdentifier: uid, result: verificationResult } = resultData || {};
-
-        const extractedUid =
-          uid ||
-          verificationResult?.uniqueIdentifier ||
-          resultData?.result?.uniqueIdentifier ||
-          resultData?.uniqueId ||
-          resultData?.id;
+        const { verified, result: verificationResult } = resultData || {};
 
         if (!verified) {
           setStatus('failed');
@@ -149,20 +165,38 @@ export function useZKPassportVerification(chainId: number, onMintSuccess?: () =>
           return;
         }
 
-        const faceMatch =
-          verificationResult?.facematch?.passed ??
-          verificationResult?.faceMatch?.passed ??
-          resultData?.facematch?.passed ??
-          true;
+        // Build the solidity verifier params struct from the captured proof
+        try {
+          const devMode = process.env.NEXT_PUBLIC_ZK_DEV_MODE === 'true';
+          verifierParamsRef.current = zkPassportRef.current?.getSolidityVerifierParameters({
+            proof: proofRef.current,
+            scope: 'ethcali-verification',
+            devMode,
+          });
+        } catch (paramError: any) {
+          setStatus('failed');
+          setErrorMessage(`Failed to prepare proof for minting: ${paramError.message}`);
+          return;
+        }
 
-        setUniqueIdentifier(extractedUid || null);
-        setFaceMatchPassed(faceMatch);
-        setPersonhoodVerified(true);
+        // Determine document type (passport vs national ID card)
+        const docType = verificationResult?.document_type?.disclose?.result;
+        isIDCardRef.current = docType !== 'passport';
 
-        if (extractedUid) {
+        // Extract on-chain bytes32 scoped nullifier
+        const uid = (verificationResult?.uniqueIdentifier || resultData?.uniqueIdentifier) as `0x${string}` | undefined;
+
+        // Nationality (ISO alpha-3) and age from disclosed proof fields
+        const nat: string | null = verificationResult?.nationality?.disclose?.result ?? null;
+        const over18: boolean = verificationResult?.age?.gte?.result === true;
+
+        setUniqueIdentifier(uid ?? null);
+        setIsOver18(over18);
+        setNationality(nat);
+
+        if (uid) {
           try {
-            const identifierHasNFT = await hasNFT(chainId, extractedUid);
-
+            const identifierHasNFT = await hasNFTByIdentifier(chainId, uid);
             if (identifierHasNFT) {
               setStatus('duplicate');
               setErrorMessage('This identity already has an NFT on this network.');
@@ -191,27 +225,30 @@ export function useZKPassportVerification(chainId: number, onMintSuccess?: () =>
       setStatus('failed');
       setErrorMessage(`Error starting verification: ${error.message || 'Unknown error'}`);
     }
-  }, [isClient, chainId]);
+  }, [isClient, chainId, userWallet?.address]);
 
   const mintNFT = useCallback(async () => {
     if (!userWallet) {
       setErrorMessage('Wallet not connected. Please connect your wallet first.');
       return;
     }
-    if (!uniqueIdentifier) {
-      setErrorMessage('Missing unique identifier from verification. Please verify again.');
+    if (!verifierParamsRef.current) {
+      setErrorMessage('Missing proof parameters. Please complete verification again.');
       return;
     }
 
-    try {
-      const identifierHasNFT = await hasNFT(chainId, uniqueIdentifier);
-      if (identifierHasNFT) {
-        setErrorMessage('This unique identifier has already been used to mint an NFT.');
-        setStatus('duplicate');
-        return;
+    // Pre-flight duplicate checks
+    if (uniqueIdentifier) {
+      try {
+        const identifierHasNFT = await hasNFTByIdentifier(chainId, uniqueIdentifier);
+        if (identifierHasNFT) {
+          setErrorMessage('This identity has already been used to mint an NFT.');
+          setStatus('duplicate');
+          return;
+        }
+      } catch {
+        // Continue — contract enforces on-chain
       }
-    } catch {
-      // Continue - contract will enforce
     }
 
     try {
@@ -222,7 +259,7 @@ export function useZKPassportVerification(chainId: number, onMintSuccess?: () =>
         return;
       }
     } catch {
-      // Continue - contract will enforce
+      // Continue — contract enforces on-chain
     }
 
     setIsMinting(true);
@@ -238,10 +275,11 @@ export function useZKPassportVerification(chainId: number, onMintSuccess?: () =>
       const addresses = getContractAddresses(chainId);
       const nftContractAddress = addresses.ZKPassportNFT;
 
+      // New contract signature: mint(ProofVerificationParams params, bool isIDCard)
       const mintTxData = encodeFunctionData({
         abi: ZKPassportNFTABI,
         functionName: 'mint',
-        args: [uniqueIdentifier, faceMatchPassed, personhoodVerified || true],
+        args: [verifierParamsRef.current, isIDCardRef.current],
       });
 
       const result = await sendTransaction(
@@ -262,14 +300,14 @@ export function useZKPassportVerification(chainId: number, onMintSuccess?: () =>
     } finally {
       setIsMinting(false);
     }
-  }, [userWallet, uniqueIdentifier, faceMatchPassed, personhoodVerified, chainId, sendTransaction, onMintSuccess]);
+  }, [userWallet, uniqueIdentifier, chainId, sendTransaction, onMintSuccess]);
 
   return {
     status,
     verificationUrl,
     uniqueIdentifier,
-    faceMatchPassed,
-    personhoodVerified,
+    isOver18,
+    nationality,
     errorMessage,
     requestReceived,
     generatingProof,

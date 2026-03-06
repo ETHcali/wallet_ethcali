@@ -25,6 +25,7 @@ import {
   type VariantSize,
 } from '../../hooks/swag/useGroupedProducts';
 import { useBuy } from '../../hooks/useSwagStore';
+import { useNextSerial } from '../../hooks/swag';
 import { getIPFSGatewayUrl } from '../../lib/pinata';
 import { baseUnitsToPrice } from '../../utils/tokenGeneration';
 import { logger } from '../../utils/logger';
@@ -198,6 +199,7 @@ function ProductDetailModal({ group, contractAddress, chainId, initialTokenId, o
   const [pending, setPending] = useState(false);
   const [txError, setTxError] = useState<string | null>(null);
   const [txSuccess, setTxSuccess] = useState(false);
+  const [mintedSerial, setMintedSerial] = useState<bigint | null>(null);
 
   const { variant } = useVariant(contractAddress, chainId, selectedTokenId);
   const { remaining } = useVariantRemaining(contractAddress, chainId, selectedTokenId);
@@ -208,6 +210,8 @@ function ProductDetailModal({ group, contractAddress, chainId, initialTokenId, o
   const { poapDiscounts } = usePoapDiscounts(contractAddress, chainId, selectedTokenId);
   const { holderDiscounts } = useHolderDiscounts(contractAddress, chainId, selectedTokenId);
   const { buy, canBuy } = useBuy();
+  // nextSerial is the *next* serial to be minted; after purchase, the minted serial = nextSerial - 1
+  const { data: nextSerial, refetch: refetchSerial } = useNextSerial(contractAddress, chainId, selectedTokenId);
 
   const explorerBase = getExplorerUrl(chainId);
   const imageUrl = group.imageUri
@@ -254,8 +258,13 @@ function ProductDetailModal({ group, contractAddress, chainId, initialTokenId, o
     setPending(true);
     setTxError(null);
     setTxSuccess(false);
+    setMintedSerial(null);
     try {
       await buy(contractAddress, selectedTokenId, qty);
+      // Refetch nextSerial to get the new value; the minted serial = previous nextSerial
+      const prevSerial = nextSerial ?? 0n;
+      await refetchSerial();
+      setMintedSerial(prevSerial);
       setTxSuccess(true);
     } catch (err: unknown) {
       logger.error('Buy error:', err);
@@ -426,9 +435,14 @@ function ProductDetailModal({ group, contractAddress, chainId, initialTokenId, o
                 </p>
               )}
               {txSuccess && (
-                <p className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-2.5 text-xs font-semibold text-emerald-400">
-                  ✓ Purchase confirmed!
-                </p>
+                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-2.5 text-xs font-semibold text-emerald-400">
+                  <p>✓ Purchase confirmed!</p>
+                  {mintedSerial !== null && (
+                    <p className="mt-1 text-[11px] font-mono text-emerald-300/80">
+                      Serial #{mintedSerial.toString()}
+                    </p>
+                  )}
+                </div>
               )}
             </div>
 

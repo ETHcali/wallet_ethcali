@@ -1,5 +1,5 @@
 // Auto-generated multi-network contract addresses and types
-// Generated: 2026-02-02T17:40:39.721Z
+// Generated: 2026-03-06T06:21:43.308Z
 export const CONTRACTS = {
   "networks": {
     "base": {
@@ -7,7 +7,7 @@ export const CONTRACTS = {
       "chainId": 8453,
       "contracts": {
         "ZKPassportNFT": {
-          "address": "0x458eb490bf5f56b6ada8605c56bcef3510d83ec8",
+          "address": "0xa3f1150a8414b0383244e7c7936119e3e24d106d",
           "abi": [
             {
               "inputs": [
@@ -25,6 +25,16 @@ export const CONTRACTS = {
                   "internalType": "address",
                   "name": "initialOwner",
                   "type": "address"
+                },
+                {
+                  "internalType": "string",
+                  "name": "_domain",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "_scope",
+                  "type": "string"
                 }
               ],
               "stateMutability": "nonpayable",
@@ -285,21 +295,21 @@ export const CONTRACTS = {
                 },
                 {
                   "indexed": false,
-                  "internalType": "string",
+                  "internalType": "bytes32",
                   "name": "uniqueIdentifier",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "bool",
+                  "name": "isOver18",
+                  "type": "bool"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "string",
+                  "name": "nationality",
                   "type": "string"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "bool",
-                  "name": "faceMatchPassed",
-                  "type": "bool"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "bool",
-                  "name": "personhoodVerified",
-                  "type": "bool"
                 }
               ],
               "name": "NFTMinted",
@@ -354,31 +364,26 @@ export const CONTRACTS = {
               "inputs": [
                 {
                   "indexed": true,
-                  "internalType": "string",
-                  "name": "uniqueIdentifier",
-                  "type": "string"
-                },
-                {
-                  "indexed": true,
                   "internalType": "address",
-                  "name": "userAddress",
+                  "name": "newVerifier",
                   "type": "address"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "bool",
-                  "name": "faceMatchPassed",
-                  "type": "bool"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "bool",
-                  "name": "personhoodVerified",
-                  "type": "bool"
                 }
               ],
-              "name": "VerificationApproved",
+              "name": "VerifierUpdated",
               "type": "event"
+            },
+            {
+              "inputs": [],
+              "name": "ZKPASSPORT_VERIFIER_ADDRESS",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
             },
             {
               "inputs": [
@@ -401,68 +406,6 @@ export const CONTRACTS = {
             {
               "inputs": [
                 {
-                  "internalType": "string",
-                  "name": "uniqueIdentifier",
-                  "type": "string"
-                },
-                {
-                  "internalType": "address",
-                  "name": "userAddress",
-                  "type": "address"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "faceMatchPassed",
-                  "type": "bool"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "personhoodVerified",
-                  "type": "bool"
-                }
-              ],
-              "name": "approveVerification",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "string",
-                  "name": "",
-                  "type": "string"
-                }
-              ],
-              "name": "approvedVerifications",
-              "outputs": [
-                {
-                  "internalType": "address",
-                  "name": "userAddress",
-                  "type": "address"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "faceMatchPassed",
-                  "type": "bool"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "personhoodVerified",
-                  "type": "bool"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "isApproved",
-                  "type": "bool"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
                   "internalType": "address",
                   "name": "owner",
                   "type": "address"
@@ -474,6 +417,19 @@ export const CONTRACTS = {
                   "internalType": "uint256",
                   "name": "",
                   "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "domain",
+              "outputs": [
+                {
+                  "internalType": "string",
+                  "name": "",
+                  "type": "string"
                 }
               ],
               "stateMutability": "view",
@@ -511,43 +467,29 @@ export const CONTRACTS = {
                 {
                   "components": [
                     {
-                      "internalType": "string",
+                      "internalType": "bytes32",
                       "name": "uniqueIdentifier",
-                      "type": "string"
-                    },
-                    {
-                      "internalType": "bool",
-                      "name": "faceMatchPassed",
-                      "type": "bool"
+                      "type": "bytes32"
                     },
                     {
                       "internalType": "bool",
                       "name": "personhoodVerified",
                       "type": "bool"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "isOver18",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "nationality",
+                      "type": "string"
                     }
                   ],
                   "internalType": "struct ZKPassportNFT.TokenData",
                   "name": "",
                   "type": "tuple"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "string",
-                  "name": "uniqueIdentifier",
-                  "type": "string"
-                }
-              ],
-              "name": "hasNFT",
-              "outputs": [
-                {
-                  "internalType": "bool",
-                  "name": "",
-                  "type": "bool"
                 }
               ],
               "stateMutability": "view",
@@ -562,6 +504,25 @@ export const CONTRACTS = {
                 }
               ],
               "name": "hasNFTByAddress",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "uniqueIdentifier",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "hasNFTByIdentifier",
               "outputs": [
                 {
                   "internalType": "bool",
@@ -599,35 +560,78 @@ export const CONTRACTS = {
             {
               "inputs": [
                 {
-                  "internalType": "string",
-                  "name": "uniqueIdentifier",
-                  "type": "string"
+                  "components": [
+                    {
+                      "internalType": "bytes32",
+                      "name": "version",
+                      "type": "bytes32"
+                    },
+                    {
+                      "components": [
+                        {
+                          "internalType": "bytes32",
+                          "name": "vkeyHash",
+                          "type": "bytes32"
+                        },
+                        {
+                          "internalType": "bytes",
+                          "name": "proof",
+                          "type": "bytes"
+                        },
+                        {
+                          "internalType": "bytes32[]",
+                          "name": "publicInputs",
+                          "type": "bytes32[]"
+                        }
+                      ],
+                      "internalType": "struct ProofVerificationData",
+                      "name": "proofVerificationData",
+                      "type": "tuple"
+                    },
+                    {
+                      "internalType": "bytes",
+                      "name": "committedInputs",
+                      "type": "bytes"
+                    },
+                    {
+                      "components": [
+                        {
+                          "internalType": "uint256",
+                          "name": "validityPeriodInSeconds",
+                          "type": "uint256"
+                        },
+                        {
+                          "internalType": "string",
+                          "name": "domain",
+                          "type": "string"
+                        },
+                        {
+                          "internalType": "string",
+                          "name": "scope",
+                          "type": "string"
+                        },
+                        {
+                          "internalType": "bool",
+                          "name": "devMode",
+                          "type": "bool"
+                        }
+                      ],
+                      "internalType": "struct ServiceConfig",
+                      "name": "serviceConfig",
+                      "type": "tuple"
+                    }
+                  ],
+                  "internalType": "struct ProofVerificationParams",
+                  "name": "params",
+                  "type": "tuple"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "isIDCard",
+                  "type": "bool"
                 }
               ],
               "name": "mint",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "string",
-                  "name": "uniqueIdentifier",
-                  "type": "string"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "faceMatchPassed",
-                  "type": "bool"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "personhoodVerified",
-                  "type": "bool"
-                }
-              ],
-              "name": "mintWithVerification",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -775,6 +779,19 @@ export const CONTRACTS = {
               "type": "function"
             },
             {
+              "inputs": [],
+              "name": "scope",
+              "outputs": [
+                {
+                  "internalType": "string",
+                  "name": "",
+                  "type": "string"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
               "inputs": [
                 {
                   "internalType": "address",
@@ -801,6 +818,19 @@ export const CONTRACTS = {
                 }
               ],
               "name": "setDescription",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "string",
+                  "name": "_domain",
+                  "type": "string"
+                }
+              ],
+              "name": "setDomain",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -862,12 +892,38 @@ export const CONTRACTS = {
             {
               "inputs": [
                 {
+                  "internalType": "string",
+                  "name": "_scope",
+                  "type": "string"
+                }
+              ],
+              "name": "setScope",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
                   "internalType": "bool",
                   "name": "useIPFS",
                   "type": "bool"
                 }
               ],
               "name": "setUseIPFSImage",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "verifierAddress",
+                  "type": "address"
+                }
+              ],
+              "name": "setVerifier",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -971,11 +1027,24 @@ export const CONTRACTS = {
               ],
               "stateMutability": "view",
               "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "zkPassportVerifier",
+              "outputs": [
+                {
+                  "internalType": "contract IZKPassportVerifier",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
             }
           ]
         },
         "FaucetManager": {
-          "address": "0xbd7d12722008a6c2f89e3906a964cc2290131a92",
+          "address": "0x145d0d587bce7e390750cd67301e02478c51b48c",
           "abi": [
             {
               "inputs": [
@@ -2534,7 +2603,7 @@ export const CONTRACTS = {
           ]
         },
         "Swag1155": {
-          "address": "0xd4218995da2e92323d33a6e38adc8ef3a671b456",
+          "address": "0xfc87358e017ec814fe94139af82e6f25b293d5b8",
           "abi": [
             {
               "inputs": [
@@ -2556,11 +2625,6 @@ export const CONTRACTS = {
                 {
                   "internalType": "address",
                   "name": "initialAdmin",
-                  "type": "address"
-                },
-                {
-                  "internalType": "address",
-                  "name": "_poap",
                   "type": "address"
                 }
               ],
@@ -2876,6 +2940,37 @@ export const CONTRACTS = {
               "inputs": [
                 {
                   "indexed": true,
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "uint256",
+                  "name": "eventId",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "address[]",
+                  "name": "addresses",
+                  "type": "address[]"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "bool",
+                  "name": "added",
+                  "type": "bool"
+                }
+              ],
+              "name": "PoapWhitelistUpdated",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
                   "internalType": "address",
                   "name": "buyer",
                   "type": "address"
@@ -3102,6 +3197,31 @@ export const CONTRACTS = {
                 {
                   "indexed": true,
                   "internalType": "address",
+                  "name": "buyer",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "uint256",
+                  "name": "serial",
+                  "type": "uint256"
+                }
+              ],
+              "name": "SerialMinted",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
                   "name": "operator",
                   "type": "address"
                 },
@@ -3293,19 +3413,6 @@ export const CONTRACTS = {
             },
             {
               "inputs": [],
-              "name": "POAP_CONTRACT",
-              "outputs": [
-                {
-                  "internalType": "address",
-                  "name": "",
-                  "type": "address"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [],
               "name": "ROYALTY_DENOMINATOR",
               "outputs": [
                 {
@@ -3377,6 +3484,29 @@ export const CONTRACTS = {
                 }
               ],
               "name": "addPoapDiscount",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "eventId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "address[]",
+                  "name": "addresses",
+                  "type": "address[]"
+                }
+              ],
+              "name": "addPoapWhitelist",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -3682,6 +3812,30 @@ export const CONTRACTS = {
                   "internalType": "uint256",
                   "name": "tokenId",
                   "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "serial",
+                  "type": "uint256"
+                }
+              ],
+              "name": "getSerialOwner",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
                 }
               ],
               "name": "getVariant",
@@ -3844,6 +3998,35 @@ export const CONTRACTS = {
             {
               "inputs": [
                 {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "eventId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "address",
+                  "name": "buyer",
+                  "type": "address"
+                }
+              ],
+              "name": "isPoapWhitelisted",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
                   "internalType": "address",
                   "name": "account",
                   "type": "address"
@@ -3897,6 +4080,25 @@ export const CONTRACTS = {
                   "internalType": "uint256",
                   "name": "",
                   "type": "uint256"
+                }
+              ],
+              "name": "nextSerial",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
                 },
                 {
                   "internalType": "uint256",
@@ -3919,6 +4121,35 @@ export const CONTRACTS = {
                 {
                   "internalType": "bool",
                   "name": "active",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "name": "poapWhitelist",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
                   "type": "bool"
                 }
               ],
@@ -4026,6 +4257,29 @@ export const CONTRACTS = {
                 }
               ],
               "name": "removePoapDiscount",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "eventId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "address[]",
+                  "name": "addresses",
+                  "type": "address[]"
+                }
+              ],
+              "name": "removePoapWhitelist",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -4159,6 +4413,30 @@ export const CONTRACTS = {
               "name": "safeTransferFrom",
               "outputs": [],
               "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "name": "serialOwner",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
               "type": "function"
             },
             {
@@ -4397,6 +4675,675 @@ export const CONTRACTS = {
               "type": "function"
             }
           ]
+        },
+        "SwagFactory": {
+          "address": "0x89fb2a22bbb309703019b34439ae70b7e6d81e96",
+          "abi": [
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "admin",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "nonpayable",
+              "type": "constructor"
+            },
+            {
+              "inputs": [],
+              "name": "AccessControlBadConfirmation",
+              "type": "error"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "neededRole",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "AccessControlUnauthorizedAccount",
+              "type": "error"
+            },
+            {
+              "inputs": [],
+              "name": "EmptyName",
+              "type": "error"
+            },
+            {
+              "inputs": [],
+              "name": "EmptySku",
+              "type": "error"
+            },
+            {
+              "inputs": [],
+              "name": "InvalidAddress",
+              "type": "error"
+            },
+            {
+              "inputs": [],
+              "name": "InvalidAdmin",
+              "type": "error"
+            },
+            {
+              "inputs": [],
+              "name": "InvalidItemAdmin",
+              "type": "error"
+            },
+            {
+              "inputs": [],
+              "name": "InvalidPaymentToken",
+              "type": "error"
+            },
+            {
+              "inputs": [],
+              "name": "InvalidTreasury",
+              "type": "error"
+            },
+            {
+              "inputs": [],
+              "name": "NoSizes",
+              "type": "error"
+            },
+            {
+              "inputs": [],
+              "name": "NotACollection",
+              "type": "error"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "collection",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "string",
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "string",
+                  "name": "sku",
+                  "type": "string"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "address",
+                  "name": "paymentToken",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "address",
+                  "name": "treasury",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "variantCount",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "creator",
+                  "type": "address"
+                }
+              ],
+              "name": "CollectionDeployed",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "collection",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "bool",
+                  "name": "active",
+                  "type": "bool"
+                }
+              ],
+              "name": "CollectionStatusChanged",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "previousAdminRole",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "newAdminRole",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "RoleAdminChanged",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "sender",
+                  "type": "address"
+                }
+              ],
+              "name": "RoleGranted",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "sender",
+                  "type": "address"
+                }
+              ],
+              "name": "RoleRevoked",
+              "type": "event"
+            },
+            {
+              "inputs": [],
+              "name": "ADMIN_ROLE",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "DEFAULT_ADMIN_ROLE",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "admin",
+                  "type": "address"
+                }
+              ],
+              "name": "addAdmin",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "name": "collectionMeta",
+              "outputs": [
+                {
+                  "internalType": "string",
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "sku",
+                  "type": "string"
+                },
+                {
+                  "internalType": "address",
+                  "name": "paymentToken",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "treasury",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "creator",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "deployedAt",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "variantCount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "active",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "name": "collections",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "string",
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "sku",
+                  "type": "string"
+                },
+                {
+                  "internalType": "address",
+                  "name": "paymentToken",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "treasury",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "itemAdmin",
+                  "type": "address"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "string",
+                      "name": "metadataURI",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "price",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "maxSupply",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "active",
+                      "type": "bool"
+                    }
+                  ],
+                  "internalType": "struct SwagFactory.VariantInit[]",
+                  "name": "sizes",
+                  "type": "tuple[]"
+                }
+              ],
+              "name": "deployCollection",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "swagAddr",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "getActiveCollections",
+              "outputs": [
+                {
+                  "internalType": "address[]",
+                  "name": "",
+                  "type": "address[]"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "getCollectionCount",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "collection",
+                  "type": "address"
+                }
+              ],
+              "name": "getCollectionMeta",
+              "outputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "string",
+                      "name": "name",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "sku",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "paymentToken",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "treasury",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "creator",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "deployedAt",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "variantCount",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "active",
+                      "type": "bool"
+                    }
+                  ],
+                  "internalType": "struct SwagFactory.CollectionMeta",
+                  "name": "",
+                  "type": "tuple"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "getCollections",
+              "outputs": [
+                {
+                  "internalType": "address[]",
+                  "name": "",
+                  "type": "address[]"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "getRoleAdmin",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "grantRole",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "hasRole",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "name": "isCollection",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "admin",
+                  "type": "address"
+                }
+              ],
+              "name": "removeAdmin",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "callerConfirmation",
+                  "type": "address"
+                }
+              ],
+              "name": "renounceRole",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "revokeRole",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "collection",
+                  "type": "address"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "active",
+                  "type": "bool"
+                }
+              ],
+              "name": "setCollectionActive",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes4",
+                  "name": "interfaceId",
+                  "type": "bytes4"
+                }
+              ],
+              "name": "supportsInterface",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            }
+          ]
         }
       }
     },
@@ -4423,6 +5370,16 @@ export const CONTRACTS = {
                   "internalType": "address",
                   "name": "initialOwner",
                   "type": "address"
+                },
+                {
+                  "internalType": "string",
+                  "name": "_domain",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "_scope",
+                  "type": "string"
                 }
               ],
               "stateMutability": "nonpayable",
@@ -4683,21 +5640,21 @@ export const CONTRACTS = {
                 },
                 {
                   "indexed": false,
-                  "internalType": "string",
+                  "internalType": "bytes32",
                   "name": "uniqueIdentifier",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "bool",
+                  "name": "isOver18",
+                  "type": "bool"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "string",
+                  "name": "nationality",
                   "type": "string"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "bool",
-                  "name": "faceMatchPassed",
-                  "type": "bool"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "bool",
-                  "name": "personhoodVerified",
-                  "type": "bool"
                 }
               ],
               "name": "NFTMinted",
@@ -4752,31 +5709,26 @@ export const CONTRACTS = {
               "inputs": [
                 {
                   "indexed": true,
-                  "internalType": "string",
-                  "name": "uniqueIdentifier",
-                  "type": "string"
-                },
-                {
-                  "indexed": true,
                   "internalType": "address",
-                  "name": "userAddress",
+                  "name": "newVerifier",
                   "type": "address"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "bool",
-                  "name": "faceMatchPassed",
-                  "type": "bool"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "bool",
-                  "name": "personhoodVerified",
-                  "type": "bool"
                 }
               ],
-              "name": "VerificationApproved",
+              "name": "VerifierUpdated",
               "type": "event"
+            },
+            {
+              "inputs": [],
+              "name": "ZKPASSPORT_VERIFIER_ADDRESS",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
             },
             {
               "inputs": [
@@ -4799,68 +5751,6 @@ export const CONTRACTS = {
             {
               "inputs": [
                 {
-                  "internalType": "string",
-                  "name": "uniqueIdentifier",
-                  "type": "string"
-                },
-                {
-                  "internalType": "address",
-                  "name": "userAddress",
-                  "type": "address"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "faceMatchPassed",
-                  "type": "bool"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "personhoodVerified",
-                  "type": "bool"
-                }
-              ],
-              "name": "approveVerification",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "string",
-                  "name": "",
-                  "type": "string"
-                }
-              ],
-              "name": "approvedVerifications",
-              "outputs": [
-                {
-                  "internalType": "address",
-                  "name": "userAddress",
-                  "type": "address"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "faceMatchPassed",
-                  "type": "bool"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "personhoodVerified",
-                  "type": "bool"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "isApproved",
-                  "type": "bool"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
                   "internalType": "address",
                   "name": "owner",
                   "type": "address"
@@ -4872,6 +5762,19 @@ export const CONTRACTS = {
                   "internalType": "uint256",
                   "name": "",
                   "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "domain",
+              "outputs": [
+                {
+                  "internalType": "string",
+                  "name": "",
+                  "type": "string"
                 }
               ],
               "stateMutability": "view",
@@ -4909,43 +5812,29 @@ export const CONTRACTS = {
                 {
                   "components": [
                     {
-                      "internalType": "string",
+                      "internalType": "bytes32",
                       "name": "uniqueIdentifier",
-                      "type": "string"
-                    },
-                    {
-                      "internalType": "bool",
-                      "name": "faceMatchPassed",
-                      "type": "bool"
+                      "type": "bytes32"
                     },
                     {
                       "internalType": "bool",
                       "name": "personhoodVerified",
                       "type": "bool"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "isOver18",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "nationality",
+                      "type": "string"
                     }
                   ],
                   "internalType": "struct ZKPassportNFT.TokenData",
                   "name": "",
                   "type": "tuple"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "string",
-                  "name": "uniqueIdentifier",
-                  "type": "string"
-                }
-              ],
-              "name": "hasNFT",
-              "outputs": [
-                {
-                  "internalType": "bool",
-                  "name": "",
-                  "type": "bool"
                 }
               ],
               "stateMutability": "view",
@@ -4960,6 +5849,25 @@ export const CONTRACTS = {
                 }
               ],
               "name": "hasNFTByAddress",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "uniqueIdentifier",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "hasNFTByIdentifier",
               "outputs": [
                 {
                   "internalType": "bool",
@@ -4997,35 +5905,78 @@ export const CONTRACTS = {
             {
               "inputs": [
                 {
-                  "internalType": "string",
-                  "name": "uniqueIdentifier",
-                  "type": "string"
+                  "components": [
+                    {
+                      "internalType": "bytes32",
+                      "name": "version",
+                      "type": "bytes32"
+                    },
+                    {
+                      "components": [
+                        {
+                          "internalType": "bytes32",
+                          "name": "vkeyHash",
+                          "type": "bytes32"
+                        },
+                        {
+                          "internalType": "bytes",
+                          "name": "proof",
+                          "type": "bytes"
+                        },
+                        {
+                          "internalType": "bytes32[]",
+                          "name": "publicInputs",
+                          "type": "bytes32[]"
+                        }
+                      ],
+                      "internalType": "struct ProofVerificationData",
+                      "name": "proofVerificationData",
+                      "type": "tuple"
+                    },
+                    {
+                      "internalType": "bytes",
+                      "name": "committedInputs",
+                      "type": "bytes"
+                    },
+                    {
+                      "components": [
+                        {
+                          "internalType": "uint256",
+                          "name": "validityPeriodInSeconds",
+                          "type": "uint256"
+                        },
+                        {
+                          "internalType": "string",
+                          "name": "domain",
+                          "type": "string"
+                        },
+                        {
+                          "internalType": "string",
+                          "name": "scope",
+                          "type": "string"
+                        },
+                        {
+                          "internalType": "bool",
+                          "name": "devMode",
+                          "type": "bool"
+                        }
+                      ],
+                      "internalType": "struct ServiceConfig",
+                      "name": "serviceConfig",
+                      "type": "tuple"
+                    }
+                  ],
+                  "internalType": "struct ProofVerificationParams",
+                  "name": "params",
+                  "type": "tuple"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "isIDCard",
+                  "type": "bool"
                 }
               ],
               "name": "mint",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "string",
-                  "name": "uniqueIdentifier",
-                  "type": "string"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "faceMatchPassed",
-                  "type": "bool"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "personhoodVerified",
-                  "type": "bool"
-                }
-              ],
-              "name": "mintWithVerification",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -5173,6 +6124,19 @@ export const CONTRACTS = {
               "type": "function"
             },
             {
+              "inputs": [],
+              "name": "scope",
+              "outputs": [
+                {
+                  "internalType": "string",
+                  "name": "",
+                  "type": "string"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
               "inputs": [
                 {
                   "internalType": "address",
@@ -5199,6 +6163,19 @@ export const CONTRACTS = {
                 }
               ],
               "name": "setDescription",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "string",
+                  "name": "_domain",
+                  "type": "string"
+                }
+              ],
+              "name": "setDomain",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -5260,12 +6237,38 @@ export const CONTRACTS = {
             {
               "inputs": [
                 {
+                  "internalType": "string",
+                  "name": "_scope",
+                  "type": "string"
+                }
+              ],
+              "name": "setScope",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
                   "internalType": "bool",
                   "name": "useIPFS",
                   "type": "bool"
                 }
               ],
               "name": "setUseIPFSImage",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "verifierAddress",
+                  "type": "address"
+                }
+              ],
+              "name": "setVerifier",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -5365,6 +6368,19 @@ export const CONTRACTS = {
                   "internalType": "bool",
                   "name": "",
                   "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "zkPassportVerifier",
+              "outputs": [
+                {
+                  "internalType": "contract IZKPassportVerifier",
+                  "name": "",
+                  "type": "address"
                 }
               ],
               "stateMutability": "view",
@@ -6955,11 +7971,6 @@ export const CONTRACTS = {
                   "internalType": "address",
                   "name": "initialAdmin",
                   "type": "address"
-                },
-                {
-                  "internalType": "address",
-                  "name": "_poap",
-                  "type": "address"
                 }
               ],
               "stateMutability": "nonpayable",
@@ -7274,6 +8285,37 @@ export const CONTRACTS = {
               "inputs": [
                 {
                   "indexed": true,
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "uint256",
+                  "name": "eventId",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "address[]",
+                  "name": "addresses",
+                  "type": "address[]"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "bool",
+                  "name": "added",
+                  "type": "bool"
+                }
+              ],
+              "name": "PoapWhitelistUpdated",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
                   "internalType": "address",
                   "name": "buyer",
                   "type": "address"
@@ -7500,6 +8542,31 @@ export const CONTRACTS = {
                 {
                   "indexed": true,
                   "internalType": "address",
+                  "name": "buyer",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "uint256",
+                  "name": "serial",
+                  "type": "uint256"
+                }
+              ],
+              "name": "SerialMinted",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
                   "name": "operator",
                   "type": "address"
                 },
@@ -7691,19 +8758,6 @@ export const CONTRACTS = {
             },
             {
               "inputs": [],
-              "name": "POAP_CONTRACT",
-              "outputs": [
-                {
-                  "internalType": "address",
-                  "name": "",
-                  "type": "address"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [],
               "name": "ROYALTY_DENOMINATOR",
               "outputs": [
                 {
@@ -7775,6 +8829,29 @@ export const CONTRACTS = {
                 }
               ],
               "name": "addPoapDiscount",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "eventId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "address[]",
+                  "name": "addresses",
+                  "type": "address[]"
+                }
+              ],
+              "name": "addPoapWhitelist",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -8080,6 +9157,30 @@ export const CONTRACTS = {
                   "internalType": "uint256",
                   "name": "tokenId",
                   "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "serial",
+                  "type": "uint256"
+                }
+              ],
+              "name": "getSerialOwner",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
                 }
               ],
               "name": "getVariant",
@@ -8242,6 +9343,35 @@ export const CONTRACTS = {
             {
               "inputs": [
                 {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "eventId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "address",
+                  "name": "buyer",
+                  "type": "address"
+                }
+              ],
+              "name": "isPoapWhitelisted",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
                   "internalType": "address",
                   "name": "account",
                   "type": "address"
@@ -8295,6 +9425,25 @@ export const CONTRACTS = {
                   "internalType": "uint256",
                   "name": "",
                   "type": "uint256"
+                }
+              ],
+              "name": "nextSerial",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
                 },
                 {
                   "internalType": "uint256",
@@ -8317,6 +9466,35 @@ export const CONTRACTS = {
                 {
                   "internalType": "bool",
                   "name": "active",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "name": "poapWhitelist",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
                   "type": "bool"
                 }
               ],
@@ -8424,6 +9602,29 @@ export const CONTRACTS = {
                 }
               ],
               "name": "removePoapDiscount",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "eventId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "address[]",
+                  "name": "addresses",
+                  "type": "address[]"
+                }
+              ],
+              "name": "removePoapWhitelist",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -8557,6 +9758,30 @@ export const CONTRACTS = {
               "name": "safeTransferFrom",
               "outputs": [],
               "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "name": "serialOwner",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
               "type": "function"
             },
             {
@@ -8803,7 +10028,7 @@ export const CONTRACTS = {
       "chainId": 130,
       "contracts": {
         "ZKPassportNFT": {
-          "address": "0x0499924492348159aa281385ace43539689e158b",
+          "address": "0xc2ddade57815220833c31ecab6f6e9de9c69df09",
           "abi": [
             {
               "inputs": [
@@ -8821,6 +10046,16 @@ export const CONTRACTS = {
                   "internalType": "address",
                   "name": "initialOwner",
                   "type": "address"
+                },
+                {
+                  "internalType": "string",
+                  "name": "_domain",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "_scope",
+                  "type": "string"
                 }
               ],
               "stateMutability": "nonpayable",
@@ -9081,21 +10316,21 @@ export const CONTRACTS = {
                 },
                 {
                   "indexed": false,
-                  "internalType": "string",
+                  "internalType": "bytes32",
                   "name": "uniqueIdentifier",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "bool",
+                  "name": "isOver18",
+                  "type": "bool"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "string",
+                  "name": "nationality",
                   "type": "string"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "bool",
-                  "name": "faceMatchPassed",
-                  "type": "bool"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "bool",
-                  "name": "personhoodVerified",
-                  "type": "bool"
                 }
               ],
               "name": "NFTMinted",
@@ -9150,31 +10385,26 @@ export const CONTRACTS = {
               "inputs": [
                 {
                   "indexed": true,
-                  "internalType": "string",
-                  "name": "uniqueIdentifier",
-                  "type": "string"
-                },
-                {
-                  "indexed": true,
                   "internalType": "address",
-                  "name": "userAddress",
+                  "name": "newVerifier",
                   "type": "address"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "bool",
-                  "name": "faceMatchPassed",
-                  "type": "bool"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "bool",
-                  "name": "personhoodVerified",
-                  "type": "bool"
                 }
               ],
-              "name": "VerificationApproved",
+              "name": "VerifierUpdated",
               "type": "event"
+            },
+            {
+              "inputs": [],
+              "name": "ZKPASSPORT_VERIFIER_ADDRESS",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
             },
             {
               "inputs": [
@@ -9197,68 +10427,6 @@ export const CONTRACTS = {
             {
               "inputs": [
                 {
-                  "internalType": "string",
-                  "name": "uniqueIdentifier",
-                  "type": "string"
-                },
-                {
-                  "internalType": "address",
-                  "name": "userAddress",
-                  "type": "address"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "faceMatchPassed",
-                  "type": "bool"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "personhoodVerified",
-                  "type": "bool"
-                }
-              ],
-              "name": "approveVerification",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "string",
-                  "name": "",
-                  "type": "string"
-                }
-              ],
-              "name": "approvedVerifications",
-              "outputs": [
-                {
-                  "internalType": "address",
-                  "name": "userAddress",
-                  "type": "address"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "faceMatchPassed",
-                  "type": "bool"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "personhoodVerified",
-                  "type": "bool"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "isApproved",
-                  "type": "bool"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
                   "internalType": "address",
                   "name": "owner",
                   "type": "address"
@@ -9270,6 +10438,19 @@ export const CONTRACTS = {
                   "internalType": "uint256",
                   "name": "",
                   "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "domain",
+              "outputs": [
+                {
+                  "internalType": "string",
+                  "name": "",
+                  "type": "string"
                 }
               ],
               "stateMutability": "view",
@@ -9307,43 +10488,29 @@ export const CONTRACTS = {
                 {
                   "components": [
                     {
-                      "internalType": "string",
+                      "internalType": "bytes32",
                       "name": "uniqueIdentifier",
-                      "type": "string"
-                    },
-                    {
-                      "internalType": "bool",
-                      "name": "faceMatchPassed",
-                      "type": "bool"
+                      "type": "bytes32"
                     },
                     {
                       "internalType": "bool",
                       "name": "personhoodVerified",
                       "type": "bool"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "isOver18",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "nationality",
+                      "type": "string"
                     }
                   ],
                   "internalType": "struct ZKPassportNFT.TokenData",
                   "name": "",
                   "type": "tuple"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "string",
-                  "name": "uniqueIdentifier",
-                  "type": "string"
-                }
-              ],
-              "name": "hasNFT",
-              "outputs": [
-                {
-                  "internalType": "bool",
-                  "name": "",
-                  "type": "bool"
                 }
               ],
               "stateMutability": "view",
@@ -9358,6 +10525,25 @@ export const CONTRACTS = {
                 }
               ],
               "name": "hasNFTByAddress",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "uniqueIdentifier",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "hasNFTByIdentifier",
               "outputs": [
                 {
                   "internalType": "bool",
@@ -9395,35 +10581,78 @@ export const CONTRACTS = {
             {
               "inputs": [
                 {
-                  "internalType": "string",
-                  "name": "uniqueIdentifier",
-                  "type": "string"
+                  "components": [
+                    {
+                      "internalType": "bytes32",
+                      "name": "version",
+                      "type": "bytes32"
+                    },
+                    {
+                      "components": [
+                        {
+                          "internalType": "bytes32",
+                          "name": "vkeyHash",
+                          "type": "bytes32"
+                        },
+                        {
+                          "internalType": "bytes",
+                          "name": "proof",
+                          "type": "bytes"
+                        },
+                        {
+                          "internalType": "bytes32[]",
+                          "name": "publicInputs",
+                          "type": "bytes32[]"
+                        }
+                      ],
+                      "internalType": "struct ProofVerificationData",
+                      "name": "proofVerificationData",
+                      "type": "tuple"
+                    },
+                    {
+                      "internalType": "bytes",
+                      "name": "committedInputs",
+                      "type": "bytes"
+                    },
+                    {
+                      "components": [
+                        {
+                          "internalType": "uint256",
+                          "name": "validityPeriodInSeconds",
+                          "type": "uint256"
+                        },
+                        {
+                          "internalType": "string",
+                          "name": "domain",
+                          "type": "string"
+                        },
+                        {
+                          "internalType": "string",
+                          "name": "scope",
+                          "type": "string"
+                        },
+                        {
+                          "internalType": "bool",
+                          "name": "devMode",
+                          "type": "bool"
+                        }
+                      ],
+                      "internalType": "struct ServiceConfig",
+                      "name": "serviceConfig",
+                      "type": "tuple"
+                    }
+                  ],
+                  "internalType": "struct ProofVerificationParams",
+                  "name": "params",
+                  "type": "tuple"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "isIDCard",
+                  "type": "bool"
                 }
               ],
               "name": "mint",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "string",
-                  "name": "uniqueIdentifier",
-                  "type": "string"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "faceMatchPassed",
-                  "type": "bool"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "personhoodVerified",
-                  "type": "bool"
-                }
-              ],
-              "name": "mintWithVerification",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -9571,6 +10800,19 @@ export const CONTRACTS = {
               "type": "function"
             },
             {
+              "inputs": [],
+              "name": "scope",
+              "outputs": [
+                {
+                  "internalType": "string",
+                  "name": "",
+                  "type": "string"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
               "inputs": [
                 {
                   "internalType": "address",
@@ -9597,6 +10839,19 @@ export const CONTRACTS = {
                 }
               ],
               "name": "setDescription",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "string",
+                  "name": "_domain",
+                  "type": "string"
+                }
+              ],
+              "name": "setDomain",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -9658,12 +10913,38 @@ export const CONTRACTS = {
             {
               "inputs": [
                 {
+                  "internalType": "string",
+                  "name": "_scope",
+                  "type": "string"
+                }
+              ],
+              "name": "setScope",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
                   "internalType": "bool",
                   "name": "useIPFS",
                   "type": "bool"
                 }
               ],
               "name": "setUseIPFSImage",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "verifierAddress",
+                  "type": "address"
+                }
+              ],
+              "name": "setVerifier",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -9767,11 +11048,24 @@ export const CONTRACTS = {
               ],
               "stateMutability": "view",
               "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "zkPassportVerifier",
+              "outputs": [
+                {
+                  "internalType": "contract IZKPassportVerifier",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
             }
           ]
         },
         "FaucetManager": {
-          "address": "0xf32e10560673668ee849c44596d74502493c7fb1",
+          "address": "0xdf1be43ae0636ba6f9bc26f75ab6ba8d66a3ddc8",
           "abi": [
             {
               "inputs": [
@@ -11330,7 +12624,7 @@ export const CONTRACTS = {
           ]
         },
         "Swag1155": {
-          "address": "0xb76a448715e3986a3a060e79598e9ffb78e792f6",
+          "address": "0x5811f284e340f6968bcffe2415e582e0eb429981",
           "abi": [
             {
               "inputs": [
@@ -11352,11 +12646,6 @@ export const CONTRACTS = {
                 {
                   "internalType": "address",
                   "name": "initialAdmin",
-                  "type": "address"
-                },
-                {
-                  "internalType": "address",
-                  "name": "_poap",
                   "type": "address"
                 }
               ],
@@ -11672,6 +12961,37 @@ export const CONTRACTS = {
               "inputs": [
                 {
                   "indexed": true,
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "uint256",
+                  "name": "eventId",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "address[]",
+                  "name": "addresses",
+                  "type": "address[]"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "bool",
+                  "name": "added",
+                  "type": "bool"
+                }
+              ],
+              "name": "PoapWhitelistUpdated",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
                   "internalType": "address",
                   "name": "buyer",
                   "type": "address"
@@ -11898,6 +13218,31 @@ export const CONTRACTS = {
                 {
                   "indexed": true,
                   "internalType": "address",
+                  "name": "buyer",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "uint256",
+                  "name": "serial",
+                  "type": "uint256"
+                }
+              ],
+              "name": "SerialMinted",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
                   "name": "operator",
                   "type": "address"
                 },
@@ -12089,19 +13434,6 @@ export const CONTRACTS = {
             },
             {
               "inputs": [],
-              "name": "POAP_CONTRACT",
-              "outputs": [
-                {
-                  "internalType": "address",
-                  "name": "",
-                  "type": "address"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [],
               "name": "ROYALTY_DENOMINATOR",
               "outputs": [
                 {
@@ -12173,6 +13505,29 @@ export const CONTRACTS = {
                 }
               ],
               "name": "addPoapDiscount",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "eventId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "address[]",
+                  "name": "addresses",
+                  "type": "address[]"
+                }
+              ],
+              "name": "addPoapWhitelist",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -12478,6 +13833,30 @@ export const CONTRACTS = {
                   "internalType": "uint256",
                   "name": "tokenId",
                   "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "serial",
+                  "type": "uint256"
+                }
+              ],
+              "name": "getSerialOwner",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
                 }
               ],
               "name": "getVariant",
@@ -12640,6 +14019,35 @@ export const CONTRACTS = {
             {
               "inputs": [
                 {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "eventId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "address",
+                  "name": "buyer",
+                  "type": "address"
+                }
+              ],
+              "name": "isPoapWhitelisted",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
                   "internalType": "address",
                   "name": "account",
                   "type": "address"
@@ -12693,6 +14101,25 @@ export const CONTRACTS = {
                   "internalType": "uint256",
                   "name": "",
                   "type": "uint256"
+                }
+              ],
+              "name": "nextSerial",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
                 },
                 {
                   "internalType": "uint256",
@@ -12715,6 +14142,35 @@ export const CONTRACTS = {
                 {
                   "internalType": "bool",
                   "name": "active",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "name": "poapWhitelist",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
                   "type": "bool"
                 }
               ],
@@ -12822,6 +14278,29 @@ export const CONTRACTS = {
                 }
               ],
               "name": "removePoapDiscount",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "eventId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "address[]",
+                  "name": "addresses",
+                  "type": "address[]"
+                }
+              ],
+              "name": "removePoapWhitelist",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -12955,6 +14434,30 @@ export const CONTRACTS = {
               "name": "safeTransferFrom",
               "outputs": [],
               "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "name": "serialOwner",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
               "type": "function"
             },
             {
@@ -13186,6 +14689,675 @@ export const CONTRACTS = {
                 {
                   "internalType": "bool",
                   "name": "active",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            }
+          ]
+        },
+        "SwagFactory": {
+          "address": "0x79abd2dabe18fa1086e210c41b622ed6011e0c85",
+          "abi": [
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "admin",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "nonpayable",
+              "type": "constructor"
+            },
+            {
+              "inputs": [],
+              "name": "AccessControlBadConfirmation",
+              "type": "error"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "neededRole",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "AccessControlUnauthorizedAccount",
+              "type": "error"
+            },
+            {
+              "inputs": [],
+              "name": "EmptyName",
+              "type": "error"
+            },
+            {
+              "inputs": [],
+              "name": "EmptySku",
+              "type": "error"
+            },
+            {
+              "inputs": [],
+              "name": "InvalidAddress",
+              "type": "error"
+            },
+            {
+              "inputs": [],
+              "name": "InvalidAdmin",
+              "type": "error"
+            },
+            {
+              "inputs": [],
+              "name": "InvalidItemAdmin",
+              "type": "error"
+            },
+            {
+              "inputs": [],
+              "name": "InvalidPaymentToken",
+              "type": "error"
+            },
+            {
+              "inputs": [],
+              "name": "InvalidTreasury",
+              "type": "error"
+            },
+            {
+              "inputs": [],
+              "name": "NoSizes",
+              "type": "error"
+            },
+            {
+              "inputs": [],
+              "name": "NotACollection",
+              "type": "error"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "collection",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "string",
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "string",
+                  "name": "sku",
+                  "type": "string"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "address",
+                  "name": "paymentToken",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "address",
+                  "name": "treasury",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "variantCount",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "creator",
+                  "type": "address"
+                }
+              ],
+              "name": "CollectionDeployed",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "collection",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "bool",
+                  "name": "active",
+                  "type": "bool"
+                }
+              ],
+              "name": "CollectionStatusChanged",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "previousAdminRole",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "newAdminRole",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "RoleAdminChanged",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "sender",
+                  "type": "address"
+                }
+              ],
+              "name": "RoleGranted",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "sender",
+                  "type": "address"
+                }
+              ],
+              "name": "RoleRevoked",
+              "type": "event"
+            },
+            {
+              "inputs": [],
+              "name": "ADMIN_ROLE",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "DEFAULT_ADMIN_ROLE",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "admin",
+                  "type": "address"
+                }
+              ],
+              "name": "addAdmin",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "name": "collectionMeta",
+              "outputs": [
+                {
+                  "internalType": "string",
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "sku",
+                  "type": "string"
+                },
+                {
+                  "internalType": "address",
+                  "name": "paymentToken",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "treasury",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "creator",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "deployedAt",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "variantCount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "active",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "name": "collections",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "string",
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "sku",
+                  "type": "string"
+                },
+                {
+                  "internalType": "address",
+                  "name": "paymentToken",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "treasury",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "itemAdmin",
+                  "type": "address"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "string",
+                      "name": "metadataURI",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "price",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "maxSupply",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "active",
+                      "type": "bool"
+                    }
+                  ],
+                  "internalType": "struct SwagFactory.VariantInit[]",
+                  "name": "sizes",
+                  "type": "tuple[]"
+                }
+              ],
+              "name": "deployCollection",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "swagAddr",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "getActiveCollections",
+              "outputs": [
+                {
+                  "internalType": "address[]",
+                  "name": "",
+                  "type": "address[]"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "getCollectionCount",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "collection",
+                  "type": "address"
+                }
+              ],
+              "name": "getCollectionMeta",
+              "outputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "string",
+                      "name": "name",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "sku",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "paymentToken",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "treasury",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "creator",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "deployedAt",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "variantCount",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "active",
+                      "type": "bool"
+                    }
+                  ],
+                  "internalType": "struct SwagFactory.CollectionMeta",
+                  "name": "",
+                  "type": "tuple"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "getCollections",
+              "outputs": [
+                {
+                  "internalType": "address[]",
+                  "name": "",
+                  "type": "address[]"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "getRoleAdmin",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "grantRole",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "hasRole",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "name": "isCollection",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "admin",
+                  "type": "address"
+                }
+              ],
+              "name": "removeAdmin",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "callerConfirmation",
+                  "type": "address"
+                }
+              ],
+              "name": "renounceRole",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "revokeRole",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "collection",
+                  "type": "address"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "active",
+                  "type": "bool"
+                }
+              ],
+              "name": "setCollectionActive",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes4",
+                  "name": "interfaceId",
+                  "type": "bytes4"
+                }
+              ],
+              "name": "supportsInterface",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
                   "type": "bool"
                 }
               ],
@@ -13201,7 +15373,7 @@ export const CONTRACTS = {
       "chainId": 10,
       "contracts": {
         "ZKPassportNFT": {
-          "address": "0x25b43ce10ffd04cb90123d7582e6b5100b27f9cb",
+          "address": "0x607003f188c49ed6e0553805734b9990393402df",
           "abi": [
             {
               "inputs": [
@@ -13219,6 +15391,16 @@ export const CONTRACTS = {
                   "internalType": "address",
                   "name": "initialOwner",
                   "type": "address"
+                },
+                {
+                  "internalType": "string",
+                  "name": "_domain",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "_scope",
+                  "type": "string"
                 }
               ],
               "stateMutability": "nonpayable",
@@ -13479,21 +15661,21 @@ export const CONTRACTS = {
                 },
                 {
                   "indexed": false,
-                  "internalType": "string",
+                  "internalType": "bytes32",
                   "name": "uniqueIdentifier",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "bool",
+                  "name": "isOver18",
+                  "type": "bool"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "string",
+                  "name": "nationality",
                   "type": "string"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "bool",
-                  "name": "faceMatchPassed",
-                  "type": "bool"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "bool",
-                  "name": "personhoodVerified",
-                  "type": "bool"
                 }
               ],
               "name": "NFTMinted",
@@ -13548,31 +15730,26 @@ export const CONTRACTS = {
               "inputs": [
                 {
                   "indexed": true,
-                  "internalType": "string",
-                  "name": "uniqueIdentifier",
-                  "type": "string"
-                },
-                {
-                  "indexed": true,
                   "internalType": "address",
-                  "name": "userAddress",
+                  "name": "newVerifier",
                   "type": "address"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "bool",
-                  "name": "faceMatchPassed",
-                  "type": "bool"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "bool",
-                  "name": "personhoodVerified",
-                  "type": "bool"
                 }
               ],
-              "name": "VerificationApproved",
+              "name": "VerifierUpdated",
               "type": "event"
+            },
+            {
+              "inputs": [],
+              "name": "ZKPASSPORT_VERIFIER_ADDRESS",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
             },
             {
               "inputs": [
@@ -13595,68 +15772,6 @@ export const CONTRACTS = {
             {
               "inputs": [
                 {
-                  "internalType": "string",
-                  "name": "uniqueIdentifier",
-                  "type": "string"
-                },
-                {
-                  "internalType": "address",
-                  "name": "userAddress",
-                  "type": "address"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "faceMatchPassed",
-                  "type": "bool"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "personhoodVerified",
-                  "type": "bool"
-                }
-              ],
-              "name": "approveVerification",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "string",
-                  "name": "",
-                  "type": "string"
-                }
-              ],
-              "name": "approvedVerifications",
-              "outputs": [
-                {
-                  "internalType": "address",
-                  "name": "userAddress",
-                  "type": "address"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "faceMatchPassed",
-                  "type": "bool"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "personhoodVerified",
-                  "type": "bool"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "isApproved",
-                  "type": "bool"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
                   "internalType": "address",
                   "name": "owner",
                   "type": "address"
@@ -13668,6 +15783,19 @@ export const CONTRACTS = {
                   "internalType": "uint256",
                   "name": "",
                   "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "domain",
+              "outputs": [
+                {
+                  "internalType": "string",
+                  "name": "",
+                  "type": "string"
                 }
               ],
               "stateMutability": "view",
@@ -13705,43 +15833,29 @@ export const CONTRACTS = {
                 {
                   "components": [
                     {
-                      "internalType": "string",
+                      "internalType": "bytes32",
                       "name": "uniqueIdentifier",
-                      "type": "string"
-                    },
-                    {
-                      "internalType": "bool",
-                      "name": "faceMatchPassed",
-                      "type": "bool"
+                      "type": "bytes32"
                     },
                     {
                       "internalType": "bool",
                       "name": "personhoodVerified",
                       "type": "bool"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "isOver18",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "nationality",
+                      "type": "string"
                     }
                   ],
                   "internalType": "struct ZKPassportNFT.TokenData",
                   "name": "",
                   "type": "tuple"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "string",
-                  "name": "uniqueIdentifier",
-                  "type": "string"
-                }
-              ],
-              "name": "hasNFT",
-              "outputs": [
-                {
-                  "internalType": "bool",
-                  "name": "",
-                  "type": "bool"
                 }
               ],
               "stateMutability": "view",
@@ -13756,6 +15870,25 @@ export const CONTRACTS = {
                 }
               ],
               "name": "hasNFTByAddress",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "uniqueIdentifier",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "hasNFTByIdentifier",
               "outputs": [
                 {
                   "internalType": "bool",
@@ -13793,35 +15926,78 @@ export const CONTRACTS = {
             {
               "inputs": [
                 {
-                  "internalType": "string",
-                  "name": "uniqueIdentifier",
-                  "type": "string"
+                  "components": [
+                    {
+                      "internalType": "bytes32",
+                      "name": "version",
+                      "type": "bytes32"
+                    },
+                    {
+                      "components": [
+                        {
+                          "internalType": "bytes32",
+                          "name": "vkeyHash",
+                          "type": "bytes32"
+                        },
+                        {
+                          "internalType": "bytes",
+                          "name": "proof",
+                          "type": "bytes"
+                        },
+                        {
+                          "internalType": "bytes32[]",
+                          "name": "publicInputs",
+                          "type": "bytes32[]"
+                        }
+                      ],
+                      "internalType": "struct ProofVerificationData",
+                      "name": "proofVerificationData",
+                      "type": "tuple"
+                    },
+                    {
+                      "internalType": "bytes",
+                      "name": "committedInputs",
+                      "type": "bytes"
+                    },
+                    {
+                      "components": [
+                        {
+                          "internalType": "uint256",
+                          "name": "validityPeriodInSeconds",
+                          "type": "uint256"
+                        },
+                        {
+                          "internalType": "string",
+                          "name": "domain",
+                          "type": "string"
+                        },
+                        {
+                          "internalType": "string",
+                          "name": "scope",
+                          "type": "string"
+                        },
+                        {
+                          "internalType": "bool",
+                          "name": "devMode",
+                          "type": "bool"
+                        }
+                      ],
+                      "internalType": "struct ServiceConfig",
+                      "name": "serviceConfig",
+                      "type": "tuple"
+                    }
+                  ],
+                  "internalType": "struct ProofVerificationParams",
+                  "name": "params",
+                  "type": "tuple"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "isIDCard",
+                  "type": "bool"
                 }
               ],
               "name": "mint",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "string",
-                  "name": "uniqueIdentifier",
-                  "type": "string"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "faceMatchPassed",
-                  "type": "bool"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "personhoodVerified",
-                  "type": "bool"
-                }
-              ],
-              "name": "mintWithVerification",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -13969,6 +16145,19 @@ export const CONTRACTS = {
               "type": "function"
             },
             {
+              "inputs": [],
+              "name": "scope",
+              "outputs": [
+                {
+                  "internalType": "string",
+                  "name": "",
+                  "type": "string"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
               "inputs": [
                 {
                   "internalType": "address",
@@ -13995,6 +16184,19 @@ export const CONTRACTS = {
                 }
               ],
               "name": "setDescription",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "string",
+                  "name": "_domain",
+                  "type": "string"
+                }
+              ],
+              "name": "setDomain",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -14056,12 +16258,38 @@ export const CONTRACTS = {
             {
               "inputs": [
                 {
+                  "internalType": "string",
+                  "name": "_scope",
+                  "type": "string"
+                }
+              ],
+              "name": "setScope",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
                   "internalType": "bool",
                   "name": "useIPFS",
                   "type": "bool"
                 }
               ],
               "name": "setUseIPFSImage",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "verifierAddress",
+                  "type": "address"
+                }
+              ],
+              "name": "setVerifier",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -14165,11 +16393,24 @@ export const CONTRACTS = {
               ],
               "stateMutability": "view",
               "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "zkPassportVerifier",
+              "outputs": [
+                {
+                  "internalType": "contract IZKPassportVerifier",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
             }
           ]
         },
         "FaucetManager": {
-          "address": "0x76235436cbd3f2ff12cc3610f2643654211efb3d",
+          "address": "0x2940e286b41d279b61e484b98a08498e355e4778",
           "abi": [
             {
               "inputs": [
@@ -15728,7 +17969,7 @@ export const CONTRACTS = {
           ]
         },
         "Swag1155": {
-          "address": "0x9df46e1c221f8b067343f9b760f5cb2c4757fe2d",
+          "address": "0xd9663db045850171850fd1298a2176b329a67928",
           "abi": [
             {
               "inputs": [
@@ -15750,11 +17991,6 @@ export const CONTRACTS = {
                 {
                   "internalType": "address",
                   "name": "initialAdmin",
-                  "type": "address"
-                },
-                {
-                  "internalType": "address",
-                  "name": "_poap",
                   "type": "address"
                 }
               ],
@@ -16070,6 +18306,37 @@ export const CONTRACTS = {
               "inputs": [
                 {
                   "indexed": true,
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "uint256",
+                  "name": "eventId",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "address[]",
+                  "name": "addresses",
+                  "type": "address[]"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "bool",
+                  "name": "added",
+                  "type": "bool"
+                }
+              ],
+              "name": "PoapWhitelistUpdated",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
                   "internalType": "address",
                   "name": "buyer",
                   "type": "address"
@@ -16296,6 +18563,31 @@ export const CONTRACTS = {
                 {
                   "indexed": true,
                   "internalType": "address",
+                  "name": "buyer",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "uint256",
+                  "name": "serial",
+                  "type": "uint256"
+                }
+              ],
+              "name": "SerialMinted",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
                   "name": "operator",
                   "type": "address"
                 },
@@ -16487,19 +18779,6 @@ export const CONTRACTS = {
             },
             {
               "inputs": [],
-              "name": "POAP_CONTRACT",
-              "outputs": [
-                {
-                  "internalType": "address",
-                  "name": "",
-                  "type": "address"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [],
               "name": "ROYALTY_DENOMINATOR",
               "outputs": [
                 {
@@ -16571,6 +18850,29 @@ export const CONTRACTS = {
                 }
               ],
               "name": "addPoapDiscount",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "eventId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "address[]",
+                  "name": "addresses",
+                  "type": "address[]"
+                }
+              ],
+              "name": "addPoapWhitelist",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -16876,6 +19178,30 @@ export const CONTRACTS = {
                   "internalType": "uint256",
                   "name": "tokenId",
                   "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "serial",
+                  "type": "uint256"
+                }
+              ],
+              "name": "getSerialOwner",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
                 }
               ],
               "name": "getVariant",
@@ -17038,6 +19364,35 @@ export const CONTRACTS = {
             {
               "inputs": [
                 {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "eventId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "address",
+                  "name": "buyer",
+                  "type": "address"
+                }
+              ],
+              "name": "isPoapWhitelisted",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
                   "internalType": "address",
                   "name": "account",
                   "type": "address"
@@ -17091,6 +19446,25 @@ export const CONTRACTS = {
                   "internalType": "uint256",
                   "name": "",
                   "type": "uint256"
+                }
+              ],
+              "name": "nextSerial",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
                 },
                 {
                   "internalType": "uint256",
@@ -17113,6 +19487,35 @@ export const CONTRACTS = {
                 {
                   "internalType": "bool",
                   "name": "active",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "name": "poapWhitelist",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
                   "type": "bool"
                 }
               ],
@@ -17220,6 +19623,29 @@ export const CONTRACTS = {
                 }
               ],
               "name": "removePoapDiscount",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "eventId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "address[]",
+                  "name": "addresses",
+                  "type": "address[]"
+                }
+              ],
+              "name": "removePoapWhitelist",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -17353,6 +19779,30 @@ export const CONTRACTS = {
               "name": "safeTransferFrom",
               "outputs": [],
               "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "name": "serialOwner",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
               "type": "function"
             },
             {
@@ -17584,6 +20034,675 @@ export const CONTRACTS = {
                 {
                   "internalType": "bool",
                   "name": "active",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            }
+          ]
+        },
+        "SwagFactory": {
+          "address": "0x94b9f649f8825d5d797e37d04dfc66d612750b10",
+          "abi": [
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "admin",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "nonpayable",
+              "type": "constructor"
+            },
+            {
+              "inputs": [],
+              "name": "AccessControlBadConfirmation",
+              "type": "error"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "neededRole",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "AccessControlUnauthorizedAccount",
+              "type": "error"
+            },
+            {
+              "inputs": [],
+              "name": "EmptyName",
+              "type": "error"
+            },
+            {
+              "inputs": [],
+              "name": "EmptySku",
+              "type": "error"
+            },
+            {
+              "inputs": [],
+              "name": "InvalidAddress",
+              "type": "error"
+            },
+            {
+              "inputs": [],
+              "name": "InvalidAdmin",
+              "type": "error"
+            },
+            {
+              "inputs": [],
+              "name": "InvalidItemAdmin",
+              "type": "error"
+            },
+            {
+              "inputs": [],
+              "name": "InvalidPaymentToken",
+              "type": "error"
+            },
+            {
+              "inputs": [],
+              "name": "InvalidTreasury",
+              "type": "error"
+            },
+            {
+              "inputs": [],
+              "name": "NoSizes",
+              "type": "error"
+            },
+            {
+              "inputs": [],
+              "name": "NotACollection",
+              "type": "error"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "collection",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "string",
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "string",
+                  "name": "sku",
+                  "type": "string"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "address",
+                  "name": "paymentToken",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "address",
+                  "name": "treasury",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "variantCount",
+                  "type": "uint256"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "creator",
+                  "type": "address"
+                }
+              ],
+              "name": "CollectionDeployed",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "collection",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "bool",
+                  "name": "active",
+                  "type": "bool"
+                }
+              ],
+              "name": "CollectionStatusChanged",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "previousAdminRole",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "newAdminRole",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "RoleAdminChanged",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "sender",
+                  "type": "address"
+                }
+              ],
+              "name": "RoleGranted",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "sender",
+                  "type": "address"
+                }
+              ],
+              "name": "RoleRevoked",
+              "type": "event"
+            },
+            {
+              "inputs": [],
+              "name": "ADMIN_ROLE",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "DEFAULT_ADMIN_ROLE",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "admin",
+                  "type": "address"
+                }
+              ],
+              "name": "addAdmin",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "name": "collectionMeta",
+              "outputs": [
+                {
+                  "internalType": "string",
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "sku",
+                  "type": "string"
+                },
+                {
+                  "internalType": "address",
+                  "name": "paymentToken",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "treasury",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "creator",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "deployedAt",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "variantCount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "active",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "name": "collections",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "string",
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "sku",
+                  "type": "string"
+                },
+                {
+                  "internalType": "address",
+                  "name": "paymentToken",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "treasury",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "itemAdmin",
+                  "type": "address"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "string",
+                      "name": "metadataURI",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "price",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "maxSupply",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "active",
+                      "type": "bool"
+                    }
+                  ],
+                  "internalType": "struct SwagFactory.VariantInit[]",
+                  "name": "sizes",
+                  "type": "tuple[]"
+                }
+              ],
+              "name": "deployCollection",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "swagAddr",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "getActiveCollections",
+              "outputs": [
+                {
+                  "internalType": "address[]",
+                  "name": "",
+                  "type": "address[]"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "getCollectionCount",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "collection",
+                  "type": "address"
+                }
+              ],
+              "name": "getCollectionMeta",
+              "outputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "string",
+                      "name": "name",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "sku",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "paymentToken",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "treasury",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "creator",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "deployedAt",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "variantCount",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "active",
+                      "type": "bool"
+                    }
+                  ],
+                  "internalType": "struct SwagFactory.CollectionMeta",
+                  "name": "",
+                  "type": "tuple"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "getCollections",
+              "outputs": [
+                {
+                  "internalType": "address[]",
+                  "name": "",
+                  "type": "address[]"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "getRoleAdmin",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "grantRole",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "hasRole",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "name": "isCollection",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "admin",
+                  "type": "address"
+                }
+              ],
+              "name": "removeAdmin",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "callerConfirmation",
+                  "type": "address"
+                }
+              ],
+              "name": "renounceRole",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "revokeRole",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "collection",
+                  "type": "address"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "active",
+                  "type": "bool"
+                }
+              ],
+              "name": "setCollectionActive",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes4",
+                  "name": "interfaceId",
+                  "type": "bytes4"
+                }
+              ],
+              "name": "supportsInterface",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
                   "type": "bool"
                 }
               ],
@@ -17602,9 +20721,10 @@ export const ADDRESSES = {
   "base": {
     "chainId": 8453,
     "addresses": {
-      "ZKPassportNFT": "0x458eb490bf5f56b6ada8605c56bcef3510d83ec8",
-      "FaucetManager": "0xbd7d12722008a6c2f89e3906a964cc2290131a92",
-      "Swag1155": "0xd4218995da2e92323d33a6e38adc8ef3a671b456"
+      "ZKPassportNFT": "0xa3f1150a8414b0383244e7c7936119e3e24d106d",
+      "FaucetManager": "0x145d0d587bce7e390750cd67301e02478c51b48c",
+      "Swag1155": "0xfc87358e017ec814fe94139af82e6f25b293d5b8",
+      "SwagFactory": "0x89fb2a22bbb309703019b34439ae70b7e6d81e96"
     }
   },
   "ethereum": {
@@ -17618,17 +20738,19 @@ export const ADDRESSES = {
   "unichain": {
     "chainId": 130,
     "addresses": {
-      "ZKPassportNFT": "0x0499924492348159aa281385ace43539689e158b",
-      "FaucetManager": "0xf32e10560673668ee849c44596d74502493c7fb1",
-      "Swag1155": "0xb76a448715e3986a3a060e79598e9ffb78e792f6"
+      "ZKPassportNFT": "0xc2ddade57815220833c31ecab6f6e9de9c69df09",
+      "FaucetManager": "0xdf1be43ae0636ba6f9bc26f75ab6ba8d66a3ddc8",
+      "Swag1155": "0x5811f284e340f6968bcffe2415e582e0eb429981",
+      "SwagFactory": "0x79abd2dabe18fa1086e210c41b622ed6011e0c85"
     }
   },
   "optimism": {
     "chainId": 10,
     "addresses": {
-      "ZKPassportNFT": "0x25b43ce10ffd04cb90123d7582e6b5100b27f9cb",
-      "FaucetManager": "0x76235436cbd3f2ff12cc3610f2643654211efb3d",
-      "Swag1155": "0x9df46e1c221f8b067343f9b760f5cb2c4757fe2d"
+      "ZKPassportNFT": "0x607003f188c49ed6e0553805734b9990393402df",
+      "FaucetManager": "0x2940e286b41d279b61e484b98a08498e355e4778",
+      "Swag1155": "0xd9663db045850171850fd1298a2176b329a67928",
+      "SwagFactory": "0x94b9f649f8825d5d797e37d04dfc66d612750b10"
     }
   }
 } as const;

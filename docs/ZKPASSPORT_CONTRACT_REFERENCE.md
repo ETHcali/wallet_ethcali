@@ -2,9 +2,10 @@
 
 **Complete API reference** for the ZKPassportNFT soulbound ERC721 contract.
 
-**Contract**: `contracts/ZKPassportNFT.sol`
-**Version**: 2.0 (with IPFS Image Support)
-**Last Updated**: January 2026
+**Contract**: `contracts/ZKPassportNFT.sol`  
+**Interfaces**: `contracts/interfaces/IZKPassport.sol`  
+**Version**: 3.0 (On-Chain ZK Proof Verification)  
+**Last Updated**: March 2026
 
 ---
 
@@ -14,7 +15,7 @@
 2. [Data Structures](#data-structures)
 3. [State Variables](#state-variables)
 4. [Admin Functions](#admin-functions)
-5. [User Functions](#user-functions)
+5. [Mint Function](#mint-function)
 6. [View Functions](#view-functions)
 7. [Events](#events)
 8. [Error Messages](#error-messages)
@@ -24,78 +25,99 @@
 
 ## Overview
 
-ZKPassportNFT is a **soulbound** (non-transferable) ERC721 NFT that represents ZKPassport verification. It provides:
-
-- **Anti-sybil protection** - One NFT per unique identity
-- **Privacy-preserving** - Uses ZK proofs for verification
-- **Customizable metadata** - IPFS image or on-chain SVG
-- **Verification traits** - Face match, personhood status stored on-chain
+ZKPassportNFT is a **soulbound** (non-transferable) ERC721 NFT that represents a cryptographically verified ZKPassport identity. Unlike self-reported approaches, the ZK proof is **verified on-chain** by the ZKPassport verifier contract — no one can fake their age, nationality, or personhood.
 
 ### Key Features
 
 | Feature | Description |
 |---------|-------------|
+| **On-chain ZK verification** | Proof verified by `IZKPassportVerifier` — no trust in user-supplied values |
 | **Soulbound** | NFTs cannot be transferred after minting |
-| **One per address** | Each wallet can only have one NFT |
-| **One per identifier** | Each ZKPassport ID can only mint once |
-| **Flexible image** | Admin can set IPFS image or use on-chain SVG |
-| **On-chain traits** | Verification results stored as NFT attributes |
+| **One per address** | Each wallet can only hold one NFT |
+| **One per passport** | Each ZKPassport unique identifier can only mint once |
+| **Verified traits** | Personhood, Age 18+, and Nationality stored from the proof |
+
+### Supported Networks
+
+The ZKPassport verifier (`0x1D000001000EFD9a6371f4d90bB8920D5431c0D8`) is currently deployed on:
+
+| Network | Chain ID | Verifier Live |
+|---------|----------|---------------|
+| Ethereum Mainnet | 1 | ✅ |
+| Base Mainnet | 8453 | ✅ |
+| Unichain Mainnet | 130 | ⏳ (owner can update via `setVerifier`) |
+| Optimism Mainnet | 10 | ⏳ (owner can update via `setVerifier`) |
 
 ### Architecture
 
 ```
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│   ZKPassport    │ ──▶ │  Backend/Proof   │ ──▶ │  ZKPassportNFT  │
-│   (User App)    │     │   Verification   │     │   (Contract)    │
-└─────────────────┘     └──────────────────┘     └─────────────────┘
-                                                         │
-                                                         ▼
-                                                 ┌───────────────┐
-                                                 │ FaucetManager │
-                                                 │ Swag1155      │
-                                                 │ (Gated Access)│
-                                                 └───────────────┘
+┌─────────────────────┐
+│  ZKPassport SDK     │  Frontend builds query:
+│  (Frontend)         │  .gte("age", 18)
+│                     │  .disclose("nationality")
+│                     │  .bind("user_address", addr)
+│                     │  .bind("chain", "base")
+│                     │  .done()  → generates proof
+└────────┬────────────┘
+         │  ProofVerificationParams
+         ▼
+┌─────────────────────┐     ┌─────────────────────────────┐
+│  ZKPassportNFT      │────▶│  IZKPassportVerifier        │
+│  mint(params,       │     │  0x1D000001000EFD9a...       │
+│    isIDCard)        │◀────│  verify(params)             │
+└─────────────────────┘     │  → verified, uniqueId,      │
+         │                  │    IZKPassportHelper         │
+         │                  └─────────────────────────────┘
+         │  Stores: uniqueIdentifier (bytes32)
+         │          personhoodVerified (always true)
+         │          isOver18 (from helper)
+         │          nationality (from helper)
+         ▼
+┌─────────────────────┐
+│  FaucetManager      │
+│  Swag1155           │  hasNFTByAddress(user) → bool
+│  (Gated Access)     │
+└─────────────────────┘
 ```
 
 ---
 
 ## Data Structures
 
-### VerificationData
-
-Stores pending verification approvals from backend.
-
-```solidity
-struct VerificationData {
-    address userAddress;        // Wallet that completed verification
-    bool faceMatchPassed;       // Face matching result
-    bool personhoodVerified;    // Personhood verification result
-    bool isApproved;            // Whether approval is active
-}
-```
-
 ### TokenData
 
-Stores minted NFT verification data.
+Stores verified identity data for a minted NFT. All fields come from the on-chain proof, not from user input.
 
 ```solidity
 struct TokenData {
-    string uniqueIdentifier;    // ZKPassport unique ID (hashed)
-    bool faceMatchPassed;       // Face match result
-    bool personhoodVerified;    // Personhood result
+    bytes32 uniqueIdentifier;   // Scoped nullifier returned by the verifier
+    bool    personhoodVerified; // Always true for minted tokens
+    bool    isOver18;           // From helper.isAgeAboveOrEqual(18, ...)
+    string  nationality;        // From helper.getDisclosedData(...).nationality
 }
 ```
 
 **Frontend usage:**
 ```typescript
 interface TokenData {
-  uniqueIdentifier: string;
-  faceMatchPassed: boolean;
+  uniqueIdentifier:  `0x${string}`; // bytes32 hex
   personhoodVerified: boolean;
+  isOver18:          boolean;
+  nationality:       string;        // ISO alpha-3 (e.g. "USA", "FRA")
 }
+```
 
-// Check if fully verified
-const isFullyVerified = data.faceMatchPassed && data.personhoodVerified;
+### ZKPassport Proof Structs (from `IZKPassport.sol`)
+
+These are passed into `mint()` and produced by the ZKPassport SDK — your frontend does not construct them manually.
+
+```solidity
+struct ProofVerificationParams {
+    bytes32               version;
+    ProofVerificationData proofVerificationData; // { vkeyHash, proof, publicInputs }
+    bytes                 committedInputs;
+    ServiceConfig         serviceConfig;         // { validityPeriod, domain, scope, devMode }
+}
 ```
 
 ---
@@ -106,262 +128,243 @@ const isFullyVerified = data.faceMatchPassed && data.personhoodVerified;
 
 | Variable | Type | Description |
 |----------|------|-------------|
+| `zkPassportVerifier` | `IZKPassportVerifier` | Active verifier contract (owner-updatable) |
+| `ZKPASSPORT_VERIFIER_ADDRESS` | `address constant` | `0x1D000001000EFD9a6371f4d90bB8920D5431c0D8` |
+| `domain` | `string` | SDK domain — must match the query (e.g. `"ethcali.com"`) |
+| `scope` | `string` | SDK scope — must match the query (e.g. `"ethcali-verification"`) |
 | `nftImageURI` | `string` | IPFS URI for NFT image |
 | `nftDescription` | `string` | Description for all NFTs |
 | `nftExternalURL` | `string` | External website URL |
-| `useIPFSImage` | `bool` | If true, use IPFS; if false, use SVG |
-| `approvedVerifications` | `mapping(string => VerificationData)` | Pending verifications |
+| `useIPFSImage` | `bool` | `true` = IPFS image, `false` = on-chain SVG |
 
 ### Private Mappings
 
 | Variable | Type | Description |
 |----------|------|-------------|
-| `_usedIdentifiers` | `mapping(string => bool)` | Track used ZKPassport IDs |
-| `_hasNFT` | `mapping(address => bool)` | Track addresses with NFT |
-| `_tokenData` | `mapping(uint256 => TokenData)` | Token verification data |
-| `_tokenIdCounter` | `uint256` | Next token ID |
+| `_usedIdentifiers` | `mapping(bytes32 => bool)` | Tracks used scoped nullifiers |
+| `_hasNFT` | `mapping(address => bool)` | Tracks addresses that hold an NFT |
+| `_tokenData` | `mapping(uint256 => TokenData)` | Per-token verified data |
+| `_tokenIdCounter` | `uint256` | Auto-incremented token ID |
 
 ---
 
 ## Admin Functions
 
-### setImageURI
+### setVerifier
 
-Set the IPFS image URI for all NFTs.
+Update the ZKPassport verifier address (e.g. when a new network is supported).
 
 ```solidity
-function setImageURI(string memory imageURI) external onlyOwner
+function setVerifier(address verifierAddress) external onlyOwner
 ```
 
-| Parameter | Type | Description | Example |
-|-----------|------|-------------|---------|
-| `imageURI` | `string` | IPFS URI for image | `ipfs://QmXyz...` |
+**Emits:** `VerifierUpdated(newVerifier)`
 
-**Frontend:**
-```typescript
-await writeContract({
-  address: zkPassportNFT,
-  abi: ZKPassportNFTABI,
-  functionName: 'setImageURI',
-  args: ['ipfs://QmYourImageHash...'],
-});
+---
+
+### setDomain
+
+Update the domain that must match the SDK query.
+
+```solidity
+function setDomain(string memory _domain) external onlyOwner
 ```
 
 ---
 
-### setDescription
+### setScope
 
-Set the description for all NFTs.
-
-```solidity
-function setDescription(string memory description) external onlyOwner
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `description` | `string` | NFT description text |
-
-**Requirements:**
-- Description cannot be empty
-
----
-
-### setExternalURL
-
-Set the external URL displayed on marketplaces.
+Update the scope that must match the SDK query.
 
 ```solidity
-function setExternalURL(string memory externalURL) external onlyOwner
-```
-
-| Parameter | Type | Description | Example |
-|-----------|------|-------------|---------|
-| `externalURL` | `string` | Website URL | `https://ethcali.com` |
-
----
-
-### setUseIPFSImage
-
-Toggle between IPFS image and on-chain SVG.
-
-```solidity
-function setUseIPFSImage(bool useIPFS) external onlyOwner
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `useIPFS` | `bool` | `true` = IPFS, `false` = on-chain SVG |
-
-**Requirements:**
-- If `useIPFS` is true, `nftImageURI` must be set first
-
----
-
-### setMetadata
-
-Set all metadata configuration at once.
-
-```solidity
-function setMetadata(
-    string memory imageURI,
-    string memory description,
-    string memory externalURL,
-    bool useIPFS
-) external onlyOwner
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `imageURI` | `string` | IPFS image URI |
-| `description` | `string` | NFT description |
-| `externalURL` | `string` | External website URL |
-| `useIPFS` | `bool` | Whether to use IPFS image |
-
-**Frontend:**
-```typescript
-await writeContract({
-  address: zkPassportNFT,
-  abi: ZKPassportNFTABI,
-  functionName: 'setMetadata',
-  args: [
-    'ipfs://QmImageHash...',
-    'ZKPassport Verification - Proof of unique personhood for ETHCALI ecosystem.',
-    'https://ethcali.com',
-    true, // Use IPFS image
-  ],
-});
+function setScope(string memory _scope) external onlyOwner
 ```
 
 ---
 
-### approveVerification
+### setImageURI / setDescription / setExternalURL / setUseIPFSImage / setMetadata
 
-Backend approves a verification for minting (legacy flow).
+Standard NFT metadata setters — identical to previous versions.
 
 ```solidity
-function approveVerification(
-    string memory uniqueIdentifier,
-    address userAddress,
-    bool faceMatchPassed,
-    bool personhoodVerified
-) external onlyOwner
+function setMetadata(string imageURI, string description, string externalURL, bool useIPFS) external onlyOwner
 ```
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `uniqueIdentifier` | `string` | ZKPassport unique ID |
-| `userAddress` | `address` | Wallet that verified |
-| `faceMatchPassed` | `bool` | Face match result |
-| `personhoodVerified` | `bool` | Personhood result |
-
-**Requirements:**
-- Identifier not already used
-- Address doesn't already have NFT
-- Not already approved
-
-**Emits:** `VerificationApproved(uniqueIdentifier, userAddress, faceMatchPassed, personhoodVerified)`
+**Emits:** `MetadataUpdated(imageURI, description, externalURL, useIPFS)`
 
 ---
 
-## User Functions
-
-### mintWithVerification
-
-Self-mint NFT with ZKPassport verification data (recommended).
-
-```solidity
-function mintWithVerification(
-    string memory uniqueIdentifier,
-    bool faceMatchPassed,
-    bool personhoodVerified
-) external
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `uniqueIdentifier` | `string` | ZKPassport unique ID |
-| `faceMatchPassed` | `bool` | Face match result from proof |
-| `personhoodVerified` | `bool` | Personhood result from proof |
-
-**Requirements:**
-- Identifier not empty
-- Identifier not already used
-- Caller doesn't already have NFT
-
-**Emits:** `NFTMinted(to, tokenId, uniqueIdentifier, faceMatchPassed, personhoodVerified)`
-
-**Frontend:**
-```typescript
-await writeContract({
-  address: zkPassportNFT,
-  abi: ZKPassportNFTABI,
-  functionName: 'mintWithVerification',
-  args: [
-    'zkp_unique_id_hash_123',
-    true,  // faceMatchPassed
-    true,  // personhoodVerified
-  ],
-});
-```
-
----
+## Mint Function
 
 ### mint
 
-Legacy mint using pre-approved verification.
+Mint a ZKPassport NFT by submitting a ZK proof. The proof is verified on-chain — all claimed values are cryptographically proven.
 
 ```solidity
-function mint(string memory uniqueIdentifier) external
+function mint(ProofVerificationParams calldata params, bool isIDCard) external
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `uniqueIdentifier` | `string` | Pre-approved ZKPassport ID |
+| `params` | `ProofVerificationParams` | Proof bundle from `zkPassport.getSolidityVerifierParameters()` |
+| `isIDCard` | `bool` | `true` for ID card / residence permit; `false` for passport |
 
-**Requirements:**
-- Must be pre-approved via `approveVerification()`
-- Caller must match approved address
+**On-chain checks performed:**
+1. Caller does not already have an NFT
+2. `zkPassportVerifier.verify(params)` returns `verified = true`
+3. Scoped nullifier not already used
+4. `helper.verifyScopes(...)` matches `domain` and `scope`
+5. `helper.getBoundData(...).senderAddress == msg.sender`
+6. `helper.getBoundData(...).chainId == block.chainid`
+
+**Emits:** `NFTMinted(to, tokenId, uniqueIdentifier, isOver18, nationality)`
 
 ---
 
 ## View Functions
 
-### hasNFT
-
-Check if a ZKPassport identifier has been used.
-
-```solidity
-function hasNFT(string memory uniqueIdentifier) external view returns (bool)
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `uniqueIdentifier` | `string` | ZKPassport ID to check |
-
-**Returns:** `bool` - true if identifier already used
-
----
-
 ### hasNFTByAddress
-
-Check if an address owns an NFT.
 
 ```solidity
 function hasNFTByAddress(address user) external view returns (bool)
 ```
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `user` | `address` | Address to check |
+Returns `true` if the address holds an NFT. Used by `FaucetManager` and `Swag1155` for gating.
 
-**Returns:** `bool` - true if address has NFT
+---
 
-**Frontend:**
+### hasNFTByIdentifier
+
+```solidity
+function hasNFTByIdentifier(bytes32 uniqueIdentifier) external view returns (bool)
+```
+
+Returns `true` if a scoped nullifier (bytes32) has already been used to mint.
+
+---
+
+### getTokenData
+
+```solidity
+function getTokenData(uint256 tokenId) external view returns (TokenData memory)
+```
+
+Returns the verified data stored for a token.
+
+---
+
+### tokenURI (inherited)
+
+Returns Base64-encoded JSON metadata with attributes: Personhood, Age 18+, Nationality, Verification Status, Token ID.
+
+---
+
+### balanceOf / ownerOf (inherited)
+
+Standard ERC721. `balanceOf` always returns 0 or 1 (one NFT per address).
+
+---
+
+## Events
+
+| Event | Parameters | When Emitted |
+|-------|------------|--------------|
+| `NFTMinted` | `to`, `tokenId`, `uniqueIdentifier` (bytes32), `isOver18`, `nationality` | NFT minted |
+| `MetadataUpdated` | `imageURI`, `description`, `externalURL`, `useIPFS` | Admin updates metadata |
+| `VerifierUpdated` | `newVerifier` | Owner updates verifier address |
+
+---
+
+## Error Messages
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `"ZKPassportNFT: address already has NFT"` | Wallet already holds an NFT | One per address |
+| `"ZKPassportNFT: proof verification failed"` | Verifier returned `verified = false` | Valid ZKPassport proof required |
+| `"ZKPassportNFT: identifier already used"` | Scoped nullifier already minted | One mint per passport |
+| `"ZKPassportNFT: invalid domain or scope"` | Proof not for this app/scope | SDK query must use matching domain + scope |
+| `"ZKPassportNFT: sender address mismatch"` | Proof bound to a different address | Proof must be generated for the calling wallet |
+| `"ZKPassportNFT: chain id mismatch"` | Proof bound to a different chain | Proof must be bound to the current chain |
+| `"ZKPassportNFT: invalid verifier address"` | Zero address passed to `setVerifier` | Provide a valid contract address |
+| `"ZKPassportNFT: soulbound token - transfers not allowed"` | Attempted transfer | NFTs are non-transferable |
+| `"ZKPassportNFT: token does not exist"` | Invalid tokenId in `getTokenData` | Query an existing token |
+| `"ZKPassportNFT: empty description"` | Empty string in `setDescription` | Provide a description |
+| `"ZKPassportNFT: set image URI first"` | `setUseIPFSImage(true)` without URI | Call `setImageURI` first |
+
+---
+
+## Frontend Integration
+
+### Complete Mint Flow
+
+The SDK query must request **age ≥ 18**, **nationality disclosure**, **personhood** (just by calling `.done()`), and **bind the proof** to the caller's address and chain. The result feeds directly into `mint()`.
+
 ```typescript
+import { ZKPassport } from "@zkpassport/sdk";
+import { useWriteContract, useReadContract, useAccount, useChainId } from "wagmi";
+import { createWalletClient, http, custom } from "viem";
+
+async function mintZKPassportNFT(walletProvider: any) {
+  const zkPassport = new ZKPassport("ethcali.com");
+
+  const queryBuilder = await zkPassport.request({
+    name: "ETHcali",
+    logo: "https://ethcali.com/logo.png",
+    purpose: "Prove your identity to access ETHcali contracts",
+    scope: "ethcali-verification",
+    // Required for on-chain verification
+    mode: "compressed-evm",
+  });
+
+  let proof: any;
+
+  const { url, onProofGenerated, onResult } = queryBuilder
+    .gte("age", 18)               // proves age ≥ 18 → isOver18
+    .disclose("nationality")      // reveals nationality string
+    .bind("user_address", userAddress)
+    .bind("chain", "base")        // or "ethereum"
+    .done();
+
+  // Capture the proof when generated
+  onProofGenerated((proofResult) => {
+    proof = proofResult;
+  });
+
+  onResult(async ({ verified, result }) => {
+    if (!verified) return;
+
+    // Build the params the contract needs
+    const verifierParams = zkPassport.getSolidityVerifierParameters({
+      proof,
+      scope: "ethcali-verification",
+      devMode: false,
+    });
+
+    // isIDCard = true for ID cards / residence permits, false for passports
+    const isIDCard = result.document_type?.disclose?.result !== "passport";
+
+    // Single contract call — all verification happens on-chain
+    await walletClient.writeContract({
+      address: ZKPASSPORT_NFT_ADDRESS,
+      abi: ZKPassportNFTABI,
+      functionName: "mint",
+      args: [verifierParams, isIDCard],
+    });
+  });
+
+  // Open the ZKPassport verification URL for the user
+  window.open(url);
+}
+```
+
+### Check Eligibility
+
+```typescript
+// Used by FaucetManager, Swag1155, etc.
 const { data: hasNFT } = useReadContract({
-  address: zkPassportNFT,
+  address: ZKPASSPORT_NFT_ADDRESS,
   abi: ZKPassportNFTABI,
-  functionName: 'hasNFTByAddress',
+  functionName: "hasNFTByAddress",
   args: [userAddress],
 });
 
@@ -370,238 +373,38 @@ if (!hasNFT) {
 }
 ```
 
----
+### Read Token Data
 
-### getTokenData
-
-Get verification data for a token.
-
-```solidity
-function getTokenData(uint256 tokenId) external view returns (TokenData memory)
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `tokenId` | `uint256` | Token ID |
-
-**Returns:** `TokenData` struct
-
-**Frontend:**
 ```typescript
 const { data: tokenData } = useReadContract({
-  address: zkPassportNFT,
+  address: ZKPASSPORT_NFT_ADDRESS,
   abi: ZKPassportNFTABI,
-  functionName: 'getTokenData',
+  functionName: "getTokenData",
   args: [tokenId],
 });
 
-// tokenData = { uniqueIdentifier, faceMatchPassed, personhoodVerified }
-```
-
----
-
-### tokenURI
-
-Get the full metadata URI for a token.
-
-```solidity
-function tokenURI(uint256 tokenId) public view returns (string memory)
-```
-
-**Returns:** Base64-encoded JSON metadata with:
-- `name`: "ZKPassport Verification #X"
-- `description`: Admin-set description
-- `image`: IPFS URI or base64 SVG
-- `external_url`: Admin-set URL (if set)
-- `attributes`: Face Match, Personhood, Verification Status, Token ID
-
----
-
-### balanceOf (inherited)
-
-Check NFT balance for an address.
-
-```solidity
-function balanceOf(address owner) public view returns (uint256)
-```
-
-**Note:** Will always return 0 or 1 (one NFT per address max)
-
----
-
-### ownerOf (inherited)
-
-Get owner of a token.
-
-```solidity
-function ownerOf(uint256 tokenId) public view returns (address)
-```
-
----
-
-## Events
-
-| Event | Parameters | When Emitted |
-|-------|------------|--------------|
-| `NFTMinted` | `to`, `tokenId`, `uniqueIdentifier`, `faceMatchPassed`, `personhoodVerified` | NFT minted |
-| `VerificationApproved` | `uniqueIdentifier`, `userAddress`, `faceMatchPassed`, `personhoodVerified` | Backend approves |
-| `MetadataUpdated` | `imageURI`, `description`, `externalURL`, `useIPFS` | Admin updates metadata |
-
-**Event Listening:**
-```typescript
-useWatchContractEvent({
-  address: zkPassportNFT,
-  abi: ZKPassportNFTABI,
-  eventName: 'NFTMinted',
-  onLogs(logs) {
-    logs.forEach((log) => {
-      const { to, tokenId, faceMatchPassed, personhoodVerified } = log.args;
-      console.log(`NFT #${tokenId} minted to ${to}`);
-    });
-  },
-});
-```
-
----
-
-## Error Messages
-
-| Error | Cause | Solution |
-|-------|-------|----------|
-| `"ZKPassportNFT: empty identifier"` | Empty string passed | Provide valid identifier |
-| `"ZKPassportNFT: invalid address"` | Zero address | Provide valid address |
-| `"ZKPassportNFT: identifier already used"` | ID already minted | Use different identifier |
-| `"ZKPassportNFT: address already has NFT"` | Wallet has NFT | One per address |
-| `"ZKPassportNFT: already approved"` | Double approval | Already pending |
-| `"ZKPassportNFT: verification not approved"` | No pre-approval | Use `mintWithVerification` instead |
-| `"ZKPassportNFT: not authorized for this verification"` | Wrong wallet | Must match approved address |
-| `"ZKPassportNFT: soulbound token - transfers not allowed"` | Tried to transfer | NFTs are soulbound |
-| `"ZKPassportNFT: empty description"` | Empty description | Provide description text |
-| `"ZKPassportNFT: set image URI first"` | Enable IPFS without URI | Set image URI first |
-
----
-
-## Frontend Integration
-
-### Complete Mint Flow
-
-```typescript
-import { useWriteContract, useReadContract, useAccount } from 'wagmi';
-
-function MintZKPassportNFT() {
-  const { address } = useAccount();
-  const { writeContractAsync } = useWriteContract();
-
-  // Check if user already has NFT
-  const { data: hasNFT } = useReadContract({
-    address: ZKPASSPORT_ADDRESS,
-    abi: ZKPassportNFTABI,
-    functionName: 'hasNFTByAddress',
-    args: [address],
-  });
-
-  const handleMint = async (verificationData: {
-    uniqueIdentifier: string;
-    faceMatchPassed: boolean;
-    personhoodVerified: boolean;
-  }) => {
-    if (hasNFT) {
-      alert('You already have a ZKPassport NFT');
-      return;
-    }
-
-    await writeContractAsync({
-      address: ZKPASSPORT_ADDRESS,
-      abi: ZKPassportNFTABI,
-      functionName: 'mintWithVerification',
-      args: [
-        verificationData.uniqueIdentifier,
-        verificationData.faceMatchPassed,
-        verificationData.personhoodVerified,
-      ],
-    });
-
-    alert('NFT minted successfully!');
-  };
-
-  if (hasNFT) {
-    return <p>You have a ZKPassport NFT</p>;
-  }
-
-  return (
-    <button onClick={() => handleMint(zkPassportResult)}>
-      Mint ZKPassport NFT
-    </button>
-  );
-}
-```
-
-### Admin Setup Metadata
-
-```typescript
-async function setupNFTMetadata() {
-  // Upload image to IPFS first (via Pinata, etc.)
-  const imageURI = 'ipfs://QmYourImageHash...';
-
-  await writeContractAsync({
-    address: ZKPASSPORT_ADDRESS,
-    abi: ZKPassportNFTABI,
-    functionName: 'setMetadata',
-    args: [
-      imageURI,
-      'ZKPassport Verification NFT - Your proof of unique personhood in the ETHCALI ecosystem. This soulbound token grants access to faucets, swag purchases, and community benefits.',
-      'https://ethcali.com',
-      true, // Use IPFS image
-    ],
-  });
-}
-```
-
-### Check Eligibility for Other Contracts
-
-```typescript
-// Used by FaucetManager, Swag1155, etc.
-async function checkZKPassportEligibility(userAddress: string): Promise<boolean> {
-  const hasNFT = await readContract({
-    address: ZKPASSPORT_ADDRESS,
-    abi: ZKPassportNFTABI,
-    functionName: 'hasNFTByAddress',
-    args: [userAddress],
-  });
-
-  return hasNFT;
-}
+// tokenData.personhoodVerified → true (always, cryptographically proven)
+// tokenData.isOver18           → true/false
+// tokenData.nationality        → "USA", "MEX", etc. (ISO alpha-3 / MRZ format)
+// tokenData.uniqueIdentifier   → bytes32 scoped nullifier
 ```
 
 ---
 
 ## NFT Metadata Example
 
-When `useIPFSImage = true`:
-
 ```json
 {
-  "name": "ZKPassport Verification #42",
-  "description": "ZKPassport Verification NFT - Your proof of unique personhood...",
-  "image": "ipfs://QmYourImageHash...",
-  "external_url": "https://ethcali.com",
+  "name": "ZKPassport Verification #0",
+  "description": "ZKPassport Verification NFT - Cryptographic proof of identity enabling access to ETHCALI Smart Contracts.",
+  "image": "data:image/svg+xml;base64,...",
   "attributes": [
-    { "trait_type": "Face Match", "value": "Passed" },
-    { "trait_type": "Personhood", "value": "Verified" },
-    { "trait_type": "Verification Status", "value": "Fully Verified" },
-    { "trait_type": "Token ID", "value": "42" }
+    { "trait_type": "Personhood",           "value": "Verified" },
+    { "trait_type": "Age 18+",              "value": "Yes" },
+    { "trait_type": "Nationality",          "value": "USA" },
+    { "trait_type": "Verification Status",  "value": "Fully Verified" },
+    { "trait_type": "Token ID",             "value": "0" }
   ]
-}
-```
-
-When `useIPFSImage = false` (on-chain SVG):
-
-```json
-{
-  "name": "ZKPassport Verification #42",
-  "description": "...",
-  "image": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL...",
-  "attributes": [...]
 }
 ```
 
@@ -611,14 +414,37 @@ When `useIPFSImage = false` (on-chain SVG):
 
 ### Verification Flow
 ```
-1. User completes ZKPassport verification (app/widget)
-2. Backend validates proof, returns: { uniqueIdentifier, faceMatchPassed, personhoodVerified }
-3. User calls mintWithVerification() with results
-4. NFT minted, user can now access gated contracts
+1. Frontend calls ZKPassport SDK:
+      queryBuilder
+        .gte("age", 18)
+        .disclose("nationality")
+        .bind("user_address", wallet)
+        .bind("chain", "base")
+        .done()
+
+2. User scans QR / completes verification in ZKPassport app
+   → SDK returns ProofVerificationParams via getSolidityVerifierParameters()
+
+3. Frontend calls: ZKPassportNFT.mint(params, isIDCard)
+   → Contract verifies proof on-chain via IZKPassportVerifier
+   → Stores uniqueIdentifier, personhoodVerified=true, isOver18, nationality
+   → Mints soulbound NFT to caller
 ```
 
 ### Soulbound Behavior
 - NFTs cannot be transferred (reverts on any transfer attempt)
-- Can only be minted, never burned by user
 - One NFT per wallet address
-- One NFT per ZKPassport identifier
+- One NFT per ZKPassport identity (scoped nullifier)
+- Metadata is frozen at mint time (stored via `_setTokenURI`)
+
+### Constructor Parameters
+```solidity
+constructor(
+    string name,          // e.g. "ZKPassport Verification"
+    string symbol,        // e.g. "ZKPASS"
+    address initialOwner, // ZK_PASSPORT_ADMIN from .env
+    string domain,        // e.g. "ethcali.com"
+    string scope          // e.g. "ethcali-verification"
+)
+```
+

@@ -19,9 +19,9 @@ interface SybilVerificationProps {
   onVerificationStatusChange?: (
     status: 'idle' | 'verified' | 'minting' | 'minted' | 'failed' | 'rejected' | 'duplicate',
     data?: {
-      uniqueIdentifier?: string | null;
-      faceMatchPassed?: boolean;
-      personhoodVerified?: boolean;
+      uniqueIdentifier?: `0x${string}` | null;
+      isOver18?: boolean;
+      nationality?: string | null;
     }
   ) => void;
 }
@@ -35,8 +35,8 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({
     status,
     verificationUrl,
     uniqueIdentifier,
-    faceMatchPassed,
-    personhoodVerified,
+    isOver18,
+    nationality,
     errorMessage,
     requestReceived,
     generatingProof,
@@ -66,12 +66,12 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({
         status as 'idle' | 'verified' | 'minting' | 'minted' | 'failed' | 'rejected' | 'duplicate',
         {
           uniqueIdentifier,
-          faceMatchPassed,
-          personhoodVerified,
+          isOver18,
+          nationality,
         }
       );
     }
-  }, [status, uniqueIdentifier, faceMatchPassed, personhoodVerified, onVerificationStatusChange]);
+  }, [status, uniqueIdentifier, isOver18, nationality, onVerificationStatusChange]);
 
   const renderStep = () => {
     switch (status) {
@@ -99,8 +99,8 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({
           return (
             <VerifiedStep
               uniqueIdentifier={uniqueIdentifier}
-              faceMatchPassed={faceMatchPassed}
-              personhoodVerified={personhoodVerified}
+              isOver18={isOver18}
+              nationality={nationality}
               chainId={chainId}
               isMinting={isMinting}
               errorMessage={errorMessage}

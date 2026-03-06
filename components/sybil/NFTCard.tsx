@@ -9,9 +9,10 @@ interface NFTCardProps {
   isLoading: boolean;
   tokenId: bigint | null;
   tokenData: {
-    uniqueIdentifier: string;
-    faceMatchPassed: boolean;
+    uniqueIdentifier: `0x${string}`;
     personhoodVerified: boolean;
+    isOver18: boolean;
+    nationality: string;
   } | null;
   nftMetadata: {
     name?: string;
@@ -158,15 +159,15 @@ const NFTCard: React.FC<NFTCardProps> = ({
                   <span className="text-cyan-400">{maskIdentifier(tokenData.uniqueIdentifier)}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-gray-800">
-                  <span className="text-gray-600">face_match</span>
-                  <span className={tokenData.faceMatchPassed ? 'text-green-400' : 'text-gray-600'}>
-                    {tokenData.faceMatchPassed ? 'PASS' : 'N/A'}
+                  <span className="text-gray-600">age</span>
+                  <span className={tokenData.isOver18 ? 'text-green-400' : 'text-yellow-500'}>
+                    {tokenData.isOver18 ? '18+' : 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between py-1">
-                  <span className="text-gray-600">personhood</span>
-                  <span className={tokenData.personhoodVerified ? 'text-green-400' : 'text-gray-600'}>
-                    {tokenData.personhoodVerified ? 'VERIFIED' : 'FALSE'}
+                  <span className="text-gray-600">nationality</span>
+                  <span className="text-cyan-400">
+                    {tokenData.nationality || 'N/A'}
                   </span>
                 </div>
               </>
