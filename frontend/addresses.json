@@ -18,9 +18,9 @@
   "unichain": {
     "chainId": 130,
     "addresses": {
-      "ZKPassportNFT": "0x0499924492348159aa281385ace43539689e158b",
-      "FaucetManager": "0xf32e10560673668ee849c44596d74502493c7fb1",
-      "Swag1155": "0xb76a448715e3986a3a060e79598e9ffb78e792f6"
+      "ZKPassportNFT": "0x6771e17e804d4039f6affc4c464c5092f7d6e48c",
+      "FaucetManager": "0xc9e5262aee85dbd0ccebcc22b461c7b853422411",
+      "Swag1155": "0x3c01afb0d656611977f7ef5c891c10e50d2c7bfe"
     }
   },
   "optimism": {
