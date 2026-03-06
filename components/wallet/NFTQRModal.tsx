@@ -67,8 +67,8 @@ export function NFTQRModal({ tokenId, nftName, onClose }: NFTQRModalProps) {
                 size={260}
                 level="H"
                 includeMargin={true}
-                bgColor="#0a0a0a"
-                fgColor="#22d3ee"
+                bgColor="#ffffff"
+                fgColor="#000000"
               />
             </div>
             <p className="qr-hint">SCAN WITH PHONE CAMERA</p>

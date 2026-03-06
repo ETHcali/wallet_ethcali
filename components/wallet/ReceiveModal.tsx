@@ -11,8 +11,8 @@ interface ReceiveModalProps {
 const ReceiveModal: React.FC<ReceiveModalProps> = ({ address, onClose, onScanQR }) => {
   const [copied, setCopied] = useState(false);
 
-  // Generate QR code URL with dark cypherpunk style (dark bg, cyan/neon color)
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${address}&bgcolor=0a0a0a&color=22d3ee&margin=1`;
+  // Generate QR code URL with black and white only
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${address}&bgcolor=ffffff&color=000000&margin=1`;
 
   const handleCopy = async () => {
     try {

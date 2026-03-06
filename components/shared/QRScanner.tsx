@@ -13,12 +13,12 @@ export interface QRScannerProps {
 
 const THEME_COLORS = {
   cyan: {
-    primary: '#22d3ee',
-    primaryRgb: '34, 211, 238',
+    primary: '#000',
+    primaryRgb: '0, 0, 0',
   },
   amber: {
-    primary: '#fbbf24',
-    primaryRgb: '251, 191, 36',
+    primary: '#000',
+    primaryRgb: '0, 0, 0',
   },
 };
 
