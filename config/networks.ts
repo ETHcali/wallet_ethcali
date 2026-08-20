@@ -83,12 +83,24 @@ export const UNICHAIN: Network = {
   color: NETWORK_COLORS[CHAIN_IDS.UNICHAIN],
 };
 
+export const CELO: Network = {
+  id: CHAIN_IDS.CELO,
+  name: 'Celo Mainnet',
+  shortName: NETWORK_NAMES[CHAIN_IDS.CELO],
+  icon: getNetworkLogoUrl(CHAIN_IDS.CELO),
+  explorerUrl: EXPLORER_URLS[CHAIN_IDS.CELO],
+  rpcUrl: getRpcUrl(CHAIN_IDS.CELO),
+  testnet: false,
+  color: NETWORK_COLORS[CHAIN_IDS.CELO],
+};
+
 // Network lookup map
 const NETWORKS: Record<ChainId, Network> = {
   [CHAIN_IDS.ETHEREUM]: ETHEREUM,
   [CHAIN_IDS.BASE]: BASE,
   [CHAIN_IDS.OPTIMISM]: OPTIMISM,
   [CHAIN_IDS.UNICHAIN]: UNICHAIN,
+  [CHAIN_IDS.CELO]: CELO,
 };
 
 // Default network

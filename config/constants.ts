@@ -11,6 +11,7 @@ export const CHAIN_IDS = {
   ETHEREUM: 1,
   OPTIMISM: 10,
   UNICHAIN: 130,
+  CELO: 42220,
 } as const;
 
 export type ChainId = (typeof CHAIN_IDS)[keyof typeof CHAIN_IDS];
@@ -30,6 +31,7 @@ export const EXPLORER_URLS: Record<ChainId, string> = {
   [CHAIN_IDS.ETHEREUM]: 'https://etherscan.io',
   [CHAIN_IDS.OPTIMISM]: 'https://optimistic.etherscan.io',
   [CHAIN_IDS.UNICHAIN]: 'https://unichain.blockscout.com',
+  [CHAIN_IDS.CELO]: 'https://celoscan.io',
 } as const;
 
 // =============================================================================
@@ -40,6 +42,7 @@ export const NETWORK_NAMES: Record<ChainId, string> = {
   [CHAIN_IDS.ETHEREUM]: 'Ethereum',
   [CHAIN_IDS.OPTIMISM]: 'Optimism',
   [CHAIN_IDS.UNICHAIN]: 'Unichain',
+  [CHAIN_IDS.CELO]: 'Celo',
 } as const;
 
 export const NETWORK_SHORT_NAMES: Record<ChainId, string> = {
@@ -47,6 +50,7 @@ export const NETWORK_SHORT_NAMES: Record<ChainId, string> = {
   [CHAIN_IDS.ETHEREUM]: 'ETH',
   [CHAIN_IDS.OPTIMISM]: 'OP',
   [CHAIN_IDS.UNICHAIN]: 'UNI',
+  [CHAIN_IDS.CELO]: 'CELO',
 } as const;
 
 export const NETWORK_COLORS: Record<ChainId, string> = {
@@ -54,6 +58,7 @@ export const NETWORK_COLORS: Record<ChainId, string> = {
   [CHAIN_IDS.ETHEREUM]: '#627EEA',
   [CHAIN_IDS.OPTIMISM]: '#FF0B51',
   [CHAIN_IDS.UNICHAIN]: '#00FF00',
+  [CHAIN_IDS.CELO]: '#FCFF52',
 } as const;
 
 // =============================================================================
@@ -64,6 +69,7 @@ export const DEFAULT_RPC_URLS: Record<ChainId, string> = {
   [CHAIN_IDS.ETHEREUM]: 'https://eth.llamarpc.com',
   [CHAIN_IDS.OPTIMISM]: 'https://mainnet.optimism.io',
   [CHAIN_IDS.UNICHAIN]: 'https://rpc.unichain.org',
+  [CHAIN_IDS.CELO]: 'https://forno.celo.org',
 } as const;
 
 /**
@@ -79,10 +85,28 @@ export function getRpcUrl(chainId: ChainId): string {
       return process.env.NEXT_PUBLIC_OPTIMISM_RPC_URL || DEFAULT_RPC_URLS[CHAIN_IDS.OPTIMISM];
     case CHAIN_IDS.UNICHAIN:
       return process.env.NEXT_PUBLIC_UNICHAIN_RPC_URL || DEFAULT_RPC_URLS[CHAIN_IDS.UNICHAIN];
+    case CHAIN_IDS.CELO:
+      return process.env.NEXT_PUBLIC_CELO_RPC_URL || DEFAULT_RPC_URLS[CHAIN_IDS.CELO];
     default:
       return DEFAULT_RPC_URLS[CHAIN_IDS.BASE];
   }
 }
+
+// =============================================================================
+// NATIVE CURRENCY
+// Celo's native gas token is CELO, not ETH. The contracts' ETH sentinel
+// (0xEeee...EEeE) resolves to whatever the chain's native token is.
+// =============================================================================
+export const NATIVE_SYMBOLS: Record<ChainId, string> = {
+  [CHAIN_IDS.BASE]: 'ETH',
+  [CHAIN_IDS.ETHEREUM]: 'ETH',
+  [CHAIN_IDS.OPTIMISM]: 'ETH',
+  [CHAIN_IDS.UNICHAIN]: 'ETH',
+  [CHAIN_IDS.CELO]: 'CELO',
+} as const;
+
+/** Sentinel the contracts use to mean "the chain's native token". */
+export const NATIVE_TOKEN_SENTINEL = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
 
 // =============================================================================
 // TIMEOUTS
@@ -102,6 +126,9 @@ export const TOKEN_DECIMALS = {
   USDC: 6,
   USDT: 6,
   EURC: 6,
+  // COPm (Mento Colombian Peso) is 18 decimals, unlike the 6-decimal
+  // stablecoins above. Never assume 6 for a "stablecoin".
+  COPm: 18,
 } as const;
 
 // =============================================================================
@@ -111,6 +138,7 @@ export const TOKEN_ADDRESSES: Record<ChainId, {
   USDC: string;
   USDT: string;
   EURC: string;
+  COPm?: string;
 }> = {
   [CHAIN_IDS.BASE]: {
     USDC: process.env.NEXT_PUBLIC_USDC_BASE || '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
@@ -131,6 +159,13 @@ export const TOKEN_ADDRESSES: Record<ChainId, {
     USDC: process.env.NEXT_PUBLIC_USDC_UNICHAIN || '0x078D782b760474a361dDA0AF3839290b0EF57AD6',
     USDT: '', // Not available on Unichain
     EURC: '', // Not available on Unichain
+  },
+  [CHAIN_IDS.CELO]: {
+    // Verified on-chain via forno.celo.org (symbol/decimals read directly).
+    USDC: process.env.NEXT_PUBLIC_USDC_CELO || '0xcebA9300f2b948710d2653dD7B07f33A8B32118C',
+    USDT: '', // Not used on Celo for donations
+    EURC: '', // Not available on Celo
+    COPm: process.env.NEXT_PUBLIC_COPM_CELO || '0x8a567e2ae79ca692bd748ab832081c45de4041ea',
   },
 } as const;
 
