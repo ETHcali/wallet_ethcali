@@ -1,0 +1,94 @@
+import React, { useMemo } from 'react';
+import { useCampaignTotals, useDisplayCurrency } from '../../hooks/donations';
+import type { Campaign } from '../../types/donations';
+
+interface CampaignCardProps {
+  campaign: Campaign;
+  chainId: number;
+  onDonate: () => void;
+}
+
+const CampaignCard: React.FC<CampaignCardProps> = ({ campaign, chainId, onDonate }) => {
+  const { data: totals = [], isLoading } = useCampaignTotals(campaign.id, chainId);
+  const { convert, formatValue, formatToken, currency } = useDisplayCurrency();
+
+  // Totals span several currencies with different decimals, so each is
+  // normalised to the display currency before being added.
+  const grandTotal = useMemo(
+    () => totals.reduce((sum, t) => sum + convert(t.raised, t.token), 0),
+    [totals, convert]
+  );
+
+  const withFunds = totals.filter((t) => t.raised > 0n);
+
+  return (
+    <div className="rounded-2xl border border-slate-700 bg-slate-800/50 p-5">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="truncate text-lg font-bold text-white">{campaign.name}</h2>
+          {campaign.description && (
+            <p className="mt-1 text-sm leading-relaxed text-slate-400">
+              {campaign.description}
+            </p>
+          )}
+        </div>
+        {campaign.active ? (
+          <span className="shrink-0 rounded-full border border-green-500/40 bg-green-500/10 px-2 py-0.5 text-[11px] font-semibold text-green-400">
+            Open
+          </span>
+        ) : (
+          <span className="shrink-0 rounded-full border border-slate-600 bg-slate-700/40 px-2 py-0.5 text-[11px] font-semibold text-slate-400">
+            Closed
+          </span>
+        )}
+      </div>
+
+      {/* Raised — always totalRaised, never the vault balance. In router mode the
+          balance is ~0 because funds forward immediately, which would render a
+          live campaign as permanently empty. */}
+      <div className="mb-4">
+        <div className="text-3xl font-bold text-white">
+          {isLoading ? '—' : formatValue(grandTotal)}
+        </div>
+        <div className="text-xs text-slate-500">
+          raised in total{currency !== 'USD' ? ` (shown in ${currency})` : ''}
+        </div>
+      </div>
+
+      {withFunds.length > 0 && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          {withFunds.map((t) => (
+            <span
+              key={t.token.address}
+              className="rounded-lg border border-slate-700 bg-slate-900/60 px-2.5 py-1 text-xs text-slate-300"
+              title={`${formatToken(t.raised, t.token)} raised`}
+            >
+              {formatToken(t.raised, t.token)}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div className="mb-4 flex gap-4 text-xs text-slate-500">
+        <span>
+          <span className="font-semibold text-slate-300">{campaign.donorCount}</span> donors
+        </span>
+        <span>
+          <span className="font-semibold text-slate-300">{campaign.donationCount}</span>{' '}
+          donations
+        </span>
+      </div>
+
+      <button
+        type="button"
+        onClick={onDonate}
+        disabled={!campaign.active}
+        className="w-full rounded-lg bg-green-500 py-3 font-semibold text-slate-900 transition-colors hover:bg-green-400 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+      >
+        {campaign.active ? 'Donate' : 'Campaign closed'}
+      </button>
+    </div>
+  );
+};
+
+export default CampaignCard;

@@ -5,6 +5,7 @@ import { useRouter } from 'next/router';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { getChainRpc } from '../config/networks';
 import { useAdminStatus } from '../hooks/useAdminStatus';
+import { useDonationAdmin } from '../hooks/donations/useDonationAdmin';
 import { logger } from '../utils/logger';
 
 // Icons as simple SVG components for cleaner mobile menu
@@ -26,6 +27,11 @@ const IdentityIcon = () => (
 const SwagIcon = () => (
   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+  </svg>
+);
+const DonateIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
   </svg>
 );
 const AdminIcon = () => (
@@ -99,18 +105,30 @@ const Navigation: React.FC<NavigationProps> = ({
     isZKPassportOwner,
   } = useAdminStatus(displayChainId);
 
+  // Donation roles live on a different contract, read separately.
+  const { isAdmin: isDonationAdmin } = useDonationAdmin(displayChainId);
+
   const mainNavItems = [
     { href: '/wallet', label: 'Wallet', icon: WalletIcon },
     { href: '/faucet', label: 'Faucet', icon: FaucetIcon },
     { href: '/sybil', label: 'Identity', icon: IdentityIcon },
     { href: '/swag', label: 'Swag', icon: SwagIcon },
+    { href: '/donations', label: 'Donate', icon: DonateIcon },
   ];
 
-  const adminNavItems = [
-    ...(isSwagAdmin ? [{ href: '/swag/admin', label: 'Swag Admin', icon: AdminIcon }] : []),
-    ...(isFaucetAdmin || isFaucetSuperAdmin ? [{ href: '/faucet/admin', label: 'Faucet Admin', icon: AdminIcon }] : []),
-    ...(isZKPassportOwner ? [{ href: '/sybil/admin', label: 'Identity Admin', icon: AdminIcon }] : []),
-  ];
+  // One entry, not four. The admin areas are reachable from the dashboard
+  // sidebar now, so repeating each of them in the top nav is noise — and on a
+  // phone four extra rows pushed the real navigation off the screen.
+  const hasAnyAdminRole =
+    isSwagAdmin ||
+    isFaucetAdmin ||
+    isFaucetSuperAdmin ||
+    isZKPassportOwner ||
+    isDonationAdmin;
+
+  const adminNavItems = hasAnyAdminRole
+    ? [{ href: '/admin', label: 'Admin', icon: AdminIcon }]
+    : [];
 
   const navItems = [...mainNavItems, ...adminNavItems];
 

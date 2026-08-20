@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useWallets } from '@privy-io/react-auth';
-import Navigation from '../../components/Navigation';
-import Layout from '../../components/shared/Layout';
+import AdminShell from '../../components/admin/AdminShell';
 import { ZKPassportMetadataAdmin } from '../../components/zkpassport/ZKPassportMetadataAdmin';
 import { useSwagAddresses } from '../../utils/network';
 import { useZKPassportAdmin, useZKPassportContractSettings } from '../../hooks/useZKPassportAdmin';
@@ -19,23 +18,18 @@ export default function IdentityAdminPage() {
 
   if (!ready || isCheckingOwner) {
     return (
-      <div className="min-h-screen bg-gray-950">
-        <Navigation currentChainId={chainId} />
-        <Layout>
+      <AdminShell active="identity" title="Identity" chainId={chainId}>
           <div className="flex items-center justify-center py-20">
             <div className="w-3 h-3 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
             <span className="ml-3 text-purple-400 font-mono text-[10px] tracking-wider">VERIFYING...</span>
           </div>
-        </Layout>
-      </div>
+        </AdminShell>
     );
   }
 
   if (!isOwner) {
     return (
-      <div className="min-h-screen bg-gray-950">
-        <Navigation currentChainId={chainId} />
-        <Layout>
+      <AdminShell active="identity" title="Identity" chainId={chainId}>
           <div className="flex flex-col items-center justify-center py-20">
             <div className="bg-black/60 border border-red-500/30 rounded-lg p-4 max-w-sm">
               <div className="flex items-center gap-2 mb-3">
@@ -49,22 +43,15 @@ export default function IdentityAdminPage() {
               </div>
             </div>
           </div>
-        </Layout>
-      </div>
+        </AdminShell>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-950">
-      <Navigation currentChainId={chainId} />
-      <Layout>
+    <AdminShell active="identity" title="Identity" chainId={chainId}>
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-            <h1 className="text-lg font-bold text-purple-400 font-mono tracking-wider">
-              IDENTITY_ADMIN
-            </h1>
             <span className="text-[9px] text-cyan-400 font-mono bg-cyan-500/10 px-2 py-0.5 rounded">OWNER</span>
           </div>
           <p className="text-gray-600 font-mono text-[10px] tracking-widest uppercase">
@@ -292,7 +279,6 @@ export default function IdentityAdminPage() {
             </a>
           </div>
         </div>
-      </Layout>
-    </div>
+      </AdminShell>
   );
 }
