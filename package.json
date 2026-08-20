@@ -27,6 +27,7 @@
     "@zkpassport/sdk": "0.12.4",
     "autoprefixer": "10.4.21",
     "ethers": "6.16.0",
+    "jose": "4.15.9",
     "next": "16.1.6",
     "postcss": "8.5.3",
     "qrcode.react": "4.2.0",

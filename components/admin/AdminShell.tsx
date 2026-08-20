@@ -5,7 +5,13 @@ import Navigation from '../Navigation';
 import { useAdminStatus } from '../../hooks/useAdminStatus';
 import { useDonationAdmin } from '../../hooks/donations/useDonationAdmin';
 
-export type AdminSection = 'overview' | 'donations' | 'faucet' | 'swag' | 'identity';
+export type AdminSection =
+  | 'overview'
+  | 'donations'
+  | 'faucet'
+  | 'swag'
+  | 'artwork'
+  | 'identity';
 
 interface AdminShellProps {
   /** Which sidebar entry is current. */
@@ -31,6 +37,7 @@ const SECTIONS: SectionDef[] = [
   { id: 'donations', href: '/donations/admin', label: 'Donations', accent: 'text-green-400' },
   { id: 'faucet', href: '/faucet/admin', label: 'Faucet', accent: 'text-orange-400' },
   { id: 'swag', href: '/swag/admin', label: 'Swag', accent: 'text-pink-400' },
+  { id: 'artwork', href: '/admin/artwork', label: 'Artwork', accent: 'text-fuchsia-400' },
   { id: 'identity', href: '/sybil/admin', label: 'Identity', accent: 'text-purple-400' },
 ];
 
@@ -68,6 +75,9 @@ const AdminShell: React.FC<AdminShellProps> = ({
     donations: isDonationAdmin || isDonationSuperAdmin,
     faucet: isFaucetAdmin || isFaucetSuperAdmin,
     swag: isSwagAdmin,
+    // Artwork is production state, not an on-chain role. Anyone who can reach
+    // an admin area can prepare artwork; the API still verifies ADMIN_ROLE.
+    artwork: true,
     identity: isZKPassportOwner,
   };
 

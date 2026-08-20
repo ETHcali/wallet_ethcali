@@ -9,11 +9,23 @@ export const config = {
   },
 };
 
+import { requireAdmin, AdminAuthError } from '../../../lib/adminAuth';
+
 type ResponseData = { uri: string; gateway: string } | { error: string };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<ResponseData>) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // This route was open to the internet: anyone could POST base64 and pin
+  // arbitrary content to our Pinata account — unbounded storage cost, and we
+  // would be hosting whatever they uploaded. Pinning now requires an operator.
+  try {
+    await requireAdmin(req);
+  } catch (e) {
+    const err = e as AdminAuthError;
+    return res.status(err.status ?? 401).json({ error: err.message });
   }
 
   const PINATA_JWT = process.env.PINATA_JWT;
