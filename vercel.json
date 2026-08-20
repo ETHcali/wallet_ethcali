@@ -1,4 +1,15 @@
 {
   "buildCommand": "npm install && npm run build",
-  "outputDirectory": ".next"
-} 
+  "outputDirectory": ".next",
+  "crons": [
+    {
+      "path": "/api/indexer/sync",
+      "schedule": "0 * * * *"
+    }
+  ],
+  "functions": {
+    "pages/api/indexer/sync.ts": {
+      "maxDuration": 60
+    }
+  }
+}
