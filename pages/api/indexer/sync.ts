@@ -370,14 +370,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const secret = process.env.INDEXER_SECRET;
-  if (!secret) {
-    return res.status(500).json({ error: 'INDEXER_SECRET is not configured' });
+  // Vercel Cron sends `Authorization: Bearer $CRON_SECRET`, but an operator
+  // triggering a sync by hand uses INDEXER_SECRET. Accept either, so the cron
+  // does not 401 purely because the two env vars hold different values.
+  const secrets = [process.env.INDEXER_SECRET, process.env.CRON_SECRET].filter(
+    (s): s is string => Boolean(s)
+  );
+  if (secrets.length === 0) {
+    return res
+      .status(500)
+      .json({ error: 'Neither INDEXER_SECRET nor CRON_SECRET is configured' });
   }
 
   // Vercel Cron sends the secret as a bearer token.
-  const auth = req.headers.authorization;
-  if (auth !== `Bearer ${secret}`) {
+  const auth = req.headers.authorization ?? '';
+  if (!secrets.some((s) => auth === `Bearer ${s}`)) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
