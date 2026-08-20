@@ -4,12 +4,12 @@
  * Resolution Strategy (Layered Approach per ENSv2 best practices):
  * 1. Layer 1: Check localStorage cache (instant)
  * 2. Layer 2: Try mainnet ENS reverse resolution (ENSv2 standard)
- * 3. Layer 3: Query Base L2 events (fallback for recent mints)
+ * 3. Layer 3: Query /api/ens/lookup (OpenSea-backed, fallback for recent mints)
  */
 import { useState, useEffect } from 'react';
-import { createPublicClient, http, parseAbiItem } from 'viem';
-import { base, mainnet } from 'viem/chains';
-import { ENS_REGISTRAR_ADDRESSES, ENS_CONFIG, CHAIN_IDS, getRpcUrl } from '../../config/constants';
+import { createPublicClient, http } from 'viem';
+import { mainnet } from 'viem/chains';
+import { ENS_CONFIG, CHAIN_IDS, getRpcUrl } from '../../config/constants';
 import { logger } from '../../utils/logger';
 
 interface UserENSResult {

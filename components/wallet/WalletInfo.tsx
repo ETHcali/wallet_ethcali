@@ -4,18 +4,16 @@ import Link from 'next/link';
 import { Wallet, TokenBalance } from '../../types/index';
 import Loading from '../../components/shared/Loading';
 import { getTokenLogoUrl, formatTokenBalance } from '../../utils/tokenUtils';
-import { usePrivy, useWallets, useSendTransaction, useFundWallet } from '@privy-io/react-auth';
+import { useWallets, useSendTransaction } from '@privy-io/react-auth';
 import SendTokenModal from './SendTokenModal';
 import QRScanner from './QRScanner';
 import { parseUnits, encodeFunctionData } from 'viem';
-import { base, mainnet, optimism } from 'viem/chains';
 import { useTokenPrices } from '../../hooks/useTokenPrices';
 import { getTokenAddresses } from '../../utils/network';
 import ReceiveModal from './ReceiveModal';
 import { useUserNFTs } from '../../hooks/useUserNFTs';
 import { NFTCard } from './NFTCard';
 import { logger } from '../../utils/logger';
-import ENSSection from '../ens/ENSSection';
 import SwapModal from './SwapModal';
 
 interface WalletInfoProps {
@@ -33,10 +31,8 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
   onRefresh,
   chainId,
 }) => {
-  const { exportWallet, user } = usePrivy();
   const { wallets } = useWallets();
   const { sendTransaction } = useSendTransaction();
-  const { fundWallet } = useFundWallet();
   const { getPriceForToken } = useTokenPrices();
   const activeWallet = wallets?.[0];
 
@@ -55,9 +51,6 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
 
   // State for Receive modal
   const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
-
-  // Fund wallet state
-  const [isFunding, setIsFunding] = useState(false);
 
   // Swap modal state
   const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
@@ -107,7 +100,6 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
   const usdcValueUsd = parseFloat(balances.uscBalance) * usdcPrice.price;
   const usdtValueUsd = parseFloat(balances.usdtBalance || '0') * usdtPrice.price;
   const eurcValueUsd = parseFloat(balances.eurcBalance || '0') * eurcPrice.price;
-  const totalValueUsd = ethValueUsd + usdcValueUsd + usdtValueUsd + eurcValueUsd;
   
   // Format USD values
   const formatUsd = (value: number) => {
@@ -119,41 +111,6 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
     }).format(value);
   };
   
-  // Handle export wallet button click
-  const handleExportWallet = async () => {
-    try {
-      await exportWallet({ address: wallet.address });
-    } catch (error) {
-      logger.error('Error exporting wallet', error);
-    }
-  };
-
-  // Get the viem chain object for current chainId
-  const getViemChain = () => {
-    switch (chainId) {
-      case 1: return mainnet;
-      case 10: return optimism;
-      default: return base;
-    }
-  };
-
-  // Handle fund wallet with Apple Pay / Google Pay
-  const handleFundWallet = async () => {
-    if (!wallet.address) return;
-
-    setIsFunding(true);
-    try {
-      // Privy fundWallet API - opens modal for Apple Pay / Google Pay
-      // Pass address and chain - asset and amount default to Dashboard settings
-      const viemChain = getViemChain();
-      await fundWallet({ address: wallet.address, options: { chain: viemChain } });
-    } catch (error) {
-      logger.error('Error funding wallet', error);
-    } finally {
-      setIsFunding(false);
-    }
-  };
-
   // Get token addresses based on chain (using centralized config)
   const getTokenAddress = (tokenSymbol: string): string | null => {
     if (tokenSymbol === 'ETH') return null; // Native token
@@ -175,17 +132,6 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
     { symbol: 'EURC', balance: balances.eurcBalance || '0', name: 'Euro Coin' },
   ];
 
-  // Handle opening the send token modal
-  const openSendModal = (token?: string) => {
-    if (token) {
-      const foundToken = availableTokens.find(t => t.symbol === token);
-      if (foundToken) {
-        setSelectedToken(token as 'ETH' | 'USDC');
-      }
-    }
-    setIsSendModalOpen(true);
-  };
-  
   // Handle sending tokens
   const handleSendToken = async (recipient: string, amount: string, tokenType: string) => {
     const walletToUse = activeWallet || privyWallet;
@@ -284,205 +230,8 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
     setIsQRScannerOpen(true);
   };
   
-  // Format address for mobile (truncated)
-  const formatAddress = (address: string, isMobile: boolean = false) => {
-    if (isMobile && address.length > 20) {
-      return `${address.slice(0, 8)}...${address.slice(-6)}`;
-    }
-    return address;
-  };
-
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(wallet.address);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  // Get user's login method info
-  const getUserLoginInfo = () => {
-    if (!user) return null;
-
-    // Check for email
-    const emailAccount = user.linkedAccounts?.find(
-      (account) => account.type === 'email'
-    );
-
-    // Check for passkey
-    const passkeyAccount = user.linkedAccounts?.find(
-      (account) => account.type === 'passkey'
-    );
-
-    if (emailAccount && 'address' in emailAccount) {
-      return { type: 'email', value: emailAccount.address as string };
-    }
-
-    if (passkeyAccount) {
-      return { type: 'passkey', value: 'Passkey Authentication' };
-    }
-
-    return null;
-  };
-
-  const loginInfo = getUserLoginInfo();
-
   return (
-    <div className="wallet-info">
-      {/* Total Portfolio Value - Hero Section */}
-      <div className="portfolio-hero">
-        <div className="portfolio-value-section">
-          <span className="portfolio-label">Total Balance</span>
-          <div className="portfolio-amount">{formatUsd(totalValueUsd)}</div>
-        </div>
-
-        {/* Quick Actions - Mobile First */}
-        <div className="quick-actions">
-            <button
-              className="quick-action-btn fund-btn"
-              onClick={handleFundWallet}
-              disabled={isFunding}
-            >
-              <div className="action-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="2" y="4" width="20" height="16" rx="2" />
-                  <line x1="2" y1="10" x2="22" y2="10" />
-                </svg>
-              </div>
-              <span>{isFunding ? 'Loading...' : 'Buy'}</span>
-            </button>
-            <button
-              className="quick-action-btn swap-btn"
-              onClick={() => setIsSwapModalOpen(true)}
-            >
-              <div className="action-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-                </svg>
-              </div>
-              <span>Swap</span>
-            </button>
-            <button
-              className="quick-action-btn send-btn"
-              onClick={() => openSendModal('USDC')}
-            >
-              <div className="action-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 19V5M5 12l7-7 7 7" />
-                </svg>
-              </div>
-              <span>Send</span>
-            </button>
-            <button
-              className="quick-action-btn receive-btn"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setIsReceiveModalOpen(true);
-              }}
-            >
-              <div className="action-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 5v14M5 12l7 7 7-7" />
-                </svg>
-              </div>
-              <span>Receive</span>
-            </button>
-            <button
-              className="quick-action-btn refresh-btn"
-              onClick={onRefresh}
-              disabled={isLoading}
-            >
-              <div className="action-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={isLoading ? 'spinning' : ''}>
-                  <path d="M23 4v6h-6M1 20v-6h6" />
-                  <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
-                </svg>
-              </div>
-              <span>Refresh</span>
-            </button>
-          </div>
-      </div>
-
-      {/* Wallet Address Card - Compact */}
-      <div className="wallet-address-card">
-        <div className="address-row">
-          <div className="address-info">
-            <div className="address-text">
-              <span className="address-label">Wallet Address</span>
-              <span className="address-value">{formatAddress(wallet.address, true)}</span>
-            </div>
-          </div>
-          <div className="address-actions-row">
-            <button className="action-icon-btn" onClick={handleCopy} title="Copy address">
-              {copied ? (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              ) : (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                  <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-                </svg>
-              )}
-            </button>
-            {explorerBase && (
-              <a
-                href={`${explorerBase}/address/${wallet.address}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="action-icon-btn"
-                title="View on explorer"
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
-                  <polyline points="15 3 21 3 21 9" />
-                  <line x1="10" y1="14" x2="21" y2="3" />
-                </svg>
-              </a>
-            )}
-            <button className="action-icon-btn" onClick={handleExportWallet} title="Export wallet">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        {/* Login Method Info */}
-        {loginInfo && (
-          <div className="login-info-row">
-            <div className="login-info-icon">
-              {loginInfo.type === 'email' ? (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="2" y="4" width="20" height="16" rx="2" />
-                  <path d="M22 6l-10 7L2 6" />
-                </svg>
-              ) : (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 2a5 5 0 0 1 5 5v3H7V7a5 5 0 0 1 5-5z" />
-                  <rect x="3" y="10" width="18" height="12" rx="2" />
-                  <circle cx="12" cy="16" r="1" />
-                </svg>
-              )}
-            </div>
-            <div className="login-info-text">
-              <span className="login-info-label">
-                {loginInfo.type === 'email' ? 'Signed in with email' : 'Signed in with passkey'}
-              </span>
-              <span className="login-info-value">
-                {loginInfo.type === 'email' ? loginInfo.value : 'Biometric / Security Key'}
-              </span>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ENS Subdomain Section */}
-      <ENSSection userAddress={wallet.address} chainId={chainId || 8453} />
-
+    <div>
       <div className="balance-section">
 
         <div className="balance-header">
@@ -638,7 +387,6 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
         )}
       </div>
       
-      {/* Show transaction receipt if available */}
       {txHash && (
         <div className="transaction-receipt">
           <div className="receipt-header">
@@ -660,11 +408,13 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
                 </a>
               )}
             </div>
-            <p className="receipt-info">Your transaction has been submitted. It may take a few moments to be confirmed.</p>
+            <div className="receipt-info">
+              {/* Add any additional receipt information here */}
+            </div>
           </div>
         </div>
       )}
-      
+
       {/* Add the QR Scanner component */}
       {isQRScannerOpen && (
         <QRScanner 
@@ -672,7 +422,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           onClose={() => setIsQRScannerOpen(false)} 
         />
       )}
-      
+
       {/* Send Token Modal */}
       {isSendModalOpen && (
         <SendTokenModal
@@ -1462,4 +1212,4 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
   );
 };
 
-export default WalletInfo; 
+export default WalletInfo;
