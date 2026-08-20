@@ -40,14 +40,19 @@ const Loading: React.FC<LoadingProps> = ({
           padding: 1rem;
         }
         
+        /* The app is dark-only, but --bg-primary is #ffffff unless the OS asks
+           for dark. A light-mode visitor got a full-screen white flash before
+           every page settled. Painted explicitly to match the page ground
+           (bg-gray-950), and dvh so the overlay does not run under the iOS
+           address bar. */
         .fullscreen {
           height: 100vh;
+          height: 100dvh;
           width: 100%;
           position: fixed;
           top: 0;
           left: 0;
-          background-color: var(--bg-primary);
-          opacity: 0.9;
+          background-color: #030712;
           z-index: 1000;
         }
         
@@ -59,8 +64,10 @@ const Loading: React.FC<LoadingProps> = ({
           margin-bottom: 1rem;
         }
         
+        /* Same reason as .fullscreen: --text-secondary is #666666 in light
+           mode, which is near-invisible on the dark ground. */
         .loading-text {
-          color: var(--text-secondary);
+          color: #94a3b8;
           font-size: ${size === 'small' ? '0.85rem' : size === 'large' ? '1.2rem' : '1rem'};
           margin: 0;
         }

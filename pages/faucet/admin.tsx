@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useWallets } from '@privy-io/react-auth';
-import Navigation from '../../components/Navigation';
-import Layout from '../../components/shared/Layout';
+import AdminShell from '../../components/admin/AdminShell';
 import { VaultList } from '../../components/faucet/VaultList';
 import { CreateVaultForm } from '../../components/faucet/CreateVaultForm';
 import { VaultWhitelistManager } from '../../components/faucet/VaultWhitelistManager';
@@ -40,23 +39,18 @@ export default function FaucetAdminPage() {
 
   if (!ready || isCheckingAdmin) {
     return (
-      <div className="min-h-screen bg-gray-950">
-        <Navigation currentChainId={chainId} />
-        <Layout>
+      <AdminShell active="faucet" title="Faucet" chainId={chainId}>
           <div className="flex items-center justify-center py-20">
             <div className="w-3 h-3 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
             <span className="ml-3 text-cyan-400 font-mono text-[10px] tracking-wider">VERIFYING...</span>
           </div>
-        </Layout>
-      </div>
+        </AdminShell>
     );
   }
 
   if (!isAdmin && !isSuperAdmin) {
     return (
-      <div className="min-h-screen bg-gray-950">
-        <Navigation currentChainId={chainId} />
-        <Layout>
+      <AdminShell active="faucet" title="Faucet" chainId={chainId}>
           <div className="flex flex-col items-center justify-center py-20">
             <div className="bg-black/60 border border-red-500/30 rounded-lg p-4 max-w-sm">
               <div className="flex items-center gap-2 mb-3">
@@ -69,22 +63,15 @@ export default function FaucetAdminPage() {
               </div>
             </div>
           </div>
-        </Layout>
-      </div>
+        </AdminShell>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-950">
-      <Navigation currentChainId={chainId} />
-      <Layout>
+    <AdminShell active="faucet" title="Faucet" chainId={chainId}>
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-            <h1 className="text-lg font-bold text-orange-400 font-mono tracking-wider">
-              FAUCET_ADMIN
-            </h1>
             {isSuperAdmin && (
               <span className="text-[9px] text-yellow-400 font-mono bg-yellow-500/10 px-2 py-0.5 rounded">SUPER</span>
             )}
@@ -293,7 +280,6 @@ export default function FaucetAdminPage() {
             </a>
           </div>
         </div>
-      </Layout>
-    </div>
+      </AdminShell>
   );
 }

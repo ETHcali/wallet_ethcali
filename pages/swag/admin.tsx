@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { useWallets } from '@privy-io/react-auth';
 
 import { useRouter } from 'next/router';
-import Navigation from '../../components/Navigation';
-import Layout from '../../components/shared/Layout';
+import AdminShell from '../../components/admin/AdminShell';
 import { AdminProductList } from '../../components/swag/AdminProductList';
 import { AdminMintedNFTs } from '../../components/swag/AdminMintedNFTs';
 import { AdminManagement } from '../../components/swag/AdminManagement';
@@ -72,23 +71,18 @@ export default function SwagAdminPage() {
 
   if (!ready || isCheckingAdmin) {
     return (
-      <div className="min-h-screen bg-gray-950">
-        <Navigation currentChainId={chainId} />
-        <Layout>
+      <AdminShell active="swag" title="Swag" chainId={chainId}>
           <div className="flex items-center justify-center py-20">
             <div className="w-3 h-3 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
             <span className="ml-3 text-pink-400 font-mono text-[10px] tracking-wider">VERIFYING...</span>
           </div>
-        </Layout>
-      </div>
+        </AdminShell>
     );
   }
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-gray-950">
-        <Navigation currentChainId={chainId} />
-        <Layout>
+      <AdminShell active="swag" title="Swag" chainId={chainId}>
           <div className="flex flex-col items-center justify-center py-20">
             <div className="bg-black/60 border border-red-500/30 rounded-lg p-4 max-w-sm">
               <div className="flex items-center gap-2 mb-3">
@@ -101,22 +95,15 @@ export default function SwagAdminPage() {
               </div>
             </div>
           </div>
-        </Layout>
-      </div>
+        </AdminShell>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-950">
-      <Navigation currentChainId={chainId} />
-      <Layout>
+    <AdminShell active="swag" title="Swag" chainId={chainId}>
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-2 h-2 bg-pink-500 rounded-full"></div>
-            <h1 className="text-lg font-bold text-pink-400 font-mono tracking-wider">
-              SWAG_ADMIN
-            </h1>
             <span className="text-[9px] text-green-400 font-mono bg-green-500/10 px-2 py-0.5 rounded">ADMIN</span>
           </div>
           <p className="text-gray-600 font-mono text-[10px] tracking-widest uppercase">
@@ -476,7 +463,6 @@ export default function SwagAdminPage() {
             </a>
           </div>
         </div>
-      </Layout>
-    </div>
+      </AdminShell>
   );
 }
