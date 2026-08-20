@@ -38,3 +38,10 @@ export { useActiveCollections, useAllCollections, useSetCollectionActive } from 
 // Re-export types
 export { RedemptionStatus } from '../../types/swag';
 export type { Variant, RoyaltyInfo, PoapDiscount, HolderDiscount } from '../../types/swag';
+
+// Artwork pipeline (admin)
+export {
+  useSwagArtwork,
+  type SwagVariant,
+  type ArtworkStatus,
+} from './useSwagArtwork';
