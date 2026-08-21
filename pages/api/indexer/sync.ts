@@ -99,10 +99,31 @@ function getDeployedVaults(): Array<{ network: string; chainId: ChainId; vault: 
   return out;
 }
 
+/**
+ * Block each chain's DonationVault was created in — the cursor's starting point
+ * for a contract we have never indexed before.
+ *
+ * Committed rather than left to env alone because the old fallback was `0n`:
+ * a chain with no env var set would try to scan Ethereum from genesis in 4k
+ * chunks and never reach the tip. A wrong-but-late start block loses donations
+ * silently; a missing one wedges the indexer. Both are worse than a constant.
+ *
+ * The vault has the same address on all four chains (CREATE2), so only the
+ * block differs. Verified by binary search on `getCode`, not from a receipt
+ * that could belong to a superseded deployment.
+ */
+const VAULT_DEPLOY_BLOCK: Record<number, bigint> = {
+  1: 25_801_678n, // ethereum
+  10: 155_847_085n, // optimism
+  8453: 50_252_573n, // base
+  42220: 75_391_791n, // celo
+};
+
 /** Deployment block for a chain's vault — the cursor's starting point. */
 function getStartBlock(chainId: number): bigint {
   const raw = process.env[`INDEXER_START_BLOCK_${chainId}`];
-  return raw ? BigInt(raw) : 0n;
+  if (raw) return BigInt(raw);
+  return VAULT_DEPLOY_BLOCK[chainId] ?? 0n;
 }
 
 /**
