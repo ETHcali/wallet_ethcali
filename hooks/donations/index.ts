@@ -50,11 +50,25 @@ export {
   type CreateCampaignInput,
 } from './useDonationAdmin';
 
+// Fiat donation accounts
+export {
+  useCampaignBankAccounts,
+  useBankAccountAdmin,
+  useCampaignRowId,
+  type PublicBankAccount,
+  type BankAccount,
+  type BankAccountInput,
+  type BankAccountType,
+  type BankAccountCurrency,
+  type HolderDocumentType,
+} from './useCampaignBankAccounts';
+
 // Display currency
 export {
   useDisplayCurrency,
   useDisplayCurrencyStore,
   useFxRates,
+  tokenToUsd,
   type CurrencyFormatter,
   type FxRates,
 } from './useDisplayCurrency';

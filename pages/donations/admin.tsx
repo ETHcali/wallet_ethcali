@@ -4,9 +4,11 @@ import { useWallets } from '@privy-io/react-auth';
 import AdminShell from '../../components/admin/AdminShell';
 import CampaignAdminForm from '../../components/donations/CampaignAdminForm';
 import CurrencyTierManager from '../../components/donations/CurrencyTierManager';
+import BankAccountManager from '../../components/donations/BankAccountManager';
 import {
   useActiveCampaigns,
   useCampaignTotals,
+  useCampaignRowId,
   useDonationAddresses,
   useDeployedDonationChains,
   useDisplayCurrency,
@@ -18,7 +20,7 @@ import {
 } from '../../hooks/donations/useDonationAdmin';
 import { CHAIN_IDS, NETWORK_NAMES, type ChainId } from '../../config/constants';
 
-type Tab = 'campaigns' | 'create' | 'receipts';
+type Tab = 'campaigns' | 'create' | 'receipts' | 'bank';
 
 export default function DonationsAdminPage() {
   const { ready } = useWallets();
@@ -43,6 +45,7 @@ export default function DonationsAdminPage() {
 
   const campaign = campaigns.find((c) => c.id === selectedCampaign) ?? campaigns[0] ?? null;
   const { data: totals = [] } = useCampaignTotals(campaign?.id ?? null, chainId);
+  const { data: campaignRowId } = useCampaignRowId(chainId, vault, campaign?.id ?? null);
   const { formatToken } = useDisplayCurrency();
 
   const acceptedTokens = totals.map((t) => t.token.address);
@@ -173,7 +176,7 @@ export default function DonationsAdminPage() {
         )}
 
         <div className="mb-5 flex gap-2 border-b border-slate-700">
-          {(['campaigns', 'create', 'receipts'] as Tab[]).map((t) => (
+          {(['campaigns', 'create', 'receipts', 'bank'] as Tab[]).map((t) => (
             <button
               key={t}
               type="button"
@@ -268,6 +271,21 @@ export default function DonationsAdminPage() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {tab === 'bank' && (
+          <div className="max-w-2xl space-y-4">
+            <div>
+              <h2 className="text-sm font-bold text-white">Bank transfer donations</h2>
+              <p className="mt-1 text-xs text-slate-500">
+                Accounts shown on{' '}
+                <span className="text-slate-300">{campaign?.name ?? 'the campaign'}</span> for
+                donors who are not paying on-chain. Display only — a transfer is not
+                recorded until it is reconciled from the bank.
+              </p>
+            </div>
+            <BankAccountManager campaignId={campaignRowId ?? null} />
           </div>
         )}
 
