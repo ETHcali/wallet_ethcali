@@ -109,14 +109,23 @@ function getDeployedVaults(): Array<{ network: string; chainId: ChainId; vault: 
  * silently; a missing one wedges the indexer. Both are worse than a constant.
  *
  * The vault has the same address on all four chains (CREATE2), so only the
- * block differs. Verified by binary search on `getCode`, not from a receipt
- * that could belong to a superseded deployment.
+ * block differs.
+ *
+ * Found by binary search on `getCode` against ARCHIVE nodes, and each result
+ * checked two ways: the receipt contract must be created no later than the
+ * vault (it is deployed first in the same run), and the timestamps must follow
+ * the launch order celo → optimism → base → ethereum. An earlier pass used
+ * non-archive RPCs, whose errors read as "no code" and converged on each node's
+ * retention edge — producing blocks up to 757 too late here, and elsewhere
+ * "creation" blocks that postdated the contract they belonged to. Too late is
+ * the dangerous direction: the indexer starts after real events and never sees
+ * them.
  */
 const VAULT_DEPLOY_BLOCK: Record<number, bigint> = {
-  1: 25_801_678n, // ethereum
-  10: 155_847_085n, // optimism
-  8453: 50_252_573n, // base
-  42220: 75_391_791n, // celo
+  1: 25_801_675n, // ethereum, 2026-08-21T06:20:23Z
+  10: 155_847_027n, // optimism, 2026-08-21T06:13:47Z
+  8453: 50_251_816n, // base,     2026-08-21T06:16:17Z
+  42220: 75_391_791n, // celo,     2026-08-21T06:08:49Z
 };
 
 /** Deployment block for a chain's vault — the cursor's starting point. */
