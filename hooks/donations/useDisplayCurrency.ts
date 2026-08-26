@@ -33,44 +33,78 @@ export const useDisplayCurrencyStore = create<DisplayCurrencyState>()(
 export interface FxRates {
   /** USD price of one unit of each CoinGecko id. */
   usd: Record<string, number>;
-  /** How many COP one USD buys. */
+  /** How many COP one USD buys — the official TRM. */
   usdToCop: number;
+  /** True when the TRM feed failed and usdToCop is the stale constant below. */
+  usdToCopIsStale: boolean;
   /** USD price of 1 ETH, used for the ETH display mode. */
   ethUsd: number;
 }
 
+/**
+ * Last-resort rate, used only when the TRM endpoint is unreachable.
+ *
+ * This was 4000 and never updated, because the code path that was supposed to
+ * replace it could not work: CoinGecko does not support COP — it is absent from
+ * /simple/supported_vs_currencies, so `cop` came back undefined on every call
+ * and the fallback WAS the production rate. Against a real TRM of ~3063 that
+ * overstated every peso amount on the site by roughly 31%.
+ *
+ * Kept as a genuine observed TRM (21 Aug 2026) rather than a round number, and
+ * flagged as stale whenever it is used, so a wrong figure cannot pass silently
+ * for an official one.
+ */
+const STALE_TRM = 3062.96;
+
 const FALLBACK_RATES: FxRates = {
   usd: { ethereum: 3500, 'usd-coin': 1, celo: 0.5 },
-  usdToCop: 4000,
+  usdToCop: STALE_TRM,
+  usdToCopIsStale: true,
   ethUsd: 3500,
 };
 
 /**
- * CoinGecko quotes crypto in several fiat currencies at once, so USD and COP
- * come back in a single request.
+ * Crypto prices come from CoinGecko; the peso rate comes from the TRM endpoint,
+ * which reads the Superintendencia Financiera feed. Two sources because no
+ * single one is both authoritative for COP and useful for crypto.
  */
 async function fetchFxRates(): Promise<FxRates> {
   const ids = 'ethereum,usd-coin,celo';
-  const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd,cop`;
 
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`CoinGecko responded ${res.status}`);
+  const [priceRes, trmRes] = await Promise.allSettled([
+    fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`),
+    fetch('/api/fx/trm'),
+  ]);
 
-  const data = (await res.json()) as Record<string, { usd?: number; cop?: number }>;
+  let usd = FALLBACK_RATES.usd;
+  let ethUsd = FALLBACK_RATES.ethUsd;
 
-  const ethUsd = data.ethereum?.usd ?? FALLBACK_RATES.ethUsd;
-  const ethCop = data.ethereum?.cop;
-
-  return {
-    usd: {
+  if (priceRes.status === 'fulfilled' && priceRes.value.ok) {
+    const data = (await priceRes.value.json()) as Record<string, { usd?: number }>;
+    ethUsd = data.ethereum?.usd ?? FALLBACK_RATES.ethUsd;
+    usd = {
       ethereum: ethUsd,
       'usd-coin': data['usd-coin']?.usd ?? 1,
       celo: data.celo?.usd ?? FALLBACK_RATES.usd.celo,
-    },
-    // Derive USD→COP from any asset quoted in both, so we need no separate feed.
-    usdToCop: ethCop && ethUsd ? ethCop / ethUsd : FALLBACK_RATES.usdToCop,
-    ethUsd,
-  };
+    };
+  } else {
+    logger.debug('[useDisplayCurrency] CoinGecko unavailable, using fallback USD prices');
+  }
+
+  let usdToCop = STALE_TRM;
+  let usdToCopIsStale = true;
+
+  if (trmRes.status === 'fulfilled' && trmRes.value.ok) {
+    const trm = (await trmRes.value.json()) as { rate?: number };
+    if (typeof trm.rate === 'number' && trm.rate > 0) {
+      usdToCop = trm.rate;
+      usdToCopIsStale = false;
+    }
+  } else {
+    logger.debug('[useDisplayCurrency] TRM unavailable, peso figures are approximate');
+  }
+
+  return { usd, usdToCop, usdToCopIsStale, ethUsd };
 }
 
 export function useFxRates() {
@@ -99,29 +133,39 @@ export interface CurrencyFormatter {
   formatToken: (amount: bigint, token: DonationToken) => string;
 }
 
+/**
+ * Raw token amount → USD.
+ *
+ * Module-level and pure so a component that has to show several currencies at
+ * once (the campaign page shows the token amount, the dollar value and the peso
+ * value side by side) can reuse it instead of re-deriving prices. Re-deriving
+ * is how the COPm special case below gets forgotten in one place and not
+ * another.
+ */
+export function tokenToUsd(amount: bigint, token: DonationToken, fx: FxRates): number {
+  const units = Number(formatUnits(amount, token.decimals));
+
+  // COPm is a Colombian peso stablecoin: 1 COPm ≈ 1 COP.
+  if (token.symbol === 'COPm') {
+    return fx.usdToCop > 0 ? units / fx.usdToCop : 0;
+  }
+
+  if (!token.coingeckoId) {
+    logger.debug('[useDisplayCurrency] no price source for token', token.symbol);
+    return 0;
+  }
+
+  return units * (fx.usd[token.coingeckoId] ?? 0);
+}
+
 export function useDisplayCurrency(): CurrencyFormatter {
   const { currency, setCurrency } = useDisplayCurrencyStore();
   const { data: rates, isLoading } = useFxRates();
 
   const fx = rates ?? FALLBACK_RATES;
 
-  /** Raw token amount → USD. */
   const toUsd = useCallback(
-    (amount: bigint, token: DonationToken): number => {
-      const units = Number(formatUnits(amount, token.decimals));
-
-      // COPm is a Colombian peso stablecoin: 1 COPm ≈ 1 COP.
-      if (token.symbol === 'COPm') {
-        return fx.usdToCop > 0 ? units / fx.usdToCop : 0;
-      }
-
-      if (!token.coingeckoId) {
-        logger.debug('[useDisplayCurrency] no price source for token', token.symbol);
-        return 0;
-      }
-
-      return units * (fx.usd[token.coingeckoId] ?? 0);
-    },
+    (amount: bigint, token: DonationToken): number => tokenToUsd(amount, token, fx),
     [fx]
   );
 

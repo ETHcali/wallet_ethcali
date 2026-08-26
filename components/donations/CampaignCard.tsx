@@ -1,6 +1,23 @@
 import React, { useMemo } from 'react';
-import { useCampaignTotals, useDisplayCurrency } from '../../hooks/donations';
+import {
+  useCampaignTotals,
+  useDisplayCurrency,
+  useFxRates,
+  tokenToUsd,
+} from '../../hooks/donations';
 import type { Campaign } from '../../types/donations';
+
+/** Pesos are not quoted in cents; dollars are. */
+const usdFormatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  maximumFractionDigits: 2,
+});
+const copFormatter = new Intl.NumberFormat('es-CO', {
+  style: 'currency',
+  currency: 'COP',
+  maximumFractionDigits: 0,
+});
 
 interface CampaignCardProps {
   campaign: Campaign;
@@ -11,6 +28,7 @@ interface CampaignCardProps {
 const CampaignCard: React.FC<CampaignCardProps> = ({ campaign, chainId, onDonate }) => {
   const { data: totals = [], isLoading } = useCampaignTotals(campaign.id, chainId);
   const { convert, formatValue, formatToken, currency } = useDisplayCurrency();
+  const { data: fx } = useFxRates();
 
   // Totals span several currencies with different decimals, so each is
   // normalised to the display currency before being added.
@@ -55,17 +73,33 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign, chainId, onDonate
         </div>
       </div>
 
-      {withFunds.length > 0 && (
-        <div className="mb-4 flex flex-wrap gap-2">
-          {withFunds.map((t) => (
-            <span
-              key={t.token.address}
-              className="rounded-lg border border-slate-700 bg-slate-900/60 px-2.5 py-1 text-xs text-slate-300"
-              title={`${formatToken(t.raised, t.token)} raised`}
-            >
-              {formatToken(t.raised, t.token)}
-            </span>
-          ))}
+      {/* Per token: the quantity actually received, then what it is worth. The
+          quantity is the fact — it is what the chain recorded. The dollar and
+          peso figures are estimates that move with the market, so they are
+          rendered as secondary and labelled approximate. Pesos use the TRM. */}
+      {withFunds.length > 0 && fx && (
+        <div className="mb-4 space-y-1.5">
+          {withFunds.map((t) => {
+            const usd = tokenToUsd(t.raised, t.token, fx);
+            return (
+              <div
+                key={t.token.address}
+                className="flex items-baseline justify-between gap-3 rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-2"
+              >
+                <span className="font-mono text-sm text-slate-200">
+                  {formatToken(t.raised, t.token)}
+                </span>
+                <span className="shrink-0 font-mono text-xs text-slate-500">
+                  ≈ {usdFormatter.format(usd)} · {copFormatter.format(usd * fx.usdToCop)}
+                </span>
+              </div>
+            );
+          })}
+          {fx.usdToCopIsStale && (
+            <p className="pt-0.5 text-[11px] text-amber-400/80">
+              Peso values are approximate — the TRM feed is unavailable right now.
+            </p>
+          )}
         </div>
       )}
 

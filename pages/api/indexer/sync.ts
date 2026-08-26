@@ -99,10 +99,40 @@ function getDeployedVaults(): Array<{ network: string; chainId: ChainId; vault: 
   return out;
 }
 
+/**
+ * Block each chain's DonationVault was created in — the cursor's starting point
+ * for a contract we have never indexed before.
+ *
+ * Committed rather than left to env alone because the old fallback was `0n`:
+ * a chain with no env var set would try to scan Ethereum from genesis in 4k
+ * chunks and never reach the tip. A wrong-but-late start block loses donations
+ * silently; a missing one wedges the indexer. Both are worse than a constant.
+ *
+ * The vault has the same address on all four chains (CREATE2), so only the
+ * block differs.
+ *
+ * Found by binary search on `getCode` against ARCHIVE nodes, and each result
+ * checked two ways: the receipt contract must be created no later than the
+ * vault (it is deployed first in the same run), and the timestamps must follow
+ * the launch order celo → optimism → base → ethereum. An earlier pass used
+ * non-archive RPCs, whose errors read as "no code" and converged on each node's
+ * retention edge — producing blocks up to 757 too late here, and elsewhere
+ * "creation" blocks that postdated the contract they belonged to. Too late is
+ * the dangerous direction: the indexer starts after real events and never sees
+ * them.
+ */
+const VAULT_DEPLOY_BLOCK: Record<number, bigint> = {
+  1: 25_801_675n, // ethereum, 2026-08-21T06:20:23Z
+  10: 155_847_027n, // optimism, 2026-08-21T06:13:47Z
+  8453: 50_251_816n, // base,     2026-08-21T06:16:17Z
+  42220: 75_391_791n, // celo,     2026-08-21T06:08:49Z
+};
+
 /** Deployment block for a chain's vault — the cursor's starting point. */
 function getStartBlock(chainId: number): bigint {
   const raw = process.env[`INDEXER_START_BLOCK_${chainId}`];
-  return raw ? BigInt(raw) : 0n;
+  if (raw) return BigInt(raw);
+  return VAULT_DEPLOY_BLOCK[chainId] ?? 0n;
 }
 
 /**

@@ -6,9 +6,11 @@ import CampaignCard from '../components/donations/CampaignCard';
 import DonateModal from '../components/donations/DonateModal';
 import DonorWall from '../components/donations/DonorWall';
 import BeneficiaryCard from '../components/donations/BeneficiaryCard';
+import BankTransferPanel from '../components/donations/BankTransferPanel';
 import CurrencyToggle from '../components/donations/CurrencyToggle';
 import {
   useActiveCampaigns,
+  useCampaignRowId,
   useDonationAddresses,
   useDeployedDonationChains,
 } from '../hooks/donations';
@@ -29,6 +31,7 @@ export default function DonationsPage() {
   const [wallToken, setWallToken] = useState(0);
 
   const featured = campaigns[0] ?? null;
+  const { data: featuredRowId } = useCampaignRowId(chainId, vault, featured?.id ?? null);
   const selectedToken = useMemo(
     () => tokens[Math.min(wallToken, tokens.length - 1)],
     [tokens, wallToken],
@@ -170,6 +173,9 @@ export default function DonationsPage() {
                     autoForward={featured.autoForward}
                   />
                 )}
+
+                {/* Renders nothing unless the campaign has published accounts. */}
+                <BankTransferPanel campaignId={featuredRowId ?? null} />
 
                 {vault && (
                   <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-4 text-xs text-slate-400">

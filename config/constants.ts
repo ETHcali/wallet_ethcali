@@ -151,7 +151,11 @@ export const TOKEN_ADDRESSES: Record<ChainId, {
     EURC: process.env.NEXT_PUBLIC_EURC_ETHEREUM || '0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c',
   },
   [CHAIN_IDS.OPTIMISM]: {
-    USDC: process.env.NEXT_PUBLIC_USDC_OPTIMISM || '0x7F5c764cBc14f9669B88837ca1490cCa17c31607',
+    // NATIVE Circle USDC. The bridged USDC.e at 0x7F5c764c… also answers
+    // symbol() with "USDC" at 6 decimals, so only the address tells them apart.
+    // DonationVault on Optimism accepts this address and not the bridged one —
+    // offering USDC.e here makes every Optimism USDC donation revert.
+    USDC: process.env.NEXT_PUBLIC_USDC_OPTIMISM || '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85',
     USDT: process.env.NEXT_PUBLIC_USDT_OPTIMISM || '0x94b008aA00579c1307B0EF2c499aD98a8ce58e58',
     EURC: '', // Not available on Optimism
   },
