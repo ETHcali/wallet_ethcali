@@ -66,17 +66,17 @@ export function VaultDepositWithdraw({ vault, onClose, onSuccess }: VaultDeposit
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-xl">
+      <div className="w-full max-w-md rounded-card border border-line-hairline bg-surface-slab p-6 ">
         <div className="flex items-start justify-between mb-6">
           <div>
-            <h2 className="text-xl font-semibold text-white">{vault.name}</h2>
-            <p className="text-sm text-slate-500">
-              Current Balance: <span className="text-green-400 font-mono">{balanceEth.toFixed(4)} ETH</span>
+            <h2 className="text-xl font-semibold text-content-primary">{vault.name}</h2>
+            <p className="text-sm text-content-faint">
+              Current Balance: <span className="text-eth-blue-text font-mono">{balanceEth.toFixed(4)} ETH</span>
             </p>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white transition"
+            className="text-content-muted hover:text-content-primary transition"
           >
             <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -85,7 +85,7 @@ export function VaultDepositWithdraw({ vault, onClose, onSuccess }: VaultDeposit
         </div>
 
         {/* Mode Toggle */}
-        <div className="flex rounded-lg bg-slate-800 p-1 mb-6">
+        <div className="flex rounded-control bg-surface-inset p-1 mb-6">
           <button
             type="button"
             onClick={() => {
@@ -93,10 +93,10 @@ export function VaultDepositWithdraw({ vault, onClose, onSuccess }: VaultDeposit
               setError(null);
               setSuccess(null);
             }}
-            className={`flex-1 rounded-md py-2 text-sm font-medium transition ${
+            className={`flex-1 rounded-chip py-2 text-sm font-medium transition ${
               mode === 'deposit'
-                ? 'bg-green-500/20 text-green-400'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-eth-blue/20 text-eth-blue-text'
+                : 'text-content-muted hover:text-content-primary'
             }`}
           >
             Deposit
@@ -108,10 +108,10 @@ export function VaultDepositWithdraw({ vault, onClose, onSuccess }: VaultDeposit
               setError(null);
               setSuccess(null);
             }}
-            className={`flex-1 rounded-md py-2 text-sm font-medium transition ${
+            className={`flex-1 rounded-chip py-2 text-sm font-medium transition ${
               mode === 'withdraw'
-                ? 'bg-red-500/20 text-red-400'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-signal-reverted/20 text-signal-reverted'
+                : 'text-content-muted hover:text-content-primary'
             }`}
           >
             Withdraw
@@ -121,12 +121,12 @@ export function VaultDepositWithdraw({ vault, onClose, onSuccess }: VaultDeposit
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="block text-sm text-slate-400">Amount (ETH)</label>
+              <label className="block text-sm text-content-muted">Amount (ETH)</label>
               {mode === 'withdraw' && (
                 <button
                   type="button"
                   onClick={setMaxWithdraw}
-                  className="text-xs text-cyan-400 hover:text-cyan-300"
+                  className="text-xs text-eth-blue-text hover:text-eth-blue-text"
                 >
                   Max
                 </button>
@@ -138,17 +138,17 @@ export function VaultDepositWithdraw({ vault, onClose, onSuccess }: VaultDeposit
               step="0.0001"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 p-3 text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none font-mono"
+              className="w-full rounded-control border border-line-hairline bg-surface-inset p-3 text-content-primary placeholder-content-faint focus:border-eth-blue focus:outline-none font-mono"
               placeholder="0.01"
               disabled={isSubmitting}
             />
           </div>
 
           {/* Info Box */}
-          <div className={`rounded-lg border p-3 text-sm ${
+          <div className={`rounded-control border p-3 text-sm ${
             mode === 'deposit'
-              ? 'border-green-500/30 bg-green-500/10 text-green-300'
-              : 'border-red-500/30 bg-red-500/10 text-red-300'
+              ? 'border-signal-confirmed/30 bg-signal-confirmed/10 text-signal-confirmed'
+              : 'border-signal-reverted/30 bg-signal-reverted/10 text-signal-reverted'
           }`}>
             {mode === 'deposit' ? (
               <p>ETH will be transferred from your wallet to this vault.</p>
@@ -158,14 +158,14 @@ export function VaultDepositWithdraw({ vault, onClose, onSuccess }: VaultDeposit
           </div>
 
           {error && (
-            <div className="rounded-lg border border-red-500/40 bg-red-500/10 p-3">
-              <p className="text-sm text-red-300">{error}</p>
+            <div className="rounded-control border border-signal-reverted/40 bg-signal-reverted/10 p-3">
+              <p className="text-sm text-signal-reverted">{error}</p>
             </div>
           )}
 
           {success && (
-            <div className="rounded-lg border border-green-500/40 bg-green-500/10 p-3">
-              <p className="text-sm text-green-300">{success}</p>
+            <div className="rounded-control border border-signal-confirmed/40 bg-signal-confirmed/10 p-3">
+              <p className="text-sm text-signal-confirmed">{success}</p>
             </div>
           )}
 
@@ -173,7 +173,7 @@ export function VaultDepositWithdraw({ vault, onClose, onSuccess }: VaultDeposit
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-lg border border-slate-600 bg-slate-800 py-3 text-white hover:bg-slate-700 transition"
+              className="flex-1 rounded-control border border-line-strong bg-surface-inset py-3 text-content-primary hover:bg-surface-ridge transition"
               disabled={isSubmitting}
             >
               Cancel
@@ -181,15 +181,15 @@ export function VaultDepositWithdraw({ vault, onClose, onSuccess }: VaultDeposit
             <button
               type="submit"
               disabled={isSubmitting || (mode === 'deposit' ? !canDeposit : !canWithdraw)}
-              className={`flex-1 rounded-lg py-3 font-medium text-white shadow-lg disabled:opacity-50 transition ${
+              className={`flex-1 rounded-control py-3 font-medium text-content-primary  disabled:opacity-50 transition ${
                 mode === 'deposit'
-                  ? 'bg-gradient-to-r from-green-500 to-emerald-500 shadow-green-500/20 hover:opacity-90'
-                  : 'bg-gradient-to-r from-red-500 to-orange-500 shadow-red-500/20 hover:opacity-90'
+                  ? 'bg-eth-blue hover:bg-eth-blue-lift'
+                  : 'bg-signal-reverted/10 border border-signal-reverted/30 hover:bg-signal-reverted/20'
               }`}
             >
               {isSubmitting ? (
                 <span className="flex items-center justify-center gap-2">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                   Processing...
                 </span>
               ) : mode === 'deposit' ? (

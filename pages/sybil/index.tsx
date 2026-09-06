@@ -47,7 +47,7 @@ export default function SybilPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950">
+    <div className="min-h-screen bg-surface-void">
       <Navigation 
         currentChainId={currentChainId}
         onChainChange={setCurrentChainId}
@@ -57,12 +57,12 @@ export default function SybilPage() {
           {/* Header */}
           <div className="mb-4">
             <div className="flex items-center gap-2 mb-1">
-              <div className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></div>
-              <h1 className="text-lg font-bold text-cyan-400 font-mono tracking-wider">
+              <div className="w-2 h-2 bg-eth-blue rounded-full animate-pulse"></div>
+              <h1 className="text-lg font-bold text-eth-blue-text font-mono tracking-wider">
                 PRIVATE_ID
               </h1>
             </div>
-            <p className="text-gray-600 font-mono text-[10px] tracking-widest uppercase">
+            <p className="text-content-faint font-mono text-[10px] tracking-widest uppercase">
               ZK • {getNetworkName(currentChainId)} • SOULBOUND
             </p>
           </div>
@@ -98,27 +98,27 @@ export default function SybilPage() {
           />
 
           {/* Info Row */}
-          <div className="flex gap-2 text-[10px] font-mono text-gray-600 pt-2">
+          <div className="flex gap-2 text-[10px] font-mono text-content-faint pt-2">
             <span className="flex items-center gap-1">
-              <span className="text-cyan-500">▪</span> NO_KYC
+              No KYC
             </span>
-            <span className="text-gray-700">|</span>
+            <span className="text-content-faint">·</span>
             <span className="flex items-center gap-1">
-              <span className="text-purple-500">▪</span> PRIVACY_FIRST
+              Privacy first
             </span>
-            <span className="text-gray-700">|</span>
+            <span className="text-content-faint">·</span>
             <span className="flex items-center gap-1">
-              <span className="text-green-500">▪</span> SPONSORED_GAS
+              Gas sponsored
             </span>
           </div>
 
           {/* Contract Link */}
-          <div className="text-[10px] font-mono text-gray-700 pt-1 border-t border-gray-800">
+          <div className="text-[10px] font-mono text-content-faint pt-1 border-t border-line-hairline">
             <a
               href={getAddressExplorerUrl(currentChainId, addresses.ZKPassportNFT)}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-gray-600 hover:text-cyan-500 transition-colors"
+              className="text-content-faint hover:text-eth-blue-text transition-colors"
             >
               contract: {addresses.ZKPassportNFT.slice(0, 8)}...{addresses.ZKPassportNFT.slice(-6)}
             </a>

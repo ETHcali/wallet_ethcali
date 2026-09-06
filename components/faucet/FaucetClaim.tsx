@@ -81,7 +81,7 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
       }
     } catch (err) {
       logger.error('Error loading faucet data:', err);
-      setError('LOAD_ERROR');
+      setError('Could not load the faucet');
     } finally {
       setIsLoading(false);
     }
@@ -147,7 +147,7 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
     try {
       const switched = await switchWalletChain();
       if (!switched) {
-        throw new Error('NETWORK_SWITCH_FAILED');
+        throw new Error('Network switch failed');
       }
 
       const txData = getClaimTxData(chainId, vaultId);
@@ -171,7 +171,7 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
 
     } catch (err: any) {
       logger.error('Claim error:', err);
-      setError(err.message || 'CLAIM_FAILED');
+      setError(err.message || 'Claim failed. Nothing left the faucet.');
     } finally {
       setIsClaiming(false);
       setClaimingVaultId(null);
@@ -180,7 +180,7 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
 
   const getVaultEligibilityStatus = (vault: any) => {
     if (isPaused) return { canClaim: false, code: 'PAUSED', message: 'Faucet is paused' };
-    if (!hasNFT) return { canClaim: false, code: 'NO_NFT', message: 'ZKPASSPORT required' };
+    if (!hasNFT) return { canClaim: false, code: 'NO_NFT', message: 'ZKPassport required' };
 
     const eligibility = vaultEligibility[vault.id];
     if (eligibility) {
@@ -206,10 +206,10 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
 
   if (isLoading) {
     return (
-      <div className="bg-black/60 border border-green-500/30 rounded-lg p-4">
+      <div className="bg-black/60 border border-line-hairline rounded-control p-4">
         <div className="flex items-center justify-center gap-3">
-          <div className="w-3 h-3 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-green-400 font-mono text-[10px] tracking-wider">LOADING...</span>
+          <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-content-primary font-mono text-[10px] tracking-wider">Loading…</span>
         </div>
       </div>
     );
@@ -218,19 +218,19 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
   // No vaults created
   if (activeVaults.length === 0) {
     return (
-      <div className="bg-black/60 border border-gray-700/40 rounded-lg p-4">
+      <div className="bg-black/60 border border-line-hairline rounded-control p-4">
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-3 h-3 bg-gray-600 rounded-full"></div>
+          <div className="w-3 h-3 bg-surface-ridge rounded-full"></div>
           <div>
-            <h2 className="text-sm font-bold text-gray-400 font-mono tracking-wide">NO_FAUCET</h2>
-            <p className="text-gray-600 text-[10px] font-mono">{networkName.toUpperCase()}</p>
+            <h2 className="text-sm font-bold text-content-muted font-mono tracking-wide">NO_FAUCET</h2>
+            <p className="text-content-faint text-[10px] font-mono">{networkName.toUpperCase()}</p>
           </div>
         </div>
         <div className="text-center py-6">
-          <div className="text-gray-500 text-[10px] font-mono mb-2">
+          <div className="text-content-faint text-[10px] font-mono mb-2">
             THERE IS NO FAUCET CREATED
           </div>
-          <div className="text-gray-700 text-[9px] font-mono">
+          <div className="text-content-faint text-[9px] font-mono">
             • WAITING_FOR_ADMIN • NO_VAULTS_AVAILABLE
           </div>
         </div>
@@ -241,15 +241,15 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
   return (
     <div className="space-y-4">
       {/* Status Bar */}
-      <div className="bg-black/60 border border-green-500/30 rounded-lg p-4">
+      <div className="bg-black/60 border border-line-hairline rounded-control p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <div className={`w-1.5 h-1.5 rounded-full ${isPaused ? 'bg-red-500' : 'bg-green-500'}`}></div>
-            <span className="text-[10px] font-mono text-gray-500 tracking-wider">
+            <div className={`w-1.5 h-1.5 rounded-full ${isPaused ? 'bg-signal-reverted' : 'bg-signal-confirmed'}`}></div>
+            <span className="text-[10px] font-mono text-content-faint tracking-wider">
               {isPaused ? 'PAUSED' : 'ACTIVE'}
             </span>
           </div>
-          <span className="text-[10px] font-mono text-gray-600">
+          <span className="text-[10px] font-mono text-content-faint">
             {networkName.toUpperCase()}
           </span>
         </div>
@@ -257,12 +257,12 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
         {/* Eligibility Checks - Minimal */}
         <div className="space-y-1.5 text-[10px] font-mono">
           <div className="flex items-center gap-2">
-            <div className={`w-1.5 h-1.5 rounded-full ${hasNFT ? 'bg-green-500' : 'bg-gray-600'}`}></div>
-            <span className={hasNFT ? 'text-green-400' : 'text-gray-600'}>ZKPASSPORT</span>
+            <div className={`w-1.5 h-1.5 rounded-full ${hasNFT ? 'bg-signal-confirmed' : 'bg-surface-ridge'}`}></div>
+            <span className={hasNFT ? 'text-signal-confirmed' : 'text-content-faint'}>ZKPassport</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className={`w-1.5 h-1.5 rounded-full ${!isPaused ? 'bg-green-500' : 'bg-gray-600'}`}></div>
-            <span className={!isPaused ? 'text-green-400' : 'text-gray-600'}>FAUCET_ACTIVE</span>
+            <div className={`w-1.5 h-1.5 rounded-full ${!isPaused ? 'bg-signal-confirmed' : 'bg-surface-ridge'}`}></div>
+            <span className={!isPaused ? 'text-signal-confirmed' : 'text-content-faint'}>Faucet active</span>
           </div>
         </div>
 
@@ -270,9 +270,9 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
         {!hasNFT && (
           <Link
             href="/sybil"
-            className="block mt-3 text-center text-[10px] text-cyan-500/70 hover:text-cyan-400 font-mono transition-colors"
+            className="block mt-3 text-center text-[10px] text-eth-blue-text/70 hover:text-eth-blue-text font-mono transition-colors"
           >
-            GET_ZKPASSPORT →
+            GET_ZKPassport →
           </Link>
         )}
       </div>
@@ -286,26 +286,26 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
         const isReturnable = vault.vaultType === VaultType.Returnable;
 
         return (
-          <div key={vault.id} className="bg-black/60 border border-green-500/30 rounded-lg p-4 space-y-3">
+          <div key={vault.id} className="bg-black/60 border border-line-hairline rounded-control p-4 space-y-3">
             {/* Vault Header */}
             <div className="flex items-start justify-between">
               <div>
-                <h3 className="text-sm font-bold text-green-400 font-mono tracking-wide mb-1">
+                <h3 className="text-sm font-bold text-content-primary font-mono tracking-wide mb-1">
                   {vault.name}
                 </h3>
                 {vault.description && (
-                  <p className="text-[9px] text-gray-600 font-mono mb-2">{vault.description}</p>
+                  <p className="text-[9px] text-content-faint font-mono mb-2">{vault.description}</p>
                 )}
                 <div className="flex gap-2 text-[9px] font-mono">
-                  <span className={`px-2 py-0.5 rounded ${
+                  <span className={`px-2 py-0.5 rounded-chip ${
                     isReturnable
-                      ? 'bg-blue-500/10 text-blue-400 border border-blue-500/30'
-                      : 'bg-purple-500/10 text-purple-400 border border-purple-500/30'
+                      ? 'bg-eth-blue/10 text-eth-blue-text border border-eth-blue/30'
+                      : 'bg-eth-blue/10 text-eth-blue-text border border-eth-blue/30'
                   }`}>
                     {isReturnable ? 'RETURNABLE' : 'NON-RETURNABLE'}
                   </span>
                   {vault.whitelistEnabled && (
-                    <span className="px-2 py-0.5 rounded bg-yellow-500/10 text-yellow-400 border border-yellow-500/30">
+                    <span className="px-2 py-0.5 rounded-chip bg-signal-pending/10 text-signal-pending border border-signal-pending/30">
                       WHITELIST
                     </span>
                   )}
@@ -315,30 +315,30 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-2 gap-2">
-              <div className="bg-black/40 rounded p-3">
-                <p className="text-[9px] text-gray-600 font-mono tracking-wider mb-1">CLAIM</p>
-                <p className="text-lg font-bold text-green-400 font-mono">{parseFloat(claimAmount).toFixed(4)}</p>
-                <p className="text-[9px] text-gray-700 font-mono">ETH</p>
+              <div className="bg-black/40 rounded-chip p-3">
+                <p className="text-[9px] text-content-faint font-mono tracking-wider mb-1">CLAIM</p>
+                <p className="text-lg font-bold text-eth-blue-text font-mono">{parseFloat(claimAmount).toFixed(4)}</p>
+                <p className="text-[9px] text-content-faint font-mono">ETH</p>
               </div>
-              <div className="bg-black/40 rounded p-3">
-                <p className="text-[9px] text-gray-600 font-mono tracking-wider mb-1">VAULT</p>
-                <p className="text-lg font-bold text-cyan-400 font-mono">{parseFloat(vaultBalance).toFixed(4)}</p>
-                <p className="text-[9px] text-gray-700 font-mono">ETH</p>
+              <div className="bg-black/40 rounded-chip p-3">
+                <p className="text-[9px] text-content-faint font-mono tracking-wider mb-1">VAULT</p>
+                <p className="text-lg font-bold text-eth-blue-text font-mono">{parseFloat(vaultBalance).toFixed(4)}</p>
+                <p className="text-[9px] text-content-faint font-mono">ETH</p>
               </div>
             </div>
 
             {/* Claim Status */}
             {claimInfo?.hasClaimed && (
-              <div className="p-2 bg-gray-900/50 border border-gray-700 rounded">
+              <div className="p-2 bg-surface-slab/50 border border-line-hairline rounded-chip">
                 <div className="flex items-center gap-2 mb-1">
-                  <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
-                  <span className="text-[10px] text-gray-400 font-mono tracking-wider">CLAIMED</span>
+                  <div className="w-2 h-2 bg-surface-ridge rounded-full"></div>
+                  <span className="text-[10px] text-content-muted font-mono tracking-wider">CLAIMED</span>
                 </div>
-                <div className="text-[9px] font-mono text-gray-600">
+                <div className="text-[9px] font-mono text-content-faint">
                   Amount: {claimInfo.claimedAmount} ETH
                 </div>
                 {isReturnable && claimInfo.hasReturned && (
-                  <div className="text-[9px] font-mono text-gray-600 mt-1">
+                  <div className="text-[9px] font-mono text-content-faint mt-1">
                     Returned: {claimInfo.returnedAmount} ETH
                   </div>
                 )}
@@ -347,18 +347,18 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
 
             {/* Status Message */}
             {!claimInfo?.hasClaimed && (
-              <div className={`p-2 rounded border ${
+              <div className={`p-2 rounded-chip border ${
                 eligibility.canClaim
-                  ? 'bg-green-500/10 border-green-500/30'
-                  : 'bg-gray-900/50 border-gray-700'
+                  ? 'bg-signal-confirmed/10 border-signal-confirmed/30'
+                  : 'bg-surface-slab/50 border-line-hairline'
               }`}>
                 <p className={`font-mono text-[10px] tracking-wider ${
-                  eligibility.canClaim ? 'text-green-400' : 'text-gray-500'
+                  eligibility.canClaim ? 'text-signal-confirmed' : 'text-content-faint'
                 }`}>
                   STATUS: {eligibility.code}
                 </p>
                 {eligibility.message && (
-                  <p className="font-mono text-[9px] text-gray-600 mt-1">{eligibility.message}</p>
+                  <p className="font-mono text-[9px] text-content-faint mt-1">{eligibility.message}</p>
                 )}
               </div>
             )}
@@ -368,15 +368,15 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
               <button
                 onClick={() => handleClaim(vault.id)}
                 disabled={!eligibility.canClaim || isClaiming}
-                className={`w-full py-3 rounded font-mono font-bold text-sm transition-all ${
+                className={`w-full py-3 rounded-chip font-mono font-bold text-sm transition-all ${
                   eligibility.canClaim && !isClaiming && claimingVaultId !== vault.id
-                    ? 'bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 text-green-400'
-                    : 'bg-gray-900/50 border border-gray-700 text-gray-600 cursor-not-allowed'
+                    ? 'bg-eth-blue hover:bg-eth-blue-lift text-on-brand'
+                    : 'bg-surface-slab/50 border border-line-hairline text-content-faint cursor-not-allowed'
                 }`}
               >
                 {isClaiming && claimingVaultId === vault.id ? (
                   <span className="flex items-center justify-center gap-2">
-                    <div className="w-3 h-3 border-2 border-green-400 border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-3 h-3 border-2 border-signal-confirmed border-t-transparent rounded-full animate-spin"></div>
                     CLAIMING...
                   </span>
                 ) : (
@@ -387,16 +387,16 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
 
             {/* Success for this vault */}
             {txHash && claimingVaultId === vault.id && (
-              <div className="p-2 bg-green-500/10 border border-green-500/30 rounded">
+              <div className="p-2 bg-signal-confirmed/10 border border-signal-confirmed/30 rounded-chip">
                 <div className="flex items-center gap-2 mb-1">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-[10px] text-green-400 font-mono tracking-wider">SUCCESS</span>
+                  <div className="w-2 h-2 bg-signal-confirmed rounded-full"></div>
+                  <span className="text-[10px] text-signal-confirmed font-mono tracking-wider">SUCCESS</span>
                 </div>
                 <a
                   href={getExplorerUrl(chainId, txHash)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[9px] text-gray-500 hover:text-green-400 font-mono"
+                  className="text-[9px] text-content-faint hover:text-eth-blue-text font-mono"
                 >
                   tx: {txHash.slice(0, 10)}...{txHash.slice(-6)} →
                 </a>
@@ -408,10 +408,10 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
 
       {/* Error */}
       {error && (
-        <div className="p-2 bg-red-500/10 border border-red-500/30 rounded">
+        <div className="p-2 bg-signal-reverted/10 border border-signal-reverted/30 rounded-chip">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-            <span className="text-[10px] text-red-400 font-mono tracking-wider">{error}</span>
+            <div className="w-2 h-2 bg-signal-reverted rounded-full"></div>
+            <span className="text-[10px] text-signal-reverted font-mono tracking-wider">{error}</span>
           </div>
         </div>
       )}
@@ -419,7 +419,7 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
       {/* Refresh */}
       <button
         onClick={loadFaucetData}
-        className="w-full py-2 text-[10px] text-gray-600 hover:text-gray-400 font-mono bg-black/60 border border-gray-700/40 rounded-lg"
+        className="w-full py-2 text-[10px] text-content-faint hover:text-content-muted font-mono bg-black/60 border border-line-hairline rounded-control"
       >
         REFRESH
       </button>

@@ -8,10 +8,10 @@ const PINATA_GATEWAY =
   process.env.NEXT_PUBLIC_PINATA_GATEWAY || 'https://gateway.pinata.cloud';
 
 const STATUS_STYLE: Record<ArtworkStatus, { label: string; className: string }> = {
-  draft:         { label: 'Draft',    className: 'bg-slate-700 text-slate-300' },
-  artwork_ready: { label: 'In Drive', className: 'bg-amber-500/15 text-amber-300' },
-  pinned:        { label: 'Pinned',   className: 'bg-cyan-500/15 text-cyan-300' },
-  live:          { label: 'Live',     className: 'bg-green-500/15 text-green-400' },
+  draft:         { label: 'Draft',    className: 'bg-surface-ridge text-content-secondary' },
+  artwork_ready: { label: 'In Drive', className: 'bg-signal-pending/15 text-signal-pending' },
+  pinned:        { label: 'Pinned',   className: 'bg-eth-blue/15 text-eth-blue-text' },
+  live:          { label: 'Live',     className: 'bg-signal-confirmed/15 text-signal-confirmed' },
 };
 
 function StatusPill({ status }: { status: ArtworkStatus }) {
@@ -61,12 +61,12 @@ function VariantRow({ variant }: { variant: SwagVariant }) {
   };
 
   return (
-    <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-4">
+    <div className="rounded-card border border-line-hairline bg-surface-inset/50 p-4">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="truncate font-semibold text-white">
+          <h3 className="truncate font-semibold text-content-primary">
             {variant.label}
-            <span className="ml-2 text-xs font-normal text-slate-500">#{variant.token_id}</span>
+            <span className="ml-2 text-xs font-normal text-content-faint">#{variant.token_id}</span>
           </h3>
         </div>
         <StatusPill status={variant.status} />
@@ -78,7 +78,7 @@ function VariantRow({ variant }: { variant: SwagVariant }) {
           href={`${PINATA_GATEWAY}/ipfs/${variant.image_cid}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="mb-3 block overflow-hidden rounded-lg border border-slate-700"
+          className="mb-3 block overflow-hidden rounded-control border border-line-hairline"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -90,7 +90,7 @@ function VariantRow({ variant }: { variant: SwagVariant }) {
         </a>
       )}
 
-      <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+      <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-content-faint">
         Drive artwork
       </label>
       <div className="mb-3 flex flex-col gap-2 sm:flex-row">
@@ -100,27 +100,27 @@ function VariantRow({ variant }: { variant: SwagVariant }) {
           onChange={(e) => setDriveDraft(e.target.value)}
           onBlur={saveDrive}
           placeholder="https://drive.google.com/…"
-          className="min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-base text-white outline-none focus:border-cyan-500 sm:text-xs"
+          className="min-w-0 flex-1 rounded-control border border-line-hairline bg-surface-slab px-3 py-2 text-base text-content-primary outline-none focus:border-eth-blue sm:text-xs"
         />
         {variant.drive_url && (
           <a
             href={variant.drive_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-[40px] shrink-0 items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-3 text-xs font-semibold text-slate-300 hover:border-cyan-500 hover:text-cyan-300"
+            className="inline-flex min-h-[40px] shrink-0 items-center justify-center rounded-control border border-line-hairline bg-surface-inset px-3 text-xs font-semibold text-content-secondary hover:border-eth-blue hover:text-eth-blue-text"
           >
             Open ↗
           </a>
         )}
       </div>
 
-      <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+      <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-content-faint">
         Product image (IPFS)
       </label>
       {variant.image_cid ? (
-        <p className="mb-2 break-all font-mono text-[11px] text-cyan-400">{variant.image_cid}</p>
+        <p className="mb-2 break-all font-mono text-[11px] text-eth-blue-text">{variant.image_cid}</p>
       ) : (
-        <p className="mb-2 text-[11px] text-slate-500">
+        <p className="mb-2 text-[11px] text-content-faint">
           Not pinned. The NFT cannot ship until this exists.
         </p>
       )}
@@ -136,7 +136,7 @@ function VariantRow({ variant }: { variant: SwagVariant }) {
         type="button"
         onClick={() => fileInput.current?.click()}
         disabled={isPinning || isSaving}
-        className="min-h-[44px] w-full rounded-lg bg-cyan-500 px-4 text-sm font-semibold text-slate-900 transition-colors hover:bg-cyan-400 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+        className="min-h-tap w-full rounded-control bg-eth-blue px-4 text-sm font-semibold text-on-brand transition-colors hover:bg-eth-blue-lift disabled:cursor-not-allowed disabled:bg-surface-ridge disabled:text-content-muted"
       >
         {isPinning
           ? 'Pinning to IPFS…'
@@ -146,7 +146,7 @@ function VariantRow({ variant }: { variant: SwagVariant }) {
       </button>
 
       {error && (
-        <p className="mt-2 rounded-lg border border-red-500/40 bg-red-500/10 p-2 text-[11px] text-red-300">
+        <p className="mt-2 rounded-control border border-signal-reverted/40 bg-signal-reverted/10 p-2 text-[11px] text-signal-reverted">
           {error}
         </p>
       )}
@@ -182,16 +182,16 @@ export default function SwagArtworkPage() {
       </Head>
 
       {ready && !authenticated && (
-        <div className="mx-auto max-w-md rounded-2xl border border-slate-700 bg-slate-800/50 p-6 text-center sm:p-8">
-          <h2 className="mb-2 text-lg font-bold text-white">Operator sign-in required</h2>
-          <p className="mb-5 text-sm text-slate-400">
+        <div className="mx-auto max-w-md rounded-card border border-line-hairline bg-surface-inset/50 p-6 text-center sm:p-8">
+          <h2 className="mb-2 text-lg font-bold text-content-primary">Operator sign-in required</h2>
+          <p className="mb-5 text-sm text-content-muted">
             Artwork state is internal. Connect a wallet holding ADMIN_ROLE to view and pin
             product images.
           </p>
           <button
             type="button"
             onClick={login}
-            className="min-h-[48px] w-full rounded-lg bg-cyan-500 px-4 font-semibold text-slate-900 transition-colors hover:bg-cyan-400"
+            className="min-h-tap w-full rounded-control bg-eth-blue px-4 font-semibold text-on-brand transition-colors hover:bg-eth-blue-lift"
           >
             Connect wallet
           </button>
@@ -199,24 +199,24 @@ export default function SwagArtworkPage() {
       )}
 
       {authenticated && variants.isLoading && (
-        <p className="text-sm text-slate-500">Loading…</p>
+        <p className="text-sm text-content-faint">Loading…</p>
       )}
 
       {authenticated && variants.error && (
-        <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-300">
+        <div className="rounded-card border border-signal-reverted/40 bg-signal-reverted/10 p-4 text-sm text-signal-reverted">
           {variants.error instanceof Error ? variants.error.message : 'Could not load artwork'}
         </div>
       )}
 
       {authenticated && !variants.isLoading && !variants.error && (
         <>
-          <div className="mb-6 rounded-xl border border-slate-700 bg-slate-800/50 p-4">
-            <p className="text-sm text-slate-300">
-              <span className="font-bold text-white">{pinnedCount}</span> of {total} variants
+          <div className="mb-6 rounded-card border border-line-hairline bg-surface-inset/50 p-4">
+            <p className="text-sm text-content-secondary">
+              <span className="font-bold text-content-primary">{pinnedCount}</span> of {total} variants
               pinned to IPFS.
             </p>
             {pinnedCount < total && (
-              <p className="mt-1 text-xs text-amber-300">
+              <p className="mt-1 text-xs text-signal-pending">
                 {total - pinnedCount} still unpinned — those NFTs would render broken if the
                 collection were deployed today.
               </p>
@@ -226,7 +226,7 @@ export default function SwagArtworkPage() {
           <div className="space-y-8">
             {grouped.map(([sku, items]) => (
               <section key={sku}>
-                <h2 className="mb-3 font-mono text-xs font-semibold uppercase tracking-wide text-slate-400">
+                <h2 className="mb-3 font-mono text-xs font-semibold uppercase tracking-wide text-content-muted">
                   {sku}
                 </h2>
                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">

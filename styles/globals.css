@@ -3,88 +3,64 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    /* Light Mode Variables */
-    --primary-color: #4B66F3;
-    --secondary-color: #333333;
-    --background-color: #ffffff;
-    --card-background: #f9f9f9;
-    --error-color: #ff6767;
-    --success-color: #4CAF50;
-    --border-radius: 8px;
-    --transition-speed: 0.3s;
-    
-    /* Text Colors */
-    --text-color: #333333;
-    --text-secondary: #666666;
-    --text-tertiary: #888888;
-    
-    /* Background Colors */
-    --bg-primary: #ffffff;
-    --bg-secondary: #f5f5f5;
-    --bg-tertiary: #f8f9fa;
-    --header-bg: #000000;
-    
-    /* Card & Container Colors */
-    --card-bg: #ffffff;
-    --card-border: #eeeeee;
-    --card-shadow: rgba(0, 0, 0, 0.05);
-    
-    /* Input & Form Colors */
-    --input-bg: #ffffff;
-    --input-border: #dddddd;
-    --input-focus-shadow: rgba(75, 102, 243, 0.2);
-    
-    /* Toggle Button Colors */
-    --toggle-bg: #f0f0f0;
-    --toggle-hover-bg: #e5e5e5;
-  }
+  /* The app is dark-only. These names are kept because components, .card and the
+     form styles below already reference them; their values now come from the
+     brand token set in @ethcali/tokens rather than being a second, unrelated
+     palette. --primary-color was #4B66F3, which was never the brand blue.
 
-  /* Dark Mode Theme */
-  .dark {
-    /* Text Colors */
-    --text-color: #e0e0e0;
-    --text-secondary: #b0b0b0;
-    --text-tertiary: #909090;
-    
-    /* Background Colors */
-    --bg-primary: #121212;
-    --bg-secondary: #1e1e1e;
-    --bg-tertiary: #252525;
-    --header-bg: #000000;
-    
-    /* Card & Container Colors */
-    --card-bg: #1e1e1e;
-    --card-border: #333333;
-    --card-shadow: rgba(0, 0, 0, 0.2);
-    
-    /* Input & Form Colors */
-    --input-bg: #252525;
-    --input-border: #444444;
-    --input-focus-shadow: rgba(75, 102, 243, 0.3);
-    
-    /* Toggle Button Colors */
-    --toggle-bg: #333333;
-    --toggle-hover-bg: #444444;
-    
-    /* Overrides for component-specific colors */
-    --primary-color: #6B86FF; /* Brighter in dark mode */
-    --secondary-color: #e0e0e0;
-    --background-color: #121212;
-    --card-background: #1e1e1e;
+     This block used to define a light theme that nothing could reach: Tailwind
+     runs darkMode:'class' and no ancestor ever sets .dark, so :root was the only
+     palette in play and body rendered white. Every page root works around that
+     by painting its own dark ground. Pointing these at the tokens fixes the
+     cause; the per-page backgrounds are now redundant but harmless.
+
+     --text-secondary is deliberately absent: @ethcali/tokens already defines it,
+     and redefining it here would shadow the token, since this file loads second. */
+  :root {
+    --primary-color: var(--eth-blue);
+    --secondary-color: var(--text-secondary);
+    --background-color: var(--surface-void);
+    --card-background: var(--surface-slab);
+    --error-color: var(--signal-reverted);
+    --success-color: var(--signal-confirmed);
+    --border-radius: var(--radius-chip);
+    --transition-speed: var(--t-base);
+
+    /* Text */
+    --text-color: var(--text-primary);
+    --text-tertiary: var(--text-faint);
+
+    /* Backgrounds */
+    --bg-primary: var(--surface-void);
+    --bg-secondary: var(--surface-slab);
+    --bg-tertiary: var(--surface-inset);
+    --header-bg: var(--surface-void);
+
+    /* Cards */
+    --card-bg: var(--surface-slab);
+    --card-border: var(--line-hairline);
+    --card-shadow: rgb(0 0 0 / 0.4);
+
+    /* Inputs */
+    --input-bg: var(--surface-inset);
+    --input-border: var(--line-strong);
+    --input-focus-shadow: var(--eth-blue-ring);
+
+    /* Toggles */
+    --toggle-bg: var(--surface-ridge);
+    --toggle-hover-bg: var(--surface-ridge);
   }
 
   html,
   body {
     padding: 0;
     margin: 0;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
-      Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+    font-family: var(--font-sans);
     background-color: var(--bg-primary);
     color: var(--text-color);
     line-height: 1.6;
     font-size: 16px;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    -webkit-font-smoothing: antialiased;
   }
 
   a {
@@ -96,11 +72,18 @@
     box-sizing: border-box;
   }
 
+  /* Sarun Pro has no 600: headings are Bold 700, display sizes tighten. */
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Inter', sans-serif;
-    font-weight: 600;
-    line-height: 1.4;
+    font-family: var(--font-sans);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
     color: var(--text-color);
+  }
+
+  /* Everything a chain produced is mono. */
+  code, kbd, pre, samp {
+    font-family: var(--font-mono);
   }
 
   p {
@@ -109,27 +92,28 @@
     color: var(--text-secondary);
   }
 
+  /* Hover is a colour change, never a lift or a fade: no bounce, no spring. */
   button {
-    transition: opacity var(--transition-speed), transform var(--transition-speed);
     cursor: pointer;
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-sans);
   }
 
-  button:hover {
-    opacity: 0.9;
-    transform: translateY(-1px);
+  /* One focus treatment for every interactive element. */
+  :focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--eth-blue-ring);
+    border-color: var(--line-brand);
   }
 
-  button:active {
-    opacity: 0.8;
-    transform: translateY(0);
+  ::selection {
+    background: var(--eth-blue-wash);
   }
 }
 
 @layer components {
   /* Privy specific overrides */
   .privy-login-button {
-    @apply py-2.5 px-4 rounded bg-blue-600 text-white border-none cursor-pointer font-medium font-sans;
+    @apply min-h-tap rounded-control bg-eth-blue px-6 font-semibold text-on-brand hover:bg-eth-blue-lift border-none cursor-pointer font-sans;
   }
 }
 
@@ -140,30 +124,23 @@
   flex-direction: column;
 }
 
-/* Card styling */
+/* Card: surface + hairline, no shadow. */
 .card {
   background-color: var(--card-bg);
-  border-radius: var(--border-radius);
+  border-radius: var(--radius-card);
   padding: 1.5rem;
   margin-bottom: 1.5rem;
-  box-shadow: 0 2px 8px var(--card-shadow);
-  transition: transform var(--transition-speed), box-shadow var(--transition-speed);
   border: 1px solid var(--card-border);
-}
-
-.card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px var(--card-shadow);
 }
 
 /* Form controls */
 input {
   width: 100%;
-  padding: 0.75rem;
+  padding: 0.75rem 1rem;
   border: 1px solid var(--input-border);
-  border-radius: 4px;
+  border-radius: var(--radius-control);
   font-size: 1rem;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-sans);
   transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
   background-color: var(--input-bg);
   color: var(--text-color);
@@ -172,5 +149,5 @@ input {
 input:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px var(--input-focus-shadow);
+  box-shadow: 0 0 0 3px var(--input-focus-shadow);
 } 

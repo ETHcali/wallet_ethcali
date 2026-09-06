@@ -61,30 +61,30 @@ const NFTGrid: React.FC<NFTGridProps> = ({
           }
 
           .empty-icon {
-            color: #4b5563;
+            color: var(--surface-ridge);
             margin-bottom: 1rem;
           }
 
           .collectibles-empty h4 {
             font-size: 1rem;
             font-weight: 600;
-            color: #f3f4f6;
+            color: var(--text-secondary);
             margin: 0 0 0.5rem;
           }
 
           .collectibles-empty p {
             font-size: 0.85rem;
-            color: #9ca3af;
+            color: var(--text-muted);
             margin: 0 0 1.25rem;
           }
 
           :global(.browse-swag-link) {
             display: inline-block;
             padding: 0.625rem 1.25rem;
-            background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(139, 92, 246, 0.2));
-            border: 1px solid rgba(6, 182, 212, 0.3);
+            background: rgb(var(--eth-blue-rgb) / 0.2);
+            border: 1px solid rgb(var(--eth-blue-rgb) / 0.3);
             border-radius: 8px;
-            color: #06b6d4;
+            color: var(--eth-blue);
             font-size: 0.85rem;
             font-weight: 500;
             text-decoration: none;
@@ -92,8 +92,8 @@ const NFTGrid: React.FC<NFTGridProps> = ({
           }
 
           :global(.browse-swag-link:hover) {
-            background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(139, 92, 246, 0.3));
-            border-color: rgba(6, 182, 212, 0.5);
+            background: rgb(var(--eth-blue-rgb) / 0.3);
+            border-color: rgb(var(--eth-blue-rgb) / 0.5);
             transform: translateY(-1px);
           }
         `}</style>
@@ -134,20 +134,20 @@ const NFTGrid: React.FC<NFTGridProps> = ({
           align-items: center;
           gap: 0.5rem;
           padding: 0.75rem 1rem;
-          background: rgba(17, 24, 39, 0.6);
+          background: var(--surface-slab);
           border-radius: 8px;
           margin-bottom: 1rem;
         }
 
         .summary-label {
           font-size: 0.8rem;
-          color: #9ca3af;
+          color: var(--text-muted);
         }
 
         .summary-value {
           font-size: 0.9rem;
           font-weight: 600;
-          color: #06b6d4;
+          color: var(--eth-blue);
         }
 
         .nfts-grid {

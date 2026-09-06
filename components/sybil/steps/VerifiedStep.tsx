@@ -34,36 +34,36 @@ export const VerifiedStep: React.FC<VerifiedStepProps> = ({
   return (
     <div className="space-y-3">
       {/* Success Badge */}
-      <div className="flex items-center gap-2 p-2 bg-green-500/10 border border-green-500/30 rounded">
-        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-        <span className="text-[10px] text-green-400 font-mono tracking-wider">VERIFIED</span>
+      <div className="flex items-center gap-2 p-2 bg-signal-confirmed/10 border border-signal-confirmed/30 rounded-chip">
+        <div className="w-2 h-2 bg-signal-confirmed rounded-full"></div>
+        <span className="text-[10px] text-signal-confirmed font-mono tracking-wider">VERIFIED</span>
       </div>
 
       {/* NFT Preview - Compact */}
-      <div className="bg-gradient-to-br from-purple-900/30 to-cyan-900/30 border border-purple-500/20 rounded p-3">
-        <div className="text-[10px] text-gray-500 font-mono mb-2 tracking-wider">NFT_TRAITS</div>
+      <div className="bg-eth-blue-wash border border-eth-blue/20 rounded-chip p-3">
+        <div className="text-[10px] text-content-faint font-mono mb-2 tracking-wider">NFT traits</div>
 
         <div className="space-y-1.5 text-[11px] font-mono">
-          <div className="flex justify-between items-center py-1.5 border-b border-gray-800">
-            <span className="text-gray-500">uid</span>
-            <span className="text-cyan-400">{maskIdentifier(uniqueIdentifier ?? '')}</span>
+          <div className="flex justify-between items-center py-1.5 border-b border-line-hairline">
+            <span className="text-content-faint">uid</span>
+            <span className="text-eth-blue-text">{maskIdentifier(uniqueIdentifier ?? '')}</span>
           </div>
-          <div className="flex justify-between items-center py-1.5 border-b border-gray-800">
-            <span className="text-gray-500">age</span>
-            <span className={isOver18 ? 'text-green-400' : 'text-gray-600'}>
+          <div className="flex justify-between items-center py-1.5 border-b border-line-hairline">
+            <span className="text-content-faint">age</span>
+            <span className={isOver18 ? 'text-signal-confirmed' : 'text-content-faint'}>
               {isOver18 ? '18+' : 'N/A'}
             </span>
           </div>
           <div className="flex justify-between items-center py-1.5">
-            <span className="text-gray-500">nationality</span>
-            <span className={nationality ? 'text-green-400' : 'text-gray-600'}>
+            <span className="text-content-faint">nationality</span>
+            <span className={nationality ? 'text-signal-confirmed' : 'text-content-faint'}>
               {nationality ?? 'N/A'}
             </span>
           </div>
         </div>
 
-        <div className="mt-2 pt-2 border-t border-gray-800">
-          <span className="text-[9px] text-gray-600 font-mono">
+        <div className="mt-2 pt-2 border-t border-line-hairline">
+          <span className="text-[9px] text-content-faint font-mono">
             {getNetworkName(chainId).toUpperCase()} • SOULBOUND
           </span>
         </div>
@@ -71,7 +71,7 @@ export const VerifiedStep: React.FC<VerifiedStepProps> = ({
 
       {/* Error */}
       {errorMessage && (
-        <div className="text-[10px] text-red-400 font-mono p-2 bg-red-500/10 border border-red-500/20 rounded">
+        <div className="text-[10px] text-signal-reverted font-mono p-2 bg-signal-reverted/10 border border-signal-reverted/20 rounded-chip">
           {errorMessage}
         </div>
       )}
@@ -80,11 +80,11 @@ export const VerifiedStep: React.FC<VerifiedStepProps> = ({
       <button
         onClick={onMint}
         disabled={isMinting}
-        className="w-full py-3 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 rounded text-green-400 font-mono font-bold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full py-3 bg-eth-blue hover:bg-eth-blue-lift rounded-chip text-on-brand font-mono font-bold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isMinting ? (
           <span className="flex items-center justify-center gap-2">
-            <div className="w-3 h-3 border-2 border-green-400 border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-3 h-3 border-2 border-signal-confirmed border-t-transparent rounded-full animate-spin"></div>
             MINTING...
           </span>
         ) : (
@@ -95,7 +95,7 @@ export const VerifiedStep: React.FC<VerifiedStepProps> = ({
       <button
         onClick={onReset}
         disabled={isMinting}
-        className="w-full py-2 text-[10px] text-gray-600 hover:text-gray-400 font-mono disabled:opacity-50"
+        className="w-full py-2 text-[10px] text-content-faint hover:text-content-muted font-mono disabled:opacity-50"
       >
         RESTART
       </button>

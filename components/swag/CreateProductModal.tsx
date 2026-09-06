@@ -173,14 +173,14 @@ export function CreateProductModal({ contractAddress, chainId, onClose, onSucces
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-xl">
+      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-card border border-line-hairline bg-surface-slab p-6 ">
         {/* Header */}
         <div className="flex items-start justify-between mb-6">
           <div>
-            <h2 className="text-xl font-semibold text-white">Create Product</h2>
-            <p className="text-sm text-slate-500">Fill in product details, upload an image, and create on-chain variants</p>
+            <h2 className="text-xl font-semibold text-content-primary">Create Product</h2>
+            <p className="text-sm text-content-faint">Fill in product details, upload an image, and create on-chain variants</p>
           </div>
-          <button onClick={onClose} disabled={isSubmitting} className="text-slate-400 hover:text-white transition">
+          <button onClick={onClose} disabled={isSubmitting} className="text-content-muted hover:text-content-primary transition">
             <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -190,25 +190,25 @@ export function CreateProductModal({ contractAddress, chainId, onClose, onSucces
         <div className="space-y-6">
           {/* A. Product Info */}
           <section className="space-y-3">
-            <h3 className="text-sm font-medium text-slate-300 uppercase tracking-wider">Product Info</h3>
+            <h3 className="text-sm font-medium text-content-secondary uppercase tracking-wider">Product Info</h3>
             <div className="space-y-2">
-              <label className="block text-sm text-slate-400">Product Name</label>
+              <label className="block text-sm text-content-muted">Product Name</label>
               <input
                 type="text"
                 value={name}
                 onChange={e => setName(e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 p-3 text-white focus:border-cyan-400 focus:outline-none"
+                className="w-full rounded-control border border-line-hairline bg-surface-inset p-3 text-content-primary focus:border-eth-blue focus:outline-none"
                 placeholder="ETH Cali Tee"
                 disabled={isSubmitting}
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-sm text-slate-400">Description</label>
+              <label className="block text-sm text-content-muted">Description</label>
               <textarea
                 value={description}
                 onChange={e => setDescription(e.target.value)}
                 rows={3}
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 p-3 text-white focus:border-cyan-400 focus:outline-none resize-none"
+                className="w-full rounded-control border border-line-hairline bg-surface-inset p-3 text-content-primary focus:border-eth-blue focus:outline-none resize-none"
                 placeholder="Premium cotton tee from ETH Cali 2025"
                 disabled={isSubmitting}
               />
@@ -217,23 +217,23 @@ export function CreateProductModal({ contractAddress, chainId, onClose, onSucces
 
           {/* B. Image Upload */}
           <section className="space-y-3">
-            <h3 className="text-sm font-medium text-slate-300 uppercase tracking-wider">Image</h3>
+            <h3 className="text-sm font-medium text-content-secondary uppercase tracking-wider">Image</h3>
             <div
               onClick={() => !isSubmitting && fileInputRef.current?.click()}
               onDrop={handleDrop}
               onDragOver={e => e.preventDefault()}
-              className={`relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 cursor-pointer transition ${
-                imagePreview ? 'border-cyan-500/50 bg-slate-800/50' : 'border-slate-600 bg-slate-800/30 hover:border-slate-500'
+              className={`relative flex flex-col items-center justify-center rounded-card border-2 border-dashed p-6 cursor-pointer transition ${
+                imagePreview ? 'border-eth-blue/50 bg-surface-inset/50' : 'border-line-strong bg-surface-inset/30 hover:border-line-strong'
               }`}
             >
               {imagePreview ? (
-                <img src={imagePreview} alt="Preview" className="max-h-48 rounded-lg object-contain" />
+                <img src={imagePreview} alt="Preview" className="max-h-48 rounded-control object-contain" />
               ) : (
                 <>
-                  <svg className="h-10 w-10 text-slate-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="h-10 w-10 text-content-faint mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
-                  <p className="text-sm text-slate-400">Click or drag to upload</p>
+                  <p className="text-sm text-content-muted">Click or drag to upload</p>
                 </>
               )}
               <input
@@ -248,14 +248,14 @@ export function CreateProductModal({ contractAddress, chainId, onClose, onSucces
                 disabled={isSubmitting}
               />
             </div>
-            <p className="text-xs text-slate-600">Recommended: 1200x1200px square, PNG or JPG, max 5MB</p>
+            <p className="text-xs text-content-faint">Recommended: 1200x1200px square, PNG or JPG, max 5MB</p>
           </section>
 
           {/* C. Traits */}
           <section className="space-y-3">
-            <h3 className="text-sm font-medium text-slate-300 uppercase tracking-wider">Traits</h3>
+            <h3 className="text-sm font-medium text-content-secondary uppercase tracking-wider">Traits</h3>
             <div className="space-y-2">
-              <label className="block text-sm text-slate-400">Gender</label>
+              <label className="block text-sm text-content-muted">Gender</label>
               <div className="flex gap-3">
                 {GENDER_OPTIONS.map(g => (
                   <button
@@ -263,10 +263,10 @@ export function CreateProductModal({ contractAddress, chainId, onClose, onSucces
                     type="button"
                     onClick={() => setGender(g)}
                     disabled={isSubmitting}
-                    className={`rounded-lg border px-4 py-2 text-sm font-medium transition ${
+                    className={`rounded-control border px-4 py-2 text-sm font-medium transition ${
                       gender === g
-                        ? 'border-cyan-500 bg-cyan-500/10 text-cyan-400'
-                        : 'border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600'
+                        ? 'border-eth-blue bg-eth-blue/10 text-eth-blue-text'
+                        : 'border-line-hairline bg-surface-inset text-content-muted hover:border-line-strong'
                     }`}
                   >
                     {g}
@@ -276,23 +276,23 @@ export function CreateProductModal({ contractAddress, chainId, onClose, onSucces
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="block text-sm text-slate-400">Color</label>
+                <label className="block text-sm text-content-muted">Color</label>
                 <input
                   type="text"
                   value={color}
                   onChange={e => setColor(e.target.value)}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800 p-3 text-white focus:border-cyan-400 focus:outline-none"
+                  className="w-full rounded-control border border-line-hairline bg-surface-inset p-3 text-content-primary focus:border-eth-blue focus:outline-none"
                   placeholder="Black"
                   disabled={isSubmitting}
                 />
               </div>
               <div className="space-y-2">
-                <label className="block text-sm text-slate-400">Style</label>
+                <label className="block text-sm text-content-muted">Style</label>
                 <input
                   type="text"
                   value={style}
                   onChange={e => setStyle(e.target.value)}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800 p-3 text-white focus:border-cyan-400 focus:outline-none"
+                  className="w-full rounded-control border border-line-hairline bg-surface-inset p-3 text-content-primary focus:border-eth-blue focus:outline-none"
                   placeholder="Classic"
                   disabled={isSubmitting}
                 />
@@ -302,37 +302,37 @@ export function CreateProductModal({ contractAddress, chainId, onClose, onSucces
 
           {/* D. Sizes & Pricing */}
           <section className="space-y-3">
-            <h3 className="text-sm font-medium text-slate-300 uppercase tracking-wider">Sizes & Pricing</h3>
+            <h3 className="text-sm font-medium text-content-secondary uppercase tracking-wider">Sizes & Pricing</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="block text-sm text-slate-400">Base Token ID</label>
+                <label className="block text-sm text-content-muted">Base Token ID</label>
                 <input
                   type="number"
                   min="0"
                   value={baseId}
                   onChange={e => setBaseId(e.target.value)}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800 p-3 text-white font-mono focus:border-cyan-400 focus:outline-none"
+                  className="w-full rounded-control border border-line-hairline bg-surface-inset p-3 text-content-primary font-mono focus:border-eth-blue focus:outline-none"
                   placeholder="100"
                   disabled={isSubmitting}
                 />
-                <p className="text-xs text-slate-600">Base ID x 10 + size offset (S=1, M=2, L=3, XL=4, OneSize=5)</p>
+                <p className="text-xs text-content-faint">Base ID x 10 + size offset (S=1, M=2, L=3, XL=4, OneSize=5)</p>
               </div>
               <div className="space-y-2">
-                <label className="block text-sm text-slate-400">Price (USDC)</label>
+                <label className="block text-sm text-content-muted">Price (USDC)</label>
                 <input
                   type="number"
                   min="0"
                   step="0.01"
                   value={price}
                   onChange={e => setPrice(e.target.value)}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800 p-3 text-white focus:border-cyan-400 focus:outline-none"
+                  className="w-full rounded-control border border-line-hairline bg-surface-inset p-3 text-content-primary focus:border-eth-blue focus:outline-none"
                   placeholder="25.00"
                   disabled={isSubmitting}
                 />
               </div>
             </div>
 
-            <div className="rounded-lg border border-slate-700 bg-slate-800/50 divide-y divide-slate-700">
+            <div className="rounded-control border border-line-hairline bg-surface-inset/50 divide-y divide-line-hairline">
               {SIZE_OPTIONS.map(s => (
                 <div key={s.key} className="flex items-center gap-4 px-4 py-3">
                   <label className="flex items-center gap-2 min-w-[100px] cursor-pointer">
@@ -341,21 +341,21 @@ export function CreateProductModal({ contractAddress, chainId, onClose, onSucces
                       checked={sizes[s.key].enabled}
                       onChange={() => toggleSize(s.key)}
                       disabled={isSubmitting}
-                      className="h-4 w-4 rounded border-slate-600 bg-slate-700 text-cyan-500 focus:ring-cyan-400"
+                      className="h-4 w-4 rounded-chip border-line-strong bg-surface-ridge text-eth-blue-text focus:ring-eth-blue"
                     />
-                    <span className={`text-sm font-medium ${sizes[s.key].enabled ? 'text-white' : 'text-slate-500'}`}>
+                    <span className={`text-sm font-medium ${sizes[s.key].enabled ? 'text-content-primary' : 'text-content-faint'}`}>
                       {s.label}
                     </span>
                   </label>
                   {sizes[s.key].enabled && (
                     <div className="flex items-center gap-2 ml-auto">
-                      <span className="text-xs text-slate-500">Max Supply:</span>
+                      <span className="text-xs text-content-faint">Max Supply:</span>
                       <input
                         type="number"
                         min="1"
                         value={sizes[s.key].maxSupply}
                         onChange={e => setSizeSupply(s.key, e.target.value)}
-                        className="w-24 rounded-lg border border-slate-600 bg-slate-700 px-3 py-1.5 text-sm text-white font-mono focus:border-cyan-400 focus:outline-none"
+                        className="w-24 rounded-control border border-line-strong bg-surface-ridge px-3 py-1.5 text-sm text-content-primary font-mono focus:border-eth-blue focus:outline-none"
                         placeholder="50"
                         disabled={isSubmitting}
                       />
@@ -366,39 +366,39 @@ export function CreateProductModal({ contractAddress, chainId, onClose, onSucces
             </div>
 
             {enabledSizes.length > 0 && (
-              <p className="text-sm text-slate-400">
-                Total supply: <span className="font-mono text-cyan-400">{totalSupply}</span> across {enabledSizes.length} size{enabledSizes.length > 1 ? 's' : ''}
+              <p className="text-sm text-content-muted">
+                Total supply: <span className="font-mono text-eth-blue-text">{totalSupply}</span> across {enabledSizes.length} size{enabledSizes.length > 1 ? 's' : ''}
               </p>
             )}
           </section>
 
           {/* E. Active toggle */}
-          <div className="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-800 p-4">
+          <div className="flex items-center justify-between rounded-control border border-line-hairline bg-surface-inset p-4">
             <div>
-              <p className="text-white font-medium">Active on Creation</p>
-              <p className="text-xs text-slate-500">{active ? 'Available for purchase immediately' : 'Hidden until activated'}</p>
+              <p className="text-content-primary font-medium">Active on Creation</p>
+              <p className="text-xs text-content-faint">{active ? 'Available for purchase immediately' : 'Hidden until activated'}</p>
             </div>
             <button
               type="button"
               onClick={() => setActive(!active)}
-              className={`relative h-6 w-11 rounded-full transition-colors ${active ? 'bg-green-500' : 'bg-slate-600'}`}
+              className={`relative h-6 w-11 rounded-full transition-colors ${active ? 'bg-eth-blue' : 'bg-surface-ridge'}`}
               disabled={isSubmitting}
             >
-              <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-md transition-transform ${active ? 'translate-x-5' : 'translate-x-0.5'}`} />
+              <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-surface-paper transition-transform ${active ? 'translate-x-5' : 'translate-x-0.5'}`} />
             </button>
           </div>
 
           {/* Progress / Error */}
           {progress && (
-            <div className="flex items-center gap-3 rounded-lg border border-cyan-500/30 bg-cyan-500/10 p-3">
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-cyan-400 border-t-transparent" />
-              <p className="text-sm text-cyan-300">{progress}</p>
+            <div className="flex items-center gap-3 rounded-control border border-eth-blue/30 bg-eth-blue/10 p-3">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-eth-blue border-t-transparent" />
+              <p className="text-sm text-eth-blue-text">{progress}</p>
             </div>
           )}
 
           {error && (
-            <div className="rounded-lg border border-red-500/40 bg-red-500/10 p-3">
-              <p className="text-sm text-red-300">{error}</p>
+            <div className="rounded-control border border-signal-reverted/40 bg-signal-reverted/10 p-3">
+              <p className="text-sm text-signal-reverted">{error}</p>
             </div>
           )}
 
@@ -407,7 +407,7 @@ export function CreateProductModal({ contractAddress, chainId, onClose, onSucces
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-lg border border-slate-600 bg-slate-800 py-3 text-white hover:bg-slate-700 transition"
+              className="flex-1 rounded-control border border-line-strong bg-surface-inset py-3 text-content-primary hover:bg-surface-ridge transition"
               disabled={isSubmitting}
             >
               Cancel
@@ -415,7 +415,7 @@ export function CreateProductModal({ contractAddress, chainId, onClose, onSucces
             <button
               onClick={handleSubmit}
               disabled={isSubmitting || !canSet}
-              className="flex-1 rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 py-3 font-medium text-white shadow-lg shadow-pink-500/20 hover:opacity-90 disabled:opacity-50 transition"
+              className="flex-1 rounded-control bg-eth-blue hover:bg-eth-blue-lift py-3 font-medium text-content-primary hover:opacity-90 disabled:opacity-50 transition"
             >
               {isSubmitting ? 'Creating...' : 'Create Product'}
             </button>

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { CloseIcon } from '../shared/icons';
 import { parseUnits, formatUnits } from 'viem';
 import {
   useDonationAddresses,
@@ -113,14 +114,14 @@ const CurrencyTierManager: React.FC<CurrencyTierManagerProps> = ({
               key={t.address}
               type="button"
               onClick={() => setSelected(t)}
-              className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
+              className={`rounded-control border px-3 py-1.5 text-xs font-semibold transition-colors ${
                 t.address === selected.address
-                  ? 'border-cyan-500 bg-cyan-500/15 text-cyan-300'
-                  : 'border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500'
+                  ? 'border-eth-blue bg-eth-blue/15 text-eth-blue-text'
+                  : 'border-line-hairline bg-surface-inset text-content-secondary hover:border-line-strong'
               }`}
             >
               {t.symbol}
-              <span className={accepted ? 'ml-1 text-green-400' : 'ml-1 text-slate-600'}>
+              <span className={accepted ? 'ml-1 text-signal-confirmed' : 'ml-1 text-content-faint'}>
                 {accepted ? '●' : '○'}
               </span>
             </button>
@@ -129,15 +130,15 @@ const CurrencyTierManager: React.FC<CurrencyTierManagerProps> = ({
       </div>
 
       {/* Accept toggle */}
-      <div className="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-900/60 p-3">
+      <div className="flex items-center justify-between rounded-control border border-line-hairline bg-surface-slab/60 p-3">
         <div>
-          <div className="text-sm font-semibold text-white">
+          <div className="text-sm font-semibold text-content-primary">
             {selected.symbol}{' '}
-            <span className="font-normal text-slate-500">
+            <span className="font-normal text-content-faint">
               · {selected.decimals} decimals
             </span>
           </div>
-          <div className="text-[11px] text-slate-500">
+          <div className="text-[11px] text-content-faint">
             {isAccepted ? 'Accepted for this campaign' : 'Not accepted yet'}
           </div>
         </div>
@@ -145,10 +146,10 @@ const CurrencyTierManager: React.FC<CurrencyTierManagerProps> = ({
           type="button"
           onClick={() => setAcceptedToken(campaign.id, selected.address, !isAccepted)}
           disabled={pendingAction === 'setAcceptedToken'}
-          className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+          className={`rounded-control px-3 py-1.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
             isAccepted
-              ? 'border border-slate-600 bg-slate-800 text-slate-300 hover:border-red-500 hover:text-red-400'
-              : 'bg-green-500 text-slate-900 hover:bg-green-400'
+              ? 'border border-line-strong bg-surface-inset text-content-secondary hover:border-signal-reverted hover:text-signal-reverted'
+              : 'bg-eth-blue text-on-brand hover:bg-eth-blue-lift'
           }`}
         >
           {pendingAction === 'setAcceptedToken'
@@ -160,15 +161,15 @@ const CurrencyTierManager: React.FC<CurrencyTierManagerProps> = ({
       </div>
 
       {/* Tiers */}
-      <div className="rounded-lg border border-slate-700 bg-slate-900/60 p-3">
+      <div className="rounded-control border border-line-hairline bg-surface-slab/60 p-3">
         <div className="mb-2 flex items-center justify-between">
-          <h4 className="text-xs font-semibold text-slate-300">
+          <h4 className="text-xs font-semibold text-content-secondary">
             Reward tiers · {selected.symbol}
           </h4>
           <button
             type="button"
             onClick={() => setDrafts([...drafts, { amount: '', receiptTokenId: '1' }])}
-            className="text-[11px] text-cyan-400 hover:underline"
+            className="text-[11px] text-eth-blue-text hover:underline"
           >
             + add tier
           </button>
@@ -188,10 +189,10 @@ const CurrencyTierManager: React.FC<CurrencyTierManagerProps> = ({
                     setDrafts(next);
                   }}
                   placeholder={selected.symbol === 'COPm' ? '40000' : '10'}
-                  className="w-full rounded border border-slate-700 bg-slate-800 px-2 py-1.5 text-xs text-white outline-none focus:border-cyan-500"
+                  className="w-full rounded-chip border border-line-hairline bg-surface-inset px-2 py-1.5 text-xs text-content-primary outline-none focus:border-eth-blue"
                 />
                 {/* Show the real base units so a decimals mistake is visible */}
-                <div className="mt-0.5 font-mono text-[10px] text-slate-600">
+                <div className="mt-0.5 font-mono text-[10px] text-content-faint">
                   {draft.raw !== null ? `${draft.raw.toString()} base units` : '—'}
                 </div>
               </div>
@@ -205,28 +206,28 @@ const CurrencyTierManager: React.FC<CurrencyTierManagerProps> = ({
                   setDrafts(next);
                 }}
                 title="Receipt tokenId minted at this tier"
-                className="w-16 self-start rounded border border-slate-700 bg-slate-800 px-2 py-1.5 text-xs text-white outline-none focus:border-cyan-500"
+                className="w-16 self-start rounded-chip border border-line-hairline bg-surface-inset px-2 py-1.5 text-xs text-content-primary outline-none focus:border-eth-blue"
               />
               <button
                 type="button"
                 onClick={() => setDrafts(drafts.filter((_, j) => j !== i))}
-                className="self-start px-1 py-1.5 text-xs text-slate-600 hover:text-red-400"
+                className="self-start px-1 py-1.5 text-xs text-content-faint hover:text-signal-reverted"
                 aria-label="Remove tier"
               >
-                ✕
+                <CloseIcon className="h-4 w-4" />
               </button>
             </div>
           ))}
         </div>
 
         {!ascending && drafts.length > 1 && (
-          <p className="mt-2 text-[11px] text-red-400">
+          <p className="mt-2 text-[11px] text-signal-reverted">
             Tiers must increase from smallest to largest — the contract rejects any other order.
           </p>
         )}
 
         {error && (
-          <p className="mt-2 rounded border border-red-500/40 bg-red-500/10 p-2 text-[11px] text-red-300">
+          <p className="mt-2 rounded-chip border border-signal-reverted/40 bg-signal-reverted/10 p-2 text-[11px] text-signal-reverted">
             {error}
           </p>
         )}
@@ -235,7 +236,7 @@ const CurrencyTierManager: React.FC<CurrencyTierManagerProps> = ({
           type="button"
           onClick={handleSaveTiers}
           disabled={!allValid || !ascending || pendingAction === 'setTiers'}
-          className="mt-3 w-full rounded-lg bg-cyan-500 py-2 text-xs font-semibold text-slate-900 transition-colors hover:bg-cyan-400 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+          className="mt-3 w-full rounded-control bg-eth-blue py-2 text-xs font-semibold text-on-brand transition-colors hover:bg-eth-blue-lift disabled:cursor-not-allowed disabled:bg-surface-ridge disabled:text-content-muted"
         >
           {pendingAction === 'setTiers' ? 'Saving…' : `Save ${selected.symbol} tiers`}
         </button>

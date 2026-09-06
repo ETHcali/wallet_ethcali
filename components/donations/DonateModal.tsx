@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { CheckIcon, CloseIcon } from '../shared/icons';
 import { parseUnits, formatUnits } from 'viem';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import {
@@ -37,8 +38,8 @@ const QUICK_AMOUNTS: Record<string, string[]> = {
 const OVERLAY =
   'fixed inset-0 z-50 flex items-end justify-center bg-black/80 backdrop-blur-sm sm:items-center sm:p-4';
 const SHEET =
-  'flex w-full max-h-[92vh] flex-col rounded-t-2xl border-t border-slate-700 bg-slate-900 ' +
-  'supports-[height:1dvh]:max-h-[92dvh] sm:max-h-[90vh] sm:w-auto sm:max-w-md sm:rounded-2xl sm:border';
+  'flex w-full max-h-[92vh] flex-col rounded-t-card border-t border-line-hairline bg-surface-slab ' +
+  'supports-[height:1dvh]:max-h-[92dvh] sm:max-h-[90vh] sm:w-auto sm:max-w-md sm:rounded-card sm:border';
 /** Clears the iPhone home indicator without adding padding on a desktop. */
 const SAFE_BOTTOM = 'pb-[max(1rem,env(safe-area-inset-bottom))]';
 
@@ -141,18 +142,18 @@ const DonateModal: React.FC<DonateModalProps> = ({ campaign, chainId, onClose })
       <div className={OVERLAY}>
         <div className={SHEET}>
           <div className={`overflow-y-auto px-5 pt-6 text-center sm:px-6 ${SAFE_BOTTOM}`}>
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-green-500/15 text-3xl">
-              💚
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-signal-confirmed/15 text-signal-confirmed">
+              <CheckIcon className="h-7 w-7" strokeWidth={2} />
             </div>
-            <h2 className="mb-2 text-xl font-bold text-white">Gracias — thank you</h2>
-            <p className="mb-4 text-sm text-slate-400">
+            <h2 className="mb-2 text-xl font-bold text-content-primary">Gracias — thank you</h2>
+            <p className="mb-4 text-sm text-content-muted">
               Your donation of{' '}
-              <span className="font-semibold text-white">{formatToken(amount, token)}</span>{' '}
+              <span className="font-semibold text-content-primary">{formatToken(amount, token)}</span>{' '}
               is on its way to {campaign.name}.
             </p>
 
             {rewardTier !== null && rewardTier !== undefined && (
-              <p className="mb-4 rounded-lg border border-cyan-500/30 bg-cyan-500/10 p-3 text-xs text-cyan-300">
+              <p className="mb-4 rounded-control border border-eth-blue/30 bg-eth-blue/10 p-3 text-xs text-eth-blue-text">
                 A donation receipt NFT is being minted to your wallet.
               </p>
             )}
@@ -162,7 +163,7 @@ const DonateModal: React.FC<DonateModalProps> = ({ campaign, chainId, onClose })
                 href={`${explorer}/tx/${txHash}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mb-4 inline-block py-2 text-xs text-cyan-400 hover:underline"
+                className="mb-4 inline-block py-2 text-xs text-eth-blue-text hover:underline"
               >
                 View transaction ↗
               </a>
@@ -174,7 +175,7 @@ const DonateModal: React.FC<DonateModalProps> = ({ campaign, chainId, onClose })
                 reset();
                 onClose();
               }}
-              className="min-h-[48px] w-full rounded-lg bg-cyan-500 py-3 font-semibold text-slate-900 transition-colors hover:bg-cyan-400"
+              className="min-h-tap w-full rounded-control bg-eth-blue py-3 font-semibold text-on-brand transition-colors hover:bg-eth-blue-lift"
             >
               Done
             </button>
@@ -198,20 +199,20 @@ const DonateModal: React.FC<DonateModalProps> = ({ campaign, chainId, onClose })
         {/* ── Header: fixed, never scrolls away ───────────────────────────── */}
         <div className="shrink-0 px-5 pt-3 sm:px-6 sm:pt-5">
           {/* Grab handle reads as "draggable sheet" on a phone; noise on desktop. */}
-          <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-slate-700 sm:hidden" />
+          <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-surface-ridge sm:hidden" />
           <div className="mb-4 flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h2 className="text-lg font-bold text-white">Donate</h2>
-              <p className="truncate text-xs text-slate-400">{campaign.name}</p>
+              <h2 className="text-lg font-bold text-content-primary">Donate</h2>
+              <p className="truncate text-xs text-content-muted">{campaign.name}</p>
             </div>
             {/* -m-2 p-2 keeps the glyph small but the tap target ~44px. */}
             <button
               type="button"
               onClick={onClose}
-              className="-m-2 shrink-0 p-2 text-slate-500 transition-colors hover:text-white"
+              className="-m-2 shrink-0 p-2 text-content-faint transition-colors hover:text-content-primary"
               aria-label="Close"
             >
-              ✕
+              <CloseIcon />
             </button>
           </div>
         </div>
@@ -219,7 +220,7 @@ const DonateModal: React.FC<DonateModalProps> = ({ campaign, chainId, onClose })
         {/* ── Scrollable form ─────────────────────────────────────────────── */}
         <div className="min-h-0 flex-1 overflow-y-auto px-5 sm:px-6">
           {/* Currency */}
-          <label className="mb-2 block text-xs font-semibold text-slate-400">Currency</label>
+          <label className="mb-2 block text-xs font-semibold text-content-muted">Currency</label>
           <div className="mb-4 flex flex-wrap gap-2">
             {tokens.map((t) => (
               <button
@@ -229,10 +230,10 @@ const DonateModal: React.FC<DonateModalProps> = ({ campaign, chainId, onClose })
                   setToken(t);
                   setAmountInput('');
                 }}
-                className={`min-h-[44px] rounded-lg border px-4 text-sm font-semibold transition-colors ${
+                className={`min-h-tap rounded-control border px-4 text-sm font-semibold transition-colors ${
                   t.address === token.address
-                    ? 'border-cyan-500 bg-cyan-500/15 text-cyan-300'
-                    : 'border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500'
+                    ? 'border-eth-blue bg-eth-blue/15 text-eth-blue-text'
+                    : 'border-line-hairline bg-surface-inset text-content-secondary hover:border-line-strong'
                 }`}
               >
                 {t.symbol}
@@ -241,7 +242,7 @@ const DonateModal: React.FC<DonateModalProps> = ({ campaign, chainId, onClose })
           </div>
 
           {/* Amount */}
-          <label className="mb-2 block text-xs font-semibold text-slate-400" htmlFor="donate-amount">
+          <label className="mb-2 block text-xs font-semibold text-content-muted" htmlFor="donate-amount">
             Amount
           </label>
           {/* grid, not flex: COPm presets like 400,000 blow out a flex row on a
@@ -252,7 +253,7 @@ const DonateModal: React.FC<DonateModalProps> = ({ campaign, chainId, onClose })
                 key={preset}
                 type="button"
                 onClick={() => setAmountInput(preset)}
-                className="min-h-[44px] truncate rounded-lg border border-slate-700 bg-slate-800 px-1 text-xs font-semibold text-slate-300 transition-colors hover:border-cyan-500 hover:text-cyan-300"
+                className="min-h-tap truncate rounded-control border border-line-hairline bg-surface-inset px-1 text-xs font-semibold text-content-secondary transition-colors hover:border-eth-blue hover:text-eth-blue-text"
               >
                 {Number(preset).toLocaleString('en-US')}
               </button>
@@ -266,29 +267,29 @@ const DonateModal: React.FC<DonateModalProps> = ({ campaign, chainId, onClose })
             value={amountInput}
             onChange={(e) => setAmountInput(e.target.value.replace(/[^0-9.]/g, ''))}
             placeholder="0.00"
-            className="mb-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 text-lg text-white outline-none focus:border-cyan-500"
+            className="mb-1 w-full rounded-control border border-line-hairline bg-surface-inset px-4 py-3 text-lg text-content-primary outline-none focus:border-eth-blue"
           />
 
           {/* Fiat context — never show a token amount without it */}
           <div className="mb-4 flex items-center justify-between gap-2 text-xs">
-            <span className="text-slate-500">
+            <span className="text-content-faint">
               {amount > 0n ? `≈ ${format(amount, token)}` : ' '}
             </span>
-            <span className="truncate text-slate-500">
+            <span className="truncate text-content-faint">
               Balance: {formatToken(balance, token)}
             </span>
           </div>
 
           {/* Reward preview, straight from the contract */}
           {rewardTier !== null && rewardTier !== undefined && (
-            <div className="mb-4 rounded-lg border border-cyan-500/30 bg-cyan-500/10 p-3 text-xs text-cyan-300">
+            <div className="mb-4 rounded-control border border-eth-blue/30 bg-eth-blue/10 p-3 text-xs text-eth-blue-text">
               This donation earns a receipt NFT (tier #{rewardTier}).
             </div>
           )}
 
           {/* Message */}
-          <label className="mb-2 block text-xs font-semibold text-slate-400" htmlFor="donate-message">
-            Message <span className="font-normal text-slate-600">(optional, public)</span>
+          <label className="mb-2 block text-xs font-semibold text-content-muted" htmlFor="donate-message">
+            Message <span className="font-normal text-content-faint">(optional, public)</span>
           </label>
           {/* text-base, not text-sm: iOS Safari zooms the whole page when a
               focused input is under 16px, and the sheet never recovers. */}
@@ -298,17 +299,17 @@ const DonateModal: React.FC<DonateModalProps> = ({ campaign, chainId, onClose })
             value={message}
             onChange={(e) => setMessage(e.target.value.slice(0, 120))}
             placeholder="Fuerza Cali"
-            className="mb-4 w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-base text-white outline-none focus:border-cyan-500 sm:text-sm"
+            className="mb-4 w-full rounded-control border border-line-hairline bg-surface-inset px-4 py-2.5 text-base text-content-primary outline-none focus:border-eth-blue sm:text-sm"
           />
         </div>
 
         {/* ── Action: pinned, so the primary button is never scrolled off ─── */}
         <div
-          className={`shrink-0 border-t border-slate-800 bg-slate-900 px-5 pt-4 sm:px-6 ${SAFE_BOTTOM}`}
+          className={`shrink-0 border-t border-line-hairline bg-surface-slab px-5 pt-4 sm:px-6 ${SAFE_BOTTOM}`}
         >
           {/* Inline, persistent error next to the action */}
           {actionError && (
-            <div className="mb-3 rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-xs text-red-300">
+            <div className="mb-3 rounded-control border border-signal-reverted/40 bg-signal-reverted/10 p-3 text-xs text-signal-reverted">
               {actionError}
             </div>
           )}
@@ -318,7 +319,7 @@ const DonateModal: React.FC<DonateModalProps> = ({ campaign, chainId, onClose })
             <button
               type="button"
               onClick={login}
-              className="min-h-[48px] w-full rounded-lg bg-cyan-500 py-3 font-semibold text-slate-900 transition-colors hover:bg-cyan-400"
+              className="min-h-tap w-full rounded-control bg-eth-blue py-3 font-semibold text-on-brand transition-colors hover:bg-eth-blue-lift"
             >
               Connect wallet
             </button>
@@ -330,14 +331,14 @@ const DonateModal: React.FC<DonateModalProps> = ({ campaign, chainId, onClose })
                 type="button"
                 onClick={handleSwitchNetwork}
                 disabled={isSwitching}
-                className="min-h-[48px] w-full rounded-lg bg-amber-500 py-3 font-semibold text-slate-900 transition-colors hover:bg-amber-400 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+                className="min-h-tap w-full rounded-control bg-signal-pending py-3 font-semibold text-on-brand transition-colors hover:bg-signal-pending disabled:cursor-not-allowed disabled:bg-surface-ridge disabled:text-content-muted"
               >
                 {isSwitching
                   ? 'Switching…'
                   : `Switch to ${NETWORK_NAMES[chainId as ChainId]}`}
               </button>
               {switchError && (
-                <p className="mt-2 text-center text-[11px] text-red-400">{switchError}</p>
+                <p className="mt-2 text-center text-[11px] text-signal-reverted">{switchError}</p>
               )}
             </>
           )}
@@ -347,7 +348,7 @@ const DonateModal: React.FC<DonateModalProps> = ({ campaign, chainId, onClose })
               type="button"
               onClick={handleApprove}
               disabled={approveLocked || amount <= 0n || insufficientBalance}
-              className="min-h-[48px] w-full rounded-lg bg-cyan-500 py-3 font-semibold text-slate-900 transition-colors hover:bg-cyan-400 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+              className="min-h-tap w-full rounded-control bg-eth-blue py-3 font-semibold text-on-brand transition-colors hover:bg-eth-blue-lift disabled:cursor-not-allowed disabled:bg-surface-ridge disabled:text-content-muted"
             >
               {isApproving
                 ? 'Approving…'
@@ -362,7 +363,7 @@ const DonateModal: React.FC<DonateModalProps> = ({ campaign, chainId, onClose })
               type="button"
               onClick={handleDonate}
               disabled={donateDisabled}
-              className="min-h-[48px] w-full rounded-lg bg-green-500 py-3 font-semibold text-slate-900 transition-colors hover:bg-green-400 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+              className="min-h-tap w-full rounded-control bg-eth-blue py-3 font-semibold text-on-brand transition-colors hover:bg-eth-blue-lift disabled:cursor-not-allowed disabled:bg-surface-ridge disabled:text-content-muted"
             >
               {isDonating
                 ? 'Sending…'
@@ -373,7 +374,7 @@ const DonateModal: React.FC<DonateModalProps> = ({ campaign, chainId, onClose })
           )}
 
           {!token.isNative && allowance > 0n && !needsApproval && amount > 0n && (
-            <p className="mt-2 text-center text-[11px] text-slate-500">
+            <p className="mt-2 text-center text-[11px] text-content-faint">
               {formatUnits(allowance, token.decimals)} {token.symbol} already approved
             </p>
           )}

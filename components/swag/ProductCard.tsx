@@ -8,6 +8,7 @@
  *                  size picker · buy · attributes · royalties · discounts
  */
 import { useState, useEffect, useCallback } from 'react';
+import { CloseIcon, KeyIcon, TicketIcon } from '../shared/icons';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { useWallets } from '@privy-io/react-auth';
@@ -42,10 +43,10 @@ function stockLabel(remaining: number, isLoading: boolean): string {
 }
 
 function stockColor(remaining: number, isLoading: boolean): string {
-  if (isLoading) return 'text-slate-500';
-  if (remaining === 0) return 'text-red-400';
-  if (remaining <= 5) return 'text-yellow-400';
-  return 'text-emerald-400';
+  if (isLoading) return 'text-content-faint';
+  if (remaining === 0) return 'text-signal-reverted';
+  if (remaining <= 5) return 'text-signal-pending';
+  return 'text-content-primary';
 }
 
 // ─── SizePill  (card – compact) ───────────────────────────────────────────────
@@ -75,12 +76,12 @@ function SizePill({
       aria-pressed={isSelected}
       title={isSoldOut ? `${label} – Sold out` : `Select ${label}`}
       className={[
-        'px-3 py-1.5 rounded-lg text-sm font-semibold border transition-all duration-150 select-none',
+        'px-3 py-1.5 rounded-control text-sm font-semibold border transition-all duration-150 select-none',
         isSelected
-          ? 'bg-cyan-500 border-cyan-500 text-white shadow-md shadow-cyan-500/25'
+          ? 'bg-eth-blue border-eth-blue text-content-primary '
           : isSoldOut
-          ? 'border-slate-800 text-slate-600 line-through bg-transparent cursor-not-allowed'
-          : 'border-slate-700 text-slate-300 hover:border-cyan-500/60 hover:text-white bg-slate-900/40 cursor-pointer',
+          ? 'border-line-hairline text-content-faint line-through bg-transparent cursor-not-allowed'
+          : 'border-line-hairline text-content-secondary hover:border-eth-blue/60 hover:text-content-primary bg-surface-slab/40 cursor-pointer',
       ].join(' ')}
     >
       {label}
@@ -114,18 +115,18 @@ function ModalSizePill({
       onClick={() => !isSoldOut && onSelect(sv.tokenId)}
       aria-pressed={isSelected}
       className={[
-        'flex flex-col items-center gap-0.5 rounded-xl border px-4 py-2.5 transition-all duration-150 min-w-[4rem] select-none',
+        'flex flex-col items-center gap-0.5 rounded-card border px-4 py-2.5 transition-all duration-150 min-w-[4rem] select-none',
         isSelected
-          ? 'bg-cyan-500/15 border-cyan-500 shadow-md shadow-cyan-500/10'
+          ? 'bg-eth-blue/15 border-eth-blue '
           : isSoldOut
-          ? 'border-slate-800 bg-transparent cursor-not-allowed opacity-50'
-          : 'border-slate-700 bg-slate-900/50 hover:border-slate-600 cursor-pointer',
+          ? 'border-line-hairline bg-transparent cursor-not-allowed opacity-50'
+          : 'border-line-hairline bg-surface-slab/50 hover:border-line-strong cursor-pointer',
       ].join(' ')}
     >
       <span
         className={[
           'text-sm font-bold',
-          isSelected ? 'text-cyan-400' : isSoldOut ? 'text-slate-600 line-through' : 'text-white',
+          isSelected ? 'text-eth-blue-text' : isSoldOut ? 'text-content-faint line-through' : 'text-content-primary',
         ].join(' ')}
       >
         {label}
@@ -157,17 +158,17 @@ function InventoryRow({
   return (
     <div className="flex items-center gap-3">
       {/* Size label */}
-      <span className="w-16 shrink-0 text-xs font-semibold text-slate-400">{label}</span>
+      <span className="w-16 shrink-0 text-xs font-semibold text-content-muted">{label}</span>
       {/* Progress bar */}
-      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-800">
+      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-inset">
         <div
           className={[
             'h-full rounded-full transition-all',
             remaining === 0
-              ? 'bg-red-500/60'
+              ? 'bg-signal-reverted/60'
               : remaining <= 5
-              ? 'bg-yellow-500/70'
-              : 'bg-emerald-500/70',
+              ? 'bg-signal-pending/70'
+              : 'bg-eth-blue/70',
           ].join(' ')}
           style={{ width: `${pct}%` }}
         />
@@ -288,19 +289,19 @@ function ProductDetailModal({ group, contractAddress, chainId, initialTokenId, o
         role="dialog"
         aria-modal="true"
         aria-label={group.productName}
-        className="relative w-full sm:max-w-3xl max-h-[92dvh] sm:max-h-[88vh] overflow-y-auto rounded-t-3xl sm:rounded-2xl border border-slate-700/60 bg-slate-950 shadow-2xl flex flex-col"
+        className="relative w-full sm:max-w-3xl max-h-[92dvh] sm:max-h-[88vh] overflow-y-auto rounded-t-3xl sm:rounded-card border border-line-hairline bg-surface-void  flex flex-col"
       >
         {/* ── Top bar (drag handle on mobile + close btn) ── */}
         <div className="flex shrink-0 items-center justify-between px-5 pt-4 pb-2">
           {/* Mobile drag handle */}
-          <div className="mx-auto h-1 w-10 rounded-full bg-slate-700 sm:hidden" />
+          <div className="mx-auto h-1 w-10 rounded-full bg-surface-ridge sm:hidden" />
           <button
             type="button"
             onClick={onClose}
-            className="ml-auto flex h-8 w-8 items-center justify-center rounded-full border border-slate-700/80 bg-slate-800/80 text-slate-400 transition-colors hover:border-slate-600 hover:text-white"
+            className="ml-auto flex h-8 w-8 items-center justify-center rounded-full border border-line-hairline bg-surface-inset/80 text-content-muted transition-colors hover:border-line-strong hover:text-content-primary"
             aria-label="Close"
           >
-            ✕
+            <CloseIcon className="h-4 w-4" />
           </button>
         </div>
 
@@ -309,7 +310,7 @@ function ProductDetailModal({ group, contractAddress, chainId, initialTokenId, o
 
           {/* ── Left: image (sticky on large screens) ── */}
           <div className="lg:sticky lg:top-4 lg:self-start shrink-0 w-full lg:w-72 xl:w-80">
-            <div className="relative aspect-square overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
+            <div className="relative aspect-square overflow-hidden rounded-card border border-line-hairline bg-surface-slab">
               <Image
                 src={imageUrl}
                 alt={group.productName}
@@ -322,7 +323,7 @@ function ProductDetailModal({ group, contractAddress, chainId, initialTokenId, o
               {/* Inactive badge */}
               {variant && !variant.active && (
                 <div className="absolute right-2 top-2">
-                  <span className="rounded-full border border-slate-600 bg-slate-800/90 px-2.5 py-1 text-xs text-slate-300">
+                  <span className="rounded-full border border-line-strong bg-surface-inset/90 px-2.5 py-1 text-xs text-content-secondary">
                     Inactive
                   </span>
                 </div>
@@ -335,19 +336,19 @@ function ProductDetailModal({ group, contractAddress, chainId, initialTokenId, o
 
             {/* Name + price */}
             <div>
-              <h2 className="text-xl font-bold leading-snug text-white sm:text-2xl">
+              <h2 className="text-xl font-bold leading-snug text-content-primary sm:text-2xl">
                 {group.productName}
               </h2>
               <div className="mt-2 flex flex-wrap items-end gap-2">
                 {hasDiscount && (
-                  <span className="text-base text-slate-500 line-through">${basePrice.toFixed(2)}</span>
+                  <span className="text-base text-content-faint line-through">${basePrice.toFixed(2)}</span>
                 )}
-                <span className="text-2xl font-bold text-white">
+                <span className="text-2xl font-bold text-content-primary">
                   ${displayPrice.toFixed(2)}{' '}
-                  <span className="text-sm font-normal text-slate-400">USDC</span>
+                  <span className="text-sm font-normal text-content-muted">USDC</span>
                 </span>
                 {hasDiscount && (
-                  <span className="rounded-full border border-purple-500/30 bg-purple-500/15 px-2.5 py-0.5 text-xs font-semibold text-purple-300">
+                  <span className="rounded-full border border-eth-blue/30 bg-eth-blue/15 px-2.5 py-0.5 text-xs font-semibold text-eth-blue-text">
                     Discount applied
                   </span>
                 )}
@@ -357,17 +358,17 @@ function ProductDetailModal({ group, contractAddress, chainId, initialTokenId, o
             {/* Description */}
             {group.description && (
               <div>
-                <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-widest text-slate-500">
+                <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-widest text-content-faint">
                   About
                 </p>
-                <p className="text-sm text-slate-300 leading-relaxed">{group.description}</p>
+                <p className="text-sm text-content-secondary leading-relaxed">{group.description}</p>
               </div>
             )}
 
             {/* ── Size picker (interactive) ── */}
             {showSizePicker && (
               <div>
-                <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-widest text-slate-500">
+                <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-widest text-content-faint">
                   Select Size
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -389,23 +390,23 @@ function ProductDetailModal({ group, contractAddress, chainId, initialTokenId, o
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 {!isSoldOut && variant?.active && (
-                  <div className="flex items-center overflow-hidden rounded-xl border border-slate-700 bg-slate-900">
+                  <div className="flex items-center overflow-hidden rounded-card border border-line-hairline bg-surface-slab">
                     <button
                       type="button"
                       onClick={() => setQty(q => Math.max(1, q - 1))}
                       disabled={qty <= 1 || pending}
-                      className="px-3 py-2.5 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white disabled:opacity-40"
+                      className="px-3 py-2.5 text-content-muted transition-colors hover:bg-surface-inset hover:text-content-primary disabled:opacity-40"
                     >
                       −
                     </button>
-                    <span className="min-w-[2.5rem] px-1 py-2.5 text-center text-sm font-semibold text-white">
+                    <span className="min-w-[2.5rem] px-1 py-2.5 text-center text-sm font-semibold text-content-primary">
                       {qty}
                     </span>
                     <button
                       type="button"
                       onClick={() => setQty(q => Math.min(remaining, q + 1))}
                       disabled={qty >= remaining || pending}
-                      className="px-3 py-2.5 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white disabled:opacity-40"
+                      className="px-3 py-2.5 text-content-muted transition-colors hover:bg-surface-inset hover:text-content-primary disabled:opacity-40"
                     >
                       +
                     </button>
@@ -415,7 +416,7 @@ function ProductDetailModal({ group, contractAddress, chainId, initialTokenId, o
                   type="button"
                   onClick={handleBuy}
                   disabled={isSoldOut || pending || !canBuy || !variant?.active}
-                  className="flex-1 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 py-3 text-sm font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="flex-1 rounded-card bg-eth-blue hover:bg-eth-blue-lift py-3 text-sm font-bold text-content-primary transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {pending
                     ? 'Processing…'
@@ -430,15 +431,15 @@ function ProductDetailModal({ group, contractAddress, chainId, initialTokenId, o
               </div>
 
               {txError && (
-                <p className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2.5 text-xs text-red-400">
+                <p className="rounded-card border border-signal-reverted/20 bg-signal-reverted/10 px-4 py-2.5 text-xs text-signal-reverted">
                   {txError}
                 </p>
               )}
               {txSuccess && (
-                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-2.5 text-xs font-semibold text-emerald-400">
+                <div className="rounded-card border border-signal-confirmed/20 bg-signal-confirmed/10 px-4 py-2.5 text-xs font-semibold text-signal-confirmed">
                   <p>✓ Purchase confirmed!</p>
                   {mintedSerial !== null && (
-                    <p className="mt-1 text-[11px] font-mono text-emerald-300/80">
+                    <p className="mt-1 text-[11px] font-mono text-signal-confirmed/80">
                       Serial #{mintedSerial.toString()}
                     </p>
                   )}
@@ -448,8 +449,8 @@ function ProductDetailModal({ group, contractAddress, chainId, initialTokenId, o
 
             {/* ── Inventory by size ── */}
             {showSizePicker && (
-              <div className="rounded-2xl border border-slate-800/80 bg-slate-900/50 p-4">
-                <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-slate-500">
+              <div className="rounded-card border border-line-hairline bg-surface-slab/50 p-4">
+                <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-content-faint">
                   Inventory by Size
                 </p>
                 <div className="space-y-2.5">
@@ -468,16 +469,16 @@ function ProductDetailModal({ group, contractAddress, chainId, initialTokenId, o
             {/* ── Attributes ── */}
             {group.baseAttributes.length > 0 && (
               <div>
-                <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-widest text-slate-500">
+                <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-widest text-content-faint">
                   Attributes
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {group.baseAttributes.map(a => (
                     <span
                       key={a.trait_type}
-                      className="rounded-lg border border-slate-700/50 bg-slate-800/60 px-3 py-1 text-xs text-slate-300"
+                      className="rounded-control border border-line-hairline bg-surface-inset/60 px-3 py-1 text-xs text-content-secondary"
                     >
-                      <span className="text-slate-500">{a.trait_type}: </span>
+                      <span className="text-content-faint">{a.trait_type}: </span>
                       {a.value}
                     </span>
                   ))}
@@ -488,30 +489,30 @@ function ProductDetailModal({ group, contractAddress, chainId, initialTokenId, o
             {/* ── Royalties ── */}
             {!rLoading && (
               <div>
-                <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-widest text-slate-500">
+                <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-widest text-content-faint">
                   Royalties
                 </p>
                 {royalties.length > 0 ? (
-                  <div className="space-y-2 rounded-xl border border-slate-800 bg-slate-900/60 p-3">
+                  <div className="space-y-2 rounded-card border border-line-hairline bg-surface-slab/60 p-3">
                     {royalties.map((r, i) => (
                       <div key={i} className="flex items-center justify-between gap-3">
                         <a
                           href={`${explorerBase}/address/${r.recipient}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 font-mono text-xs text-slate-400 transition-colors hover:text-cyan-400"
+                          className="flex items-center gap-1.5 font-mono text-xs text-content-muted transition-colors hover:text-eth-blue-text"
                         >
                           {r.recipient.slice(0, 10)}…{r.recipient.slice(-8)}
                           <span className="text-[10px]">↗</span>
                         </a>
-                        <span className="shrink-0 rounded-full border border-cyan-500/20 bg-cyan-500/10 px-2.5 py-0.5 text-xs font-semibold text-cyan-400">
+                        <span className="shrink-0 rounded-full border border-eth-blue/20 bg-eth-blue/10 px-2.5 py-0.5 text-xs font-semibold text-eth-blue-text">
                           {(Number(r.percentage) / 100).toFixed(2)}%
                         </span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-slate-600">No royalties configured</p>
+                  <p className="text-xs text-content-faint">No royalties configured</p>
                 )}
               </div>
             )}
@@ -519,16 +520,16 @@ function ProductDetailModal({ group, contractAddress, chainId, initialTokenId, o
             {/* ── Active discounts ── */}
             {hasDiscounts && (
               <div>
-                <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-widest text-slate-500">
+                <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-widest text-content-faint">
                   Active Discounts
                 </p>
                 <div className="space-y-1.5">
                   {activePoap.map((d, i) => (
                     <div
                       key={i}
-                      className="flex items-center gap-2 rounded-lg border border-purple-500/20 bg-purple-500/10 px-3 py-2 text-xs text-purple-300"
+                      className="flex items-center gap-2 rounded-control border border-eth-blue/20 bg-eth-blue/10 px-3 py-2 text-xs text-eth-blue-text"
                     >
-                      <span>🎟</span>
+                      <TicketIcon className="h-4 w-4 shrink-0" />
                       <span>
                         POAP Event #{Number(d.eventId)} —{' '}
                         <strong>{(Number(d.discountBps) / 100).toFixed(0)}% off</strong>
@@ -538,9 +539,9 @@ function ProductDetailModal({ group, contractAddress, chainId, initialTokenId, o
                   {activeHolder.map((d, i) => (
                     <div
                       key={i}
-                      className="flex items-center gap-2 rounded-lg border border-blue-500/20 bg-blue-500/10 px-3 py-2 text-xs text-blue-300"
+                      className="flex items-center gap-2 rounded-control border border-eth-blue/20 bg-eth-blue/10 px-3 py-2 text-xs text-eth-blue-text"
                     >
-                      <span>🔑</span>
+                      <KeyIcon className="h-4 w-4 shrink-0" />
                       <span>
                         Token holder ({d.token.slice(0, 6)}…{d.token.slice(-4)}) —{' '}
                         <strong>
@@ -556,12 +557,12 @@ function ProductDetailModal({ group, contractAddress, chainId, initialTokenId, o
             )}
 
             {/* ── Contract link ── */}
-            <div className="border-t border-slate-800/60 pt-4">
+            <div className="border-t border-line-hairline pt-4">
               <a
                 href={`${explorerBase}/address/${contractAddress}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-2.5 text-xs text-slate-500 transition-colors hover:border-slate-700 hover:text-cyan-400"
+                className="inline-flex items-center gap-2 rounded-card border border-line-hairline bg-surface-slab/60 px-4 py-2.5 text-xs text-content-faint transition-colors hover:border-line-hairline hover:text-eth-blue-text"
               >
                 <span className="font-mono">
                   {contractAddress.slice(0, 10)}…{contractAddress.slice(-8)}
@@ -643,13 +644,13 @@ function GroupedProductCard({
 
   return (
     <>
-      <article className="group/card flex flex-col overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-900/60 shadow-xl backdrop-blur-sm transition-all duration-300 hover:border-slate-700/80 hover:shadow-2xl">
+      <article className="group/card flex flex-col overflow-hidden rounded-card border border-line-hairline bg-surface-slab/60  backdrop-blur-sm transition-all duration-300 hover:border-line-hairline hover:shadow-2xl">
 
         {/* ── Image – click opens modal ── */}
         <button
           type="button"
           onClick={() => setIsModalOpen(true)}
-          className="relative aspect-square w-full overflow-hidden bg-slate-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500"
+          className="relative aspect-square w-full overflow-hidden bg-surface-void focus:outline-none focus-visible:ring-2 focus-visible:ring-eth-blue"
           aria-label={`View details for ${group.productName}`}
         >
           <Image
@@ -662,15 +663,15 @@ function GroupedProductCard({
           />
           {/* Hover overlay hint */}
           <div className="absolute inset-0 flex items-end justify-center bg-gradient-to-t from-black/60 to-transparent pb-4 opacity-0 transition-opacity duration-300 group-hover/card:opacity-100">
-            <span className="rounded-full border border-white/20 bg-black/50 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm">
+            <span className="rounded-full border border-line-hairline bg-black/50 px-3 py-1 text-xs font-medium text-content-primary backdrop-blur-sm">
               View Details
             </span>
           </div>
 
           {/* Sold-out overlay */}
           {isSoldOut && variant && (
-            <div className="absolute inset-0 flex items-center justify-center bg-slate-950/70">
-              <span className="rounded-full border border-red-500/40 bg-red-500/20 px-4 py-1.5 text-sm font-semibold text-red-400">
+            <div className="absolute inset-0 flex items-center justify-center bg-surface-void/70">
+              <span className="rounded-full border border-signal-reverted/40 bg-signal-reverted/20 px-4 py-1.5 text-sm font-semibold text-signal-reverted">
                 Sold Out
               </span>
             </div>
@@ -679,7 +680,7 @@ function GroupedProductCard({
           {/* Inactive badge */}
           {variant && !variant.active && (
             <div className="absolute right-2 top-2">
-              <span className="rounded-full border border-slate-700 bg-slate-800/90 px-2.5 py-1 text-xs text-slate-400">
+              <span className="rounded-full border border-line-hairline bg-surface-inset/90 px-2.5 py-1 text-xs text-content-muted">
                 Inactive
               </span>
             </div>
@@ -693,7 +694,7 @@ function GroupedProductCard({
           <button
             type="button"
             onClick={() => setIsModalOpen(true)}
-            className="text-left text-base font-bold leading-snug text-white hover:text-cyan-300 transition-colors"
+            className="text-left text-base font-bold leading-snug text-content-primary hover:text-eth-blue-text transition-colors"
           >
             {group.productName}
           </button>
@@ -701,14 +702,14 @@ function GroupedProductCard({
           {/* Price */}
           <div className="flex flex-wrap items-end gap-2">
             {hasDiscount && (
-              <span className="text-sm text-slate-500 line-through">${basePrice.toFixed(2)}</span>
+              <span className="text-sm text-content-faint line-through">${basePrice.toFixed(2)}</span>
             )}
-            <span className="text-xl font-bold text-white">
+            <span className="text-xl font-bold text-content-primary">
               ${displayPrice.toFixed(2)}{' '}
-              <span className="text-sm font-normal text-slate-400">USDC</span>
+              <span className="text-sm font-normal text-content-muted">USDC</span>
             </span>
             {hasDiscount && (
-              <span className="ml-auto rounded-full border border-purple-500/30 bg-purple-500/15 px-2 py-0.5 text-xs font-semibold text-purple-300">
+              <span className="ml-auto rounded-full border border-eth-blue/30 bg-eth-blue/15 px-2 py-0.5 text-xs font-semibold text-eth-blue-text">
                 Discount
               </span>
             )}
@@ -717,7 +718,7 @@ function GroupedProductCard({
           {/* Size pills (compact) */}
           {showSizePicker && (
             <div>
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-slate-500">
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-content-faint">
                 Size
               </p>
               <div className="flex flex-wrap gap-1.5">
@@ -738,23 +739,23 @@ function GroupedProductCard({
           {/* Qty + Buy */}
           <div className="mt-auto flex items-center gap-2 pt-1">
             {!isSoldOut && variant?.active && (
-              <div className="flex items-center overflow-hidden rounded-lg border border-slate-700/80 bg-slate-900">
+              <div className="flex items-center overflow-hidden rounded-control border border-line-hairline bg-surface-slab">
                 <button
                   type="button"
                   onClick={() => setQty(q => Math.max(1, q - 1))}
                   disabled={qty <= 1 || pending}
-                  className="px-2.5 py-2 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white disabled:opacity-40"
+                  className="px-2.5 py-2 text-content-muted transition-colors hover:bg-surface-inset hover:text-content-primary disabled:opacity-40"
                 >
                   −
                 </button>
-                <span className="min-w-[2rem] px-1 py-2 text-center text-sm font-medium text-white">
+                <span className="min-w-[2rem] px-1 py-2 text-center text-sm font-medium text-content-primary">
                   {qty}
                 </span>
                 <button
                   type="button"
                   onClick={() => setQty(q => Math.min(remaining, q + 1))}
                   disabled={qty >= remaining || pending}
-                  className="px-2.5 py-2 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white disabled:opacity-40"
+                  className="px-2.5 py-2 text-content-muted transition-colors hover:bg-surface-inset hover:text-content-primary disabled:opacity-40"
                 >
                   +
                 </button>
@@ -764,7 +765,7 @@ function GroupedProductCard({
               type="button"
               onClick={handleBuy}
               disabled={isSoldOut || pending || !canBuy || !variant?.active}
-              className="flex-1 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex-1 rounded-card bg-eth-blue hover:bg-eth-blue-lift py-2.5 text-sm font-semibold text-content-primary transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {pending
                 ? 'Buying…'
@@ -779,7 +780,7 @@ function GroupedProductCard({
           </div>
 
           {txError && (
-            <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+            <p className="rounded-control border border-signal-reverted/20 bg-signal-reverted/10 px-3 py-2 text-xs text-signal-reverted">
               {txError}
             </p>
           )}
@@ -788,7 +789,7 @@ function GroupedProductCard({
           <button
             type="button"
             onClick={() => setIsModalOpen(true)}
-            className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-800 py-2 text-xs font-medium text-slate-500 transition-all hover:border-slate-600 hover:text-slate-300"
+            className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-control border border-line-hairline py-2 text-xs font-medium text-content-faint transition-all hover:border-line-strong hover:text-content-secondary"
           >
             <span>View Details</span>
             <span className="text-[10px]">↗</span>
@@ -826,19 +827,19 @@ export function ProductCard({ designAddress, chainId }: ProductCardProps) {
         {[0, 1, 2].map(i => (
           <div
             key={i}
-            className="animate-pulse overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/70"
+            className="animate-pulse overflow-hidden rounded-card border border-line-hairline bg-surface-slab/70"
           >
-            <div className="aspect-square bg-slate-800" />
+            <div className="aspect-square bg-surface-inset" />
             <div className="space-y-3 p-4">
-              <div className="h-5 w-2/3 rounded bg-slate-800" />
-              <div className="h-7 w-1/3 rounded bg-slate-800" />
+              <div className="h-5 w-2/3 rounded-chip bg-surface-inset" />
+              <div className="h-7 w-1/3 rounded-chip bg-surface-inset" />
               <div className="flex gap-2">
                 {[0, 1, 2, 3].map(j => (
-                  <div key={j} className="h-8 w-10 rounded-lg bg-slate-800" />
+                  <div key={j} className="h-8 w-10 rounded-control bg-surface-inset" />
                 ))}
               </div>
-              <div className="h-10 rounded-xl bg-slate-800" />
-              <div className="h-8 rounded-lg bg-slate-800/60" />
+              <div className="h-10 rounded-card bg-surface-inset" />
+              <div className="h-8 rounded-control bg-surface-inset/60" />
             </div>
           </div>
         ))}
@@ -848,18 +849,18 @@ export function ProductCard({ designAddress, chainId }: ProductCardProps) {
 
   if (error) {
     return (
-      <div className="col-span-full rounded-2xl border border-red-500/30 bg-red-500/10 p-6">
-        <p className="font-medium text-red-300">Failed to load products</p>
-        <p className="mt-1 text-xs text-red-400/70">{error}</p>
+      <div className="col-span-full rounded-card border border-signal-reverted/30 bg-signal-reverted/10 p-6">
+        <p className="font-medium text-signal-reverted">Failed to load products</p>
+        <p className="mt-1 text-xs text-signal-reverted/70">{error}</p>
       </div>
     );
   }
 
   if (groups.length === 0) {
     return (
-      <div className="col-span-full rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-6">
-        <p className="mb-1 font-medium text-yellow-200">No Products Available</p>
-        <p className="text-sm text-yellow-300/70">No active variants found in this contract.</p>
+      <div className="col-span-full rounded-card border border-signal-pending/30 bg-signal-pending/10 p-6">
+        <p className="mb-1 font-medium text-signal-pending">No Products Available</p>
+        <p className="text-sm text-signal-pending/70">No active variants found in this contract.</p>
       </div>
     );
   }

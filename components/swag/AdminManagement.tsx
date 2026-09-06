@@ -90,17 +90,17 @@ export function AdminManagement() {
   };
 
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 space-y-6">
+    <div className="rounded-card border border-line-hairline bg-surface-slab/60 p-6 space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-white mb-1">Admin Management</h3>
-        <p className="text-sm text-slate-400">Add or remove addresses that can create products</p>
+        <h3 className="text-lg font-semibold text-content-primary mb-1">Admin Management</h3>
+        <p className="text-sm text-content-muted">Add or remove addresses that can create products</p>
       </div>
 
       {message && (
-        <div className={`p-3 rounded-lg text-sm ${
+        <div className={`p-3 rounded-control text-sm ${
           message.type === 'success'
-            ? 'bg-emerald-500/10 border border-emerald-500/40 text-emerald-300'
-            : 'bg-red-500/10 border border-red-500/40 text-red-300'
+            ? 'bg-signal-confirmed/10 border border-signal-confirmed/40 text-signal-confirmed'
+            : 'bg-signal-reverted/10 border border-signal-reverted/40 text-signal-reverted'
         }`}>
           {message.text}
         </div>
@@ -108,20 +108,20 @@ export function AdminManagement() {
 
       <form onSubmit={handleAddAdmin} className="space-y-3">
         <label className="block">
-          <span className="text-sm text-slate-400">Add Admin</span>
+          <span className="text-sm text-content-muted">Add Admin</span>
           <div className="flex gap-2 mt-1">
             <input
               type="text"
               value={newAdmin}
               onChange={(e) => setNewAdmin(e.target.value)}
               placeholder="0x..."
-              className="flex-1 rounded-lg border border-slate-700 bg-slate-900/80 p-3 text-white text-sm font-mono focus:border-cyan-400 focus:outline-none"
+              className="flex-1 rounded-control border border-line-hairline bg-surface-slab/80 p-3 text-content-primary text-sm font-mono focus:border-eth-blue focus:outline-none"
               disabled={isAdding}
             />
             <button
               type="submit"
               disabled={isAdding || !newAdmin}
-              className="px-4 py-2 rounded-lg bg-emerald-600 text-white font-medium hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-4 py-2 rounded-control bg-eth-blue text-on-brand font-medium hover:bg-eth-blue-lift disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {isAdding ? 'Adding...' : 'Add'}
             </button>
@@ -131,20 +131,20 @@ export function AdminManagement() {
 
       <form onSubmit={handleRemoveAdmin} className="space-y-3">
         <label className="block">
-          <span className="text-sm text-slate-400">Remove Admin</span>
+          <span className="text-sm text-content-muted">Remove Admin</span>
           <div className="flex gap-2 mt-1">
             <input
               type="text"
               value={removeAdminAddr}
               onChange={(e) => setRemoveAdminAddr(e.target.value)}
               placeholder="0x..."
-              className="flex-1 rounded-lg border border-slate-700 bg-slate-900/80 p-3 text-white text-sm font-mono focus:border-cyan-400 focus:outline-none"
+              className="flex-1 rounded-control border border-line-hairline bg-surface-slab/80 p-3 text-content-primary text-sm font-mono focus:border-eth-blue focus:outline-none"
               disabled={isRemoving}
             />
             <button
               type="submit"
               disabled={isRemoving || !removeAdminAddr}
-              className="px-4 py-2 rounded-lg bg-red-600 text-white font-medium hover:bg-red-500 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-4 py-2 rounded-control bg-signal-reverted text-content-primary font-medium hover:bg-signal-reverted disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {isRemoving ? 'Removing...' : 'Remove'}
             </button>

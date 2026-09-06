@@ -20,8 +20,8 @@ export default function IdentityAdminPage() {
     return (
       <AdminShell active="identity" title="Identity" chainId={chainId}>
           <div className="flex items-center justify-center py-20">
-            <div className="w-3 h-3 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
-            <span className="ml-3 text-purple-400 font-mono text-[10px] tracking-wider">VERIFYING...</span>
+            <div className="w-3 h-3 border-2 border-eth-blue border-t-transparent rounded-full animate-spin" />
+            <span className="ml-3 text-eth-blue-text font-mono text-[10px] tracking-wider">VERIFYING...</span>
           </div>
         </AdminShell>
     );
@@ -31,15 +31,15 @@ export default function IdentityAdminPage() {
     return (
       <AdminShell active="identity" title="Identity" chainId={chainId}>
           <div className="flex flex-col items-center justify-center py-20">
-            <div className="bg-black/60 border border-red-500/30 rounded-lg p-4 max-w-sm">
+            <div className="bg-black/60 border border-signal-reverted/30 rounded-control p-4 max-w-sm">
               <div className="flex items-center gap-2 mb-3">
-                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                <span className="text-[10px] text-red-400 font-mono tracking-wider">ACCESS_DENIED</span>
+                <div className="w-2 h-2 bg-signal-reverted rounded-full"></div>
+                <span className="text-[10px] text-signal-reverted font-mono tracking-wider">Access denied</span>
               </div>
               <div className="space-y-2 text-[10px] font-mono">
-                <p className="text-gray-500">contract: <span className="text-gray-600">{zkpassport?.slice(0, 10)}...</span></p>
-                <p className="text-gray-500">owner: <span className="text-purple-400">{owner?.slice(0, 10)}...</span></p>
-                <p className="text-gray-500">wallet: <span className="text-gray-600">{walletAddress?.slice(0, 10)}...</span></p>
+                <p className="text-content-faint">contract: <span className="text-content-faint">{zkpassport?.slice(0, 10)}...</span></p>
+                <p className="text-content-faint">owner: <span className="text-eth-blue-text">{owner?.slice(0, 10)}...</span></p>
+                <p className="text-content-faint">wallet: <span className="text-content-faint">{walletAddress?.slice(0, 10)}...</span></p>
               </div>
             </div>
           </div>
@@ -52,33 +52,33 @@ export default function IdentityAdminPage() {
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[9px] text-cyan-400 font-mono bg-cyan-500/10 px-2 py-0.5 rounded">OWNER</span>
+            <span className="text-[9px] text-eth-blue-text font-mono bg-eth-blue/10 px-2 py-0.5 rounded-chip">OWNER</span>
           </div>
-          <p className="text-gray-600 font-mono text-[10px] tracking-widest uppercase">
-            ZKPASSPORT_NFT • METADATA_CONTROL
+          <p className="text-content-faint font-mono text-[10px] tracking-widest uppercase">
+            ZKPassport_NFT • METADATA_CONTROL
           </p>
         </div>
 
         {/* Contract Info */}
         <div className="grid grid-cols-2 gap-2 mb-6">
-          <div className="bg-black/60 border border-gray-800 rounded p-3">
-            <p className="text-[9px] text-gray-600 font-mono tracking-wider mb-1">CONTRACT</p>
+          <div className="bg-black/60 border border-line-hairline rounded-chip p-3">
+            <p className="text-[9px] text-content-faint font-mono tracking-wider mb-1">CONTRACT</p>
             <a
               href={`${explorerUrl}/address/${zkpassport}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs font-mono text-cyan-400 hover:text-cyan-300"
+              className="text-xs font-mono text-eth-blue-text hover:text-eth-blue-text"
             >
               {zkpassport?.slice(0, 8)}...{zkpassport?.slice(-6)}
             </a>
           </div>
-          <div className="bg-black/60 border border-gray-800 rounded p-3">
-            <p className="text-[9px] text-gray-600 font-mono tracking-wider mb-1">OWNER</p>
+          <div className="bg-black/60 border border-line-hairline rounded-chip p-3">
+            <p className="text-[9px] text-content-faint font-mono tracking-wider mb-1">OWNER</p>
             <a
               href={`${explorerUrl}/address/${owner}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs font-mono text-purple-400 hover:text-purple-300"
+              className="text-xs font-mono text-eth-blue-text hover:text-eth-blue-text"
             >
               {owner?.slice(0, 8)}...{owner?.slice(-6)}
             </a>
@@ -86,14 +86,14 @@ export default function IdentityAdminPage() {
         </div>
 
         {/* Admin Functions Reference */}
-        <div className="bg-black/40 border border-gray-800 rounded p-3 mb-6">
-          <p className="text-[9px] text-gray-500 font-mono tracking-wider mb-2">OWNER_FUNCTIONS</p>
+        <div className="bg-black/40 border border-line-hairline rounded-chip p-3 mb-6">
+          <p className="text-[9px] text-content-faint font-mono tracking-wider mb-2">Owner functions</p>
           <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
-            <div className="text-gray-600">
-              <span className="text-purple-400">setMetadata</span>(imageURI, desc, url, ipfs)
+            <div className="text-content-faint">
+              <span className="text-eth-blue-text">setMetadata</span>(imageURI, desc, url, ipfs)
             </div>
-            <div className="text-gray-600">
-              <span className="text-purple-400">transferOwnership</span>(newOwner)
+            <div className="text-content-faint">
+              <span className="text-eth-blue-text">transferOwnership</span>(newOwner)
             </div>
           </div>
         </div>
@@ -104,10 +104,10 @@ export default function IdentityAdminPage() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-3 py-1.5 text-[10px] font-mono rounded transition-all ${
+              className={`px-3 py-1.5 text-[10px] font-mono rounded-chip transition-all ${
                 activeTab === tab
-                  ? 'bg-purple-500/20 text-purple-400 border border-purple-500/40'
-                  : 'text-gray-600 hover:text-gray-400 border border-transparent'
+                  ? 'bg-eth-blue/20 text-eth-blue-text border border-eth-blue/40'
+                  : 'text-content-faint hover:text-content-muted border border-transparent'
               }`}
             >
               {tab.toUpperCase()}
@@ -123,41 +123,41 @@ export default function IdentityAdminPage() {
 
           {activeTab === 'ownership' && (
             <div className="space-y-4">
-              <div className="bg-black/60 border border-gray-800 rounded p-4">
-                <p className="text-[9px] text-gray-500 font-mono tracking-wider mb-3">TRANSFER_OWNERSHIP</p>
+              <div className="bg-black/60 border border-line-hairline rounded-chip p-4">
+                <p className="text-[9px] text-content-faint font-mono tracking-wider mb-3">Transfer ownership</p>
                 <div className="space-y-3">
                   <div className="flex gap-2">
                     <input
                       type="text"
                       placeholder="0x... new owner address"
-                      className="flex-1 bg-black/40 border border-gray-700 rounded px-3 py-2 text-[10px] font-mono text-gray-300 placeholder-gray-600 focus:border-purple-500/50 focus:outline-none"
+                      className="flex-1 bg-black/40 border border-line-hairline rounded-chip px-3 py-2 text-[10px] font-mono text-content-secondary placeholder-content-faint focus:border-eth-blue/50 focus:outline-none"
                     />
-                    <button className="px-4 py-2 bg-red-500/10 border border-red-500/30 rounded text-red-400 text-[10px] font-mono hover:bg-red-500/20 transition">
+                    <button className="px-4 py-2 bg-signal-reverted/10 border border-signal-reverted/30 rounded-chip text-signal-reverted text-[10px] font-mono hover:bg-signal-reverted/20 transition">
                       TRANSFER
                     </button>
                   </div>
-                  <div className="p-2 bg-yellow-500/10 border border-yellow-500/20 rounded">
-                    <p className="text-[9px] text-yellow-400 font-mono">
-                      ⚠ WARNING: This action is irreversible. The new owner will have full control.
+                  <div className="p-2 bg-signal-pending/10 border border-signal-pending/20 rounded-chip">
+                    <p className="text-[9px] text-signal-pending font-mono">
+                      This action is irreversible. The new owner will have full control.
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-black/60 border border-gray-800 rounded p-4">
-                <p className="text-[9px] text-gray-500 font-mono tracking-wider mb-3">CURRENT_STATUS</p>
+              <div className="bg-black/60 border border-line-hairline rounded-chip p-4">
+                <p className="text-[9px] text-content-faint font-mono tracking-wider mb-3">Current status</p>
                 <div className="space-y-2 text-[10px] font-mono">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">current_owner</span>
-                    <span className="text-purple-400">{owner}</span>
+                    <span className="text-content-faint">current_owner</span>
+                    <span className="text-eth-blue-text">{owner}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">your_wallet</span>
-                    <span className={isOwner ? 'text-green-400' : 'text-gray-400'}>{walletAddress}</span>
+                    <span className="text-content-faint">your_wallet</span>
+                    <span className={isOwner ? 'text-eth-blue-text' : 'text-content-muted'}>{walletAddress}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">status</span>
-                    <span className="text-green-400">OWNER</span>
+                    <span className="text-content-faint">status</span>
+                    <span className="text-eth-blue-text">OWNER</span>
                   </div>
                 </div>
               </div>
@@ -166,19 +166,19 @@ export default function IdentityAdminPage() {
 
           {activeTab === 'settings' && (
             <div className="space-y-4">
-              <div className="bg-black/60 border border-gray-800 rounded p-4">
-                <p className="text-[9px] text-gray-500 font-mono tracking-wider mb-3">CONTRACT_SETTINGS</p>
+              <div className="bg-black/60 border border-line-hairline rounded-chip p-4">
+                <p className="text-[9px] text-content-faint font-mono tracking-wider mb-3">Contract settings</p>
                 <div className="space-y-4">
                   {/* setVerifier */}
                   <div>
-                    <p className="text-[9px] text-gray-600 font-mono tracking-wider mb-1">SET_VERIFIER</p>
+                    <p className="text-[9px] text-content-faint font-mono tracking-wider mb-1">Set verifier</p>
                     <div className="flex gap-2">
                       <input
                         type="text"
                         placeholder="0x... verifier address"
                         value={settingsInput.verifier}
                         onChange={(e) => setSettingsInput((s) => ({ ...s, verifier: e.target.value }))}
-                        className="flex-1 bg-black/40 border border-gray-700 rounded px-3 py-2 text-[10px] font-mono text-gray-300 placeholder-gray-600 focus:border-purple-500/50 focus:outline-none"
+                        className="flex-1 bg-black/40 border border-line-hairline rounded-chip px-3 py-2 text-[10px] font-mono text-content-secondary placeholder-content-faint focus:border-eth-blue/50 focus:outline-none"
                       />
                       <button
                         onClick={async () => {
@@ -186,7 +186,7 @@ export default function IdentityAdminPage() {
                           try { await setVerifier(settingsInput.verifier); setSettingsTxStatus('✓ done'); }
                           catch (e) { setSettingsTxStatus(`error: ${e instanceof Error ? e.message : 'unknown'}`); }
                         }}
-                        className="px-3 py-2 bg-purple-500/20 text-purple-400 border border-purple-500/40 rounded text-[10px] font-mono hover:bg-purple-500/30"
+                        className="px-3 py-2 bg-eth-blue/20 text-eth-blue-text border border-eth-blue/40 rounded-chip text-[10px] font-mono hover:bg-eth-blue/30"
                       >
                         SET
                       </button>
@@ -195,14 +195,14 @@ export default function IdentityAdminPage() {
 
                   {/* setDomain */}
                   <div>
-                    <p className="text-[9px] text-gray-600 font-mono tracking-wider mb-1">SET_DOMAIN</p>
+                    <p className="text-[9px] text-content-faint font-mono tracking-wider mb-1">Set domain</p>
                     <div className="flex gap-2">
                       <input
                         type="text"
                         placeholder="e.g. wallet.ethcali.org"
                         value={settingsInput.domain}
                         onChange={(e) => setSettingsInput((s) => ({ ...s, domain: e.target.value }))}
-                        className="flex-1 bg-black/40 border border-gray-700 rounded px-3 py-2 text-[10px] font-mono text-gray-300 placeholder-gray-600 focus:border-purple-500/50 focus:outline-none"
+                        className="flex-1 bg-black/40 border border-line-hairline rounded-chip px-3 py-2 text-[10px] font-mono text-content-secondary placeholder-content-faint focus:border-eth-blue/50 focus:outline-none"
                       />
                       <button
                         onClick={async () => {
@@ -210,7 +210,7 @@ export default function IdentityAdminPage() {
                           try { await setDomain(settingsInput.domain); setSettingsTxStatus('✓ done'); }
                           catch (e) { setSettingsTxStatus(`error: ${e instanceof Error ? e.message : 'unknown'}`); }
                         }}
-                        className="px-3 py-2 bg-purple-500/20 text-purple-400 border border-purple-500/40 rounded text-[10px] font-mono hover:bg-purple-500/30"
+                        className="px-3 py-2 bg-eth-blue/20 text-eth-blue-text border border-eth-blue/40 rounded-chip text-[10px] font-mono hover:bg-eth-blue/30"
                       >
                         SET
                       </button>
@@ -219,14 +219,14 @@ export default function IdentityAdminPage() {
 
                   {/* setScope */}
                   <div>
-                    <p className="text-[9px] text-gray-600 font-mono tracking-wider mb-1">SET_SCOPE</p>
+                    <p className="text-[9px] text-content-faint font-mono tracking-wider mb-1">Set scope</p>
                     <div className="flex gap-2">
                       <input
                         type="text"
                         placeholder="e.g. ethcali-verification"
                         value={settingsInput.scope}
                         onChange={(e) => setSettingsInput((s) => ({ ...s, scope: e.target.value }))}
-                        className="flex-1 bg-black/40 border border-gray-700 rounded px-3 py-2 text-[10px] font-mono text-gray-300 placeholder-gray-600 focus:border-purple-500/50 focus:outline-none"
+                        className="flex-1 bg-black/40 border border-line-hairline rounded-chip px-3 py-2 text-[10px] font-mono text-content-secondary placeholder-content-faint focus:border-eth-blue/50 focus:outline-none"
                       />
                       <button
                         onClick={async () => {
@@ -234,7 +234,7 @@ export default function IdentityAdminPage() {
                           try { await setScope(settingsInput.scope); setSettingsTxStatus('✓ done'); }
                           catch (e) { setSettingsTxStatus(`error: ${e instanceof Error ? e.message : 'unknown'}`); }
                         }}
-                        className="px-3 py-2 bg-purple-500/20 text-purple-400 border border-purple-500/40 rounded text-[10px] font-mono hover:bg-purple-500/30"
+                        className="px-3 py-2 bg-eth-blue/20 text-eth-blue-text border border-eth-blue/40 rounded-chip text-[10px] font-mono hover:bg-eth-blue/30"
                       >
                         SET
                       </button>
@@ -242,7 +242,7 @@ export default function IdentityAdminPage() {
                   </div>
 
                   {settingsTxStatus && (
-                    <p className={`text-[10px] font-mono ${settingsTxStatus.startsWith('✓') ? 'text-green-400' : 'text-yellow-400'}`}>
+                    <p className={`text-[10px] font-mono ${settingsTxStatus.startsWith('✓') ? 'text-signal-confirmed' : 'text-signal-pending'}`}>
                       {settingsTxStatus}
                     </p>
                   )}
@@ -253,16 +253,16 @@ export default function IdentityAdminPage() {
 
           {activeTab === 'holders' && (
             <div className="space-y-4">
-              <div className="bg-black/60 border border-gray-800 rounded p-4">
-                <p className="text-[9px] text-gray-500 font-mono tracking-wider mb-3">NFT_HOLDERS</p>
-                <p className="text-[10px] text-gray-600 font-mono mb-3">
+              <div className="bg-black/60 border border-line-hairline rounded-chip p-4">
+                <p className="text-[9px] text-content-faint font-mono tracking-wider mb-3">NFT holders</p>
+                <p className="text-[10px] text-content-faint font-mono mb-3">
                   View all NFTMinted events on the block explorer for this contract.
                 </p>
                 <a
                   href={`${explorerUrl}/address/${zkpassport}#events`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-block px-3 py-2 bg-purple-500/20 text-purple-400 border border-purple-500/40 rounded text-[10px] font-mono hover:bg-purple-500/30"
+                  className="inline-block px-3 py-2 bg-eth-blue/20 text-eth-blue-text border border-eth-blue/40 rounded-chip text-[10px] font-mono hover:bg-eth-blue/30"
                 >
                   VIEW NFTMINTED EVENTS →
                 </a>
@@ -272,9 +272,9 @@ export default function IdentityAdminPage() {
         </div>
 
         {/* Footer */}
-        <div className="mt-6 pt-4 border-t border-gray-800">
-          <div className="flex gap-2 text-[9px] font-mono text-gray-700">
-            <a href={`${explorerUrl}/address/${zkpassport}`} target="_blank" rel="noopener noreferrer" className="hover:text-purple-400">
+        <div className="mt-6 pt-4 border-t border-line-hairline">
+          <div className="flex gap-2 text-[9px] font-mono text-content-faint">
+            <a href={`${explorerUrl}/address/${zkpassport}`} target="_blank" rel="noopener noreferrer" className="hover:text-eth-blue-text">
               VIEW_CONTRACT →
             </a>
           </div>

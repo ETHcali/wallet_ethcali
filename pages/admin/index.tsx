@@ -25,14 +25,14 @@ function StatTile({
   hint?: string;
 }) {
   return (
-    <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-4">
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+    <div className="rounded-card border border-line-hairline bg-surface-inset/50 p-4">
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-content-faint">
         {label}
       </p>
-      <p className="mt-1 truncate text-xl font-bold text-white" title={value}>
+      <p className="mt-1 truncate text-xl font-bold text-content-primary" title={value}>
         {value}
       </p>
-      {hint && <p className="mt-1 truncate text-[11px] text-slate-500">{hint}</p>}
+      {hint && <p className="mt-1 truncate text-[11px] text-content-faint">{hint}</p>}
     </div>
   );
 }
@@ -43,11 +43,11 @@ function CampaignSummary({ campaign, chainId }: { campaign: Campaign; chainId: n
   const { format, formatToken } = useDisplayCurrency();
 
   return (
-    <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-4">
+    <div className="rounded-card border border-line-hairline bg-surface-inset/50 p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
-          <h3 className="truncate font-semibold text-white">{campaign.name}</h3>
-          <p className="text-xs text-slate-500">
+          <h3 className="truncate font-semibold text-content-primary">{campaign.name}</h3>
+          <p className="text-xs text-content-faint">
             Campaign #{campaign.id} · {campaign.donorCount} donors ·{' '}
             {campaign.donationCount} donations
           </p>
@@ -55,31 +55,31 @@ function CampaignSummary({ campaign, chainId }: { campaign: Campaign; chainId: n
         <span
           className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold ${
             campaign.active
-              ? 'bg-green-500/15 text-green-400'
-              : 'bg-slate-700 text-slate-400'
+              ? 'bg-eth-blue/15 text-eth-blue-text'
+              : 'bg-surface-ridge text-content-muted'
           }`}
         >
           {campaign.active ? 'Active' : 'Closed'}
         </span>
       </div>
 
-      {isLoading && <p className="text-xs text-slate-500">Reading totals…</p>}
+      {isLoading && <p className="text-xs text-content-faint">Reading totals…</p>}
 
       {!isLoading && totals.length === 0 && (
-        <p className="text-xs text-slate-500">No currencies accepted yet.</p>
+        <p className="text-xs text-content-faint">No currencies accepted yet.</p>
       )}
 
       <div className="space-y-2">
         {totals.map((t) => (
           <div
             key={t.token.address}
-            className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-t border-slate-700/60 pt-2 text-sm first:border-0 first:pt-0"
+            className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-t border-line-hairline pt-2 text-sm first:border-0 first:pt-0"
           >
-            <span className="font-semibold text-slate-300">{t.token.symbol}</span>
-            <span className="text-white">
+            <span className="font-semibold text-content-secondary">{t.token.symbol}</span>
+            <span className="text-content-primary">
               {/* formatToken uses the token's own decimals — COPm 18, USDC 6. */}
               {formatToken(t.raised, t.token)}
-              <span className="ml-2 text-xs text-slate-500">
+              <span className="ml-2 text-xs text-content-faint">
                 ≈ {format(t.raised, t.token)}
               </span>
             </span>
@@ -88,7 +88,7 @@ function CampaignSummary({ campaign, chainId }: { campaign: Campaign; chainId: n
       </div>
 
       {campaign.autoForward && (
-        <p className="mt-3 text-[11px] text-slate-500">
+        <p className="mt-3 text-[11px] text-content-faint">
           Router mode: each donation forwards to the beneficiary on arrival, so the
           vault balance stays near zero by design.
         </p>
@@ -135,10 +135,10 @@ export default function AdminOverviewPage() {
               key={chain.chainId}
               type="button"
               onClick={() => setChainId(chain.chainId)}
-              className={`min-h-[44px] rounded-lg border px-4 text-sm font-semibold transition-colors ${
+              className={`min-h-tap rounded-control border px-4 text-sm font-semibold transition-colors ${
                 chain.chainId === chainId
-                  ? 'border-cyan-500 bg-cyan-500/15 text-cyan-300'
-                  : 'border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500'
+                  ? 'border-eth-blue bg-eth-blue/15 text-eth-blue-text'
+                  : 'border-line-hairline bg-surface-inset text-content-secondary hover:border-line-strong'
               }`}
             >
               {chain.name}
@@ -148,9 +148,9 @@ export default function AdminOverviewPage() {
       )}
 
       {!isDeployed ? (
-        <div className="rounded-2xl border border-slate-700 bg-slate-800/50 p-6 text-center sm:p-8">
-          <h2 className="mb-2 text-lg font-bold text-white">Nothing deployed here</h2>
-          <p className="text-sm text-slate-400">
+        <div className="rounded-card border border-line-hairline bg-surface-inset/50 p-6 text-center sm:p-8">
+          <h2 className="mb-2 text-lg font-bold text-content-primary">Nothing deployed here</h2>
+          <p className="text-sm text-content-muted">
             No DonationVault on {NETWORK_NAMES[chainId as ChainId] ?? 'this network'}.
           </p>
         </div>
@@ -186,23 +186,23 @@ export default function AdminOverviewPage() {
           </div>
 
           {isPaused && (
-            <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-300">
+            <div className="rounded-card border border-signal-pending/40 bg-signal-pending/10 p-4 text-sm text-signal-pending">
               The vault is paused — donations are rejected until it is unpaused.
             </div>
           )}
 
           {/* Campaigns */}
           <section>
-            <h2 className="mb-3 text-sm font-semibold text-slate-300">Campaigns</h2>
-            {isLoading && <p className="text-sm text-slate-500">Loading…</p>}
+            <h2 className="mb-3 text-sm font-semibold text-content-secondary">Campaigns</h2>
+            {isLoading && <p className="text-sm text-content-faint">Loading…</p>}
             {!isLoading && campaigns.length === 0 && (
-              <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-5">
-                <p className="text-sm text-slate-400">
+              <div className="rounded-card border border-line-hairline bg-surface-inset/50 p-5">
+                <p className="text-sm text-content-muted">
                   No campaign exists yet. Nothing can be donated until one is created.
                 </p>
                 <Link
                   href="/donations/admin"
-                  className="mt-3 inline-flex min-h-[44px] items-center rounded-lg bg-cyan-500 px-4 text-sm font-semibold text-slate-900 transition-colors hover:bg-cyan-400"
+                  className="mt-3 inline-flex min-h-tap items-center rounded-control bg-eth-blue px-4 text-sm font-semibold text-on-brand transition-colors hover:bg-eth-blue-lift"
                 >
                   Create a campaign
                 </Link>
@@ -217,8 +217,8 @@ export default function AdminOverviewPage() {
 
           {/* Contracts */}
           <section>
-            <h2 className="mb-3 text-sm font-semibold text-slate-300">Contracts</h2>
-            <div className="space-y-2 rounded-xl border border-slate-700 bg-slate-800/50 p-4 text-xs">
+            <h2 className="mb-3 text-sm font-semibold text-content-secondary">Contracts</h2>
+            <div className="space-y-2 rounded-card border border-line-hairline bg-surface-inset/50 p-4 text-xs">
               {[
                 { label: 'DonationVault', address: vault },
                 { label: 'DonationReceipt1155', address: receiptCollection },
@@ -228,12 +228,12 @@ export default function AdminOverviewPage() {
                     key={label}
                     className="flex flex-wrap items-center justify-between gap-2"
                   >
-                    <span className="text-slate-400">{label}</span>
+                    <span className="text-content-muted">{label}</span>
                     <a
                       href={`${explorer}/address/${address}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="truncate font-mono text-cyan-400 hover:underline"
+                      className="truncate font-mono text-eth-blue-text hover:underline"
                     >
                       {address.slice(0, 10)}…{address.slice(-8)} ↗
                     </a>
@@ -245,13 +245,13 @@ export default function AdminOverviewPage() {
 
           {otherAreas.length > 0 && (
             <section>
-              <h2 className="mb-3 text-sm font-semibold text-slate-300">Other areas</h2>
+              <h2 className="mb-3 text-sm font-semibold text-content-secondary">Other areas</h2>
               <div className="flex flex-wrap gap-2">
                 {otherAreas.map((area) => (
                   <Link
                     key={area.href}
                     href={area.href}
-                    className="inline-flex min-h-[44px] items-center rounded-lg border border-slate-700 bg-slate-800 px-4 text-sm font-semibold text-slate-300 transition-colors hover:border-slate-500 hover:text-white"
+                    className="inline-flex min-h-tap items-center rounded-control border border-line-hairline bg-surface-inset px-4 text-sm font-semibold text-content-secondary transition-colors hover:border-line-strong hover:text-content-primary"
                   >
                     {area.label}
                   </Link>

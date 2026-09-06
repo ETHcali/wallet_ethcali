@@ -47,7 +47,7 @@ const CampaignAdminForm: React.FC<CampaignAdminFormProps> = ({ chainId, onCreate
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="mb-1 block text-xs font-semibold text-slate-400" htmlFor="c-name">
+        <label className="mb-1 block text-xs font-semibold text-content-muted" htmlFor="c-name">
           Campaign name
         </label>
         <input
@@ -56,12 +56,12 @@ const CampaignAdminForm: React.FC<CampaignAdminFormProps> = ({ chainId, onCreate
           value={form.name}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
           placeholder="Cali Earthquake Relief 2026"
-          className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white outline-none focus:border-cyan-500"
+          className="w-full rounded-control border border-line-hairline bg-surface-inset px-3 py-2 text-sm text-content-primary outline-none focus:border-eth-blue"
         />
       </div>
 
       <div>
-        <label className="mb-1 block text-xs font-semibold text-slate-400" htmlFor="c-desc">
+        <label className="mb-1 block text-xs font-semibold text-content-muted" htmlFor="c-desc">
           Description
         </label>
         <textarea
@@ -70,12 +70,12 @@ const CampaignAdminForm: React.FC<CampaignAdminFormProps> = ({ chainId, onCreate
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
           placeholder="Emergency relief for families affected by the earthquake"
-          className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white outline-none focus:border-cyan-500"
+          className="w-full rounded-control border border-line-hairline bg-surface-inset px-3 py-2 text-sm text-content-primary outline-none focus:border-eth-blue"
         />
       </div>
 
       <div>
-        <label className="mb-1 block text-xs font-semibold text-slate-400" htmlFor="c-beneficiary">
+        <label className="mb-1 block text-xs font-semibold text-content-muted" htmlFor="c-beneficiary">
           Beneficiary
         </label>
         <input
@@ -83,11 +83,11 @@ const CampaignAdminForm: React.FC<CampaignAdminFormProps> = ({ chainId, onCreate
           type="text"
           value={form.beneficiary}
           onChange={(e) => setForm({ ...form, beneficiary: e.target.value.trim() })}
-          className={`w-full rounded-lg border bg-slate-800 px-3 py-2 font-mono text-xs text-white outline-none ${
-            beneficiaryValid ? 'border-slate-700 focus:border-cyan-500' : 'border-red-500/60'
+          className={`w-full rounded-control border bg-surface-inset px-3 py-2 font-mono text-xs text-content-primary outline-none ${
+            beneficiaryValid ? 'border-line-hairline focus:border-eth-blue' : 'border-signal-reverted/60'
           }`}
         />
-        <p className="mt-1 text-[11px] text-slate-500">
+        <p className="mt-1 text-[11px] text-content-faint">
           {form.beneficiary.toLowerCase() === ETHCALI_SAFE.toLowerCase()
             ? 'ethcali.eth — the 3-of-5 treasury Safe.'
             : beneficiaryValid
@@ -97,8 +97,8 @@ const CampaignAdminForm: React.FC<CampaignAdminFormProps> = ({ chainId, onCreate
       </div>
 
       <div>
-        <label className="mb-1 block text-xs font-semibold text-slate-400" htmlFor="c-receipt">
-          Receipt collection <span className="font-normal text-slate-600">(optional)</span>
+        <label className="mb-1 block text-xs font-semibold text-content-muted" htmlFor="c-receipt">
+          Receipt collection <span className="font-normal text-content-faint">(optional)</span>
         </label>
         <input
           id="c-receipt"
@@ -106,24 +106,24 @@ const CampaignAdminForm: React.FC<CampaignAdminFormProps> = ({ chainId, onCreate
           value={form.receiptCollection}
           onChange={(e) => setForm({ ...form, receiptCollection: e.target.value.trim() })}
           placeholder="0x… leave blank for no NFT receipts"
-          className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 font-mono text-xs text-white outline-none focus:border-cyan-500"
+          className="w-full rounded-control border border-line-hairline bg-surface-inset px-3 py-2 font-mono text-xs text-content-primary outline-none focus:border-eth-blue"
         />
       </div>
 
       {/* Custody mode — the most consequential choice on this form */}
-      <div className="rounded-lg border border-slate-700 bg-slate-900/60 p-3">
+      <div className="rounded-control border border-line-hairline bg-surface-slab/60 p-3">
         <label className="flex cursor-pointer items-start gap-3">
           <input
             type="checkbox"
             checked={form.autoForward}
             onChange={(e) => setForm({ ...form, autoForward: e.target.checked })}
-            className="mt-0.5 h-4 w-4 accent-cyan-500"
+            className="mt-0.5 h-4 w-4 accent-eth-blue"
           />
           <span className="text-xs">
-            <span className="font-semibold text-white">
+            <span className="font-semibold text-content-primary">
               Router mode {form.autoForward ? '(on)' : '(off)'}
             </span>
-            <span className="mt-1 block leading-relaxed text-slate-400">
+            <span className="mt-1 block leading-relaxed text-content-muted">
               {form.autoForward
                 ? 'Each donation is forwarded to the beneficiary in the same transaction. The contract never holds funds and no admin has custody.'
                 : 'Funds accumulate in the contract until an admin withdraws them — still only ever to the beneficiary.'}
@@ -133,13 +133,13 @@ const CampaignAdminForm: React.FC<CampaignAdminFormProps> = ({ chainId, onCreate
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-xs text-red-300">
+        <div className="rounded-control border border-signal-reverted/40 bg-signal-reverted/10 p-3 text-xs text-signal-reverted">
           {error}
         </div>
       )}
 
       {txHash && (
-        <div className="rounded-lg border border-green-500/40 bg-green-500/10 p-3 text-xs text-green-300">
+        <div className="rounded-control border border-signal-confirmed/40 bg-signal-confirmed/10 p-3 text-xs text-signal-confirmed">
           Campaign created. It will appear in the list once the transaction confirms.
         </div>
       )}
@@ -147,7 +147,7 @@ const CampaignAdminForm: React.FC<CampaignAdminFormProps> = ({ chainId, onCreate
       <button
         type="submit"
         disabled={!canSubmit}
-        className="w-full rounded-lg bg-cyan-500 py-2.5 text-sm font-semibold text-slate-900 transition-colors hover:bg-cyan-400 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+        className="w-full rounded-control bg-eth-blue py-2.5 text-sm font-semibold text-on-brand transition-colors hover:bg-eth-blue-lift disabled:cursor-not-allowed disabled:bg-surface-ridge disabled:text-content-muted"
       >
         {isCreating ? 'Creating…' : 'Create campaign'}
       </button>
