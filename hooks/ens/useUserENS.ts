@@ -1,129 +1,106 @@
 /**
- * useUserENS - Hook for querying user's ENS subdomain
+ * useUserENS - Which `<label>.ethcali.eth` does this address hold?
  *
- * Resolution Strategy (Layered Approach per ENSv2 best practices):
- * 1. Layer 1: Check localStorage cache (instant)
- * 2. Layer 2: Try mainnet ENS reverse resolution (ENSv2 standard)
- * 3. Layer 3: Query /api/ens/lookup (OpenSea-backed, fallback for recent mints)
+ * Layers, in order, per docs.ens.domains "resolution always starts on mainnet":
+ *   1. A label we just registered — verified against the registry, not trusted.
+ *   2. Mainnet primary name (reverse record). Only answers once ethcali.eth's
+ *      resolver on L1 is the Durin L1Resolver, which it is not yet.
+ *   3. The Base registry itself: Blockscout lists the registry tokens the address
+ *      holds, then names(node) and addr(node) are re-read on-chain. The index
+ *      only tells us where to look; the chain decides what is shown.
+ *
+ * There is deliberately no localStorage cache. A name can be transferred, and a
+ * cached label would keep showing it to its old owner.
  */
-import { useState, useEffect } from 'react';
-import { createPublicClient, http } from 'viem';
-import { mainnet } from 'viem/chains';
+import { useQuery } from '@tanstack/react-query';
+import { createPublicClient, http, isAddressEqual } from 'viem';
+import { base, mainnet } from 'viem/chains';
+import L2RegistryABI from '../../frontend/abis/l2registry.json';
 import { ENS_CONFIG, CHAIN_IDS, getRpcUrl } from '../../config/constants';
+import { decodeDnsName, fullName, labelOf, subnameNode } from '../../utils/ens';
 import { logger } from '../../utils/logger';
+
+interface UserName {
+  label: string;
+  node: `0x${string}`;
+}
 
 interface UserENSResult {
   subdomain: string | null;
   fullName: string | null;
+  node: `0x${string}` | null;
   isLoading: boolean;
   refetch: () => void;
 }
 
-export function useUserENS(address: string | undefined): UserENSResult {
-  const [subdomain, setSubdomain] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [fetchTrigger, setFetchTrigger] = useState(0);
+function baseClient() {
+  return createPublicClient({ chain: base, transport: http(getRpcUrl(CHAIN_IDS.BASE)) });
+}
 
-  useEffect(() => {
-    if (!address) {
-      setSubdomain(null);
-      return;
-    }
+/** True when the registry says this node's address record is `address`. */
+async function ownsNode(node: `0x${string}`, address: `0x${string}`): Promise<boolean> {
+  const addr = (await baseClient().readContract({
+    address: ENS_CONFIG.registry,
+    abi: L2RegistryABI,
+    functionName: 'addr',
+    args: [node],
+  })) as `0x${string}`;
+  return isAddressEqual(addr, address);
+}
 
-    const fetchUserENS = async () => {
-      setIsLoading(true);
-      const cacheKey = `ens-subdomain-${address.toLowerCase()}`;
+async function lookup(address: `0x${string}`, knownLabel: string | null): Promise<UserName | null> {
+  // 1. Just registered: verify, never assume.
+  if (knownLabel) {
+    const node = subnameNode(knownLabel);
+    if (await ownsNode(node, address)) return { label: knownLabel, node };
+  }
 
-      try {
-        // ============================================
-        // Layer 1: Check localStorage cache (instant)
-        // ============================================
-        const cachedSubdomain = localStorage.getItem(cacheKey);
-        if (cachedSubdomain) {
-          logger.info('[useUserENS] Layer 1: Found cached subdomain', { subdomain: cachedSubdomain });
-          setSubdomain(cachedSubdomain);
-          setIsLoading(false);
-          return;
-        }
+  // 2. Mainnet primary name.
+  try {
+    const name = await createPublicClient({
+      chain: mainnet,
+      transport: http(getRpcUrl(CHAIN_IDS.ETHEREUM)),
+    }).getEnsName({ address });
+    const label = labelOf(name);
+    if (label) return { label, node: subnameNode(label) };
+  } catch (err) {
+    logger.debug('[useUserENS] Mainnet reverse lookup unavailable', err);
+  }
 
-        // ============================================
-        // Layer 2: Try mainnet ENS reverse resolution
-        // Per ENSv2: "Resolution always starts on Ethereum Mainnet"
-        // ============================================
-        try {
-          const mainnetClient = createPublicClient({
-            chain: mainnet,
-            transport: http(getRpcUrl(CHAIN_IDS.ETHEREUM)),
-          });
+  // 3. The Base registry, located through the index.
+  const res = await fetch(`/api/ens/lookup?address=${address}`);
+  if (!res.ok) throw new Error(`lookup ${res.status}`);
+  const { nodes } = (await res.json()) as { nodes: `0x${string}`[] };
+  const client = baseClient();
+  for (const node of nodes) {
+    const encoded = (await client.readContract({
+      address: ENS_CONFIG.registry,
+      abi: L2RegistryABI,
+      functionName: 'names',
+      args: [node],
+    })) as `0x${string}`;
+    const label = labelOf(decodeDnsName(encoded));
+    if (label && (await ownsNode(node, address))) return { label, node };
+  }
+  return null;
+}
 
-          // Reverse lookup: address -> name
-          const ensName = await mainnetClient.getEnsName({
-            address: address as `0x${string}`,
-          });
+export function useUserENS(address: string | undefined, knownLabel: string | null = null): UserENSResult {
+  const query = useQuery({
+    queryKey: ['ens-user-name', address, knownLabel],
+    enabled: !!address,
+    staleTime: 60_000,
+    queryFn: () => lookup(address as `0x${string}`, knownLabel),
+  });
 
-          // Check if it's an ethcali.eth subdomain
-          if (ensName && ensName.endsWith(`.${ENS_CONFIG.parentName}`)) {
-            const label = ensName.replace(`.${ENS_CONFIG.parentName}`, '');
-
-            // Cache for future lookups
-            try {
-              localStorage.setItem(cacheKey, label);
-            } catch {
-              // Ignore storage errors
-            }
-
-            logger.info('[useUserENS] Layer 2: Found subdomain via mainnet ENS', { label });
-            setSubdomain(label);
-            setIsLoading(false);
-            return;
-          }
-        } catch (mainnetError) {
-          // Mainnet resolution failed (resolver not configured or network error)
-          // This is expected if ethcali.eth doesn't have CCIP-Read resolver set up
-          logger.debug('[useUserENS] Layer 2: Mainnet resolution failed, trying Layer 3', mainnetError);
-        }
-
-        // ============================================
-        // Layer 3: Query OpenSea API for L2 subdomain NFT (fallback)
-        // ============================================
-        try {
-          const res = await fetch(`/api/ens/lookup?address=${address}`);
-          if (res.ok) {
-            const { name } = await res.json();
-            if (name && name.endsWith(`.${ENS_CONFIG.parentName}`)) {
-              const label = name.replace(`.${ENS_CONFIG.parentName}`, '');
-              try {
-                localStorage.setItem(cacheKey, label);
-              } catch {}
-              logger.info('[useUserENS] Layer 3: Found subdomain via OpenSea API', { label });
-              setSubdomain(label);
-              setIsLoading(false);
-              return;
-            }
-          }
-        } catch (osError) {
-          logger.error('[useUserENS] Layer 3: OpenSea API error', osError);
-        }
-
-        // No subdomain found in any layer
-        setSubdomain(null);
-      } catch (error) {
-        logger.error('[useUserENS] Query failed', error);
-        setSubdomain(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchUserENS();
-  }, [address, fetchTrigger]);
-
-  const refetch = () => setFetchTrigger(prev => prev + 1);
-
+  const found = query.data ?? null;
   return {
-    subdomain,
-    fullName: subdomain ? `${subdomain}.${ENS_CONFIG.parentName}` : null,
-    isLoading,
-    refetch,
+    subdomain: found?.label ?? null,
+    fullName: found ? fullName(found.label) : null,
+    node: found?.node ?? null,
+    isLoading: query.isLoading,
+    refetch: () => {
+      query.refetch();
+    },
   };
 }
