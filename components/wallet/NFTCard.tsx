@@ -23,9 +23,9 @@ const statusLabels: Record<RedemptionStatus, string> = {
 };
 
 const statusColors: Record<RedemptionStatus, string> = {
-  [RedemptionStatus.NotRedeemed]: 'bg-slate-500/10 text-slate-400 border-slate-500/30',
-  [RedemptionStatus.PendingFulfillment]: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30',
-  [RedemptionStatus.Fulfilled]: 'bg-green-500/10 text-green-400 border-green-500/30',
+  [RedemptionStatus.NotRedeemed]: 'bg-surface-ridge/10 text-content-muted border-line-strong',
+  [RedemptionStatus.PendingFulfillment]: 'bg-signal-pending/10 text-signal-pending border-signal-pending/30',
+  [RedemptionStatus.Fulfilled]: 'bg-signal-confirmed/10 text-signal-confirmed border-signal-confirmed/30',
 };
 
 export function NFTCard({ nft, onRedeemSuccess }: NFTCardProps) {
@@ -202,16 +202,15 @@ export function NFTCard({ nft, onRedeemSuccess }: NFTCardProps) {
 
       <style jsx>{`
         .nft-card {
-          background: rgba(17, 24, 39, 0.6);
-          border: 1px solid rgba(75, 85, 99, 0.3);
+          background: var(--surface-slab);
+          border: 1px solid var(--line-hairline);
           border-radius: 12px;
           padding: 1rem;
           transition: all 0.2s ease;
         }
 
         .nft-card:hover {
-          border-color: rgba(34, 211, 238, 0.4);
-          box-shadow: 0 4px 12px rgba(34, 211, 238, 0.1);
+          border-color: rgb(var(--eth-blue-rgb) / 0.4);
         }
 
         .nft-card-header {
@@ -226,7 +225,7 @@ export function NFTCard({ nft, onRedeemSuccess }: NFTCardProps) {
           height: 120px;
           border-radius: 8px;
           overflow: hidden;
-          border: 1px solid rgba(75, 85, 99, 0.3);
+          border: 1px solid var(--line-hairline);
           background: rgba(0, 0, 0, 0.3);
           position: relative;
         }
@@ -256,7 +255,7 @@ export function NFTCard({ nft, onRedeemSuccess }: NFTCardProps) {
         .nft-name {
           font-size: 1.125rem;
           font-weight: 600;
-          color: #e5e7eb;
+          color: var(--text-secondary);
           margin: 0;
         }
 
@@ -268,12 +267,12 @@ export function NFTCard({ nft, onRedeemSuccess }: NFTCardProps) {
         }
 
         .balance-label {
-          color: #9ca3af;
+          color: var(--text-muted);
           font-weight: 500;
         }
 
         .balance-value {
-          color: #06b6d4;
+          color: var(--eth-blue);
           font-weight: 600;
           font-size: 1rem;
         }
@@ -291,7 +290,7 @@ export function NFTCard({ nft, onRedeemSuccess }: NFTCardProps) {
 
         .nft-description {
           font-size: 0.875rem;
-          color: #9ca3af;
+          color: var(--text-muted);
           line-height: 1.5;
           margin: 0 0 1rem 0;
         }
@@ -316,14 +315,14 @@ export function NFTCard({ nft, onRedeemSuccess }: NFTCardProps) {
         }
 
         .redeem-btn {
-          background: rgba(34, 211, 238, 0.1);
-          color: #22d3ee;
-          border-color: rgba(34, 211, 238, 0.3);
+          background: rgb(var(--eth-blue-rgb) / 0.1);
+          color: var(--eth-blue-text);
+          border-color: rgb(var(--eth-blue-rgb) / 0.3);
         }
 
         .redeem-btn:hover:not(:disabled) {
-          background: rgba(34, 211, 238, 0.2);
-          border-color: rgba(34, 211, 238, 0.5);
+          background: rgb(var(--eth-blue-rgb) / 0.2);
+          border-color: rgb(var(--eth-blue-rgb) / 0.5);
         }
 
         .redeem-btn:disabled {
@@ -332,31 +331,31 @@ export function NFTCard({ nft, onRedeemSuccess }: NFTCardProps) {
         }
 
         .qr-btn {
-          background: rgba(251, 191, 36, 0.1);
-          color: #fbbf24;
-          border-color: rgba(251, 191, 36, 0.3);
+          background: rgb(var(--signal-pending-rgb) / 0.1);
+          color: var(--signal-pending);
+          border-color: rgb(var(--signal-pending-rgb) / 0.3);
         }
 
         .qr-btn:hover {
-          background: rgba(251, 191, 36, 0.2);
-          border-color: rgba(251, 191, 36, 0.5);
+          background: rgb(var(--signal-pending-rgb) / 0.2);
+          border-color: rgb(var(--signal-pending-rgb) / 0.5);
         }
 
         .details-btn {
-          background: rgba(75, 85, 99, 0.2);
-          color: #9ca3af;
-          border-color: rgba(75, 85, 99, 0.3);
+          background: var(--line-hairline);
+          color: var(--text-muted);
+          border-color: var(--line-hairline);
         }
 
         .details-btn:hover {
-          background: rgba(75, 85, 99, 0.3);
-          border-color: rgba(75, 85, 99, 0.5);
+          background: var(--line-hairline);
+          border-color: var(--surface-ridge);
         }
 
         .nft-details {
           margin-top: 1rem;
           padding-top: 1rem;
-          border-top: 1px solid rgba(75, 85, 99, 0.3);
+          border-top: 1px solid var(--line-hairline);
         }
 
         .detail-row {
@@ -368,12 +367,12 @@ export function NFTCard({ nft, onRedeemSuccess }: NFTCardProps) {
 
         .detail-label {
           font-size: 0.875rem;
-          color: #9ca3af;
+          color: var(--text-muted);
         }
 
         .detail-value {
           font-size: 0.875rem;
-          color: #e5e7eb;
+          color: var(--text-secondary);
         }
 
         .nft-attributes {
@@ -382,7 +381,7 @@ export function NFTCard({ nft, onRedeemSuccess }: NFTCardProps) {
 
         .attributes-header {
           font-size: 0.75rem;
-          color: #6b7280;
+          color: var(--text-faint);
           text-transform: uppercase;
           letter-spacing: 0.1em;
           margin-bottom: 0.75rem;
@@ -397,7 +396,7 @@ export function NFTCard({ nft, onRedeemSuccess }: NFTCardProps) {
 
         .attribute-item {
           background: rgba(0, 0, 0, 0.3);
-          border: 1px solid rgba(75, 85, 99, 0.3);
+          border: 1px solid var(--line-hairline);
           border-radius: 6px;
           padding: 0.5rem;
           display: flex;
@@ -407,14 +406,14 @@ export function NFTCard({ nft, onRedeemSuccess }: NFTCardProps) {
 
         .attribute-type {
           font-size: 0.75rem;
-          color: #9ca3af;
+          color: var(--text-muted);
           text-transform: uppercase;
           letter-spacing: 0.05em;
         }
 
         .attribute-value {
           font-size: 0.875rem;
-          color: #22d3ee;
+          color: var(--eth-blue-text);
           font-weight: 500;
         }
 

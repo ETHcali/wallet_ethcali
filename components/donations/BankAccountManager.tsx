@@ -45,8 +45,8 @@ const EMPTY: BankAccountInput = {
 };
 
 const inputClass =
-  'w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-cyan-400 focus:outline-none';
-const labelClass = 'mb-1 block text-[11px] uppercase tracking-wide text-slate-500';
+  'w-full rounded-control border border-line-strong bg-surface-slab px-3 py-2 text-sm text-content-primary placeholder-content-faint focus:border-eth-blue focus:outline-none';
+const labelClass = 'mb-1 block text-[11px] uppercase tracking-wide text-content-faint';
 
 const BankAccountManager: React.FC<BankAccountManagerProps> = ({ campaignId }) => {
   const { accounts, create, update, remove } = useBankAccountAdmin(campaignId);
@@ -57,7 +57,7 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ campaignId }) =
 
   if (campaignId === null) {
     return (
-      <p className="rounded-xl border border-slate-700 bg-slate-800/40 p-4 text-sm text-slate-400">
+      <p className="rounded-card border border-line-hairline bg-surface-inset/40 p-4 text-sm text-content-muted">
         This campaign has no editorial row in the index yet, so it cannot hold bank
         accounts. Publish the campaign first.
       </p>
@@ -99,12 +99,12 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ campaignId }) =
     <div className="space-y-6">
       {/* ── Existing accounts ─────────────────────────────────────────────── */}
       <div>
-        <h2 className="mb-3 text-sm font-bold text-white">Published accounts</h2>
+        <h2 className="mb-3 text-sm font-bold text-content-primary">Published accounts</h2>
 
         {accounts.isLoading ? (
-          <p className="text-sm text-slate-500">Loading…</p>
+          <p className="text-sm text-content-faint">Loading…</p>
         ) : (accounts.data ?? []).length === 0 ? (
-          <p className="rounded-xl border border-slate-700 bg-slate-800/40 p-4 text-sm text-slate-400">
+          <p className="rounded-card border border-line-hairline bg-surface-inset/40 p-4 text-sm text-content-muted">
             No bank accounts yet. Donors can only give on-chain.
           </p>
         ) : (
@@ -112,26 +112,26 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ campaignId }) =
             {(accounts.data ?? []).map((account) => (
               <div
                 key={account.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-700 bg-slate-800/50 p-4"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-line-hairline bg-surface-inset/50 p-4"
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-white">
+                    <span className="text-sm font-semibold text-content-primary">
                       {account.bank_name}
                     </span>
-                    <span className="rounded-full border border-slate-600 px-2 py-0.5 text-[11px] text-slate-400">
+                    <span className="rounded-full border border-line-strong px-2 py-0.5 text-[11px] text-content-muted">
                       {account.currency}
                     </span>
                     {!account.is_active && (
-                      <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-300">
+                      <span className="rounded-full border border-signal-pending/40 bg-signal-pending/10 px-2 py-0.5 text-[11px] text-signal-pending">
                         Hidden
                       </span>
                     )}
                   </div>
-                  <div className="mt-1 font-mono text-xs text-slate-400">
+                  <div className="mt-1 font-mono text-xs text-content-muted">
                     {account.account_number}
                   </div>
-                  <div className="text-xs text-slate-500">
+                  <div className="text-xs text-content-faint">
                     {account.account_holder} · {account.holder_document_type}{' '}
                     {account.holder_document_number}
                   </div>
@@ -142,7 +142,7 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ campaignId }) =
                     type="button"
                     onClick={() => toggleActive(account)}
                     disabled={update.isPending}
-                    className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs text-slate-300 transition-colors hover:border-slate-500 hover:text-white disabled:opacity-50"
+                    className="rounded-control border border-line-strong px-3 py-1.5 text-xs text-content-secondary transition-colors hover:border-line-strong hover:text-content-primary disabled:opacity-50"
                   >
                     {account.is_active ? 'Hide' : 'Show'}
                   </button>
@@ -150,7 +150,7 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ campaignId }) =
                     type="button"
                     onClick={() => handleRemove(account)}
                     disabled={remove.isPending}
-                    className="rounded-lg border border-red-500/40 px-3 py-1.5 text-xs text-red-300 transition-colors hover:bg-red-500/10 disabled:opacity-50"
+                    className="rounded-control border border-signal-reverted/40 px-3 py-1.5 text-xs text-signal-reverted transition-colors hover:bg-signal-reverted/10 disabled:opacity-50"
                   >
                     Delete
                   </button>
@@ -162,8 +162,8 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ campaignId }) =
       </div>
 
       {/* ── Add ───────────────────────────────────────────────────────────── */}
-      <form onSubmit={handleCreate} className="rounded-xl border border-slate-700 bg-slate-800/50 p-4">
-        <h2 className="mb-4 text-sm font-bold text-white">Add an account</h2>
+      <form onSubmit={handleCreate} className="rounded-card border border-line-hairline bg-surface-inset/50 p-4">
+        <h2 className="mb-4 text-sm font-bold text-content-primary">Add an account</h2>
 
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
@@ -312,17 +312,17 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ campaignId }) =
         </div>
 
         {isInternational && !form.swift_bic && !form.iban && (
-          <p className="mt-3 text-xs text-amber-400">
+          <p className="mt-3 text-xs text-signal-pending">
             An international account needs a SWIFT/BIC or an IBAN.
           </p>
         )}
 
-        {error && <p className="mt-3 text-xs text-red-400">{error}</p>}
+        {error && <p className="mt-3 text-xs text-signal-reverted">{error}</p>}
 
         <button
           type="submit"
           disabled={create.isPending}
-          className="mt-4 rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-900 transition-colors hover:bg-cyan-400 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+          className="mt-4 rounded-control bg-eth-blue px-4 py-2 text-sm font-semibold text-on-brand transition-colors hover:bg-eth-blue-lift disabled:cursor-not-allowed disabled:bg-surface-ridge disabled:text-content-muted"
         >
           {create.isPending ? 'Adding…' : 'Add account'}
         </button>

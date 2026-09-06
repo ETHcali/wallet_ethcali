@@ -190,11 +190,16 @@ export function isSupportedChain(chainId: number): chainId is ChainId {
 // =============================================================================
 // ENS CONFIGURATION
 // =============================================================================
+/**
+ * ethcali.eth subnames live on Base (Durin). Verified on-chain 2026-09-04:
+ * registrar.registry() == registry, registry.name() == "ethcali.eth",
+ * registry.registrars(registrar) == true. The mainnet resolver for ethcali.eth is
+ * still the ENS PublicResolver, so L1 resolution of these names is not wired yet;
+ * the wallet reads the Base registry directly and treats that as the truth.
+ */
 export const ENS_CONFIG = {
   parentName: 'ethcali.eth',
   chainId: CHAIN_IDS.BASE,
-} as const;
-
-export const ENS_REGISTRAR_ADDRESSES: Partial<Record<ChainId, string>> = {
-  [CHAIN_IDS.BASE]: '0x7103595fc32b4072b775e9f6b438921c8cf532ed',
+  registrar: '0x7103595fc32b4072b775e9f6b438921c8cf532ed',
+  registry: '0x58f23036463463f947aeadab97eeecf5a76049c7',
 } as const;

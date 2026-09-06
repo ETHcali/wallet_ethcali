@@ -83,17 +83,17 @@ export function VaultEditModal({ vault, onClose, onSuccess }: VaultEditModalProp
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-xl">
+      <div className="w-full max-w-md rounded-card border border-line-hairline bg-surface-slab p-6 ">
         <div className="flex items-start justify-between mb-6">
           <div>
-            <h2 className="text-xl font-semibold text-white">Edit Vault</h2>
-            <p className="text-sm text-slate-500">
+            <h2 className="text-xl font-semibold text-content-primary">Edit Vault</h2>
+            <p className="text-sm text-content-faint">
               Vault #{vault.id} - {vaultTypeLabels[vault.vaultType]}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white transition"
+            className="text-content-muted hover:text-content-primary transition"
           >
             <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -103,44 +103,44 @@ export function VaultEditModal({ vault, onClose, onSuccess }: VaultEditModalProp
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <label className="block text-sm text-slate-400">Vault Name</label>
+            <label className="block text-sm text-content-muted">Vault Name</label>
             <input
               type="text"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 p-3 text-white focus:border-cyan-400 focus:outline-none"
+              className="w-full rounded-control border border-line-hairline bg-surface-inset p-3 text-content-primary focus:border-eth-blue focus:outline-none"
               disabled={isSubmitting}
             />
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm text-slate-400">Description</label>
+            <label className="block text-sm text-content-muted">Description</label>
             <textarea
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               rows={2}
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 p-3 text-white focus:border-cyan-400 focus:outline-none resize-none"
+              className="w-full rounded-control border border-line-hairline bg-surface-inset p-3 text-content-primary focus:border-eth-blue focus:outline-none resize-none"
               disabled={isSubmitting}
             />
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm text-slate-400">Claim Amount (ETH)</label>
+            <label className="block text-sm text-content-muted">Claim Amount (ETH)</label>
             <input
               type="number"
               min="0"
               step="0.001"
               value={form.claimAmount}
               onChange={(e) => setForm({ ...form, claimAmount: e.target.value })}
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 p-3 text-white focus:border-cyan-400 focus:outline-none"
+              className="w-full rounded-control border border-line-hairline bg-surface-inset p-3 text-content-primary focus:border-eth-blue focus:outline-none"
               disabled={isSubmitting}
             />
           </div>
 
-          <div className="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-800 p-4">
+          <div className="flex items-center justify-between rounded-control border border-line-hairline bg-surface-inset p-4">
             <div>
-              <p className="text-white font-medium">Active Status</p>
-              <p className="text-xs text-slate-500">
+              <p className="text-content-primary font-medium">Active Status</p>
+              <p className="text-xs text-content-faint">
                 {form.active ? 'Users can claim from this vault' : 'Vault is paused'}
               </p>
             </div>
@@ -148,12 +148,12 @@ export function VaultEditModal({ vault, onClose, onSuccess }: VaultEditModalProp
               type="button"
               onClick={() => setForm({ ...form, active: !form.active })}
               className={`relative h-6 w-11 rounded-full transition-colors ${
-                form.active ? 'bg-green-500' : 'bg-slate-600'
+                form.active ? 'bg-eth-blue' : 'bg-surface-ridge'
               }`}
               disabled={isSubmitting}
             >
               <span
-                className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-md transition-transform ${
+                className={`absolute top-0.5 h-5 w-5 rounded-full bg-surface-paper transition-transform ${
                   form.active ? 'translate-x-5' : 'translate-x-0.5'
                 }`}
               />
@@ -161,24 +161,24 @@ export function VaultEditModal({ vault, onClose, onSuccess }: VaultEditModalProp
           </div>
 
           {/* Gating Settings */}
-          <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4 space-y-4">
-            <p className="text-xs text-slate-500 uppercase tracking-wider">Gating Settings</p>
+          <div className="rounded-control border border-line-hairline bg-surface-inset/50 p-4 space-y-4">
+            <p className="text-xs text-content-faint uppercase tracking-wider">Gating Settings</p>
 
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-white font-medium">Require ZKPassport</p>
-                <p className="text-xs text-slate-500">Only ZKPassport NFT holders can claim</p>
+                <p className="text-content-primary font-medium">Require ZKPassport</p>
+                <p className="text-xs text-content-faint">Only ZKPassport NFT holders can claim</p>
               </div>
               <button
                 type="button"
                 onClick={() => setGatingForm({ ...gatingForm, zkPassportRequired: !gatingForm.zkPassportRequired })}
                 className={`relative h-6 w-11 rounded-full transition-colors ${
-                  gatingForm.zkPassportRequired ? 'bg-orange-500' : 'bg-slate-600'
+                  gatingForm.zkPassportRequired ? 'bg-eth-blue' : 'bg-surface-ridge'
                 }`}
                 disabled={isGatingSubmitting}
               >
                 <span
-                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-md transition-transform ${
+                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-surface-paper transition-transform ${
                     gatingForm.zkPassportRequired ? 'translate-x-5' : 'translate-x-0.5'
                   }`}
                 />
@@ -186,21 +186,21 @@ export function VaultEditModal({ vault, onClose, onSuccess }: VaultEditModalProp
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm text-slate-400">Allowed Token/NFT Address</label>
+              <label className="block text-sm text-content-muted">Allowed Token/NFT Address</label>
               <input
                 type="text"
                 value={gatingForm.allowedToken}
                 onChange={(e) => setGatingForm({ ...gatingForm, allowedToken: e.target.value })}
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 p-3 text-white font-mono text-sm focus:border-cyan-400 focus:outline-none"
+                className="w-full rounded-control border border-line-hairline bg-surface-inset p-3 text-content-primary font-mono text-sm focus:border-eth-blue focus:outline-none"
                 placeholder="0x..."
                 disabled={isGatingSubmitting}
               />
-              <p className="text-xs text-slate-500">Set to 0x0...0 to disable token gating</p>
+              <p className="text-xs text-content-faint">Set to 0x0...0 to disable token gating</p>
             </div>
 
             {gatingError && (
-              <div className="rounded-lg border border-red-500/40 bg-red-500/10 p-3">
-                <p className="text-sm text-red-300">{gatingError}</p>
+              <div className="rounded-control border border-signal-reverted/40 bg-signal-reverted/10 p-3">
+                <p className="text-sm text-signal-reverted">{gatingError}</p>
               </div>
             )}
 
@@ -208,36 +208,36 @@ export function VaultEditModal({ vault, onClose, onSuccess }: VaultEditModalProp
               type="button"
               onClick={handleGatingSubmit}
               disabled={isGatingSubmitting || !canUpdateGating}
-              className="w-full rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 py-2.5 text-sm font-medium text-white shadow-lg shadow-orange-500/20 hover:opacity-90 disabled:opacity-50 transition"
+              className="w-full rounded-control border border-line-strong bg-surface-inset hover:border-line-brand py-2.5 text-sm font-medium text-content-primary hover:opacity-90 disabled:opacity-50 transition"
             >
               {isGatingSubmitting ? 'Updating Gating...' : 'Save Gating'}
             </button>
           </div>
 
           {/* Read-only vault stats */}
-          <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4 space-y-2">
-            <p className="text-xs text-slate-500 uppercase tracking-wider">Vault Stats (Read-only)</p>
+          <div className="rounded-control border border-line-hairline bg-surface-inset/50 p-4 space-y-2">
+            <p className="text-xs text-content-faint uppercase tracking-wider">Vault Stats (Read-only)</p>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="text-slate-500">Balance</p>
-                <p className="text-green-400 font-mono">{parseFloat(formatEther(vault.balance)).toFixed(4)} ETH</p>
+                <p className="text-content-faint">Balance</p>
+                <p className="text-eth-blue-text font-mono">{parseFloat(formatEther(vault.balance)).toFixed(4)} ETH</p>
               </div>
               <div>
-                <p className="text-slate-500">Total Claimed</p>
-                <p className="text-white font-mono">{parseFloat(formatEther(vault.totalClaimed)).toFixed(4)} ETH</p>
+                <p className="text-content-faint">Total Claimed</p>
+                <p className="text-content-primary font-mono">{parseFloat(formatEther(vault.totalClaimed)).toFixed(4)} ETH</p>
               </div>
               {vault.vaultType === VaultType.Returnable && (
                 <div>
-                  <p className="text-slate-500">Total Returned</p>
-                  <p className="text-cyan-400 font-mono">{parseFloat(formatEther(vault.totalReturned)).toFixed(4)} ETH</p>
+                  <p className="text-content-faint">Total Returned</p>
+                  <p className="text-eth-blue-text font-mono">{parseFloat(formatEther(vault.totalReturned)).toFixed(4)} ETH</p>
                 </div>
               )}
             </div>
           </div>
 
           {error && (
-            <div className="rounded-lg border border-red-500/40 bg-red-500/10 p-3">
-              <p className="text-sm text-red-300">{error}</p>
+            <div className="rounded-control border border-signal-reverted/40 bg-signal-reverted/10 p-3">
+              <p className="text-sm text-signal-reverted">{error}</p>
             </div>
           )}
 
@@ -245,7 +245,7 @@ export function VaultEditModal({ vault, onClose, onSuccess }: VaultEditModalProp
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-lg border border-slate-600 bg-slate-800 py-3 text-white hover:bg-slate-700 transition"
+              className="flex-1 rounded-control border border-line-strong bg-surface-inset py-3 text-content-primary hover:bg-surface-ridge transition"
               disabled={isSubmitting}
             >
               Cancel
@@ -253,7 +253,7 @@ export function VaultEditModal({ vault, onClose, onSuccess }: VaultEditModalProp
             <button
               type="submit"
               disabled={isSubmitting || !canUpdate}
-              className="flex-1 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 py-3 font-medium text-white shadow-lg shadow-cyan-500/20 hover:opacity-90 disabled:opacity-50 transition"
+              className="flex-1 rounded-control bg-eth-blue hover:bg-eth-blue-lift py-3 font-medium text-content-primary hover:opacity-90 disabled:opacity-50 transition"
             >
               {isSubmitting ? 'Updating...' : 'Save Changes'}
             </button>

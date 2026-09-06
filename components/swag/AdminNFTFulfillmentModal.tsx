@@ -19,9 +19,9 @@ const statusLabels: Record<RedemptionStatus, string> = {
 };
 
 const statusColors: Record<RedemptionStatus, string> = {
-  [RedemptionStatus.NotRedeemed]: 'bg-slate-500/10 text-slate-400',
-  [RedemptionStatus.PendingFulfillment]: 'bg-yellow-500/10 text-yellow-400',
-  [RedemptionStatus.Fulfilled]: 'bg-green-500/10 text-green-400',
+  [RedemptionStatus.NotRedeemed]: 'bg-surface-ridge/10 text-content-muted',
+  [RedemptionStatus.PendingFulfillment]: 'bg-signal-pending/10 text-signal-pending',
+  [RedemptionStatus.Fulfilled]: 'bg-signal-confirmed/10 text-signal-confirmed',
 };
 
 export function AdminNFTFulfillmentModal({ 
@@ -131,7 +131,7 @@ export function AdminNFTFulfillmentModal({
               >
                 {isConfirming || isProcessing ? (
                   <span className="flex items-center justify-center gap-2">
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                     Processing...
                   </span>
                 ) : (
@@ -171,17 +171,14 @@ export function AdminNFTFulfillmentModal({
         }
 
         .modal-container {
-          background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
-          border: 1px solid rgba(251, 191, 36, 0.3);
+          background: var(--surface-slab);
+          border: 1px solid rgb(var(--signal-pending-rgb) / 0.3);
           border-radius: 12px;
           width: 90%;
           max-width: 500px;
           max-height: 90vh;
           overflow-y: auto;
-          box-shadow: 
-            0 0 30px rgba(251, 191, 36, 0.2),
-            0 10px 40px rgba(0, 0, 0, 0.5);
-          color: #e5e7eb;
+          color: var(--text-secondary);
         }
 
         .modal-header {
@@ -189,16 +186,16 @@ export function AdminNFTFulfillmentModal({
           justify-content: space-between;
           align-items: center;
           padding: 1rem 1.5rem;
-          border-bottom: 1px solid rgba(251, 191, 36, 0.2);
+          border-bottom: 1px solid rgb(var(--signal-pending-rgb) / 0.2);
           position: sticky;
           top: 0;
-          background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+          background: var(--surface-slab);
           z-index: 10;
         }
 
         .modal-header h3 {
           margin: 0;
-          color: #fbbf24;
+          color: var(--signal-pending);
           font-size: 1rem;
           font-weight: 600;
           font-family: monospace;
@@ -207,12 +204,12 @@ export function AdminNFTFulfillmentModal({
         }
 
         .close-button {
-          background: rgba(251, 191, 36, 0.1);
-          border: 1px solid rgba(251, 191, 36, 0.3);
+          background: rgb(var(--signal-pending-rgb) / 0.1);
+          border: 1px solid rgb(var(--signal-pending-rgb) / 0.3);
           border-radius: 4px;
           font-size: 1.25rem;
           cursor: pointer;
-          color: #fbbf24;
+          color: var(--signal-pending);
           padding: 0.25rem 0.5rem;
           width: auto;
           height: auto;
@@ -223,8 +220,8 @@ export function AdminNFTFulfillmentModal({
         }
 
         .close-button:hover:not(:disabled) {
-          background: rgba(251, 191, 36, 0.2);
-          border-color: rgba(251, 191, 36, 0.5);
+          background: rgb(var(--signal-pending-rgb) / 0.2);
+          border-color: rgb(var(--signal-pending-rgb) / 0.5);
         }
 
         .close-button:disabled {
@@ -247,7 +244,7 @@ export function AdminNFTFulfillmentModal({
           height: 200px;
           border-radius: 12px;
           overflow: hidden;
-          border: 2px solid rgba(251, 191, 36, 0.3);
+          border: 2px solid rgb(var(--signal-pending-rgb) / 0.3);
           background: rgba(0, 0, 0, 0.3);
         }
 
@@ -264,7 +261,7 @@ export function AdminNFTFulfillmentModal({
         .nft-name {
           font-size: 1.25rem;
           font-weight: 600;
-          color: #e5e7eb;
+          color: var(--text-secondary);
           margin: 0 0 1rem 0;
           text-align: center;
         }
@@ -284,14 +281,14 @@ export function AdminNFTFulfillmentModal({
 
         .detail-label {
           font-size: 0.75rem;
-          color: #9ca3af;
+          color: var(--text-muted);
           text-transform: uppercase;
           letter-spacing: 0.05em;
         }
 
         .detail-value {
           font-size: 0.875rem;
-          color: #e5e7eb;
+          color: var(--text-secondary);
           font-weight: 500;
         }
 
@@ -305,8 +302,8 @@ export function AdminNFTFulfillmentModal({
         }
 
         .description-section {
-          background: rgba(251, 191, 36, 0.05);
-          border: 1px solid rgba(251, 191, 36, 0.2);
+          background: rgb(var(--signal-pending-rgb) / 0.05);
+          border: 1px solid rgb(var(--signal-pending-rgb) / 0.2);
           border-radius: 8px;
           padding: 1rem;
           margin-top: 1rem;
@@ -314,7 +311,7 @@ export function AdminNFTFulfillmentModal({
 
         .description-text {
           font-size: 0.875rem;
-          color: #9ca3af;
+          color: var(--text-muted);
           line-height: 1.6;
           margin: 0;
         }
@@ -340,14 +337,14 @@ export function AdminNFTFulfillmentModal({
         }
 
         .fulfill-btn {
-          background: rgba(34, 197, 94, 0.1);
-          color: #22c55e;
-          border-color: rgba(34, 197, 94, 0.3);
+          background: rgb(var(--signal-confirmed-rgb) / 0.1);
+          color: var(--signal-confirmed);
+          border-color: rgb(var(--signal-confirmed-rgb) / 0.3);
         }
 
         .fulfill-btn:hover:not(:disabled) {
-          background: rgba(34, 197, 94, 0.2);
-          border-color: rgba(34, 197, 94, 0.5);
+          background: rgb(var(--signal-confirmed-rgb) / 0.2);
+          border-color: rgb(var(--signal-confirmed-rgb) / 0.5);
         }
 
         .fulfill-btn:disabled {
@@ -356,14 +353,14 @@ export function AdminNFTFulfillmentModal({
         }
 
         .cancel-btn {
-          background: rgba(75, 85, 99, 0.2);
-          color: #9ca3af;
-          border-color: rgba(75, 85, 99, 0.3);
+          background: var(--line-hairline);
+          color: var(--text-muted);
+          border-color: var(--line-hairline);
         }
 
         .cancel-btn:hover:not(:disabled) {
-          background: rgba(75, 85, 99, 0.3);
-          border-color: rgba(75, 85, 99, 0.5);
+          background: var(--line-hairline);
+          border-color: var(--surface-ridge);
         }
 
         .cancel-btn:disabled {
@@ -372,12 +369,12 @@ export function AdminNFTFulfillmentModal({
         }
 
         .info-message {
-          background: rgba(107, 114, 128, 0.1);
-          border: 1px solid rgba(107, 114, 128, 0.3);
+          background: var(--line-strong);
+          border: 1px solid var(--line-strong);
           border-radius: 8px;
           padding: 0.875rem 1rem;
           text-align: center;
-          color: #9ca3af;
+          color: var(--text-muted);
           font-size: 0.875rem;
         }
 

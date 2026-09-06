@@ -11,8 +11,8 @@ const vaultTypeLabels: Record<VaultType, string> = {
 };
 
 const vaultTypeColors: Record<VaultType, string> = {
-  [VaultType.NonReturnable]: 'bg-purple-500/10 text-purple-400 border-purple-500/30',
-  [VaultType.Returnable]: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
+  [VaultType.NonReturnable]: 'bg-eth-blue/10 text-eth-blue-text border-eth-blue/30',
+  [VaultType.Returnable]: 'bg-eth-blue/10 text-eth-blue-text border-eth-blue/30',
 };
 
 export function VaultList() {
@@ -22,10 +22,10 @@ export function VaultList() {
 
   if (isLoading) {
     return (
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+      <div className="rounded-card border border-line-hairline bg-surface-slab/60 p-6">
         <div className="flex items-center justify-center py-8">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-cyan-400 border-t-transparent" />
-          <span className="ml-3 text-slate-400">Loading vaults...</span>
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-eth-blue border-t-transparent" />
+          <span className="ml-3 text-content-muted">Loading vaults...</span>
         </div>
       </div>
     );
@@ -33,11 +33,11 @@ export function VaultList() {
 
   if (error) {
     return (
-      <div className="rounded-2xl border border-red-500/40 bg-red-500/10 p-6">
-        <p className="text-red-300">Error loading vaults: {error}</p>
+      <div className="rounded-card border border-signal-reverted/40 bg-signal-reverted/10 p-6">
+        <p className="text-signal-reverted">Error loading vaults: {error}</p>
         <button
           onClick={() => refetch()}
-          className="mt-3 text-sm text-cyan-400 hover:text-cyan-300"
+          className="mt-3 text-sm text-eth-blue-text hover:text-eth-blue-text"
         >
           Retry
         </button>
@@ -47,8 +47,8 @@ export function VaultList() {
 
   if (vaults.length === 0) {
     return (
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
-        <p className="text-center text-slate-400">No vaults found. Create your first vault above.</p>
+      <div className="rounded-card border border-line-hairline bg-surface-slab/60 p-6">
+        <p className="text-center text-content-muted">No vaults found. Create your first vault above.</p>
       </div>
     );
   }
@@ -56,10 +56,10 @@ export function VaultList() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-white">All Vaults</h2>
+        <h2 className="text-xl font-semibold text-content-primary">All Vaults</h2>
         <button
           onClick={() => refetch()}
-          className="text-sm text-cyan-400 hover:text-cyan-300 transition"
+          className="text-sm text-eth-blue-text hover:text-eth-blue-text transition"
         >
           Refresh
         </button>
@@ -69,17 +69,17 @@ export function VaultList() {
         {vaults.map((vault) => (
           <div
             key={vault.id}
-            className={`rounded-xl border p-5 transition ${
+            className={`rounded-card border p-5 transition ${
               vault.active
-                ? 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
-                : 'border-slate-800 bg-slate-900/30 opacity-70'
+                ? 'border-line-hairline bg-surface-inset/50 hover:border-line-strong'
+                : 'border-line-hairline bg-surface-slab/30 opacity-70'
             }`}
           >
             {/* Header */}
             <div className="flex items-start justify-between mb-4">
               <div>
-                <h3 className="text-lg font-semibold text-white">{vault.name}</h3>
-                <p className="text-sm text-slate-400 line-clamp-2">{vault.description}</p>
+                <h3 className="text-lg font-semibold text-content-primary">{vault.name}</h3>
+                <p className="text-sm text-content-muted line-clamp-2">{vault.description}</p>
               </div>
               <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${vaultTypeColors[vault.vaultType]}`}>
                 {vaultTypeLabels[vault.vaultType]}
@@ -88,54 +88,54 @@ export function VaultList() {
 
             {/* Stats */}
             <div className="grid grid-cols-2 gap-3 mb-4">
-              <div className="rounded-lg bg-slate-900/60 p-3">
-                <p className="text-xs text-slate-500 uppercase tracking-wider">Balance</p>
-                <p className="text-lg font-mono text-green-400">
+              <div className="rounded-control bg-surface-slab/60 p-3">
+                <p className="text-xs text-content-faint uppercase tracking-wider">Balance</p>
+                <p className="text-lg font-mono text-eth-blue-text">
                   {parseFloat(formatEther(vault.balance)).toFixed(4)} ETH
                 </p>
               </div>
-              <div className="rounded-lg bg-slate-900/60 p-3">
-                <p className="text-xs text-slate-500 uppercase tracking-wider">Claim Amount</p>
-                <p className="text-lg font-mono text-cyan-400">
+              <div className="rounded-control bg-surface-slab/60 p-3">
+                <p className="text-xs text-content-faint uppercase tracking-wider">Claim Amount</p>
+                <p className="text-lg font-mono text-eth-blue-text">
                   {parseFloat(formatEther(vault.claimAmount)).toFixed(4)} ETH
                 </p>
               </div>
             </div>
 
             {/* Additional Stats */}
-            <div className="flex gap-4 text-xs text-slate-500 mb-4">
+            <div className="flex gap-4 text-xs text-content-faint mb-4">
               <span>
-                Claimed: <span className="text-white">{parseFloat(formatEther(vault.totalClaimed)).toFixed(4)}</span> ETH
+                Claimed: <span className="text-content-primary">{parseFloat(formatEther(vault.totalClaimed)).toFixed(4)}</span> ETH
               </span>
               {vault.vaultType === VaultType.Returnable && (
                 <span>
-                  Returned: <span className="text-white">{parseFloat(formatEther(vault.totalReturned)).toFixed(4)}</span> ETH
+                  Returned: <span className="text-content-primary">{parseFloat(formatEther(vault.totalReturned)).toFixed(4)}</span> ETH
                 </span>
               )}
             </div>
 
             {/* Status & Actions */}
-            <div className="flex items-center justify-between border-t border-slate-700 pt-4">
+            <div className="flex items-center justify-between border-t border-line-hairline pt-4">
               <div className="flex flex-col gap-1">
-                <span className={`inline-flex items-center gap-1.5 text-xs ${vault.active ? 'text-green-400' : 'text-red-400'}`}>
-                  <span className={`h-2 w-2 rounded-full ${vault.active ? 'bg-green-400' : 'bg-red-400'}`} />
+                <span className={`inline-flex items-center gap-1.5 text-xs ${vault.active ? 'text-signal-confirmed' : 'text-content-faint'}`}>
+                  <span className={`h-2 w-2 rounded-full ${vault.active ? 'bg-signal-confirmed' : 'bg-content-faint'}`} />
                   {vault.active ? 'Active' : 'Inactive'}
                 </span>
                 {vault.whitelistEnabled && (
-                  <span className="inline-flex items-center gap-1.5 text-xs text-yellow-400">
-                    <span className="h-2 w-2 rounded-full bg-yellow-400" />
+                  <span className="inline-flex items-center gap-1.5 text-xs text-signal-pending">
+                    <span className="h-2 w-2 rounded-full bg-signal-pending" />
                     Whitelist Enabled
                   </span>
                 )}
                 {vault.zkPassportRequired && (
-                  <span className="inline-flex items-center gap-1.5 text-xs text-orange-400">
-                    <span className="h-2 w-2 rounded-full bg-orange-400" />
+                  <span className="inline-flex items-center gap-1.5 text-xs text-eth-blue-text">
+                    <span className="h-2 w-2 rounded-full bg-eth-blue" />
                     ZKPassport Required
                   </span>
                 )}
                 {vault.allowedToken !== '0x0000000000000000000000000000000000000000' && (
-                  <span className="inline-flex items-center gap-1.5 text-xs text-cyan-400">
-                    <span className="h-2 w-2 rounded-full bg-cyan-400" />
+                  <span className="inline-flex items-center gap-1.5 text-xs text-eth-blue-text">
+                    <span className="h-2 w-2 rounded-full bg-eth-blue" />
                     Token Gated
                   </span>
                 )}
@@ -143,13 +143,13 @@ export function VaultList() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setDepositWithdrawVault(vault)}
-                  className="rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-1.5 text-xs font-medium text-green-400 hover:bg-green-500/20 transition"
+                  className="rounded-control border border-eth-blue/30 bg-eth-blue/10 px-3 py-1.5 text-xs font-medium text-eth-blue-text hover:bg-eth-blue/20 transition"
                 >
                   Deposit/Withdraw
                 </button>
                 <button
                   onClick={() => setEditingVault(vault)}
-                  className="rounded-lg border border-slate-600 bg-slate-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-600 transition"
+                  className="rounded-control border border-line-strong bg-surface-ridge px-3 py-1.5 text-xs font-medium text-content-primary hover:bg-surface-ridge transition"
                 >
                   Edit
                 </button>

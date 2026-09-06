@@ -72,7 +72,7 @@ export default function WalletPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950">
+    <div className="min-h-screen bg-surface-void">
       <Navigation 
         currentChainId={currentChainId}
         onChainChange={(newChainId) => {
@@ -93,34 +93,34 @@ export default function WalletPage() {
               />
             </div>
           ) : (
-            <div className="rounded-lg border border-cyan-500/30 bg-gray-900 p-5 text-center shadow sm:p-8">
+            <div className="rounded-control border border-eth-blue/30 bg-surface-slab p-5 text-center  sm:p-8">
               {needsWalletReconnect ? (
                 // External wallet was used to log in but is not connected in this session
                 <>
-                  <p className="mb-2 text-cyan-400 font-mono text-sm">WALLET_NOT_CONNECTED</p>
-                  <p className="text-gray-500 text-xs font-mono mb-1">
+                  <p className="mb-2 text-eth-blue-text font-mono text-sm">Wallet not connected</p>
+                  <p className="text-content-faint text-xs font-mono mb-1">
                     {externalWalletAddress?.slice(0, 6)}…{externalWalletAddress?.slice(-4)}
                   </p>
-                  <p className="text-gray-600 text-xs mb-6">
+                  <p className="text-content-faint text-xs mb-6">
                     Your external wallet is not connected in this session.
                   </p>
                   <button
                     onClick={handleReconnect}
                     disabled={isReconnecting}
-                    className="mx-auto flex min-h-[48px] w-full max-w-xs items-center justify-center gap-2 rounded-lg bg-cyan-600 px-6 font-mono text-sm text-white transition-all hover:bg-cyan-700 disabled:opacity-50 sm:w-auto"
+                    className="mx-auto flex min-h-tap w-full max-w-xs items-center justify-center gap-2 rounded-control bg-eth-blue px-6 font-mono text-sm text-content-primary transition-all hover:bg-eth-blue-lift disabled:opacity-50 sm:w-auto"
                   >
                     {isReconnecting && (
-                      <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
                     )}
-                    {isReconnecting ? 'Connecting…' : '🔗 Reconnect Wallet'}
+                    {isReconnecting ? 'Connecting…' : 'Reconnect wallet'}
                   </button>
                 </>
               ) : (
                 // Embedded wallet is being created
                 <>
-                  <p className="mb-4 text-cyan-400 font-mono">INITIALIZING_WALLET...</p>
+                  <p className="mb-4 text-eth-blue-text font-mono">Setting up your wallet…</p>
                   <div className="flex justify-center">
-                    <div className="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-10 h-10 border-2 border-eth-blue border-t-transparent rounded-full animate-spin"></div>
                   </div>
                 </>
               )}

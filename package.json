@@ -16,6 +16,7 @@
     "postinstall": "npx update-browserslist-db@latest || true"
   },
   "dependencies": {
+    "@ethcali/design-tokens": "github:ETHcali/design-tokens#v1",
     "@pinata/sdk": "2.1.0",
     "@privy-io/react-auth": "^3.13.0",
     "@supabase/supabase-js": "2.58.0",

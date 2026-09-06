@@ -21,28 +21,28 @@ export default function SwagStorePage() {
   }, [chainId, queryClient]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-black">
+    <div className="min-h-screen bg-surface-void">
       <Navigation currentChainId={chainId} />
       <Layout>
         {/* ── Page header ── */}
         <div className="mb-10">
-          <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-cyan-500">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-eth-blue-text">
             Official Merchandise
           </p>
-          <h1 className="text-3xl font-bold text-white sm:text-4xl">
+          <h1 className="text-3xl font-bold text-content-primary sm:text-4xl">
             ETH CALI Swag Store
           </h1>
-          <p className="mt-2 text-sm text-slate-400">
+          <p className="mt-2 text-sm text-content-muted">
             Pay with USDC · Connect your wallet to see personalised pricing
           </p>
         </div>
 
         {/* ── Empty state – no contract on this chain ── */}
         {designAddresses.length === 0 && (
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-12 text-center">
-            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-slate-800">
+          <div className="rounded-card border border-line-hairline bg-surface-slab/50 p-12 text-center">
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-surface-inset">
               <svg
-                className="h-10 w-10 text-slate-600"
+                className="h-10 w-10 text-content-faint"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -55,10 +55,10 @@ export default function SwagStorePage() {
                 />
               </svg>
             </div>
-            <p className="mb-2 text-lg font-medium text-slate-300">
+            <p className="mb-2 text-lg font-medium text-content-secondary">
               No Swag Contract Deployed
             </p>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-content-faint">
               No Swag1155 contract is configured for the selected network (Chain
               ID: {chainId}).
             </p>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Button from '../shared/Button';
+import { CameraIcon, ClipboardIcon } from '../shared/icons';
 import Loading from '../shared/Loading';
 import QRScanner from './QRScanner';
 
@@ -243,7 +244,7 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
 
           {selectedToken && parseFloat(selectedToken.balance) === 0 && (
             <div className="warning-message">
-              <span className="warning-icon">⚠</span>
+              
               <span>You have 0 {selectedToken.symbol} balance. You cannot send this token.</span>
             </div>
           )}
@@ -255,17 +256,17 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
                 onClick={openQRScanner} 
                 className="scan-button"
                 disabled={isSending}
-                title="Scan QR Code"
+                title="Scan QR code"
               >
-                📷
+                <CameraIcon />
               </button>
               <button 
                 onClick={handlePaste} 
                 className="paste-button"
                 disabled={isSending}
-                title="Paste Address"
+                title="Paste address"
               >
-                📋
+                <ClipboardIcon />
               </button>
               <input
                 id="recipient"
@@ -376,7 +377,7 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
           left: 0;
           right: 0;
           bottom: 0;
-          background: linear-gradient(135deg, rgba(0, 0, 0, 0.95), rgba(10, 10, 20, 0.98));
+          background: var(--surface-slab);
           backdrop-filter: blur(8px);
           display: flex;
           justify-content: center;
@@ -386,13 +387,12 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
         }
 
         .modal-container {
-          background: linear-gradient(135deg, rgba(10, 10, 20, 0.95), rgba(0, 0, 0, 0.98));
-          border: 1px solid rgba(34, 211, 238, 0.3);
+          background: var(--surface-slab);
+          border: 1px solid rgb(var(--eth-blue-rgb) / 0.3);
           border-radius: 16px;
           width: 100%;
           max-width: 500px;
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(34, 211, 238, 0.1);
-          color: #e5e7eb;
+          color: var(--text-secondary);
           font-family: 'SF Mono', 'Menlo', 'Monaco', monospace;
         }
 
@@ -401,13 +401,13 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
           justify-content: space-between;
           align-items: center;
           padding: 1.25rem 1.5rem;
-          border-bottom: 1px solid rgba(34, 211, 238, 0.2);
+          border-bottom: 1px solid rgb(var(--eth-blue-rgb) / 0.2);
           background: rgba(0, 0, 0, 0.3);
         }
 
         .modal-header h3 {
           margin: 0;
-          color: #22d3ee;
+          color: var(--eth-blue-text);
           font-size: 1.1rem;
           font-weight: 700;
           letter-spacing: 0.1em;
@@ -416,12 +416,12 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
         }
 
         .close-button {
-          background: rgba(34, 211, 238, 0.1);
-          border: 1px solid rgba(34, 211, 238, 0.3);
+          background: rgb(var(--eth-blue-rgb) / 0.1);
+          border: 1px solid rgb(var(--eth-blue-rgb) / 0.3);
           border-radius: 6px;
           font-size: 1.5rem;
           cursor: pointer;
-          color: #22d3ee;
+          color: var(--eth-blue-text);
           width: 32px;
           height: 32px;
           display: flex;
@@ -432,22 +432,21 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
         }
 
         .close-button:hover {
-          background: rgba(34, 211, 238, 0.2);
-          border-color: rgba(34, 211, 238, 0.5);
-          box-shadow: 0 0 12px rgba(34, 211, 238, 0.3);
+          background: rgb(var(--eth-blue-rgb) / 0.2);
+          border-color: rgb(var(--eth-blue-rgb) / 0.5);
         }
         
         .transaction-info {
           margin-top: 1rem;
           padding: 1rem;
-          background: rgba(34, 211, 238, 0.1);
-          border: 1px solid rgba(34, 211, 238, 0.3);
+          background: rgb(var(--eth-blue-rgb) / 0.1);
+          border: 1px solid rgb(var(--eth-blue-rgb) / 0.3);
           border-radius: 8px;
         }
         
         .transaction-info p {
           margin: 0.5rem 0;
-          color: #22d3ee;
+          color: var(--eth-blue-text);
         }
         
         .tx-hash {
@@ -457,24 +456,24 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
           margin: 0.5rem 0;
           padding: 0.75rem;
           background: rgba(0, 0, 0, 0.5);
-          border: 1px solid rgba(34, 211, 238, 0.2);
+          border: 1px solid rgb(var(--eth-blue-rgb) / 0.2);
           border-radius: 6px;
-          color: #22d3ee;
+          color: var(--eth-blue-text);
         }
         
         .block-explorer-link {
           display: inline-block;
           margin-top: 0.5rem;
-          color: #22d3ee;
+          color: var(--eth-blue-text);
           text-decoration: none;
           font-size: 0.85rem;
-          border-bottom: 1px solid rgba(34, 211, 238, 0.5);
+          border-bottom: 1px solid rgb(var(--eth-blue-rgb) / 0.5);
           transition: all 0.2s;
         }
 
         .block-explorer-link:hover {
-          color: #67e8f9;
-          border-color: rgba(34, 211, 238, 0.8);
+          color: var(--eth-blue-text);
+          border-color: rgb(var(--eth-blue-rgb) / 0.8);
         }
 
         .modal-body {
@@ -486,7 +485,7 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
           display: flex;
           justify-content: flex-end;
           gap: 1rem;
-          border-top: 1px solid rgba(34, 211, 238, 0.2);
+          border-top: 1px solid rgb(var(--eth-blue-rgb) / 0.2);
           background: rgba(0, 0, 0, 0.2);
         }
 
@@ -497,7 +496,7 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
         label {
           display: block;
           margin-bottom: 0.5rem;
-          color: #9ca3af;
+          color: var(--text-muted);
           font-weight: 600;
           font-size: 0.75rem;
           text-transform: uppercase;
@@ -508,24 +507,23 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
         input {
           width: 100%;
           padding: 0.875rem;
-          border: 1px solid rgba(34, 211, 238, 0.3);
+          border: 1px solid rgb(var(--eth-blue-rgb) / 0.3);
           border-radius: 8px;
           font-size: 0.95rem;
           background: rgba(0, 0, 0, 0.5);
-          color: #e5e7eb;
+          color: var(--text-secondary);
           font-family: 'SF Mono', 'Menlo', 'Monaco', monospace;
           transition: all 0.2s;
         }
 
         input:focus {
           outline: none;
-          border-color: #22d3ee;
-          box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.1), 0 0 12px rgba(34, 211, 238, 0.2);
+          border-color: var(--eth-blue-text);
           background: rgba(0, 0, 0, 0.7);
         }
 
         input::placeholder {
-          color: #6b7280;
+          color: var(--text-faint);
         }
 
         input:disabled {
@@ -534,12 +532,11 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
         }
 
         input.input-error {
-          border-color: #ef4444;
-          box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1), 0 0 12px rgba(239, 68, 68, 0.2);
+          border-color: var(--signal-reverted);
         }
 
         .field-error-message {
-          color: #ef4444;
+          color: var(--signal-reverted);
           margin-top: 0.5rem;
           font-size: 0.75rem;
           font-family: 'SF Mono', 'Menlo', 'Monaco', monospace;
@@ -549,19 +546,19 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
         .balance-info-top {
           margin-bottom: 0.5rem;
           font-size: 0.75rem;
-          color: #9ca3af;
+          color: var(--text-muted);
           font-family: 'SF Mono', 'Menlo', 'Monaco', monospace;
         }
 
         .balance-info-top .balance-amount {
-          color: #22d3ee;
+          color: var(--eth-blue-text);
           font-weight: 600;
         }
 
         .amount-preview {
           margin-top: 0.5rem;
           font-size: 0.7rem;
-          color: #6b7280;
+          color: var(--text-faint);
           font-family: 'SF Mono', 'Menlo', 'Monaco', monospace;
           padding-left: 0.25rem;
         }
@@ -576,7 +573,7 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
           flex: 1;
           min-width: 80px;
           padding: 0.875rem 0.75rem;
-          border: 1px solid rgba(34, 211, 238, 0.3);
+          border: 1px solid rgb(var(--eth-blue-rgb) / 0.3);
           border-radius: 8px;
           background: rgba(0, 0, 0, 0.5);
           cursor: pointer;
@@ -588,15 +585,13 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
         }
 
         .token-option:hover:not(:disabled) {
-          border-color: #22d3ee;
-          background: rgba(34, 211, 238, 0.1);
-          box-shadow: 0 0 12px rgba(34, 211, 238, 0.2);
+          border-color: var(--eth-blue-text);
+          background: rgb(var(--eth-blue-rgb) / 0.1);
         }
 
         .token-option.active {
-          border-color: #22d3ee;
-          background: rgba(34, 211, 238, 0.15);
-          box-shadow: 0 0 16px rgba(34, 211, 238, 0.3);
+          border-color: var(--eth-blue-text);
+          background: rgb(var(--eth-blue-rgb) / 0.15);
         }
 
         .token-option:disabled {
@@ -606,41 +601,40 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
 
         .token-option.no-balance {
           opacity: 0.6;
-          border-color: rgba(107, 114, 128, 0.3);
+          border-color: var(--line-strong);
           background: rgba(0, 0, 0, 0.3);
         }
 
         .token-option.no-balance:hover:not(:disabled) {
-          border-color: rgba(107, 114, 128, 0.5);
+          border-color: var(--line-strong);
           background: rgba(0, 0, 0, 0.4);
-          box-shadow: none;
         }
 
         .token-symbol {
           font-weight: 700;
           font-size: 0.9rem;
-          color: #22d3ee;
+          color: var(--eth-blue-text);
           font-family: 'SF Mono', 'Menlo', 'Monaco', monospace;
         }
 
         .token-option.no-balance .token-symbol {
-          color: #6b7280;
+          color: var(--text-faint);
         }
 
         .token-balance-small {
           font-size: 0.7rem;
-          color: #9ca3af;
+          color: var(--text-muted);
           font-family: 'SF Mono', 'Menlo', 'Monaco', monospace;
         }
 
         .token-balance-small.zero-balance {
-          color: #6b7280;
+          color: var(--text-faint);
         }
 
         .no-tokens-message {
           padding: 2rem;
           text-align: center;
-          color: #9ca3af;
+          color: var(--text-muted);
           font-family: 'SF Mono', 'Menlo', 'Monaco', monospace;
         }
 
@@ -654,10 +648,10 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
           align-items: center;
           gap: 0.5rem;
           padding: 0.75rem;
-          background: rgba(251, 191, 36, 0.1);
-          border: 1px solid rgba(251, 191, 36, 0.3);
+          background: rgb(var(--signal-pending-rgb) / 0.1);
+          border: 1px solid rgb(var(--signal-pending-rgb) / 0.3);
           border-radius: 8px;
-          color: #fbbf24;
+          color: var(--signal-pending);
           font-size: 0.8rem;
           font-family: 'SF Mono', 'Menlo', 'Monaco', monospace;
           margin-bottom: 1rem;
@@ -679,13 +673,13 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
 
         .paste-button,
         .scan-button {
-          background: rgba(34, 211, 238, 0.1);
-          border: 1px solid rgba(34, 211, 238, 0.3);
+          background: rgb(var(--eth-blue-rgb) / 0.1);
+          border: 1px solid rgb(var(--eth-blue-rgb) / 0.3);
           padding: 0.875rem;
           border-radius: 8px;
           font-size: 1.1rem;
           cursor: pointer;
-          color: #22d3ee;
+          color: var(--eth-blue-text);
           min-width: 48px;
           display: flex;
           align-items: center;
@@ -695,9 +689,8 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
 
         .paste-button:hover:not(:disabled),
         .scan-button:hover:not(:disabled) {
-          background: rgba(34, 211, 238, 0.2);
-          border-color: rgba(34, 211, 238, 0.5);
-          box-shadow: 0 0 12px rgba(34, 211, 238, 0.3);
+          background: rgb(var(--eth-blue-rgb) / 0.2);
+          border-color: rgb(var(--eth-blue-rgb) / 0.5);
         }
 
         .paste-button:disabled,
@@ -712,14 +705,14 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
         }
 
         .max-button {
-          background: rgba(34, 211, 238, 0.1);
-          border: 1px solid rgba(34, 211, 238, 0.3);
+          background: rgb(var(--eth-blue-rgb) / 0.1);
+          border: 1px solid rgb(var(--eth-blue-rgb) / 0.3);
           padding: 0 1rem;
           border-radius: 8px;
           font-size: 0.75rem;
           font-weight: 700;
           cursor: pointer;
-          color: #22d3ee;
+          color: var(--eth-blue-text);
           font-family: 'SF Mono', 'Menlo', 'Monaco', monospace;
           text-transform: uppercase;
           letter-spacing: 0.05em;
@@ -727,9 +720,8 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
         }
 
         .max-button:hover:not(:disabled) {
-          background: rgba(34, 211, 238, 0.2);
-          border-color: rgba(34, 211, 238, 0.5);
-          box-shadow: 0 0 12px rgba(34, 211, 238, 0.3);
+          background: rgb(var(--eth-blue-rgb) / 0.2);
+          border-color: rgb(var(--eth-blue-rgb) / 0.5);
         }
 
         .max-button:disabled {
@@ -740,18 +732,18 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
         .balance-info {
           margin-top: 0.5rem;
           font-size: 0.75rem;
-          color: #9ca3af;
+          color: var(--text-muted);
           text-align: right;
           font-family: 'SF Mono', 'Menlo', 'Monaco', monospace;
         }
 
         .error-message {
-          color: #ef4444;
+          color: var(--signal-reverted);
           margin-top: 1rem;
           font-size: 0.85rem;
           padding: 0.75rem;
-          background: rgba(239, 68, 68, 0.1);
-          border: 1px solid rgba(239, 68, 68, 0.3);
+          background: rgb(var(--signal-reverted-rgb) / 0.1);
+          border: 1px solid rgb(var(--signal-reverted-rgb) / 0.3);
           border-radius: 8px;
           font-family: 'SF Mono', 'Menlo', 'Monaco', monospace;
         }

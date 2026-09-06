@@ -11,15 +11,10 @@ export interface QRScannerProps {
   showScanCount?: boolean;
 }
 
+// Both themes resolve to the brand blue now; the prop survives so callers need not change.
 const THEME_COLORS = {
-  cyan: {
-    primary: '#000',
-    primaryRgb: '0, 0, 0',
-  },
-  amber: {
-    primary: '#000',
-    primaryRgb: '0, 0, 0',
-  },
+  cyan: { primary: 'var(--eth-blue-text)' },
+  amber: { primary: 'var(--eth-blue-text)' },
 };
 
 const QRScanner: React.FC<QRScannerProps> = ({
@@ -106,7 +101,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
           left: 0;
           right: 0;
           bottom: 0;
-          background: linear-gradient(135deg, rgba(0, 0, 0, 0.95), rgba(10, 10, 20, 0.98));
+          background: var(--surface-slab);
           backdrop-filter: blur(8px);
           display: flex;
           justify-content: center;
@@ -121,11 +116,10 @@ const QRScanner: React.FC<QRScannerProps> = ({
         .qr-scanner-container {
           width: 100%;
           max-width: 600px;
-          background: linear-gradient(135deg, rgba(10, 10, 20, 0.95), rgba(0, 0, 0, 0.98));
-          border: 1px solid rgba(${colors.primaryRgb}, 0.3);
+          background: var(--surface-slab);
+          border: 1px solid rgb(var(--eth-blue-rgb) / 0.3);
           border-radius: 16px;
           overflow: hidden;
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(${colors.primaryRgb}, 0.1);
           margin: auto;
         }
 
@@ -135,7 +129,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
           align-items: center;
           padding: 1rem 1.25rem;
           background: rgba(0, 0, 0, 0.3);
-          border-bottom: 1px solid rgba(${colors.primaryRgb}, 0.2);
+          border-bottom: 1px solid rgb(var(--eth-blue-rgb) / 0.2);
         }
 
         .qr-scanner-header h3 {
@@ -149,8 +143,8 @@ const QRScanner: React.FC<QRScannerProps> = ({
         }
 
         .close-button {
-          background: rgba(${colors.primaryRgb}, 0.1);
-          border: 1px solid rgba(${colors.primaryRgb}, 0.3);
+          background: rgb(var(--eth-blue-rgb) / 0.1);
+          border: 1px solid rgb(var(--eth-blue-rgb) / 0.3);
           border-radius: 6px;
           color: ${colors.primary};
           font-size: 1.5rem;
@@ -165,16 +159,15 @@ const QRScanner: React.FC<QRScannerProps> = ({
         }
 
         .close-button:hover {
-          background: rgba(${colors.primaryRgb}, 0.2);
-          border-color: rgba(${colors.primaryRgb}, 0.5);
-          box-shadow: 0 0 12px rgba(${colors.primaryRgb}, 0.3);
+          background: rgb(var(--eth-blue-rgb) / 0.2);
+          border-color: rgb(var(--eth-blue-rgb) / 0.5);
         }
 
         .qr-reader {
           position: relative;
           width: 100%;
           overflow: hidden;
-          background: #000;
+          background: var(--surface-void);
         }
 
         .qr-reader > div {
@@ -219,7 +212,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
         .scanner-help {
           text-align: center;
           padding: 1rem;
-          color: #9ca3af;
+          color: var(--text-muted);
           font-size: 0.8rem;
           margin: 0;
           font-family: 'SF Mono', 'Menlo', 'Monaco', monospace;
@@ -228,9 +221,9 @@ const QRScanner: React.FC<QRScannerProps> = ({
         }
 
         .error-message {
-          background: rgba(239, 68, 68, 0.1);
-          border: 1px solid rgba(239, 68, 68, 0.3);
-          color: #ef4444;
+          background: rgb(var(--signal-reverted-rgb) / 0.1);
+          border: 1px solid rgb(var(--signal-reverted-rgb) / 0.3);
+          color: var(--signal-reverted);
           padding: 0.75rem 1rem;
           margin: 0.5rem 1rem;
           text-align: center;
@@ -248,12 +241,12 @@ const QRScanner: React.FC<QRScannerProps> = ({
           cursor: pointer;
           background: transparent;
           border: none;
-          color: #ef4444;
+          color: var(--signal-reverted);
         }
 
         .scan-success {
-          background: rgba(34, 197, 94, 0.1);
-          border: 1px solid rgba(34, 197, 94, 0.3);
+          background: rgb(var(--signal-confirmed-rgb) / 0.1);
+          border: 1px solid rgb(var(--signal-confirmed-rgb) / 0.3);
           padding: 0.5rem 1rem;
           margin: 0.5rem 1rem;
           border-radius: 6px;
@@ -261,7 +254,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
         }
 
         .scan-indicator {
-          color: #22c55e;
+          color: var(--signal-confirmed);
           font-size: 0.8rem;
           font-family: 'SF Mono', 'Menlo', 'Monaco', monospace;
           display: flex;

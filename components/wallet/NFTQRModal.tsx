@@ -89,7 +89,7 @@ export function NFTQRModal({ tokenId, nftName, onClose }: NFTQRModalProps) {
               className={`action-btn copy-btn ${copied ? 'copied' : ''}`}
               onClick={handleCopy}
             >
-              {copied ? '✓ COPIED' : 'COPY URL'}
+              {copied ? 'Copied' : 'Copy URL'}
             </button>
             <button
               className="action-btn close-btn"
@@ -119,8 +119,8 @@ export function NFTQRModal({ tokenId, nftName, onClose }: NFTQRModalProps) {
         }
 
         .modal-container {
-          background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
-          border: 1px solid rgba(34, 211, 238, 0.3);
+          background: var(--surface-slab);
+          border: 1px solid rgb(var(--eth-blue-rgb) / 0.3);
           border-radius: 12px;
           width: 90%;
           max-width: 400px;
@@ -128,10 +128,7 @@ export function NFTQRModal({ tokenId, nftName, onClose }: NFTQRModalProps) {
           overflow-y: auto;
           margin-top: 2rem;
           margin-bottom: 2rem;
-          box-shadow: 
-            0 0 30px rgba(34, 211, 238, 0.2),
-            0 10px 40px rgba(0, 0, 0, 0.5);
-          color: #e5e7eb;
+          color: var(--text-secondary);
         }
 
         .modal-header {
@@ -139,12 +136,12 @@ export function NFTQRModal({ tokenId, nftName, onClose }: NFTQRModalProps) {
           justify-content: space-between;
           align-items: center;
           padding: 1rem 1.5rem;
-          border-bottom: 1px solid rgba(34, 211, 238, 0.2);
+          border-bottom: 1px solid rgb(var(--eth-blue-rgb) / 0.2);
         }
 
         .modal-header h3 {
           margin: 0;
-          color: #22d3ee;
+          color: var(--eth-blue-text);
           font-size: 1rem;
           font-weight: 600;
           font-family: monospace;
@@ -153,12 +150,12 @@ export function NFTQRModal({ tokenId, nftName, onClose }: NFTQRModalProps) {
         }
 
         .close-button {
-          background: rgba(34, 211, 238, 0.1);
-          border: 1px solid rgba(34, 211, 238, 0.3);
+          background: rgb(var(--eth-blue-rgb) / 0.1);
+          border: 1px solid rgb(var(--eth-blue-rgb) / 0.3);
           border-radius: 4px;
           font-size: 1.25rem;
           cursor: pointer;
-          color: #22d3ee;
+          color: var(--eth-blue-text);
           padding: 0.25rem 0.5rem;
           width: auto;
           height: auto;
@@ -169,8 +166,8 @@ export function NFTQRModal({ tokenId, nftName, onClose }: NFTQRModalProps) {
         }
 
         .close-button:hover {
-          background: rgba(34, 211, 238, 0.2);
-          border-color: rgba(34, 211, 238, 0.5);
+          background: rgb(var(--eth-blue-rgb) / 0.2);
+          border-color: rgb(var(--eth-blue-rgb) / 0.5);
         }
 
         .modal-body {
@@ -185,13 +182,13 @@ export function NFTQRModal({ tokenId, nftName, onClose }: NFTQRModalProps) {
         .nft-name {
           font-size: 1.125rem;
           font-weight: 600;
-          color: #e5e7eb;
+          color: var(--text-secondary);
           margin: 0 0 0.5rem 0;
         }
 
         .token-id {
           font-size: 0.875rem;
-          color: #9ca3af;
+          color: var(--text-muted);
           font-family: monospace;
           margin: 0;
         }
@@ -204,12 +201,9 @@ export function NFTQRModal({ tokenId, nftName, onClose }: NFTQRModalProps) {
         .qr-wrapper {
           background: #ffffff;
           padding: 1rem;
-          border: 2px solid rgba(34, 211, 238, 0.4);
+          border: 2px solid rgb(var(--eth-blue-rgb) / 0.4);
           border-radius: 12px;
           display: inline-block;
-          box-shadow: 
-            0 0 20px rgba(34, 211, 238, 0.2),
-            inset 0 0 20px rgba(34, 211, 238, 0.05);
           position: relative;
           min-width: 280px;
           min-height: 280px;
@@ -231,7 +225,7 @@ export function NFTQRModal({ tokenId, nftName, onClose }: NFTQRModalProps) {
           position: absolute;
           width: 30px;
           height: 30px;
-          border: 3px solid #22d3ee;
+          border: 3px solid var(--eth-blue-text);
         }
 
         .corner-tl {
@@ -269,7 +263,7 @@ export function NFTQRModal({ tokenId, nftName, onClose }: NFTQRModalProps) {
         .qr-hint {
           margin-top: 1rem;
           font-size: 0.75rem;
-          color: #6b7280;
+          color: var(--text-faint);
           font-family: monospace;
           letter-spacing: 0.1em;
           text-transform: uppercase;
@@ -279,20 +273,20 @@ export function NFTQRModal({ tokenId, nftName, onClose }: NFTQRModalProps) {
         .qr-status {
           margin-top: 0.5rem;
           font-size: 0.875rem;
-          color: #fbbf24;
+          color: var(--signal-pending);
           font-weight: 500;
         }
 
         .qr-instruction {
           margin-top: 0.5rem;
           font-size: 0.75rem;
-          color: #9ca3af;
+          color: var(--text-muted);
           font-style: italic;
         }
 
         .instructions-section {
-          background: rgba(34, 211, 238, 0.05);
-          border: 1px solid rgba(34, 211, 238, 0.2);
+          background: rgb(var(--eth-blue-rgb) / 0.05);
+          border: 1px solid rgb(var(--eth-blue-rgb) / 0.2);
           border-radius: 8px;
           padding: 1rem;
           margin-bottom: 1.5rem;
@@ -300,7 +294,7 @@ export function NFTQRModal({ tokenId, nftName, onClose }: NFTQRModalProps) {
 
         .instructions-text {
           font-size: 0.875rem;
-          color: #9ca3af;
+          color: var(--text-muted);
           line-height: 1.6;
           margin: 0;
           text-align: center;
@@ -314,7 +308,7 @@ export function NFTQRModal({ tokenId, nftName, onClose }: NFTQRModalProps) {
         .action-btn {
           flex: 1;
           padding: 0.75rem 1rem;
-          border: 1px solid rgba(34, 211, 238, 0.3);
+          border: 1px solid rgb(var(--eth-blue-rgb) / 0.3);
           border-radius: 6px;
           font-size: 0.75rem;
           font-weight: 600;
@@ -326,30 +320,30 @@ export function NFTQRModal({ tokenId, nftName, onClose }: NFTQRModalProps) {
         }
 
         .copy-btn {
-          background: rgba(34, 211, 238, 0.1);
-          color: #22d3ee;
+          background: rgb(var(--eth-blue-rgb) / 0.1);
+          color: var(--eth-blue-text);
         }
 
         .copy-btn:hover {
-          background: rgba(34, 211, 238, 0.2);
-          border-color: rgba(34, 211, 238, 0.5);
+          background: rgb(var(--eth-blue-rgb) / 0.2);
+          border-color: rgb(var(--eth-blue-rgb) / 0.5);
         }
 
         .copy-btn.copied {
-          background: rgba(34, 197, 94, 0.2);
-          border-color: rgba(34, 197, 94, 0.4);
-          color: #22c55e;
+          background: rgb(var(--signal-confirmed-rgb) / 0.2);
+          border-color: rgb(var(--signal-confirmed-rgb) / 0.4);
+          color: var(--signal-confirmed);
         }
 
         .close-btn {
-          background: rgba(75, 85, 99, 0.2);
-          color: #9ca3af;
-          border-color: rgba(75, 85, 99, 0.3);
+          background: var(--line-hairline);
+          color: var(--text-muted);
+          border-color: var(--line-hairline);
         }
 
         .close-btn:hover {
-          background: rgba(75, 85, 99, 0.3);
-          border-color: rgba(75, 85, 99, 0.5);
+          background: var(--line-hairline);
+          border-color: var(--surface-ridge);
         }
 
         @media (max-width: 480px) {

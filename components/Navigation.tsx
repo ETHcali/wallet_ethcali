@@ -7,6 +7,7 @@ import { getChainRpc } from '../config/networks';
 import { useAdminStatus } from '../hooks/useAdminStatus';
 import { useDonationAdmin } from '../hooks/donations/useDonationAdmin';
 import { logger } from '../utils/logger';
+import { CheckIcon, ChevronDownIcon, CloseIcon } from './shared/icons';
 
 // Icons as simple SVG components for cleaner mobile menu
 const WalletIcon = () => (
@@ -53,12 +54,20 @@ const SUPPORTED_CHAINS = [
   { id: 130, name: 'Unichain', logo: '/chains/unichain.png' },
 ];
 
+/** Real ellipsis, per BRAND.md: `0x55C9…711d`. */
+function truncateAddress(address: string): string {
+  return `${address.slice(0, 6)}…${address.slice(-4)}`;
+}
+
 interface NavigationProps {
   className?: string;
   currentChainId?: number;
   onChainChange?: (chainId: number) => void;
 }
 
+/* COMPONENTS.md — Nav (topbar): 60px, --surface-void at 86% + blur, bottom
+   hairline. Items are mono 11 uppercase; the active one sits on --eth-blue-wash.
+   Chain switching lives here and nowhere else. */
 const Navigation: React.FC<NavigationProps> = ({
   className = '',
   currentChainId = 8453,
@@ -288,35 +297,34 @@ const Navigation: React.FC<NavigationProps> = ({
   if (!authenticated) return null;
 
   return (
-    <nav className={`bg-black border-b border-cyan-500/30 sticky top-0 z-50 ${className}`}>
-      <div className="max-w-6xl mx-auto px-3 sm:px-4">
-        <div className="flex items-center justify-between h-14">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 shrink-0">
+    <nav className={`sticky top-0 z-50 border-b border-line-hairline bg-surface-void/85 backdrop-blur-[14px] ${className}`}>
+      <div className="mx-auto max-w-page px-3 sm:px-4">
+        <div className="flex h-nav items-center justify-between">
+          {/* Logo — horizontal lockup, never below 32px */}
+          <Link href="/" className="flex shrink-0 items-center gap-2" aria-label="ETH Cali">
             <Image
               src="/logotethcali.png"
-              alt="ETH CALI"
+              alt="ETH Cali"
               width={200}
               height={96}
-              className="h-7 sm:h-8 w-auto"
+              className="h-8 w-auto"
               priority
               unoptimized
             />
           </Link>
 
           {/* Desktop Navigation Links */}
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden items-center gap-1 md:flex">
             {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`
-                  px-3 py-1.5 rounded-lg font-mono text-xs transition-all uppercase
-                  ${isActive(item.href)
-                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50'
-                    : 'text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10'
-                  }
-                `}
+                aria-current={isActive(item.href) ? 'page' : undefined}
+                className={`inline-flex min-h-[36px] items-center rounded-chip border px-3 font-mono text-[11px] uppercase tracking-[0.12em] transition-colors duration-base ${
+                  isActive(item.href)
+                    ? 'border-line-brand bg-eth-blue-wash text-eth-blue-text'
+                    : 'border-transparent text-content-muted hover:bg-surface-inset hover:text-content-primary'
+                }`}
               >
                 {item.label}
               </Link>
@@ -331,77 +339,90 @@ const Navigation: React.FC<NavigationProps> = ({
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 disabled={isSwitching}
-                className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 bg-gray-900 border rounded-lg text-xs font-mono transition-all duration-200 ${
+                aria-haspopup="listbox"
+                aria-expanded={isDropdownOpen}
+                className={`flex min-h-[36px] items-center gap-1.5 rounded-full border bg-surface-slab px-2 font-mono text-xs transition-colors duration-base sm:px-3 ${
                   isSwitching
-                    ? 'border-yellow-500/50 text-yellow-400'
+                    ? 'border-signal-pending/50 text-signal-pending'
                     : isDropdownOpen
-                    ? 'border-cyan-500 text-cyan-400'
-                    : 'border-gray-700 text-gray-300 hover:border-cyan-500/50'
+                    ? 'border-line-brand text-eth-blue-text'
+                    : 'border-line-strong text-content-secondary hover:border-line-brand'
                 }`}
               >
-                <div className="w-5 h-5 flex items-center justify-center">
+                <div className="flex h-5 w-5 items-center justify-center">
                   {isSwitching ? (
-                    <div className="w-4 h-4 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin" />
+                    <div className="h-4 w-4 animate-[spin_0.9s_linear_infinite] rounded-full border-2 border-signal-pending border-t-transparent" />
                   ) : (
-                    <Image src={currentChain.logo} alt={currentChain.name} width={20} height={20} className="w-5 h-5 rounded-full object-contain" unoptimized />
+                    <Image src={currentChain.logo} alt="" width={20} height={20} className="h-5 w-5 rounded-full object-contain" unoptimized />
                   )}
                 </div>
-                <span className="hidden sm:inline">{isSwitching ? 'Switching...' : currentChain.name}</span>
-                <span className={`text-gray-500 transition-transform duration-200 text-[10px] ${isDropdownOpen ? 'rotate-180' : ''}`}>▼</span>
+                <span className="hidden sm:inline">{isSwitching ? 'Switching…' : currentChain.name}</span>
+                <ChevronDownIcon
+                  className={`h-3.5 w-3.5 text-content-faint transition-transform duration-base ${isDropdownOpen ? 'rotate-180' : ''}`}
+                />
               </button>
 
               {/* Dropdown Menu */}
               <div
-                className={`absolute right-0 top-full mt-1 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-50 min-w-[160px] overflow-hidden transition-all duration-200 origin-top ${
+                role="listbox"
+                aria-label="Network"
+                className={`absolute right-0 top-full z-50 mt-1 min-w-[180px] origin-top overflow-hidden rounded-control border border-line-hairline bg-surface-slab transition-all duration-base ${
                   isDropdownOpen
-                    ? 'opacity-100 scale-100 translate-y-0'
-                    : 'opacity-0 scale-95 -translate-y-1 pointer-events-none'
+                    ? 'translate-y-0 scale-100 opacity-100'
+                    : 'pointer-events-none -translate-y-1 scale-95 opacity-0'
                 }`}
               >
                 {SUPPORTED_CHAINS.map((chain) => (
                   <button
                     key={chain.id}
+                    role="option"
+                    aria-selected={displayChainId === chain.id}
                     onClick={() => handleChainSwitch(chain.id)}
                     disabled={isSwitching}
-                    className={`w-full px-3 py-2.5 text-left text-xs font-mono flex items-center gap-2 transition-all duration-150 ${
+                    className={`flex min-h-[44px] w-full items-center gap-2 px-3 text-left font-mono text-xs transition-colors duration-fast ${
                       displayChainId === chain.id
-                        ? 'text-cyan-400 bg-cyan-500/10'
-                        : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-                    } ${isSwitching ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        ? 'bg-eth-blue-wash text-eth-blue-text'
+                        : 'text-content-secondary hover:bg-surface-inset hover:text-content-primary'
+                    } ${isSwitching ? 'cursor-not-allowed opacity-50' : ''}`}
                   >
-                    <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
-                      <Image src={chain.logo} alt={chain.name} width={20} height={20} className="w-5 h-5 rounded-full object-contain" unoptimized />
+                    <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center">
+                      <Image src={chain.logo} alt="" width={20} height={20} className="h-5 w-5 rounded-full object-contain" unoptimized />
                     </div>
                     <span className="flex-1">{chain.name}</span>
-                    {displayChainId === chain.id && (
-                      <span className="text-cyan-400">✓</span>
-                    )}
+                    {displayChainId === chain.id && <CheckIcon className="h-4 w-4" />}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Logout - Desktop */}
+            {/* Address chip - Desktop */}
+            {userWallet && (
+              <span className="hidden min-h-[36px] items-center rounded-full border border-line-hairline bg-surface-slab px-3 font-mono text-xs text-eth-blue-text lg:inline-flex">
+                {truncateAddress(userWallet.address)}
+              </span>
+            )}
+
+            {/* Sign out - Desktop (destructive-quiet) */}
             <button
               onClick={logout}
-              className="hidden sm:block px-2 py-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-lg text-red-400 text-xs font-mono transition-all"
+              className="hidden min-h-[36px] items-center gap-1.5 rounded-control border border-signal-reverted/30 bg-signal-reverted/10 px-3 text-xs font-medium text-signal-reverted transition-colors duration-base hover:bg-signal-reverted/20 sm:inline-flex"
             >
-              EXIT
+              <LogoutIcon />
+              <span className="hidden md:inline">Sign out</span>
             </button>
 
             {/* Mobile Menu Button */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden p-2 text-gray-400 hover:text-cyan-400 transition-colors"
+              className="flex min-h-tap min-w-tap items-center justify-center rounded-chip text-content-muted transition-colors hover:text-content-primary md:hidden"
               aria-label="Toggle menu"
+              aria-expanded={isMobileMenuOpen}
             >
               {isMobileMenuOpen ? (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <CloseIcon />
               ) : (
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               )}
             </button>
@@ -412,8 +433,8 @@ const Navigation: React.FC<NavigationProps> = ({
 
       {/* Mobile Menu - Full screen slide-in drawer */}
       <div
-        className={`md:hidden fixed inset-0 z-[60] transition-opacity duration-300 ${
-          isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        className={`fixed inset-0 z-[60] transition-opacity duration-slow md:hidden ${
+          isMobileMenuOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
         }`}
       >
         {/* Backdrop */}
@@ -425,45 +446,43 @@ const Navigation: React.FC<NavigationProps> = ({
         {/* Drawer Panel */}
         <div
           ref={mobileMenuRef}
-          className={`absolute right-0 top-0 bottom-0 w-[280px] max-w-[85vw] bg-slate-950 flex flex-col shadow-2xl transform transition-transform duration-300 ease-out ${
+          className={`absolute bottom-0 right-0 top-0 flex w-[280px] max-w-[85vw] transform flex-col border-l border-line-hairline bg-surface-slab transition-transform duration-slow ease-out ${
             isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
           }`}
         >
           {/* Header with close button */}
-          <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-slate-800/80 bg-slate-900/50">
+          <div className="flex flex-shrink-0 items-center justify-between border-b border-line-hairline px-4 py-3">
             <div className="flex items-center gap-3">
               <Image
                 src={currentChain.logo}
-                alt={currentChain.name}
+                alt=""
                 width={28}
                 height={28}
-                className="w-7 h-7 rounded-full ring-2 ring-slate-700"
+                className="h-7 w-7 rounded-full ring-1 ring-line-strong"
                 unoptimized
               />
               <div className="min-w-0">
-                <p className="text-xs text-white font-medium">{currentChain.name}</p>
+                <p className="font-mono text-xs text-content-primary">{currentChain.name}</p>
                 {userWallet && (
-                  <p className="text-[10px] text-slate-500 font-mono truncate">
-                    {userWallet.address.slice(0, 6)}...{userWallet.address.slice(-4)}
+                  <p className="truncate font-mono text-[11px] text-eth-blue-text">
+                    {truncateAddress(userWallet.address)}
                   </p>
                 )}
               </div>
             </div>
             <button
               onClick={closeMobileMenu}
-              className="p-2 -mr-1 text-slate-400 hover:text-white rounded-full hover:bg-slate-800/50 transition-colors"
+              className="-mr-2 flex min-h-tap min-w-tap items-center justify-center rounded-full text-content-muted transition-colors hover:text-content-primary"
               aria-label="Close menu"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <CloseIcon />
             </button>
           </div>
 
           {/* Navigation Links - Scrollable area */}
           <div className="flex-1 overflow-y-auto overscroll-contain py-2">
             {/* Main Navigation */}
-            <div className="px-3 space-y-1">
+            <div className="space-y-1 px-3">
               {mainNavItems.map((item) => {
                 const IconComponent = item.icon;
                 const active = isActive(item.href);
@@ -472,20 +491,19 @@ const Navigation: React.FC<NavigationProps> = ({
                     key={item.href}
                     href={item.href}
                     onClick={closeMobileMenu}
-                    className={`
-                      flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all
-                      ${active
-                        ? 'bg-cyan-500/15 text-cyan-400'
-                        : 'text-slate-300 active:bg-slate-800'
-                      }
-                    `}
+                    aria-current={active ? 'page' : undefined}
+                    className={`flex min-h-tap items-center gap-3 rounded-control px-4 text-sm font-medium transition-colors ${
+                      active
+                        ? 'bg-eth-blue-wash text-eth-blue-text'
+                        : 'text-content-secondary active:bg-surface-inset'
+                    }`}
                   >
-                    <span className={active ? 'text-cyan-400' : 'text-slate-500'}>
+                    <span className={active ? 'text-eth-blue-text' : 'text-content-faint'}>
                       <IconComponent />
                     </span>
                     {item.label}
                     {active && (
-                      <span className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                      <span className="ml-auto h-1.5 w-1.5 rounded-full bg-eth-blue" />
                     )}
                   </Link>
                 );
@@ -494,9 +512,9 @@ const Navigation: React.FC<NavigationProps> = ({
 
             {/* Admin Section */}
             {adminNavItems.length > 0 && (
-              <div className="px-3 mt-4">
-                <div className="px-4 pb-2 mb-1 border-b border-slate-800/50">
-                  <span className="text-[10px] text-orange-500/70 uppercase tracking-widest font-medium">Admin</span>
+              <div className="mt-4 px-3">
+                <div className="mb-1 border-b border-line-hairline px-4 pb-2">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-content-faint">Admin</span>
                 </div>
                 <div className="space-y-1">
                   {adminNavItems.map((item) => {
@@ -507,20 +525,19 @@ const Navigation: React.FC<NavigationProps> = ({
                         key={item.href}
                         href={item.href}
                         onClick={closeMobileMenu}
-                        className={`
-                          flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all
-                          ${active
-                            ? 'bg-orange-500/15 text-orange-400'
-                            : 'text-orange-400/70 active:bg-slate-800'
-                          }
-                        `}
+                        aria-current={active ? 'page' : undefined}
+                        className={`flex min-h-tap items-center gap-3 rounded-control px-4 text-sm font-medium transition-colors ${
+                          active
+                            ? 'bg-eth-blue-wash text-eth-blue-text'
+                            : 'text-content-secondary active:bg-surface-inset'
+                        }`}
                       >
-                        <span className={active ? 'text-orange-400' : 'text-orange-500/50'}>
+                        <span className={active ? 'text-eth-blue-text' : 'text-content-faint'}>
                           <IconComponent />
                         </span>
                         {item.label}
                         {active && (
-                          <span className="ml-auto w-1.5 h-1.5 rounded-full bg-orange-400" />
+                          <span className="ml-auto h-1.5 w-1.5 rounded-full bg-eth-blue" />
                         )}
                       </Link>
                     );
@@ -530,17 +547,17 @@ const Navigation: React.FC<NavigationProps> = ({
             )}
           </div>
 
-          {/* Footer - Always visible logout */}
-          <div className="flex-shrink-0 border-t border-slate-800/80 p-3 bg-slate-950/95 backdrop-blur-sm">
+          {/* Footer - Always visible sign out */}
+          <div className="flex-shrink-0 border-t border-line-hairline p-3">
             <button
               onClick={() => {
                 closeMobileMenu();
                 logout();
               }}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3.5 bg-red-500/10 hover:bg-red-500/20 active:bg-red-500/30 border border-red-500/30 rounded-xl text-red-400 font-medium transition-all"
+              className="flex min-h-tap w-full items-center justify-center gap-2 rounded-control border border-signal-reverted/30 bg-signal-reverted/10 px-4 font-medium text-signal-reverted transition-colors hover:bg-signal-reverted/20 active:bg-signal-reverted/30"
             >
               <LogoutIcon />
-              Logout
+              Sign out
             </button>
           </div>
         </div>

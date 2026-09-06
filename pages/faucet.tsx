@@ -31,7 +31,7 @@ export default function FaucetPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950">
+    <div className="min-h-screen bg-surface-void">
       <Navigation
         currentChainId={currentChainId}
         onChainChange={setCurrentChainId}
@@ -41,13 +41,10 @@ export default function FaucetPage() {
           {/* Minimal Cypherpunk Header */}
           <div className="mb-4">
             <div className="flex items-center gap-2 mb-1">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <h1 className="text-lg font-bold text-green-400 font-mono tracking-wider">
-                FAUCET
-              </h1>
+              <h1 className="text-xl font-bold text-content-primary">Faucet</h1>
             </div>
-            <p className="text-gray-600 font-mono text-[10px] tracking-widest uppercase">
-              ETH • {getNetworkName(currentChainId)} • SYBIL_GATED
+            <p className="text-content-faint font-mono text-[10px] tracking-widest uppercase">
+              ETH • {getNetworkName(currentChainId)} • Sybil gated
             </p>
           </div>
 
@@ -61,27 +58,27 @@ export default function FaucetPage() {
           />
 
           {/* Compact Info Row */}
-          <div className="flex gap-2 text-[10px] font-mono text-gray-600 pt-2">
+          <div className="flex gap-2 text-[10px] font-mono text-content-faint pt-2">
             <span className="flex items-center gap-1">
-              <span className="text-green-500">▪</span> VERIFIED_ONLY
+              Verified only
             </span>
-            <span className="text-gray-700">|</span>
+            <span className="text-content-faint">·</span>
             <span className="flex items-center gap-1">
-              <span className="text-cyan-500">▪</span> ONE_CLAIM
+              One claim
             </span>
-            <span className="text-gray-700">|</span>
+            <span className="text-content-faint">·</span>
             <span className="flex items-center gap-1">
-              <span className="text-purple-500">▪</span> SPONSORED_GAS
+              Gas sponsored
             </span>
           </div>
 
           {/* Contract Link - Minimal */}
-          <div className="text-[10px] font-mono text-gray-700 pt-1 border-t border-gray-800">
+          <div className="text-[10px] font-mono text-content-faint pt-1 border-t border-line-hairline">
             <a
               href={getAddressExplorerUrl(currentChainId, addresses.FaucetManager)}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-gray-600 hover:text-green-500 transition-colors"
+              className="text-content-faint hover:text-eth-blue-text transition-colors"
             >
               contract: {addresses.FaucetManager.slice(0, 8)}...{addresses.FaucetManager.slice(-6)}
             </a>

@@ -17,9 +17,9 @@ const statusLabels: Record<RedemptionStatus, string> = {
 };
 
 const statusColors: Record<RedemptionStatus, string> = {
-  [RedemptionStatus.NotRedeemed]: 'bg-slate-500/10 text-slate-400',
-  [RedemptionStatus.PendingFulfillment]: 'bg-yellow-500/10 text-yellow-400',
-  [RedemptionStatus.Fulfilled]: 'bg-green-500/10 text-green-400',
+  [RedemptionStatus.NotRedeemed]: 'bg-surface-ridge/10 text-content-muted',
+  [RedemptionStatus.PendingFulfillment]: 'bg-signal-pending/10 text-signal-pending',
+  [RedemptionStatus.Fulfilled]: 'bg-signal-confirmed/10 text-signal-confirmed',
 };
 
 interface AdminMintedNFTsProps {
@@ -239,10 +239,10 @@ export function AdminMintedNFTs({
 
   if (isLoading) {
     return (
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+      <div className="rounded-card border border-line-hairline bg-surface-slab/60 p-6">
         <div className="flex items-center justify-center py-8">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-cyan-400 border-t-transparent" />
-          <span className="ml-3 text-slate-400">Loading minted NFTs...</span>
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-eth-blue border-t-transparent" />
+          <span className="ml-3 text-content-muted">Loading minted NFTs...</span>
         </div>
       </div>
     );
@@ -250,11 +250,11 @@ export function AdminMintedNFTs({
 
   if (error) {
     return (
-      <div className="rounded-2xl border border-red-500/40 bg-red-500/10 p-6">
-        <p className="text-red-300">Error loading minted NFTs: {error}</p>
+      <div className="rounded-card border border-signal-reverted/40 bg-signal-reverted/10 p-6">
+        <p className="text-signal-reverted">Error loading minted NFTs: {error}</p>
         <button
           onClick={() => refetch()}
-          className="mt-3 text-sm text-cyan-400 hover:text-cyan-300"
+          className="mt-3 text-sm text-eth-blue-text hover:text-eth-blue-text"
         >
           Retry
         </button>
@@ -265,14 +265,14 @@ export function AdminMintedNFTs({
   const pendingCount = mintedNFTs.filter((n) => n.redemptionStatus === RedemptionStatus.PendingFulfillment).length;
 
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 space-y-4">
+    <div className="rounded-card border border-line-hairline bg-surface-slab/60 p-6 space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-white">Minted NFTs</h2>
-          <p className="text-sm text-slate-500">
+          <h2 className="text-xl font-semibold text-content-primary">Minted NFTs</h2>
+          <p className="text-sm text-content-faint">
             {mintedNFTs.length} total NFTs minted
             {pendingCount > 0 && (
-              <span className="ml-2 text-yellow-400">({pendingCount} pending fulfillment)</span>
+              <span className="ml-2 text-signal-pending">({pendingCount} pending fulfillment)</span>
             )}
           </p>
         </div>
@@ -280,14 +280,14 @@ export function AdminMintedNFTs({
           {pendingCount > 0 && (
             <button
               onClick={() => setIsQRScannerOpen(true)}
-              className="rounded-lg bg-yellow-500/10 border border-yellow-500/30 px-4 py-2 text-sm font-medium text-yellow-400 hover:bg-yellow-500/20 transition"
+              className="rounded-control bg-signal-pending/10 border border-signal-pending/30 px-4 py-2 text-sm font-medium text-signal-pending hover:bg-signal-pending/20 transition"
             >
               Scan QR Code
             </button>
           )}
           <button
             onClick={() => refetch()}
-            className="text-sm text-cyan-400 hover:text-cyan-300 transition"
+            className="text-sm text-eth-blue-text hover:text-eth-blue-text transition"
           >
             Refresh
           </button>
@@ -301,10 +301,10 @@ export function AdminMintedNFTs({
             <button
               key={status}
               onClick={() => setFilterStatus(status)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+              className={`rounded-control px-3 py-1.5 text-xs font-medium transition ${
                 filterStatus === status
-                  ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50'
-                  : 'bg-slate-800 text-slate-400 border border-slate-700 hover:border-slate-600'
+                  ? 'bg-eth-blue/20 text-eth-blue-text border border-eth-blue/50'
+                  : 'bg-surface-inset text-content-muted border border-line-hairline hover:border-line-strong'
               }`}
             >
               {status === 'all' && 'All'}
@@ -320,20 +320,20 @@ export function AdminMintedNFTs({
             placeholder="Search by owner address..."
             value={searchOwner}
             onChange={(e) => setSearchOwner(e.target.value)}
-            className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none"
+            className="w-full rounded-control border border-line-hairline bg-surface-inset px-4 py-2 text-sm text-content-primary placeholder-content-faint focus:border-eth-blue focus:outline-none"
           />
         </div>
       </div>
 
       {filteredNFTs.length === 0 ? (
-        <div className="py-8 text-center text-slate-500">
+        <div className="py-8 text-center text-content-faint">
           No NFTs found matching your filters.
         </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
-              <tr className="border-b border-slate-700 text-xs uppercase tracking-wider text-slate-500">
+              <tr className="border-b border-line-hairline text-xs uppercase tracking-wider text-content-faint">
                 <th className="px-4 py-3">Token</th>
                 <th className="px-4 py-3">Owner</th>
                 <th className="px-4 py-3">Size</th>
@@ -342,17 +342,17 @@ export function AdminMintedNFTs({
                 <th className="px-4 py-3">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800">
+            <tbody className="divide-y divide-line-hairline">
               {filteredNFTs.map((nft) => {
                 const key = `${nft.tokenId.toString()}-${nft.owner}`;
                 const isProcessing = processingIds.has(key);
 
                 return (
-                  <tr key={key} className="hover:bg-slate-800/50 transition">
+                  <tr key={key} className="hover:bg-surface-inset/50 transition">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         {nft.metadata?.image && (
-                          <div className="h-10 w-10 rounded-lg overflow-hidden border border-slate-700">
+                          <div className="h-10 w-10 rounded-control overflow-hidden border border-line-hairline">
                             <Image
                               src={getIPFSGatewayUrl(nft.metadata.image)}
                               alt={nft.metadata?.name || 'NFT'}
@@ -364,10 +364,10 @@ export function AdminMintedNFTs({
                           </div>
                         )}
                         <div>
-                          <p className="text-white font-medium text-sm">
+                          <p className="text-content-primary font-medium text-sm">
                             {nft.metadata?.name || `Token ${nft.tokenId.toString().slice(-6)}`}
                           </p>
-                          <span className="font-mono text-xs text-slate-500">
+                          <span className="font-mono text-xs text-content-faint">
                             #{nft.tokenId.toString().slice(-8)}
                           </span>
                         </div>
@@ -378,16 +378,16 @@ export function AdminMintedNFTs({
                         href={`${explorerUrl}/address/${nft.owner}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="font-mono text-sm text-cyan-400 hover:text-cyan-300 transition"
+                        className="font-mono text-sm text-eth-blue-text hover:text-eth-blue-text transition"
                       >
                         {truncateAddress(nft.owner)}
                       </a>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-white font-medium">{nft.size || 'N/A'}</span>
+                      <span className="text-content-primary font-medium">{nft.size || 'N/A'}</span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-white">{nft.balance}</span>
+                      <span className="text-content-primary">{nft.balance}</span>
                     </td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${statusColors[nft.redemptionStatus]}`}>
@@ -399,11 +399,11 @@ export function AdminMintedNFTs({
                         <button
                           onClick={() => handleMarkFulfilled(nft)}
                           disabled={isProcessing || !canMarkFulfilled}
-                          className="rounded-lg bg-green-500/10 border border-green-500/30 px-3 py-1.5 text-xs font-medium text-green-400 hover:bg-green-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                          className="rounded-control bg-eth-blue px-3 py-1.5 text-xs font-medium text-on-brand hover:bg-eth-blue-lift disabled:opacity-50 disabled:cursor-not-allowed transition"
                         >
                           {isProcessing ? (
                             <span className="flex items-center gap-1">
-                              <div className="h-3 w-3 animate-spin rounded-full border border-green-400 border-t-transparent" />
+                              <div className="h-3 w-3 animate-spin rounded-full border border-signal-confirmed border-t-transparent" />
                               Processing...
                             </span>
                           ) : (
@@ -440,17 +440,17 @@ export function AdminMintedNFTs({
 
       {/* Scanned Data Confirmation */}
       {scannedData && (
-        <div className="mt-4 rounded-lg bg-green-500/10 border border-green-500/30 p-4">
+        <div className="mt-4 rounded-control bg-signal-confirmed/10 border border-signal-confirmed/30 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-green-400">QR Code Scanned Successfully</p>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="text-sm font-medium text-signal-confirmed">QR Code Scanned Successfully</p>
+              <p className="text-xs text-content-muted mt-1">
                 Token ID: {scannedData.tokenId} | Owner: {scannedData.owner.slice(0, 6)}...{scannedData.owner.slice(-4)}
               </p>
             </div>
             <button
               onClick={() => setScannedData(null)}
-              className="text-green-400 hover:text-green-300"
+              className="text-signal-confirmed hover:text-signal-confirmed"
             >
               ×
             </button>

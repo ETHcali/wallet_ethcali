@@ -153,51 +153,51 @@ const FaucetAdmin: React.FC<FaucetAdminProps> = ({ chainId }) => {
 
   if (isLoading) {
     return (
-      <div className="bg-gray-900 border border-orange-500/30 rounded-xl p-6">
+      <div className="bg-surface-slab border border-eth-blue/30 rounded-card p-6">
         <div className="flex items-center justify-center gap-3">
-          <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-orange-400 font-mono">LOADING_ADMIN_DATA...</span>
+          <div className="w-6 h-6 border-2 border-eth-blue border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-eth-blue-text font-mono">Loading admin data…</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-gray-900 border border-orange-500/30 rounded-xl p-6 space-y-6">
+    <div className="bg-surface-slab border border-eth-blue/30 rounded-card p-6 space-y-6">
       {/* Admin Header */}
       <div className="flex items-center gap-3">
-        <span className="text-3xl">⚙️</span>
+        
         <div>
-          <h2 className="text-xl font-bold text-orange-400 font-mono">ADMIN_PANEL</h2>
-          <p className="text-gray-500 text-sm font-mono">Manage faucet contracts with Privy gas sponsorship</p>
+          <h2 className="text-xl font-bold text-eth-blue-text font-mono">Admin panel</h2>
+          <p className="text-content-faint text-sm font-mono">Manage faucet contracts with Privy gas sponsorship</p>
         </div>
       </div>
 
       {/* Contract Balance */}
-      <div className="bg-gray-800/50 border border-cyan-500/20 rounded-lg p-4">
-        <p className="text-xs text-gray-500 font-mono mb-2">FAUCET_VAULT</p>
-        <p className="text-2xl font-bold text-cyan-400 font-mono">{parseFloat(faucetBalance).toFixed(6)} ETH</p>
-        <p className="text-xs text-gray-500 font-mono mt-1">
+      <div className="bg-surface-inset/50 border border-eth-blue/20 rounded-control p-4">
+        <p className="text-xs text-content-faint font-mono mb-2">Faucet vault</p>
+        <p className="text-2xl font-bold text-eth-blue-text font-mono">{parseFloat(faucetBalance).toFixed(6)} ETH</p>
+        <p className="text-xs text-content-faint font-mono mt-1">
           Claim amount: {claimAmount} ETH
         </p>
-        <p className="text-xs text-gray-500 font-mono">
-          Status: <span className={isPaused ? 'text-red-400' : 'text-green-400'}>
+        <p className="text-xs text-content-faint font-mono">
+          Status: <span className={isPaused ? 'text-signal-reverted' : 'text-signal-confirmed'}>
             {isPaused ? 'PAUSED' : 'ACTIVE'}
           </span>
         </p>
-        <p className="text-xs text-purple-400 font-mono mt-2">
-          💰 Gas fees sponsored by Privy
+        <p className="text-xs text-eth-blue-text font-mono mt-2">
+          No fee — we cover gas on this network.
         </p>
       </div>
 
       {/* Faucet Controls */}
-      <div className="border border-cyan-500/20 rounded-lg p-4 space-y-4">
-        <h3 className="text-sm font-bold text-cyan-400 font-mono">FAUCET_CONTROLS</h3>
+      <div className="border border-eth-blue/20 rounded-control p-4 space-y-4">
+        <h3 className="text-sm font-bold text-eth-blue-text font-mono">FAUCET_CONTROLS</h3>
         
         {/* Update Claim Amount */}
-        <div className="bg-gray-800/30 rounded-lg p-3 space-y-2">
-          <p className="text-xs text-gray-400 font-mono">
-            CURRENT_CLAIM_AMOUNT: <span className="text-cyan-400">{claimAmount} ETH</span>
+        <div className="bg-surface-inset/30 rounded-control p-3 space-y-2">
+          <p className="text-xs text-content-muted font-mono">
+            CURRENT_CLAIM_AMOUNT: <span className="text-eth-blue-text">{claimAmount} ETH</span>
           </p>
           <div className="flex gap-2">
             <input
@@ -205,14 +205,14 @@ const FaucetAdmin: React.FC<FaucetAdminProps> = ({ chainId }) => {
               placeholder="New claim amount in ETH"
               value={newClaimAmount}
               onChange={(e) => setNewClaimAmount(e.target.value)}
-              className="flex-1 px-3 py-2 bg-gray-800 border border-yellow-500/30 rounded-lg text-white font-mono text-sm focus:border-yellow-500 focus:outline-none"
+              className="flex-1 px-3 py-2 bg-surface-inset border border-signal-pending/30 rounded-control text-content-primary font-mono text-sm focus:border-signal-pending focus:outline-none"
               step="0.0001"
               min="0"
             />
             <button
               onClick={handleUpdateClaimAmount}
               disabled={isProcessing || !newClaimAmount}
-              className="px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/50 rounded-lg text-yellow-400 font-mono text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-signal-pending/20 hover:bg-signal-pending/30 border border-signal-pending/50 rounded-control text-signal-pending font-mono text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               UPDATE
             </button>
@@ -226,14 +226,14 @@ const FaucetAdmin: React.FC<FaucetAdminProps> = ({ chainId }) => {
             placeholder="Amount in ETH"
             value={depositAmount}
             onChange={(e) => setDepositAmount(e.target.value)}
-            className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white font-mono text-sm focus:border-cyan-500 focus:outline-none"
+            className="flex-1 px-3 py-2 bg-surface-inset border border-line-strong rounded-control text-content-primary font-mono text-sm focus:border-eth-blue focus:outline-none"
             step="0.001"
             min="0"
           />
           <button
             onClick={handleFaucetDeposit}
             disabled={isProcessing || !depositAmount}
-            className="px-4 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/50 rounded-lg text-cyan-400 font-mono text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-eth-blue/20 hover:bg-eth-blue/30 border border-eth-blue/50 rounded-control text-eth-blue-text font-mono text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             DEPOSIT
           </button>
@@ -246,14 +246,14 @@ const FaucetAdmin: React.FC<FaucetAdminProps> = ({ chainId }) => {
             placeholder="Amount in ETH"
             value={withdrawAmount}
             onChange={(e) => setWithdrawAmount(e.target.value)}
-            className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white font-mono text-sm focus:border-cyan-500 focus:outline-none"
+            className="flex-1 px-3 py-2 bg-surface-inset border border-line-strong rounded-control text-content-primary font-mono text-sm focus:border-eth-blue focus:outline-none"
             step="0.001"
             min="0"
           />
           <button
             onClick={handleFaucetWithdraw}
             disabled={isProcessing || !withdrawAmount}
-            className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 rounded-lg text-red-400 font-mono text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-signal-reverted/20 hover:bg-signal-reverted/30 border border-signal-reverted/50 rounded-control text-signal-reverted font-mono text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             WITHDRAW
           </button>
@@ -263,10 +263,10 @@ const FaucetAdmin: React.FC<FaucetAdminProps> = ({ chainId }) => {
         <button
           onClick={handlePauseToggle}
           disabled={isProcessing}
-          className={`w-full py-2 rounded-lg font-mono text-sm transition-all ${
+          className={`w-full py-2 rounded-control font-mono text-sm transition-all ${
             isPaused
-              ? 'bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 text-green-400'
-              : 'bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50 text-orange-400'
+              ? 'bg-eth-blue hover:bg-eth-blue-lift text-on-brand'
+              : 'bg-eth-blue/20 hover:bg-eth-blue/30 border border-eth-blue/50 text-eth-blue-text'
           }`}
         >
           {isPaused ? 'UNPAUSE_FAUCET' : 'PAUSE_FAUCET'}
@@ -274,89 +274,89 @@ const FaucetAdmin: React.FC<FaucetAdminProps> = ({ chainId }) => {
       </div>
 
       {/* Advanced Settings */}
-      <details className="border border-gray-700/50 rounded-lg">
-        <summary className="p-4 cursor-pointer text-sm font-bold text-gray-400 font-mono hover:text-gray-300">
-          ⚡ ADVANCED_SETTINGS
+      <details className="border border-line-hairline rounded-control">
+        <summary className="p-4 cursor-pointer text-sm font-bold text-content-muted font-mono hover:text-content-secondary">
+          Advanced settings
         </summary>
         <div className="p-4 pt-0 space-y-4">
           {/* Current Linked NFT Contract */}
-          <div className="bg-gray-800/30 rounded-lg p-3 space-y-2">
-            <p className="text-xs text-gray-500 font-mono">CURRENTLY_LINKED_NFT_CONTRACT</p>
+          <div className="bg-surface-inset/30 rounded-control p-3 space-y-2">
+            <p className="text-xs text-content-faint font-mono">Linked NFT contract</p>
             <div className="flex items-center gap-2">
-              <span className="text-green-400">●</span>
+              <span className="text-content-primary">●</span>
               <a
                 href={getAddressExplorerUrl(chainId, linkedNFTContract || addresses.ZKPassportNFT)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-cyan-400 font-mono hover:underline break-all"
+                className="text-xs text-eth-blue-text font-mono hover:underline break-all"
               >
                 {linkedNFTContract || addresses.ZKPassportNFT}
               </a>
             </div>
             {linkedNFTContract && linkedNFTContract.toLowerCase() !== addresses.ZKPassportNFT.toLowerCase() && (
-              <p className="text-xs text-yellow-400 font-mono">
-                ⚠️ Different from config: {addresses.ZKPassportNFT}
+              <p className="text-xs text-signal-pending font-mono">
+                Different from config: {addresses.ZKPassportNFT}
               </p>
             )}
           </div>
 
           {/* Update NFT Contract */}
           <div className="space-y-2">
-            <p className="text-xs text-gray-500 font-mono">UPDATE_NFT_CONTRACT</p>
+            <p className="text-xs text-content-faint font-mono">UPDATE_NFT_CONTRACT</p>
             <div className="flex gap-2">
               <input
                 type="text"
                 placeholder="0x... new NFT contract address"
                 value={newNFTContract}
                 onChange={(e) => setNewNFTContract(e.target.value)}
-                className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white font-mono text-xs focus:border-red-500 focus:outline-none"
+                className="flex-1 px-3 py-2 bg-surface-inset border border-line-strong rounded-control text-content-primary font-mono text-xs focus:border-signal-reverted focus:outline-none"
               />
               <button
                 onClick={handleSetNFTContract}
                 disabled={isProcessing || !newNFTContract}
-                className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-lg text-red-400 font-mono text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-signal-reverted/10 hover:bg-signal-reverted/20 border border-signal-reverted/30 rounded-control text-signal-reverted font-mono text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 SET
               </button>
             </div>
-            <p className="text-xs text-red-400/60 font-mono">
-              ⚠️ Caution: Only change if you know what you&apos;re doing
+            <p className="text-xs text-signal-reverted/60 font-mono">
+              Only change this if you know what you are doing.
             </p>
           </div>
         </div>
       </details>
 
       {/* Contract Addresses */}
-      <div className="bg-gray-800/30 rounded-lg p-4 space-y-2">
-        <p className="text-xs text-gray-500 font-mono">CONTRACT_ADDRESSES</p>
-        <p className="text-xs text-gray-400 font-mono break-all">
+      <div className="bg-surface-inset/30 rounded-control p-4 space-y-2">
+        <p className="text-xs text-content-faint font-mono">CONTRACT_ADDRESSES</p>
+        <p className="text-xs text-content-muted font-mono break-all">
           Faucet: {addresses.FaucetManager}
         </p>
-        <p className="text-xs text-gray-400 font-mono break-all">
+        <p className="text-xs text-content-muted font-mono break-all">
           NFT: {addresses.ZKPassportNFT}
         </p>
-        <p className="text-xs text-purple-400 font-mono">
+        <p className="text-xs text-eth-blue-text font-mono">
           All transactions sponsored by Privy
         </p>
       </div>
 
       {/* Processing Indicator */}
       {isProcessing && (
-        <div className="flex items-center justify-center gap-3 p-4 bg-orange-500/10 border border-orange-500/30 rounded-lg">
-          <div className="w-5 h-5 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-orange-400 font-mono">PROCESSING_TRANSACTION...</span>
+        <div className="flex items-center justify-center gap-3 p-4 bg-eth-blue/10 border border-eth-blue/30 rounded-control">
+          <div className="w-5 h-5 border-2 border-eth-blue border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-eth-blue-text font-mono">PROCESSING_TRANSACTION...</span>
         </div>
       )}
 
       {/* Success Message */}
       {txHash && (
-        <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
-          <p className="text-green-400 font-mono text-sm mb-2">✓ TX_SUCCESS!</p>
+        <div className="p-4 bg-signal-confirmed/10 border border-signal-confirmed/30 rounded-control">
+          <p className="text-signal-confirmed font-mono text-sm mb-2">✓ Transaction confirmed</p>
           <a
             href={getExplorerUrl(chainId, txHash)}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs text-green-400 font-mono hover:underline break-all"
+            className="text-xs text-signal-confirmed font-mono hover:underline break-all"
           >
             View: {txHash.slice(0, 30)}...
           </a>
@@ -365,8 +365,8 @@ const FaucetAdmin: React.FC<FaucetAdminProps> = ({ chainId }) => {
 
       {/* Error Message */}
       {error && (
-        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
-          <p className="text-red-400 font-mono text-sm">✗ {error}</p>
+        <div className="p-4 bg-signal-reverted/10 border border-signal-reverted/30 rounded-control">
+          <p className="text-signal-reverted font-mono text-sm">{error}</p>
         </div>
       )}
 
@@ -374,7 +374,7 @@ const FaucetAdmin: React.FC<FaucetAdminProps> = ({ chainId }) => {
       <button
         onClick={loadAdminData}
         disabled={isProcessing}
-        className="w-full py-2 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-lg text-gray-400 font-mono text-sm transition-all"
+        className="w-full py-2 bg-surface-inset hover:bg-surface-ridge border border-line-strong rounded-control text-content-muted font-mono text-sm transition-all"
       >
         ↻ REFRESH_DATA
       </button>

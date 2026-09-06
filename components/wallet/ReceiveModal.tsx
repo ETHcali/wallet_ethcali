@@ -81,7 +81,7 @@ const ReceiveModal: React.FC<ReceiveModalProps> = ({ address, onClose, onScanQR 
               className={`action-btn copy-btn ${copied ? 'copied' : ''}`}
               onClick={handleCopy}
             >
-              {copied ? '✓ COPIED' : 'COPY'}
+              {copied ? 'Copied' : 'Copy'}
             </button>
             <button
               className="action-btn share-btn"
@@ -117,15 +117,12 @@ const ReceiveModal: React.FC<ReceiveModalProps> = ({ address, onClose, onScanQR 
         }
 
         .modal-container {
-          background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
-          border: 1px solid rgba(34, 211, 238, 0.3);
+          background: var(--surface-slab);
+          border: 1px solid rgb(var(--eth-blue-rgb) / 0.3);
           border-radius: 12px;
           width: 90%;
           max-width: 400px;
-          box-shadow: 
-            0 0 30px rgba(34, 211, 238, 0.2),
-            0 10px 40px rgba(0, 0, 0, 0.5);
-          color: #e5e7eb;
+          color: var(--text-secondary);
         }
 
         .modal-header {
@@ -133,12 +130,12 @@ const ReceiveModal: React.FC<ReceiveModalProps> = ({ address, onClose, onScanQR 
           justify-content: space-between;
           align-items: center;
           padding: 1rem 1.5rem;
-          border-bottom: 1px solid rgba(34, 211, 238, 0.2);
+          border-bottom: 1px solid rgb(var(--eth-blue-rgb) / 0.2);
         }
 
         .modal-header h3 {
           margin: 0;
-          color: #22d3ee;
+          color: var(--eth-blue-text);
           font-size: 1rem;
           font-weight: 600;
           font-family: monospace;
@@ -147,12 +144,12 @@ const ReceiveModal: React.FC<ReceiveModalProps> = ({ address, onClose, onScanQR 
         }
 
         .close-button {
-          background: rgba(34, 211, 238, 0.1);
-          border: 1px solid rgba(34, 211, 238, 0.3);
+          background: rgb(var(--eth-blue-rgb) / 0.1);
+          border: 1px solid rgb(var(--eth-blue-rgb) / 0.3);
           border-radius: 4px;
           font-size: 1.25rem;
           cursor: pointer;
-          color: #22d3ee;
+          color: var(--eth-blue-text);
           padding: 0.25rem 0.5rem;
           width: auto;
           height: auto;
@@ -163,8 +160,8 @@ const ReceiveModal: React.FC<ReceiveModalProps> = ({ address, onClose, onScanQR 
         }
 
         .close-button:hover {
-          background: rgba(34, 211, 238, 0.2);
-          border-color: rgba(34, 211, 238, 0.5);
+          background: rgb(var(--eth-blue-rgb) / 0.2);
+          border-color: rgb(var(--eth-blue-rgb) / 0.5);
         }
 
         .modal-body {
@@ -177,14 +174,11 @@ const ReceiveModal: React.FC<ReceiveModalProps> = ({ address, onClose, onScanQR 
         }
 
         .qr-wrapper {
-          background: #0a0a0a;
+          background: var(--surface-slab);
           padding: 1rem;
-          border: 2px solid rgba(34, 211, 238, 0.4);
+          border: 2px solid rgb(var(--eth-blue-rgb) / 0.4);
           border-radius: 8px;
           display: inline-block;
-          box-shadow: 
-            0 0 20px rgba(34, 211, 238, 0.2),
-            inset 0 0 20px rgba(34, 211, 238, 0.05);
         }
 
         .qr-image {
@@ -196,7 +190,7 @@ const ReceiveModal: React.FC<ReceiveModalProps> = ({ address, onClose, onScanQR 
         .qr-hint {
           margin-top: 1rem;
           font-size: 0.75rem;
-          color: #6b7280;
+          color: var(--text-faint);
           font-family: monospace;
           letter-spacing: 0.1em;
           text-transform: uppercase;
@@ -208,7 +202,7 @@ const ReceiveModal: React.FC<ReceiveModalProps> = ({ address, onClose, onScanQR 
 
         .address-box {
           background: rgba(0, 0, 0, 0.5);
-          border: 1px solid rgba(34, 211, 238, 0.2);
+          border: 1px solid rgb(var(--eth-blue-rgb) / 0.2);
           border-radius: 8px;
           padding: 1rem;
           word-break: break-all;
@@ -217,7 +211,7 @@ const ReceiveModal: React.FC<ReceiveModalProps> = ({ address, onClose, onScanQR 
         .address-text {
           font-family: monospace;
           font-size: 0.75rem;
-          color: #22d3ee;
+          color: var(--eth-blue-text);
           line-height: 1.6;
           letter-spacing: 0.05em;
         }
@@ -230,7 +224,7 @@ const ReceiveModal: React.FC<ReceiveModalProps> = ({ address, onClose, onScanQR 
         .action-btn {
           flex: 1;
           padding: 0.75rem 1rem;
-          border: 1px solid rgba(34, 211, 238, 0.3);
+          border: 1px solid rgb(var(--eth-blue-rgb) / 0.3);
           border-radius: 6px;
           font-size: 0.75rem;
           font-weight: 600;
@@ -242,41 +236,41 @@ const ReceiveModal: React.FC<ReceiveModalProps> = ({ address, onClose, onScanQR 
         }
 
         .copy-btn {
-          background: rgba(34, 211, 238, 0.1);
-          color: #22d3ee;
+          background: rgb(var(--eth-blue-rgb) / 0.1);
+          color: var(--eth-blue-text);
         }
 
         .copy-btn:hover {
-          background: rgba(34, 211, 238, 0.2);
-          border-color: rgba(34, 211, 238, 0.5);
+          background: rgb(var(--eth-blue-rgb) / 0.2);
+          border-color: rgb(var(--eth-blue-rgb) / 0.5);
         }
 
         .copy-btn.copied {
-          background: rgba(34, 197, 94, 0.2);
-          border-color: rgba(34, 197, 94, 0.4);
-          color: #22c55e;
+          background: rgb(var(--signal-confirmed-rgb) / 0.2);
+          border-color: rgb(var(--signal-confirmed-rgb) / 0.4);
+          color: var(--signal-confirmed);
         }
 
         .share-btn {
-          background: rgba(139, 92, 246, 0.1);
-          color: #a78bfa;
-          border-color: rgba(139, 92, 246, 0.3);
+          background: rgb(var(--eth-blue-rgb) / 0.1);
+          color: var(--eth-blue-text);
+          border-color: rgb(var(--eth-blue-rgb) / 0.3);
         }
 
         .share-btn:hover {
-          background: rgba(139, 92, 246, 0.2);
-          border-color: rgba(139, 92, 246, 0.5);
+          background: rgb(var(--eth-blue-rgb) / 0.2);
+          border-color: rgb(var(--eth-blue-rgb) / 0.5);
         }
 
         .scan-btn {
-          background: rgba(75, 85, 99, 0.2);
-          color: #9ca3af;
-          border-color: rgba(75, 85, 99, 0.3);
+          background: var(--line-hairline);
+          color: var(--text-muted);
+          border-color: var(--line-hairline);
         }
 
         .scan-btn:hover {
-          background: rgba(75, 85, 99, 0.3);
-          border-color: rgba(75, 85, 99, 0.5);
+          background: var(--line-hairline);
+          border-color: var(--surface-ridge);
         }
 
         @media (max-width: 480px) {

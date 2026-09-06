@@ -64,23 +64,23 @@ const NFTCard: React.FC<NFTCardProps> = ({
   const showInitialLoading = isLoading && !alreadyHasNFT;
 
   return (
-    <div className="bg-black/60 border border-green-500/40 rounded-lg p-4 space-y-3">
+    <div className="bg-black/60 border border-line-hairline rounded-control p-4 space-y-3">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className={`w-3 h-3 rounded-full shadow-lg ${alreadyHasNFT ? 'bg-green-500 animate-pulse' : isLoading ? 'bg-yellow-500 animate-pulse' : 'bg-gray-600'}`}></div>
+          <div className={`w-3 h-3 rounded-full  ${alreadyHasNFT ? 'bg-signal-confirmed animate-pulse' : isLoading ? 'bg-signal-pending animate-pulse' : 'bg-surface-ridge'}`}></div>
           <div>
-            <h2 className={`text-sm font-bold font-mono tracking-wide ${alreadyHasNFT ? 'text-green-400' : isLoading ? 'text-yellow-400' : 'text-gray-400'}`}>
+            <h2 className={`text-sm font-bold font-mono tracking-wide ${alreadyHasNFT ? 'text-signal-confirmed' : isLoading ? 'text-signal-pending' : 'text-content-muted'}`}>
               {alreadyHasNFT ? 'VERIFIED' : isLoading ? 'CHECKING...' : 'NO_VERIFICATION'}
             </h2>
-            <p className="text-gray-600 text-[10px] font-mono">{getNetworkName(chainId).toUpperCase()}</p>
+            <p className="text-content-faint text-[10px] font-mono">{getNetworkName(chainId).toUpperCase()}</p>
           </div>
         </div>
         {onRefresh && (
           <button
             onClick={onRefresh}
             disabled={isLoading}
-            className={`px-2 py-1 bg-gray-800/50 hover:bg-gray-700/50 border border-gray-700 rounded text-gray-400 hover:text-cyan-400 font-mono text-[9px] transition-all disabled:opacity-50 ${isLoading ? 'animate-spin' : ''}`}
+            className={`px-2 py-1 bg-surface-inset/50 hover:bg-surface-ridge/50 border border-line-hairline rounded-chip text-content-muted hover:text-eth-blue-text font-mono text-[9px] transition-all disabled:opacity-50 ${isLoading ? 'animate-spin' : ''}`}
             title="Refresh"
           >
             ↻
@@ -91,8 +91,8 @@ const NFTCard: React.FC<NFTCardProps> = ({
       {/* Initial Loading State - Only show when we don't have NFT data yet */}
       {showInitialLoading && (
         <div className="flex items-center justify-center py-4">
-          <div className="w-4 h-4 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
-          <span className="ml-2 text-[10px] text-cyan-400 font-mono">CHECKING NFT...</span>
+          <div className="w-4 h-4 border-2 border-eth-blue border-t-transparent rounded-full animate-spin"></div>
+          <span className="ml-2 text-[10px] text-eth-blue-text font-mono">CHECKING NFT...</span>
         </div>
       )}
 
@@ -101,7 +101,7 @@ const NFTCard: React.FC<NFTCardProps> = ({
         <>
           {/* NFT Image */}
           {nftMetadata?.image && (
-            <div className="mb-3 rounded-lg overflow-hidden border border-cyan-500/20 relative aspect-square bg-gray-900/50">
+            <div className="mb-3 rounded-control overflow-hidden border border-eth-blue/20 relative aspect-square bg-surface-slab/50">
               <Image
                 src={getIPFSImageUrl(nftMetadata.image)}
                 alt={nftMetadata?.name || 'ZKPassport NFT'}
@@ -119,14 +119,14 @@ const NFTCard: React.FC<NFTCardProps> = ({
           {/* NFT Name */}
           {nftMetadata?.name && (
             <div className="mb-2">
-              <h3 className="text-sm font-bold text-cyan-400 font-mono">{nftMetadata.name}</h3>
+              <h3 className="text-sm font-bold text-eth-blue-text font-mono">{nftMetadata.name}</h3>
             </div>
           )}
 
           {/* NFT Description */}
           {nftMetadata?.description && (
             <div className="mb-2">
-              <p className="text-[10px] text-gray-500 font-mono">{nftMetadata.description}</p>
+              <p className="text-[10px] text-content-faint font-mono">{nftMetadata.description}</p>
             </div>
           )}
 
@@ -137,7 +137,7 @@ const NFTCard: React.FC<NFTCardProps> = ({
                 href={nftMetadata.external_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[10px] text-cyan-400 hover:text-cyan-300 font-mono underline"
+                className="text-[10px] text-eth-blue-text hover:text-eth-blue-text font-mono underline"
               >
                 View on website →
               </a>
@@ -147,50 +147,50 @@ const NFTCard: React.FC<NFTCardProps> = ({
           {/* NFT Details */}
           <div className="space-y-1.5 text-[10px] font-mono">
             {tokenId !== null && tokenId !== undefined && (
-              <div className="flex justify-between py-1 border-b border-gray-800">
-                <span className="text-gray-600">token_id</span>
-                <span className="text-cyan-400">#{tokenId.toString()}</span>
+              <div className="flex justify-between py-1 border-b border-line-hairline">
+                <span className="text-content-faint">token_id</span>
+                <span className="text-eth-blue-text">#{tokenId.toString()}</span>
               </div>
             )}
             {tokenData ? (
               <>
-                <div className="flex justify-between py-1 border-b border-gray-800">
-                  <span className="text-gray-600">uid</span>
-                  <span className="text-cyan-400">{maskIdentifier(tokenData.uniqueIdentifier)}</span>
+                <div className="flex justify-between py-1 border-b border-line-hairline">
+                  <span className="text-content-faint">uid</span>
+                  <span className="text-eth-blue-text">{maskIdentifier(tokenData.uniqueIdentifier)}</span>
                 </div>
-                <div className="flex justify-between py-1 border-b border-gray-800">
-                  <span className="text-gray-600">age</span>
-                  <span className={tokenData.isOver18 ? 'text-green-400' : 'text-yellow-500'}>
+                <div className="flex justify-between py-1 border-b border-line-hairline">
+                  <span className="text-content-faint">age</span>
+                  <span className={tokenData.isOver18 ? 'text-signal-confirmed' : 'text-signal-pending'}>
                     {tokenData.isOver18 ? '18+' : 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between py-1">
-                  <span className="text-gray-600">nationality</span>
-                  <span className="text-cyan-400">
+                  <span className="text-content-faint">nationality</span>
+                  <span className="text-eth-blue-text">
                     {tokenData.nationality || 'N/A'}
                   </span>
                 </div>
               </>
             ) : (
               <div className="flex justify-between py-1">
-                <span className="text-gray-600">status</span>
-                <span className="text-green-400">VERIFIED</span>
+                <span className="text-content-faint">status</span>
+                <span className="text-signal-confirmed">VERIFIED</span>
               </div>
             )}
           </div>
 
           {/* Attributes */}
           {nftMetadata?.attributes && nftMetadata.attributes.length > 0 && (
-            <div className="mt-3 pt-3 border-t border-gray-800">
-              <div className="text-[9px] text-gray-600 font-mono mb-2 tracking-wider">ATTRIBUTES</div>
+            <div className="mt-3 pt-3 border-t border-line-hairline">
+              <div className="text-[9px] text-content-faint font-mono mb-2 tracking-wider">ATTRIBUTES</div>
               <div className="flex flex-wrap gap-1.5">
                 {nftMetadata.attributes.map((attr, idx) => (
                   <div
                     key={idx}
-                    className="px-2 py-1 bg-gray-900/50 border border-gray-800 rounded text-[9px] font-mono"
+                    className="px-2 py-1 bg-surface-slab/50 border border-line-hairline rounded-chip text-[9px] font-mono"
                   >
-                    <span className="text-gray-500">{attr.trait_type}:</span>{' '}
-                    <span className="text-cyan-400">{attr.value}</span>
+                    <span className="text-content-faint">{attr.trait_type}:</span>{' '}
+                    <span className="text-eth-blue-text">{attr.value}</span>
                   </div>
                 ))}
               </div>
@@ -199,7 +199,7 @@ const NFTCard: React.FC<NFTCardProps> = ({
 
           <Link
             href="/faucet"
-            className="block w-full py-2.5 bg-green-500/20 hover:bg-green-500/30 border border-green-500/40 rounded text-green-400 font-mono text-xs font-bold text-center transition-all"
+            className="block w-full py-2.5 bg-eth-blue hover:bg-eth-blue-lift rounded-chip text-on-brand font-mono text-xs font-bold text-center transition-all"
           >
             CLAIM_FAUCET →
           </Link>
@@ -209,11 +209,11 @@ const NFTCard: React.FC<NFTCardProps> = ({
       {/* Empty State - No NFT (only show after loading completes with no NFT) */}
       {showEmptyState && (
         <div className="text-center py-8">
-          <div className="text-gray-600 text-[10px] font-mono mb-4">
-            VERIFY YOUR IDENTITY TO MINT YOUR ZKPASSPORT NFT
+          <div className="text-content-faint text-[10px] font-mono mb-4">
+            VERIFY YOUR IDENTITY TO MINT YOUR ZKPassport NFT
           </div>
-          <div className="text-gray-700 text-[9px] font-mono">
-            • PRIVACY_FIRST • NO_KYC • SOULBOUND
+          <div className="text-content-faint text-[9px] font-mono">
+            • Privacy first • No KYC • SOULBOUND
           </div>
         </div>
       )}

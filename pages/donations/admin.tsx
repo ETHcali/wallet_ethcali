@@ -53,7 +53,7 @@ export default function DonationsAdminPage() {
   if (!ready || isLoading) {
     return (
       <AdminShell active="donations" title="Donations" chainId={chainId}>
-        <p className="py-16 text-center text-sm text-slate-500">Checking permissions…</p>
+        <p className="py-16 text-center text-sm text-content-faint">Checking permissions…</p>
       </AdminShell>
     );
   }
@@ -61,9 +61,9 @@ export default function DonationsAdminPage() {
   if (!isDeployed) {
     return (
       <AdminShell active="donations" title="Donations" chainId={chainId}>
-        <div className="rounded-2xl border border-slate-700 bg-slate-800/50 p-6 text-center sm:p-8">
-          <h2 className="mb-2 text-lg font-bold text-white">Not deployed</h2>
-            <p className="text-sm text-slate-400">
+        <div className="rounded-card border border-line-hairline bg-surface-inset/50 p-6 text-center sm:p-8">
+          <h2 className="mb-2 text-lg font-bold text-content-primary">Not deployed</h2>
+            <p className="text-sm text-content-muted">
               DonationVault is not deployed on{' '}
               {NETWORK_NAMES[chainId as ChainId] ?? 'this network'} yet.
             </p>
@@ -75,9 +75,9 @@ export default function DonationsAdminPage() {
   if (!isAdmin && !isSuperAdmin) {
     return (
       <AdminShell active="donations" title="Donations" chainId={chainId}>
-        <div className="rounded-2xl border border-slate-700 bg-slate-800/50 p-6 text-center sm:p-8">
-          <h2 className="mb-2 text-lg font-bold text-white">Not authorised</h2>
-            <p className="text-sm text-slate-400">
+        <div className="rounded-card border border-line-hairline bg-surface-inset/50 p-6 text-center sm:p-8">
+          <h2 className="mb-2 text-lg font-bold text-content-primary">Not authorised</h2>
+            <p className="text-sm text-content-muted">
               {walletAddress ? (
                 <>
                   <span className="font-mono text-xs">{walletAddress}</span> does not hold
@@ -106,7 +106,7 @@ export default function DonationsAdminPage() {
       <div>
         <header className="mb-6 flex flex-wrap items-center gap-2">
             {isSuperAdmin && (
-              <span className="rounded-full border border-cyan-500/40 bg-cyan-500/10 px-2 py-0.5 text-[11px] font-semibold text-cyan-300">
+              <span className="rounded-full border border-eth-blue/40 bg-eth-blue/10 px-2 py-0.5 text-[11px] font-semibold text-eth-blue-text">
                 super admin
               </span>
             )}
@@ -114,10 +114,10 @@ export default function DonationsAdminPage() {
               type="button"
               onClick={() => setPaused(!isPaused)}
               disabled={pendingAction === 'pause' || pendingAction === 'unpause'}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
+              className={`rounded-control px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
                 isPaused
-                  ? 'bg-green-500 text-slate-900 hover:bg-green-400'
-                  : 'border border-slate-600 bg-slate-800 text-slate-300 hover:border-red-500 hover:text-red-400'
+                  ? 'bg-eth-blue text-on-brand hover:bg-eth-blue-lift'
+                  : 'border border-line-strong bg-surface-inset text-content-secondary hover:border-signal-reverted hover:text-signal-reverted'
               }`}
             >
               {pendingAction === 'pause' || pendingAction === 'unpause'
@@ -130,11 +130,11 @@ export default function DonationsAdminPage() {
 
         {/* The launch mistake that silently costs donors their NFTs */}
         {receiptCollection && !isCheckingMinter && !vaultIsMinter && (
-          <div className="mb-6 rounded-xl border border-amber-500/50 bg-amber-500/10 p-4">
-            <h2 className="mb-1 text-sm font-bold text-amber-300">
+          <div className="mb-6 rounded-card border border-signal-pending/50 bg-signal-pending/10 p-4">
+            <h2 className="mb-1 text-sm font-bold text-signal-pending">
               Receipts are not being minted
             </h2>
-            <p className="mb-3 text-xs leading-relaxed text-amber-200/80">
+            <p className="mb-3 text-xs leading-relaxed text-signal-pending/80">
               The vault does not hold MINTER_ROLE on the receipt collection. Donations
               will still succeed, but every donor silently receives no NFT. Grant it
               before announcing the campaign.
@@ -143,7 +143,7 @@ export default function DonationsAdminPage() {
               type="button"
               onClick={() => vault && addReceiptMinter(vault)}
               disabled={pendingAction === 'addReceiptMinter'}
-              className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-slate-900 hover:bg-amber-400 disabled:opacity-50"
+              className="rounded-control bg-signal-pending px-3 py-1.5 text-xs font-semibold text-on-brand hover:bg-signal-pending disabled:opacity-50"
             >
               {pendingAction === 'addReceiptMinter' ? 'Granting…' : 'Grant MINTER_ROLE'}
             </button>
@@ -151,7 +151,7 @@ export default function DonationsAdminPage() {
         )}
 
         {isPaused && (
-          <div className="mb-6 rounded-xl border border-red-500/50 bg-red-500/10 p-4 text-sm text-red-300">
+          <div className="mb-6 rounded-card border border-signal-reverted/50 bg-signal-reverted/10 p-4 text-sm text-signal-reverted">
             Donations are paused. Nobody can donate until this is resumed.
           </div>
         )}
@@ -163,10 +163,10 @@ export default function DonationsAdminPage() {
                 key={c.chainId}
                 type="button"
                 onClick={() => setChainId(c.chainId)}
-                className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors ${
+                className={`rounded-control border px-3 py-1.5 text-sm font-semibold transition-colors ${
                   c.chainId === chainId
-                    ? 'border-cyan-500 bg-cyan-500/15 text-cyan-300'
-                    : 'border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500'
+                    ? 'border-eth-blue bg-eth-blue/15 text-eth-blue-text'
+                    : 'border-line-hairline bg-surface-inset text-content-secondary hover:border-line-strong'
                 }`}
               >
                 {c.name}
@@ -175,7 +175,7 @@ export default function DonationsAdminPage() {
           </div>
         )}
 
-        <div className="mb-5 flex gap-2 border-b border-slate-700">
+        <div className="mb-5 flex gap-2 border-b border-line-hairline">
           {(['campaigns', 'create', 'receipts', 'bank'] as Tab[]).map((t) => (
             <button
               key={t}
@@ -183,8 +183,8 @@ export default function DonationsAdminPage() {
               onClick={() => setTab(t)}
               className={`px-4 py-2 text-sm font-semibold capitalize transition-colors ${
                 tab === t
-                  ? 'border-b-2 border-cyan-500 text-cyan-300'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'border-b-2 border-eth-blue text-eth-blue-text'
+                  : 'text-content-muted hover:text-content-primary'
               }`}
             >
               {t}
@@ -193,14 +193,14 @@ export default function DonationsAdminPage() {
         </div>
 
         {error && (
-          <div className="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-xs text-red-300">
+          <div className="mb-4 rounded-control border border-signal-reverted/40 bg-signal-reverted/10 p-3 text-xs text-signal-reverted">
             {error}
           </div>
         )}
 
         {tab === 'create' && (
-          <div className="max-w-xl rounded-2xl border border-slate-700 bg-slate-800/50 p-5">
-            <h2 className="mb-4 text-sm font-bold text-white">New campaign</h2>
+          <div className="max-w-xl rounded-card border border-line-hairline bg-surface-inset/50 p-5">
+            <h2 className="mb-4 text-sm font-bold text-content-primary">New campaign</h2>
             <CampaignAdminForm chainId={chainId} onCreated={() => setTab('campaigns')} />
           </div>
         )}
@@ -209,7 +209,7 @@ export default function DonationsAdminPage() {
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="space-y-3">
               {campaigns.length === 0 && (
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-content-faint">
                   No campaigns yet. Create one to begin.
                 </p>
               )}
@@ -218,17 +218,17 @@ export default function DonationsAdminPage() {
                   key={c.id}
                   type="button"
                   onClick={() => setSelectedCampaign(c.id)}
-                  className={`w-full rounded-xl border p-4 text-left transition-colors ${
+                  className={`w-full rounded-card border p-4 text-left transition-colors ${
                     campaign?.id === c.id
-                      ? 'border-cyan-500 bg-cyan-500/10'
-                      : 'border-slate-700 bg-slate-800/50 hover:border-slate-500'
+                      ? 'border-eth-blue bg-eth-blue/10'
+                      : 'border-line-hairline bg-surface-inset/50 hover:border-line-strong'
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold text-white">{c.name}</span>
-                    <span className="text-[11px] text-slate-500">#{c.id}</span>
+                    <span className="font-semibold text-content-primary">{c.name}</span>
+                    <span className="text-[11px] text-content-faint">#{c.id}</span>
                   </div>
-                  <div className="mt-1 flex gap-3 text-[11px] text-slate-500">
+                  <div className="mt-1 flex gap-3 text-[11px] text-content-faint">
                     <span>{c.donorCount} donors</span>
                     <span>{c.autoForward ? 'router' : 'holder'}</span>
                     <span>{c.active ? 'open' : 'closed'}</span>
@@ -239,12 +239,12 @@ export default function DonationsAdminPage() {
 
             {campaign && (
               <div className="space-y-4">
-                <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-4">
-                  <h3 className="mb-3 text-sm font-bold text-white">
+                <div className="rounded-card border border-line-hairline bg-surface-inset/50 p-4">
+                  <h3 className="mb-3 text-sm font-bold text-content-primary">
                     Raised · {campaign.name}
                   </h3>
                   {totals.length === 0 && (
-                    <p className="text-xs text-slate-500">No currencies accepted yet.</p>
+                    <p className="text-xs text-content-faint">No currencies accepted yet.</p>
                   )}
                   <ul className="space-y-1.5">
                     {totals.map((t) => (
@@ -252,8 +252,8 @@ export default function DonationsAdminPage() {
                         key={t.token.address}
                         className="flex items-center justify-between text-xs"
                       >
-                        <span className="text-slate-400">{t.token.symbol}</span>
-                        <span className="font-semibold text-white">
+                        <span className="text-content-muted">{t.token.symbol}</span>
+                        <span className="font-semibold text-content-primary">
                           {formatToken(t.raised, t.token)}
                         </span>
                       </li>
@@ -261,8 +261,8 @@ export default function DonationsAdminPage() {
                   </ul>
                 </div>
 
-                <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-4">
-                  <h3 className="mb-3 text-sm font-bold text-white">Currencies & tiers</h3>
+                <div className="rounded-card border border-line-hairline bg-surface-inset/50 p-4">
+                  <h3 className="mb-3 text-sm font-bold text-content-primary">Currencies & tiers</h3>
                   <CurrencyTierManager
                     campaign={campaign}
                     chainId={chainId}
@@ -277,10 +277,10 @@ export default function DonationsAdminPage() {
         {tab === 'bank' && (
           <div className="max-w-2xl space-y-4">
             <div>
-              <h2 className="text-sm font-bold text-white">Bank transfer donations</h2>
-              <p className="mt-1 text-xs text-slate-500">
+              <h2 className="text-sm font-bold text-content-primary">Bank transfer donations</h2>
+              <p className="mt-1 text-xs text-content-faint">
                 Accounts shown on{' '}
-                <span className="text-slate-300">{campaign?.name ?? 'the campaign'}</span> for
+                <span className="text-content-secondary">{campaign?.name ?? 'the campaign'}</span> for
                 donors who are not paying on-chain. Display only — a transfer is not
                 recorded until it is reconciled from the bank.
               </p>
@@ -291,15 +291,15 @@ export default function DonationsAdminPage() {
 
         {tab === 'receipts' && (
           <div className="max-w-xl space-y-4">
-            <div className="rounded-2xl border border-slate-700 bg-slate-800/50 p-5">
-              <h2 className="mb-1 text-sm font-bold text-white">Receipt tiers</h2>
-              <p className="mb-4 text-xs text-slate-500">
+            <div className="rounded-card border border-line-hairline bg-surface-inset/50 p-5">
+              <h2 className="mb-1 text-sm font-bold text-content-primary">Receipt tiers</h2>
+              <p className="mb-4 text-xs text-content-faint">
                 Each tokenId is a tier. Tiers that have already been minted cannot be
                 removed, only deactivated.
               </p>
 
               {!receiptCollection && (
-                <p className="text-xs text-amber-300">
+                <p className="text-xs text-signal-pending">
                   No receipt collection deployed on this network.
                 </p>
               )}
@@ -315,14 +315,14 @@ export default function DonationsAdminPage() {
                         setTierForm({ ...tierForm, id: e.target.value.replace(/[^0-9]/g, '') })
                       }
                       placeholder="1"
-                      className="w-16 rounded border border-slate-700 bg-slate-800 px-2 py-2 text-xs text-white outline-none focus:border-cyan-500"
+                      className="w-16 rounded-chip border border-line-hairline bg-surface-inset px-2 py-2 text-xs text-content-primary outline-none focus:border-eth-blue"
                     />
                     <input
                       type="text"
                       value={tierForm.name}
                       onChange={(e) => setTierForm({ ...tierForm, name: e.target.value })}
                       placeholder="Supporter"
-                      className="flex-1 rounded border border-slate-700 bg-slate-800 px-2 py-2 text-xs text-white outline-none focus:border-cyan-500"
+                      className="flex-1 rounded-chip border border-line-hairline bg-surface-inset px-2 py-2 text-xs text-content-primary outline-none focus:border-eth-blue"
                     />
                   </div>
                   <input
@@ -330,7 +330,7 @@ export default function DonationsAdminPage() {
                     value={tierForm.uri}
                     onChange={(e) => setTierForm({ ...tierForm, uri: e.target.value })}
                     placeholder="ipfs://…/1.json"
-                    className="w-full rounded border border-slate-700 bg-slate-800 px-2 py-2 font-mono text-xs text-white outline-none focus:border-cyan-500"
+                    className="w-full rounded-chip border border-line-hairline bg-surface-inset px-2 py-2 font-mono text-xs text-content-primary outline-none focus:border-eth-blue"
                   />
                   <button
                     type="button"
@@ -345,7 +345,7 @@ export default function DonationsAdminPage() {
                     disabled={
                       !tierForm.name || !tierForm.uri || pendingAction === 'setReceiptTier'
                     }
-                    className="w-full rounded-lg bg-cyan-500 py-2 text-xs font-semibold text-slate-900 hover:bg-cyan-400 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+                    className="w-full rounded-control bg-eth-blue py-2 text-xs font-semibold text-on-brand hover:bg-eth-blue-lift disabled:cursor-not-allowed disabled:bg-surface-ridge disabled:text-content-muted"
                   >
                     {pendingAction === 'setReceiptTier' ? 'Saving…' : 'Save tier'}
                   </button>
@@ -353,8 +353,8 @@ export default function DonationsAdminPage() {
               )}
             </div>
 
-            <div className="rounded-2xl border border-slate-700 bg-slate-800/50 p-4 text-xs text-slate-400">
-              <h3 className="mb-2 text-sm font-semibold text-slate-300">Launch order</h3>
+            <div className="rounded-card border border-line-hairline bg-surface-inset/50 p-4 text-xs text-content-muted">
+              <h3 className="mb-2 text-sm font-semibold text-content-secondary">Launch order</h3>
               <ol className="list-inside list-decimal space-y-1">
                 <li>Grant the vault MINTER_ROLE on the receipt collection</li>
                 <li>Create the receipt tiers above</li>

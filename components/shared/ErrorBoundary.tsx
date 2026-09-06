@@ -56,10 +56,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
       // Default fallback UI
       return (
-        <div className="flex flex-col items-center justify-center p-8 bg-gray-900 rounded-xl border border-red-500/20">
-          <div className="w-16 h-16 mb-4 rounded-full bg-red-500/10 flex items-center justify-center">
+        <div className="flex flex-col items-center justify-center p-8 bg-surface-slab rounded-card border border-signal-reverted/20">
+          <div className="w-16 h-16 mb-4 rounded-full bg-signal-reverted/10 flex items-center justify-center">
             <svg
-              className="w-8 h-8 text-red-500"
+              className="w-8 h-8 text-signal-reverted"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -72,15 +72,15 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               />
             </svg>
           </div>
-          <h3 className="text-lg font-semibold text-white mb-2">
+          <h3 className="text-lg font-semibold text-content-primary mb-2">
             Something went wrong
           </h3>
-          <p className="text-gray-400 text-sm text-center mb-4 max-w-md">
+          <p className="text-content-muted text-sm text-center mb-4 max-w-md">
             {error?.message || 'An unexpected error occurred'}
           </p>
           <button
             onClick={this.handleRetry}
-            className="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg transition-colors"
+            className="px-4 py-2 bg-eth-blue hover:bg-eth-blue-lift text-content-primary rounded-control transition-colors"
           >
             Try Again
           </button>
@@ -120,10 +120,10 @@ export function QueryErrorBoundary({
 
   if (hasError) {
     return (
-      <div className="flex flex-col items-center justify-center p-6 bg-gray-800/50 rounded-xl border border-gray-700">
-        <div className="w-12 h-12 mb-3 rounded-full bg-amber-500/10 flex items-center justify-center">
+      <div className="flex flex-col items-center justify-center p-6 bg-surface-inset/50 rounded-card border border-line-hairline">
+        <div className="w-12 h-12 mb-3 rounded-full bg-signal-pending/10 flex items-center justify-center">
           <svg
-            className="w-6 h-6 text-amber-500"
+            className="w-6 h-6 text-signal-pending"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -136,11 +136,11 @@ export function QueryErrorBoundary({
             />
           </svg>
         </div>
-        <h4 className="text-base font-medium text-white mb-1">{title}</h4>
-        <p className="text-gray-400 text-sm text-center mb-3">{description}</p>
+        <h4 className="text-base font-medium text-content-primary mb-1">{title}</h4>
+        <p className="text-content-muted text-sm text-center mb-3">{description}</p>
         <button
           onClick={handleRetry}
-          className="px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+          className="px-3 py-1.5 text-sm bg-surface-ridge hover:bg-surface-ridge text-content-primary rounded-control transition-colors"
         >
           Retry
         </button>
@@ -152,10 +152,10 @@ export function QueryErrorBoundary({
     <ErrorBoundary
       onError={() => setHasError(true)}
       fallback={
-        <div className="flex flex-col items-center justify-center p-6 bg-gray-800/50 rounded-xl border border-gray-700">
-          <div className="w-12 h-12 mb-3 rounded-full bg-amber-500/10 flex items-center justify-center">
+        <div className="flex flex-col items-center justify-center p-6 bg-surface-inset/50 rounded-card border border-line-hairline">
+          <div className="w-12 h-12 mb-3 rounded-full bg-signal-pending/10 flex items-center justify-center">
             <svg
-              className="w-6 h-6 text-amber-500"
+              className="w-6 h-6 text-signal-pending"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -168,11 +168,11 @@ export function QueryErrorBoundary({
               />
             </svg>
           </div>
-          <h4 className="text-base font-medium text-white mb-1">{title}</h4>
-          <p className="text-gray-400 text-sm text-center mb-3">{description}</p>
+          <h4 className="text-base font-medium text-content-primary mb-1">{title}</h4>
+          <p className="text-content-muted text-sm text-center mb-3">{description}</p>
           <button
             onClick={handleRetry}
-            className="px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+            className="px-3 py-1.5 text-sm bg-surface-ridge hover:bg-surface-ridge text-content-primary rounded-control transition-colors"
           >
             Retry
           </button>

@@ -43,11 +43,11 @@ const BeneficiaryCard: React.FC<BeneficiaryCardProps> = ({
   };
 
   return (
-    <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-4">
+    <div className="rounded-card border border-line-hairline bg-surface-inset/50 p-4">
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-300">Funds go to</h3>
+        <h3 className="text-sm font-semibold text-content-secondary">Funds go to</h3>
         {safe && (
-          <span className="rounded-full border border-green-500/40 bg-green-500/10 px-2 py-0.5 text-[11px] font-semibold text-green-400">
+          <span className="rounded-full border border-eth-blue/40 bg-eth-blue/10 px-2 py-0.5 text-[11px] font-semibold text-eth-blue-text">
             {safe.threshold}-of-{safe.ownerCount} multisig
           </span>
         )}
@@ -59,24 +59,24 @@ const BeneficiaryCard: React.FC<BeneficiaryCardProps> = ({
           <img
             src={profile.avatar}
             alt=""
-            className="h-10 w-10 rounded-full border border-slate-600 object-cover"
+            className="h-10 w-10 rounded-full border border-line-strong object-cover"
           />
         ) : (
-          <div className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-600 bg-slate-700 text-sm font-bold text-cyan-400">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full border border-line-strong bg-surface-ridge text-sm font-bold text-eth-blue-text">
             EC
           </div>
         )}
 
         <div className="min-w-0 flex-1">
-          <div className="truncate font-semibold text-white">
+          <div className="truncate font-semibold text-content-primary">
             {profile?.ensName || truncate(beneficiary)}
           </div>
-          <div className="flex items-center gap-2 text-xs text-slate-400">
+          <div className="flex items-center gap-2 text-xs text-content-muted">
             <span className="font-mono">{truncate(beneficiary)}</span>
             <button
               type="button"
               onClick={handleCopy}
-              className="text-slate-500 transition-colors hover:text-cyan-400"
+              className="text-content-faint transition-colors hover:text-eth-blue-text"
               title="Copy address"
             >
               {copied ? 'copied' : 'copy'}
@@ -86,7 +86,7 @@ const BeneficiaryCard: React.FC<BeneficiaryCardProps> = ({
                 href={`${explorer}/address/${beneficiary}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-slate-500 transition-colors hover:text-cyan-400"
+                className="text-content-faint transition-colors hover:text-eth-blue-text"
               >
                 explorer ↗
               </a>
@@ -95,11 +95,11 @@ const BeneficiaryCard: React.FC<BeneficiaryCardProps> = ({
         </div>
       </div>
 
-      <p className="mt-3 text-xs leading-relaxed text-slate-400">
+      <p className="mt-3 text-xs leading-relaxed text-content-muted">
         {autoForward ? (
           <>
             Every donation is forwarded to this wallet{' '}
-            <span className="text-slate-300">in the same transaction</span>. The
+            <span className="text-content-secondary">in the same transaction</span>. The
             contract never holds your funds and no administrator can redirect them.
           </>
         ) : (
@@ -115,7 +115,7 @@ const BeneficiaryCard: React.FC<BeneficiaryCardProps> = ({
           href={profile.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-2 inline-block text-xs text-cyan-400 hover:underline"
+          className="mt-2 inline-block text-xs text-eth-blue-text hover:underline"
         >
           {profile.url.replace(/^https?:\/\//, '')} ↗
         </a>

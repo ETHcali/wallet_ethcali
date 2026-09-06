@@ -131,20 +131,20 @@ export function VaultWhitelistManager({ vault, onSuccess }: VaultWhitelistManage
   }
 
   return (
-    <div className="bg-black/60 border border-gray-800 rounded p-4 space-y-4">
+    <div className="bg-black/60 border border-line-hairline rounded-chip p-4 space-y-4">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-[9px] text-gray-500 font-mono tracking-wider">WHITELIST_MANAGEMENT</p>
+        <p className="text-[9px] text-content-faint font-mono tracking-wider">Whitelist management</p>
         <div className="flex items-center gap-2">
-          <span className={`text-[9px] font-mono ${vault.whitelistEnabled ? 'text-green-400' : 'text-gray-600'}`}>
+          <span className={`text-[9px] font-mono ${vault.whitelistEnabled ? 'text-signal-confirmed' : 'text-content-faint'}`}>
             {vault.whitelistEnabled ? 'ENABLED' : 'DISABLED'}
           </span>
           <button
             onClick={handleToggleWhitelist}
             disabled={isProcessing}
-            className={`text-[9px] font-mono px-2 py-1 rounded transition ${
+            className={`text-[9px] font-mono px-2 py-1 rounded-chip transition ${
               vault.whitelistEnabled
-                ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20'
-                : 'bg-green-500/10 text-green-400 hover:bg-green-500/20'
+                ? 'bg-signal-reverted/10 text-signal-reverted hover:bg-signal-reverted/20'
+                : 'bg-eth-blue/10 text-eth-blue-text hover:bg-eth-blue/20'
             }`}
           >
             {vault.whitelistEnabled ? 'DISABLE' : 'ENABLE'}
@@ -156,20 +156,20 @@ export function VaultWhitelistManager({ vault, onSuccess }: VaultWhitelistManage
       <div className="flex gap-1 mb-3">
         <button
           onClick={() => setActiveMode('single')}
-          className={`px-2 py-1 text-[9px] font-mono rounded transition ${
+          className={`px-2 py-1 text-[9px] font-mono rounded-chip transition ${
             activeMode === 'single'
-              ? 'bg-orange-500/20 text-orange-400 border border-orange-500/40'
-              : 'text-gray-600 hover:text-gray-400 border border-transparent'
+              ? 'bg-eth-blue/20 text-eth-blue-text border border-eth-blue/40'
+              : 'text-content-faint hover:text-content-muted border border-transparent'
           }`}
         >
           SINGLE
         </button>
         <button
           onClick={() => setActiveMode('batch')}
-          className={`px-2 py-1 text-[9px] font-mono rounded transition ${
+          className={`px-2 py-1 text-[9px] font-mono rounded-chip transition ${
             activeMode === 'batch'
-              ? 'bg-orange-500/20 text-orange-400 border border-orange-500/40'
-              : 'text-gray-600 hover:text-gray-400 border border-transparent'
+              ? 'bg-eth-blue/20 text-eth-blue-text border border-eth-blue/40'
+              : 'text-content-faint hover:text-content-muted border border-transparent'
           }`}
         >
           BATCH
@@ -184,12 +184,12 @@ export function VaultWhitelistManager({ vault, onSuccess }: VaultWhitelistManage
               value={addressInput}
               onChange={(e) => setAddressInput(e.target.value)}
               placeholder="0x..."
-              className="w-full bg-black/40 border border-gray-700 rounded px-3 py-2 text-[10px] font-mono text-gray-300 placeholder-gray-600 focus:border-orange-500/50 focus:outline-none"
+              className="w-full bg-black/40 border border-line-hairline rounded-chip px-3 py-2 text-[10px] font-mono text-content-secondary placeholder-content-faint focus:border-eth-blue/50 focus:outline-none"
             />
             {isValidAddress && (
-              <div className="mt-1 text-[9px] font-mono text-gray-600">
-                Status: <span className={isWhitelisted ? 'text-green-400' : 'text-red-400'}>
-                  {isWhitelisted ? 'WHITELISTED' : 'NOT_WHITELISTED'}
+              <div className="mt-1 text-[9px] font-mono text-content-faint">
+                Status: <span className={isWhitelisted ? 'text-signal-confirmed' : 'text-signal-reverted'}>
+                  {isWhitelisted ? 'WHITELISTED' : 'Not whitelisted'}
                 </span>
               </div>
             )}
@@ -198,14 +198,14 @@ export function VaultWhitelistManager({ vault, onSuccess }: VaultWhitelistManage
             <button
               onClick={handleAddSingle}
               disabled={isProcessing || !addressInput}
-              className="flex-1 px-3 py-2 bg-green-500/10 border border-green-500/30 rounded text-green-400 text-[10px] font-mono hover:bg-green-500/20 transition disabled:opacity-50"
+              className="flex-1 px-3 py-2 bg-eth-blue/10 border border-eth-blue/30 rounded-chip text-eth-blue-text text-[10px] font-mono hover:bg-eth-blue/20 transition disabled:opacity-50"
             >
               ADD
             </button>
             <button
               onClick={handleRemoveSingle}
               disabled={isProcessing || !addressInput}
-              className="flex-1 px-3 py-2 bg-red-500/10 border border-red-500/30 rounded text-red-400 text-[10px] font-mono hover:bg-red-500/20 transition disabled:opacity-50"
+              className="flex-1 px-3 py-2 bg-signal-reverted/10 border border-signal-reverted/30 rounded-chip text-signal-reverted text-[10px] font-mono hover:bg-signal-reverted/20 transition disabled:opacity-50"
             >
               REMOVE
             </button>
@@ -218,20 +218,20 @@ export function VaultWhitelistManager({ vault, onSuccess }: VaultWhitelistManage
             onChange={(e) => setBatchInput(e.target.value)}
             placeholder="0x...&#10;0x...&#10;0x... (one per line or comma-separated)"
             rows={6}
-            className="w-full bg-black/40 border border-gray-700 rounded px-3 py-2 text-[10px] font-mono text-gray-300 placeholder-gray-600 focus:border-orange-500/50 focus:outline-none resize-none"
+            className="w-full bg-black/40 border border-line-hairline rounded-chip px-3 py-2 text-[10px] font-mono text-content-secondary placeholder-content-faint focus:border-eth-blue/50 focus:outline-none resize-none"
           />
           <div className="flex gap-2">
             <button
               onClick={handleAddBatch}
               disabled={isProcessing || !batchInput.trim()}
-              className="flex-1 px-3 py-2 bg-green-500/10 border border-green-500/30 rounded text-green-400 text-[10px] font-mono hover:bg-green-500/20 transition disabled:opacity-50"
+              className="flex-1 px-3 py-2 bg-eth-blue/10 border border-eth-blue/30 rounded-chip text-eth-blue-text text-[10px] font-mono hover:bg-eth-blue/20 transition disabled:opacity-50"
             >
               ADD_BATCH
             </button>
             <button
               onClick={handleRemoveBatch}
               disabled={isProcessing || !batchInput.trim()}
-              className="flex-1 px-3 py-2 bg-red-500/10 border border-red-500/30 rounded text-red-400 text-[10px] font-mono hover:bg-red-500/20 transition disabled:opacity-50"
+              className="flex-1 px-3 py-2 bg-signal-reverted/10 border border-signal-reverted/30 rounded-chip text-signal-reverted text-[10px] font-mono hover:bg-signal-reverted/20 transition disabled:opacity-50"
             >
               REMOVE_BATCH
             </button>
@@ -239,8 +239,8 @@ export function VaultWhitelistManager({ vault, onSuccess }: VaultWhitelistManage
         </div>
       )}
 
-      <p className="text-[9px] text-gray-600 font-mono">
-        Vault ID: <span className="text-gray-400">{vault.id}</span> | {vault.name}
+      <p className="text-[9px] text-content-faint font-mono">
+        Vault ID: <span className="text-content-muted">{vault.id}</span> | {vault.name}
       </p>
     </div>
   );

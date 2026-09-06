@@ -473,11 +473,11 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
 
         /* Portfolio Hero Section */
         .portfolio-hero {
-          background: linear-gradient(135deg, rgba(17, 24, 39, 0.95), rgba(31, 41, 55, 0.95));
+          background: var(--surface-slab);
           border-radius: 20px;
           padding: 1.5rem;
           margin-bottom: 1rem;
-          border: 1px solid rgba(75, 85, 99, 0.3);
+          border: 1px solid var(--line-hairline);
         }
 
         .portfolio-value-section {
@@ -489,29 +489,28 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           display: block;
           font-size: 0.75rem;
           font-weight: 500;
-          color: #9ca3af;
+          color: var(--text-muted);
           text-transform: uppercase;
           letter-spacing: 0.1em;
           margin-bottom: 0.5rem;
         }
 
         .portfolio-amount {
+          font-family: var(--font-mono);
           font-size: 2.25rem;
-          font-weight: 700;
-          background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
+          font-weight: 500;
+          letter-spacing: -0.02em;
+          color: var(--text-primary);
           line-height: 1.2;
         }
 
         /* Wallet Address Card - Compact */
         .wallet-address-card {
-          background: rgba(17, 24, 39, 0.8);
+          background: var(--surface-slab);
           border-radius: 12px;
           padding: 0.875rem 1rem;
           margin-bottom: 1.25rem;
-          border: 1px solid rgba(75, 85, 99, 0.3);
+          border: 1px solid var(--line-hairline);
         }
 
         .address-row {
@@ -553,7 +552,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
         .address-label {
           font-size: 0.7rem;
           font-weight: 500;
-          color: #6b7280;
+          color: var(--text-faint);
           text-transform: uppercase;
           letter-spacing: 0.05em;
         }
@@ -561,7 +560,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
         .address-value {
           font-family: 'SF Mono', 'Menlo', monospace;
           font-size: 0.875rem;
-          color: #06b6d4;
+          color: var(--eth-blue);
           font-weight: 500;
         }
 
@@ -578,18 +577,18 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           width: 36px;
           height: 36px;
           border-radius: 8px;
-          background: rgba(55, 65, 81, 0.5);
-          border: 1px solid rgba(75, 85, 99, 0.4);
-          color: #9ca3af;
+          background: var(--surface-ridge);
+          border: 1px solid var(--surface-ridge);
+          color: var(--text-muted);
           cursor: pointer;
           transition: all 0.2s ease;
           text-decoration: none;
         }
 
         .action-icon-btn:hover {
-          background: rgba(75, 85, 99, 0.6);
-          color: #e5e7eb;
-          border-color: rgba(107, 114, 128, 0.6);
+          background: var(--surface-ridge);
+          color: var(--text-secondary);
+          border-color: var(--line-strong);
         }
 
         .action-icon-btn svg {
@@ -604,7 +603,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           gap: 0.75rem;
           margin-top: 0.875rem;
           padding-top: 0.875rem;
-          border-top: 1px solid rgba(75, 85, 99, 0.3);
+          border-top: 1px solid var(--line-hairline);
         }
 
         .login-info-icon {
@@ -613,9 +612,9 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           justify-content: center;
           width: 32px;
           height: 32px;
-          background: rgba(6, 182, 212, 0.15);
+          background: rgb(var(--eth-blue-rgb) / 0.15);
           border-radius: 8px;
-          color: #06b6d4;
+          color: var(--eth-blue);
           flex-shrink: 0;
         }
 
@@ -633,14 +632,14 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
         .login-info-label {
           font-size: 0.6875rem;
           font-weight: 500;
-          color: #6b7280;
+          color: var(--text-faint);
           text-transform: uppercase;
           letter-spacing: 0.05em;
         }
 
         .login-info-value {
           font-size: 0.8125rem;
-          color: #e5e7eb;
+          color: var(--text-secondary);
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -660,7 +659,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
 
         .balance-header h4 {
           margin: 0;
-          color: #9ca3af;
+          color: var(--text-muted);
           font-size: 0.75rem;
           font-weight: 600;
           text-transform: uppercase;
@@ -670,7 +669,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
         .loading-balances {
           padding: 2rem;
           text-align: center;
-          color: #9ca3af;
+          color: var(--text-muted);
         }
 
         .token-list {
@@ -684,9 +683,9 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           justify-content: space-between;
           align-items: center;
           padding: 0.875rem 1rem;
-          background: rgba(17, 24, 39, 0.6);
+          background: var(--surface-slab);
           border-radius: 12px;
-          border: 1px solid rgba(75, 85, 99, 0.25);
+          border: 1px solid var(--line-hairline);
           transition: all 0.15s ease;
         }
 
@@ -712,12 +711,12 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
         .token-name {
           font-weight: 500;
           font-size: 0.9375rem;
-          color: #e5e7eb;
+          color: var(--text-secondary);
         }
 
         .token-symbol {
           font-size: 0.75rem;
-          color: #6b7280;
+          color: var(--text-faint);
         }
 
         .token-balance {
@@ -730,35 +729,34 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
         .balance-amount {
           font-weight: 600;
           font-size: 0.9375rem;
-          color: #e5e7eb;
+          color: var(--text-secondary);
         }
 
         .balance-usd {
           font-size: 0.75rem;
-          color: #6b7280;
+          color: var(--text-faint);
         }
         
         .transaction-receipt {
           margin: 1.5rem 0;
-          background-color: #f1fbf6;
+          background-color: var(--surface-inset);
           border-radius: 12px;
-          border: 1px solid #c5e8d1;
+          border: 1px solid var(--line-hairline);
           overflow: hidden;
-          box-shadow: 0 1px 3px var(--card-shadow);
         }
         
         .receipt-header {
-          background-color: #e3f6ea;
+          background-color: var(--surface-slab);
           padding: 1rem 1.5rem;
           display: flex;
           align-items: center;
           gap: 0.75rem;
-          border-bottom: 1px solid #c5e8d1;
+          border-bottom: 1px solid var(--line-hairline);
         }
         
         .receipt-header h4 {
           margin: 0;
-          color: #2a9d5c;
+          color: var(--signal-confirmed);
           font-size: 1.1rem;
         }
         
@@ -768,8 +766,8 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           justify-content: center;
           width: 24px;
           height: 24px;
-          background-color: #2a9d5c;
-          color: white;
+          background-color: rgb(var(--signal-confirmed-rgb) / 0.15);
+          color: var(--signal-confirmed);
           border-radius: 50%;
           font-weight: bold;
         }
@@ -804,7 +802,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
         .explorer-button {
           display: inline-flex;
           align-items: center;
-          background-color: #2a9d5c;
+          background-color: var(--signal-confirmed);
           color: white;
           text-decoration: none;
           padding: 0.25rem 0.75rem;
@@ -814,7 +812,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
         }
         
         .explorer-button:hover {
-          background-color: #237a49;
+          background-color: var(--eth-blue-lift);
         }
         
         .receipt-info {
@@ -930,10 +928,10 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           display: flex;
           gap: 0;
           margin-bottom: 1.5rem;
-          background: rgba(17, 24, 39, 0.6);
+          background: var(--surface-slab);
           border-radius: 8px;
           padding: 4px;
-          border: 1px solid rgba(75, 85, 99, 0.3);
+          border: 1px solid var(--line-hairline);
         }
 
         .wallet-tab {
@@ -941,7 +939,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           padding: 0.75rem 1rem;
           font-size: 0.875rem;
           font-weight: 600;
-          color: #9ca3af;
+          color: var(--text-muted);
           background: transparent;
           border: none;
           border-radius: 6px;
@@ -950,14 +948,13 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
         }
 
         .wallet-tab:hover {
-          color: #e5e7eb;
-          background: rgba(75, 85, 99, 0.3);
+          color: var(--text-secondary);
+          background: var(--line-hairline);
         }
 
         .wallet-tab.active {
-          color: #06b6d4;
-          background: rgba(6, 182, 212, 0.15);
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+          color: var(--eth-blue);
+          background: rgb(var(--eth-blue-rgb) / 0.15);
         }
 
         .refresh-collectibles-btn {
@@ -966,18 +963,18 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           justify-content: center;
           padding: 0.5rem;
           margin-left: auto;
-          background: rgba(55, 65, 81, 0.5);
-          border: 1px solid rgba(75, 85, 99, 0.4);
+          background: var(--surface-ridge);
+          border: 1px solid var(--surface-ridge);
           border-radius: 6px;
-          color: #9ca3af;
+          color: var(--text-muted);
           cursor: pointer;
           transition: all 0.2s ease;
         }
 
         .refresh-collectibles-btn:hover:not(:disabled) {
-          background: rgba(75, 85, 99, 0.6);
-          color: #06b6d4;
-          border-color: rgba(6, 182, 212, 0.4);
+          background: var(--surface-ridge);
+          color: var(--eth-blue);
+          border-color: rgb(var(--eth-blue-rgb) / 0.4);
         }
 
         .refresh-collectibles-btn:disabled {
@@ -1013,25 +1010,25 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           justify-content: center;
           padding: 3rem 1.5rem;
           text-align: center;
-          background: rgba(17, 24, 39, 0.4);
+          background: var(--surface-slab);
           border-radius: 12px;
-          border: 1px dashed rgba(75, 85, 99, 0.5);
+          border: 1px dashed var(--surface-ridge);
         }
 
         .collectibles-empty .empty-icon {
-          color: #4b5563;
+          color: var(--surface-ridge);
           margin-bottom: 1rem;
         }
 
         .collectibles-empty h4 {
-          color: #e5e7eb;
+          color: var(--text-secondary);
           font-size: 1.125rem;
           font-weight: 600;
           margin: 0 0 0.5rem 0;
         }
 
         .collectibles-empty p {
-          color: #9ca3af;
+          color: var(--text-muted);
           font-size: 0.875rem;
           margin: 0 0 1.5rem 0;
         }
@@ -1042,20 +1039,20 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           justify-content: space-between;
           padding: 1rem;
           margin-bottom: 1rem;
-          background: rgba(6, 182, 212, 0.1);
-          border: 1px solid rgba(6, 182, 212, 0.3);
+          background: rgb(var(--eth-blue-rgb) / 0.1);
+          border: 1px solid rgb(var(--eth-blue-rgb) / 0.3);
           border-radius: 8px;
         }
 
         .summary-label {
           font-size: 0.875rem;
-          color: #9ca3af;
+          color: var(--text-muted);
           font-weight: 500;
         }
 
         .summary-value {
           font-size: 1.125rem;
-          color: #06b6d4;
+          color: var(--eth-blue);
           font-weight: 700;
         }
 
@@ -1084,10 +1081,10 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           align-items: center;
           gap: 0.5rem;
           padding: 0.75rem 1.5rem;
-          background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(139, 92, 246, 0.2));
-          border: 1px solid rgba(6, 182, 212, 0.4);
+          background: rgb(var(--eth-blue-rgb) / 0.2);
+          border: 1px solid rgb(var(--eth-blue-rgb) / 0.4);
           border-radius: 8px;
-          color: #06b6d4;
+          color: var(--eth-blue);
           font-size: 0.875rem;
           font-weight: 600;
           text-decoration: none;
@@ -1111,7 +1108,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           background: transparent;
           border: none;
           border-radius: 12px;
-          color: #9ca3af;
+          color: var(--text-muted);
           font-size: 0.6875rem;
           font-weight: 500;
           cursor: pointer;
@@ -1119,7 +1116,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
         }
 
         .quick-action-btn:hover:not(:disabled) {
-          color: #e5e7eb;
+          color: var(--text-secondary);
         }
 
         .quick-action-btn:active:not(:disabled) {
@@ -1148,49 +1145,49 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
         }
 
         .quick-action-btn.fund-btn .action-icon {
-          background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.25));
-          color: #4ade80;
+          background: rgb(var(--eth-blue-rgb) / 0.2);
+          color: var(--eth-blue-text);
         }
 
         .quick-action-btn.fund-btn:hover:not(:disabled) .action-icon {
-          background: linear-gradient(135deg, rgba(34, 197, 94, 0.3), rgba(16, 185, 129, 0.35));
+          background: rgb(var(--eth-blue-rgb) / 0.3);
         }
 
         .quick-action-btn.swap-btn .action-icon {
-          background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.25));
-          color: #fbbf24;
+          background: rgb(var(--eth-blue-rgb) / 0.2);
+          color: var(--eth-blue-text);
         }
 
         .quick-action-btn.swap-btn:hover:not(:disabled) .action-icon {
-          background: linear-gradient(135deg, rgba(251, 191, 36, 0.3), rgba(245, 158, 11, 0.35));
+          background: rgb(var(--eth-blue-rgb) / 0.3);
         }
 
         .quick-action-btn.send-btn .action-icon {
-          background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(59, 130, 246, 0.25));
-          color: #22d3ee;
+          background: rgb(var(--eth-blue-rgb) / 0.2);
+          color: var(--eth-blue-text);
         }
 
         .quick-action-btn.send-btn:hover:not(:disabled) .action-icon {
-          background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(59, 130, 246, 0.35));
+          background: rgb(var(--eth-blue-rgb) / 0.3);
         }
 
         .quick-action-btn.receive-btn .action-icon {
-          background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.25));
-          color: #a78bfa;
+          background: rgb(var(--eth-blue-rgb) / 0.2);
+          color: var(--eth-blue-text);
         }
 
         .quick-action-btn.receive-btn:hover:not(:disabled) .action-icon {
-          background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(168, 85, 247, 0.35));
+          background: rgb(var(--eth-blue-rgb) / 0.3);
         }
 
         .quick-action-btn.refresh-btn .action-icon {
-          background: rgba(55, 65, 81, 0.5);
-          color: #9ca3af;
+          background: var(--surface-ridge);
+          color: var(--text-muted);
         }
 
         .quick-action-btn.refresh-btn:hover:not(:disabled) .action-icon {
-          background: rgba(75, 85, 99, 0.6);
-          color: #e5e7eb;
+          background: var(--surface-ridge);
+          color: var(--text-secondary);
         }
 
         .quick-action-btn.refresh-btn svg.spinning {
@@ -1203,8 +1200,8 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
         }
 
         .browse-swag-link:hover {
-          background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(139, 92, 246, 0.3));
-          border-color: rgba(6, 182, 212, 0.6);
+          background: rgb(var(--eth-blue-rgb) / 0.3);
+          border-color: rgb(var(--eth-blue-rgb) / 0.6);
           transform: translateY(-1px);
         }
       `}</style>

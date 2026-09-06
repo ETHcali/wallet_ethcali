@@ -40,7 +40,7 @@ export default function DonationsPage() {
   return (
     // Matches every other page root: globals.css only goes dark under
     // prefers-color-scheme, so a light-mode visitor saw white-on-white.
-    <div className="min-h-screen bg-gray-950">
+    <div className="min-h-screen bg-surface-void">
       <Layout>
         <Head>
           <title>Donate · ETH Cali</title>
@@ -58,10 +58,10 @@ export default function DonationsPage() {
         <main>
           <header className="mb-6 flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <h1 className="text-xl font-bold text-white sm:text-2xl">
+              <h1 className="text-xl font-bold text-content-primary sm:text-2xl">
                 Donations
               </h1>
-              <p className="mt-1 text-sm text-slate-400">
+              <p className="mt-1 text-sm text-content-muted">
                 Direct support, settled onchain and visible to everyone.
               </p>
             </div>
@@ -79,10 +79,10 @@ export default function DonationsPage() {
                     setChainId(chain.chainId);
                     setWallToken(0);
                   }}
-                  className={`min-h-[44px] rounded-lg border px-4 text-sm font-semibold transition-colors ${
+                  className={`min-h-tap rounded-control border px-4 text-sm font-semibold transition-colors ${
                     chain.chainId === chainId
-                      ? 'border-cyan-500 bg-cyan-500/15 text-cyan-300'
-                      : 'border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500'
+                      ? 'border-eth-blue bg-eth-blue/15 text-eth-blue-text'
+                      : 'border-line-hairline bg-surface-inset text-content-secondary hover:border-line-strong'
                   }`}
                 >
                   {chain.name}
@@ -93,12 +93,12 @@ export default function DonationsPage() {
 
           {/* Not deployed anywhere yet — an honest empty state, not a broken page */}
           {!isDeployed && (
-            <div className="rounded-2xl border border-slate-700 bg-slate-800/50 p-8 text-center">
-              <div className="mb-3 text-4xl">🌱</div>
-              <h2 className="mb-2 text-lg font-bold text-white">
+            <div className="rounded-card border border-line-hairline bg-surface-inset/50 p-8 text-center">
+              
+              <h2 className="mb-2 text-lg font-bold text-content-primary">
                 Not live yet
               </h2>
-              <p className="mx-auto max-w-md text-sm text-slate-400">
+              <p className="mx-auto max-w-md text-sm text-content-muted">
                 The donation contract has not been deployed to{' '}
                 {NETWORK_NAMES[chainId as ChainId] ?? 'this network'} yet. Once
                 it is, campaigns will appear here automatically.
@@ -107,17 +107,17 @@ export default function DonationsPage() {
           )}
 
           {isDeployed && isLoading && (
-            <p className="py-12 text-center text-sm text-slate-500">
+            <p className="py-12 text-center text-sm text-content-faint">
               Loading campaigns…
             </p>
           )}
 
           {isDeployed && !isLoading && campaigns.length === 0 && (
-            <div className="rounded-2xl border border-slate-700 bg-slate-800/50 p-8 text-center">
-              <h2 className="mb-2 text-lg font-bold text-white">
+            <div className="rounded-card border border-line-hairline bg-surface-inset/50 p-8 text-center">
+              <h2 className="mb-2 text-lg font-bold text-content-primary">
                 No open campaigns
               </h2>
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-content-muted">
                 There are no active campaigns on{' '}
                 {NETWORK_NAMES[chainId as ChainId]} right now.
               </p>
@@ -145,10 +145,10 @@ export default function DonationsPage() {
                             key={t.address}
                             type="button"
                             onClick={() => setWallToken(i)}
-                            className={`min-h-[40px] rounded-lg border px-4 text-xs font-semibold transition-colors ${
+                            className={`min-h-[40px] rounded-control border px-4 text-xs font-semibold transition-colors ${
                               i === wallToken
-                                ? 'border-cyan-500 bg-cyan-500/15 text-cyan-300'
-                                : 'border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-500'
+                                ? 'border-eth-blue bg-eth-blue/15 text-eth-blue-text'
+                                : 'border-line-hairline bg-surface-inset text-content-muted hover:border-line-strong'
                             }`}
                           >
                             {t.symbol}
@@ -178,8 +178,8 @@ export default function DonationsPage() {
                 <BankTransferPanel campaignId={featuredRowId ?? null} />
 
                 {vault && (
-                  <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-4 text-xs text-slate-400">
-                    <h3 className="mb-2 text-sm font-semibold text-slate-300">
+                  <div className="rounded-card border border-line-hairline bg-surface-inset/50 p-4 text-xs text-content-muted">
+                    <h3 className="mb-2 text-sm font-semibold text-content-secondary">
                       How this works
                     </h3>
                     <ul className="space-y-1.5">

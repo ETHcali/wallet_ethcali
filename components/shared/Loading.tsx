@@ -6,79 +6,43 @@ interface LoadingProps {
   fullScreen?: boolean;
 }
 
-const Loading: React.FC<LoadingProps> = ({ 
-  size = 'medium', 
-  text = 'Loading...', 
-  fullScreen = false 
+const SPINNER_PX = { small: 20, medium: 28, large: 40 } as const;
+
+/**
+ * The brand spinner: a 2px ring in --eth-blue with a transparent top,
+ * 0.9s linear. Full-screen paints --surface-void itself so a page never
+ * flashes before the body background lands; dvh keeps it under the iOS bar.
+ */
+const Loading: React.FC<LoadingProps> = ({
+  size = 'medium',
+  text = 'Loading…',
+  fullScreen = false,
 }) => {
-  // Define spinner sizes
-  const spinnerSizes = {
-    small: 20,
-    medium: 30,
-    large: 40
-  };
-  
-  const spinnerSize = spinnerSizes[size];
-  
+  const px = SPINNER_PX[size];
+
   return (
-    <div className={`loading-container ${fullScreen ? 'fullscreen' : ''}`}>
-      <div 
-        className="loading-spinner"
-        style={{ 
-          width: `${spinnerSize}px`, 
-          height: `${spinnerSize}px` 
-        }}
+    <div
+      className={`flex flex-col items-center justify-center p-4 ${
+        fullScreen ? 'fixed inset-0 z-[1000] h-[100dvh] w-full bg-surface-void' : ''
+      }`}
+      role="status"
+      aria-live="polite"
+    >
+      <div
+        className="mb-4 animate-[spin_0.9s_linear_infinite] rounded-full border-2 border-eth-blue border-t-transparent"
+        style={{ width: px, height: px }}
       />
-      {text && <p className="loading-text">{text}</p>}
-      
-      <style jsx>{`
-        .loading-container {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: 1rem;
-        }
-        
-        /* The app is dark-only, but --bg-primary is #ffffff unless the OS asks
-           for dark. A light-mode visitor got a full-screen white flash before
-           every page settled. Painted explicitly to match the page ground
-           (bg-gray-950), and dvh so the overlay does not run under the iOS
-           address bar. */
-        .fullscreen {
-          height: 100vh;
-          height: 100dvh;
-          width: 100%;
-          position: fixed;
-          top: 0;
-          left: 0;
-          background-color: #030712;
-          z-index: 1000;
-        }
-        
-        .loading-spinner {
-          border: 4px solid var(--card-border);
-          border-left: 4px solid var(--primary-color);
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
-          margin-bottom: 1rem;
-        }
-        
-        /* Same reason as .fullscreen: --text-secondary is #666666 in light
-           mode, which is near-invisible on the dark ground. */
-        .loading-text {
-          color: #94a3b8;
-          font-size: ${size === 'small' ? '0.85rem' : size === 'large' ? '1.2rem' : '1rem'};
-          margin: 0;
-        }
-        
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
+      {text && (
+        <p
+          className={`m-0 text-content-muted ${
+            size === 'small' ? 'text-sm' : size === 'large' ? 'text-lg' : 'text-base'
+          }`}
+        >
+          {text}
+        </p>
+      )}
     </div>
   );
 };
 
-export default Loading; 
+export default Loading;

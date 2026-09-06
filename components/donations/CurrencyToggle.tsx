@@ -18,7 +18,7 @@ const CurrencyToggle: React.FC = () => {
 
   return (
     <div
-      className="inline-flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-800/60 p-1"
+      className="inline-flex items-center gap-1 rounded-control border border-line-hairline bg-surface-inset/60 p-1"
       role="group"
       aria-label="Display currency"
     >
@@ -31,10 +31,10 @@ const CurrencyToggle: React.FC = () => {
             onClick={() => setCurrency(option.value)}
             title={option.title}
             aria-pressed={active}
-            className={`min-h-[36px] rounded-md px-3 text-xs font-semibold transition-colors sm:min-h-0 sm:py-1 ${
+            className={`min-h-[36px] rounded-chip px-3 text-xs font-semibold transition-colors sm:min-h-0 sm:py-1 ${
               active
-                ? 'bg-cyan-500 text-slate-900'
-                : 'text-slate-400 hover:bg-slate-700 hover:text-white'
+                ? 'bg-eth-blue text-on-brand'
+                : 'text-content-muted hover:bg-surface-ridge hover:text-content-primary'
             }`}
           >
             {option.label}
@@ -42,7 +42,7 @@ const CurrencyToggle: React.FC = () => {
         );
       })}
       {isLoading && (
-        <span className="px-2 text-[10px] text-slate-500" aria-live="polite">
+        <span className="px-2 text-[10px] text-content-faint" aria-live="polite">
           rates…
         </span>
       )}

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { CloseIcon } from '../shared/icons';
 import Link from 'next/link';
 import { useWallets } from '@privy-io/react-auth';
 import Navigation from '../Navigation';
@@ -11,7 +12,8 @@ export type AdminSection =
   | 'faucet'
   | 'swag'
   | 'artwork'
-  | 'identity';
+  | 'identity'
+  | 'content';
 
 interface AdminShellProps {
   /** Which sidebar entry is current. */
@@ -33,12 +35,13 @@ interface SectionDef {
 }
 
 const SECTIONS: SectionDef[] = [
-  { id: 'overview', href: '/admin', label: 'Overview', accent: 'text-cyan-400' },
-  { id: 'donations', href: '/donations/admin', label: 'Donations', accent: 'text-green-400' },
-  { id: 'faucet', href: '/faucet/admin', label: 'Faucet', accent: 'text-orange-400' },
-  { id: 'swag', href: '/swag/admin', label: 'Swag', accent: 'text-pink-400' },
-  { id: 'artwork', href: '/admin/artwork', label: 'Artwork', accent: 'text-fuchsia-400' },
-  { id: 'identity', href: '/sybil/admin', label: 'Identity', accent: 'text-purple-400' },
+  { id: 'overview', href: '/admin', label: 'Overview', accent: 'text-eth-blue-text' },
+  { id: 'donations', href: '/donations/admin', label: 'Donations', accent: 'text-eth-blue-text' },
+  { id: 'faucet', href: '/faucet/admin', label: 'Faucet', accent: 'text-eth-blue-text' },
+  { id: 'swag', href: '/swag/admin', label: 'Swag', accent: 'text-eth-blue-text' },
+  { id: 'artwork', href: '/admin/artwork', label: 'Artwork', accent: 'text-eth-blue-text' },
+  { id: 'identity', href: '/sybil/admin', label: 'Identity', accent: 'text-eth-blue-text' },
+  { id: 'content', href: '/admin/content', label: 'Site content', accent: 'text-eth-blue-text' },
 ];
 
 function truncate(address?: string): string {
@@ -79,6 +82,9 @@ const AdminShell: React.FC<AdminShellProps> = ({
     // an admin area can prepare artwork; the API still verifies ADMIN_ROLE.
     artwork: true,
     identity: isZKPassportOwner,
+    // Site content is editorial, not an on-chain role, so the menu does not
+    // gate it. The API still checks ADMIN_ROLE before it writes anything.
+    content: true,
   };
 
   // The current section stays listed even if the role read is still resolving,
@@ -95,15 +101,15 @@ const AdminShell: React.FC<AdminShellProps> = ({
             href={section.href}
             onClick={() => setNavOpen(false)}
             aria-current={current ? 'page' : undefined}
-            className={`flex min-h-[44px] items-center gap-2 rounded-lg px-3 text-sm font-semibold transition-colors ${
+            className={`flex min-h-tap items-center gap-2 rounded-control px-3 text-sm font-semibold transition-colors ${
               current
-                ? `bg-slate-800 ${section.accent}`
-                : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
+                ? `bg-surface-inset ${section.accent}`
+                : 'text-content-muted hover:bg-surface-inset/60 hover:text-content-primary'
             }`}
           >
             <span
               className={`h-1.5 w-1.5 rounded-full ${
-                current ? 'bg-current' : 'bg-slate-700'
+                current ? 'bg-current' : 'bg-surface-ridge'
               }`}
               aria-hidden
             />
@@ -115,12 +121,12 @@ const AdminShell: React.FC<AdminShellProps> = ({
   );
 
   const sidebarFooter = (
-    <div className="mt-6 border-t border-slate-800 pt-4">
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-600">
+    <div className="mt-6 border-t border-line-hairline pt-4">
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-content-faint">
         Signed in as
       </p>
-      <p className="mt-1 font-mono text-xs text-slate-400">{truncate(address)}</p>
-      <p className="mt-2 text-[10px] leading-relaxed text-slate-600">
+      <p className="mt-1 font-mono text-xs text-content-muted">{truncate(address)}</p>
+      <p className="mt-2 text-[10px] leading-relaxed text-content-faint">
         Roles are read from the contracts. The chain rejects a call your address
         cannot make, whatever this menu shows.
       </p>
@@ -131,7 +137,7 @@ const AdminShell: React.FC<AdminShellProps> = ({
     // The dark ground has to live here. globals.css only paints the body dark
     // under prefers-color-scheme: dark, so without this the app renders white
     // and every white heading disappears. Every other page root does the same.
-    <div className="min-h-screen bg-gray-950">
+    <div className="min-h-screen bg-surface-void">
       <Navigation currentChainId={chainId} />
 
       <div className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-6 lg:py-8">
@@ -139,7 +145,7 @@ const AdminShell: React.FC<AdminShellProps> = ({
           {/* Desktop sidebar */}
           <aside className="hidden lg:block">
             <div className="sticky top-6">
-              <p className="mb-3 px-3 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
+              <p className="mb-3 px-3 text-[10px] font-semibold uppercase tracking-wide text-content-faint">
                 Admin
               </p>
               {nav}
@@ -154,7 +160,7 @@ const AdminShell: React.FC<AdminShellProps> = ({
               <button
                 type="button"
                 onClick={() => setNavOpen(true)}
-                className="-ml-1 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-slate-700 text-slate-300 transition-colors hover:border-slate-500 hover:text-white lg:hidden"
+                className="-ml-1 flex min-h-tap min-w-tap items-center justify-center rounded-control border border-line-hairline text-content-secondary transition-colors hover:border-line-strong hover:text-content-primary lg:hidden"
                 aria-label="Open admin sections"
                 aria-expanded={navOpen}
               >
@@ -168,8 +174,8 @@ const AdminShell: React.FC<AdminShellProps> = ({
                 </svg>
               </button>
               <div className="min-w-0">
-                <h1 className="text-xl font-bold text-white sm:text-2xl">{title}</h1>
-                {subtitle && <p className="mt-1 text-sm text-slate-400">{subtitle}</p>}
+                <h1 className="text-xl font-bold text-content-primary sm:text-2xl">{title}</h1>
+                {subtitle && <p className="mt-1 text-sm text-content-muted">{subtitle}</p>}
               </div>
             </header>
 
@@ -187,18 +193,18 @@ const AdminShell: React.FC<AdminShellProps> = ({
             onClick={() => setNavOpen(false)}
             aria-label="Close admin sections"
           />
-          <div className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col overflow-y-auto border-r border-slate-700 bg-slate-900 p-4">
+          <div className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col overflow-y-auto border-r border-line-hairline bg-surface-slab p-4">
             <div className="mb-4 flex items-center justify-between">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-600">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-content-faint">
                 Admin
               </p>
               <button
                 type="button"
                 onClick={() => setNavOpen(false)}
-                className="-m-2 p-2 text-slate-500 hover:text-white"
+                className="-m-2 p-2 text-content-faint hover:text-content-primary"
                 aria-label="Close"
               >
-                ✕
+                <CloseIcon />
               </button>
             </div>
             {nav}

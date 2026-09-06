@@ -1,632 +1,254 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useENSAvailability, useENSMint, useUserENS } from '../../hooks/ens';
-import { ENS_CONFIG, CHAIN_IDS, EXPLORER_URLS } from '../../config/constants';
+import { ENS_CONFIG, CHAIN_IDS } from '../../config/constants';
+import { getAddressUrl, getTxUrl } from '../../utils/explorer';
+import { CheckIcon } from '../shared/icons';
 
 interface ENSSectionProps {
   userAddress: string;
-  chainId: number;
 }
 
-const ENSSection: React.FC<ENSSectionProps> = ({ userAddress, chainId }) => {
-  const [label, setLabel] = useState('');
-  const { subdomain, fullName, isLoading: isLoadingUserENS, refetch: refetchUserENS } = useUserENS(userAddress);
-  const { isAvailable, isLoading: isCheckingAvailability } = useENSAvailability(label);
-  const { mintSubdomain, isPending, isSuccess, hash, error, reset } = useENSMint();
+const Spinner = ({ className = 'h-4 w-4' }: { className?: string }) => (
+  <span
+    className={`inline-block animate-[spin_0.9s_linear_infinite] rounded-full border-2 border-current border-t-transparent ${className}`}
+    aria-hidden
+  />
+);
 
-  const previewName = label ? `${label}.${ENS_CONFIG.parentName}` : `your-name.${ENS_CONFIG.parentName}`;
-  const canMint = label && isAvailable && !isPending;
-  const isWrongChain = chainId !== ENS_CONFIG.chainId;
+function truncate(address: string): string {
+  return `${address.slice(0, 6)}…${address.slice(-4)}`;
+}
 
-  // Refetch user ENS after successful mint
-  useEffect(() => {
-    if (isSuccess) {
-      const timeout = setTimeout(() => {
-        refetchUserENS();
-        reset();
-      }, 3000);
-      return () => clearTimeout(timeout);
-    }
-  }, [isSuccess, refetchUserENS, reset]);
+/** The registrar every claim goes through, printed as the spec asks: truncated + explorer link. */
+const ContractLine = () => (
+  <p className="mt-4 font-mono text-[11px] text-content-faint">
+    Registrar{' '}
+    <a
+      href={getAddressUrl(CHAIN_IDS.BASE, ENS_CONFIG.registrar)}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-eth-blue-text hover:underline"
+    >
+      {truncate(ENS_CONFIG.registrar)}
+    </a>{' '}
+    · Base
+  </p>
+);
 
-  const handleMint = async () => {
-    if (!canMint) return;
+/**
+ * Claim and show the user's `<label>.ethcali.eth` name.
+ *
+ * Registration happens on Base. The transaction carries its own chainId, so
+ * Privy switches an embedded wallet itself; there is no network picker here.
+ * The topbar owns chain switching for everything else.
+ */
+const ENSSection: React.FC<ENSSectionProps> = ({ userAddress }) => {
+  const owner = userAddress as `0x${string}`;
+  const [input, setInput] = useState('');
+  const [copied, setCopied] = useState(false);
+  const { register, phase, hash, error, reset } = useENSMint();
+  const availability = useENSAvailability(input);
+
+  // Once a claim confirms we know the label; the name query verifies it against
+  // the registry before it is displayed, so a stale index cannot hide it.
+  const justClaimed = phase === 'confirmed' ? availability.label : null;
+  const { subdomain, fullName, node, isLoading } = useUserENS(userAddress, justClaimed);
+
+  const busy = phase === 'submitting' || phase === 'confirming';
+  const canClaim = availability.status === 'available' && !busy;
+
+  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Lowercase as they type; ENSIP-15 normalisation does the rest in the hook.
+    setInput(e.target.value.toLowerCase().replace(/\s+/g, ''));
+    if (phase === 'failed') reset();
+  };
+
+  const copyName = async () => {
+    if (!fullName) return;
     try {
-      await mintSubdomain(label, userAddress);
+      await navigator.clipboard.writeText(fullName);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Error is handled in hook state
+      // Clipboard can be unavailable; the name stays selectable.
     }
   };
 
-  const handleLabelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Only allow lowercase alphanumeric and hyphens
-    const value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
-    setLabel(value);
-  };
-
-  // If user already has an ENS subdomain, show the badge
-  if (subdomain && !isLoadingUserENS) {
+  /* ── Has a name: emphasis card, the only glow the brand allows ── */
+  if (subdomain && fullName && node) {
     return (
-      <div className="ens-section">
-        <div className="ens-badge-container">
-          <div className="ens-badge">
-            <div className="badge-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                <path d="M2 17l10 5 10-5" />
-                <path d="M2 12l10 5 10-5" />
-              </svg>
-            </div>
-            <div className="badge-content">
-              <span className="badge-label">Your ENS Name</span>
-              <span className="badge-name">{fullName}</span>
-            </div>
-            <div className="verified-badge">
-              <svg viewBox="0 0 24 24" fill="currentColor">
-                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-              </svg>
-            </div>
+      <div
+        className="rounded-card border border-line-brand bg-surface-slab p-5"
+        style={{ boxShadow: '0 0 32px rgb(var(--eth-blue-rgb) / 0.2)' }}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-content-faint">
+              Your ENS name
+            </p>
+            <p className="mt-1 break-all font-mono text-xl font-medium text-eth-blue-text">
+              {fullName}
+            </p>
           </div>
+          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-signal-confirmed/35 bg-signal-confirmed/10 px-3 py-1.5 text-xs font-semibold text-signal-confirmed">
+            <CheckIcon className="h-3.5 w-3.5" strokeWidth={2.2} />
+            Registered
+          </span>
         </div>
 
-        <style jsx>{`
-          .ens-section {
-            margin-bottom: 1rem;
-          }
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={copyName}
+            className="inline-flex min-h-[40px] items-center rounded-control border border-line-strong px-3 text-xs font-semibold text-content-primary transition-colors duration-base hover:border-line-brand hover:text-eth-blue-text"
+          >
+            {copied ? 'Copied' : 'Copy name'}
+          </button>
+          <a
+            href={`${getAddressUrl(CHAIN_IDS.BASE, ENS_CONFIG.registry)}?a=${BigInt(node).toString()}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-[40px] items-center rounded-control border border-line-strong px-3 text-xs font-semibold text-content-primary transition-colors duration-base hover:border-line-brand hover:text-eth-blue-text"
+          >
+            View on explorer ↗
+          </a>
+        </div>
 
-          .ens-badge-container {
-            background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(139, 92, 246, 0.1));
-            border: 1px solid rgba(6, 182, 212, 0.3);
-            border-radius: 12px;
-            padding: 1rem;
-          }
-
-          .ens-badge {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-          }
-
-          .badge-icon {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(139, 92, 246, 0.2));
-            border-radius: 10px;
-            color: #06b6d4;
-          }
-
-          .badge-icon svg {
-            width: 20px;
-            height: 20px;
-          }
-
-          .badge-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 0.125rem;
-          }
-
-          .badge-label {
-            font-size: 0.6875rem;
-            font-weight: 500;
-            color: #6b7280;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-          }
-
-          .badge-name {
-            font-size: 1rem;
-            font-weight: 600;
-            color: #06b6d4;
-            font-family: 'SF Mono', 'Menlo', monospace;
-          }
-
-          .verified-badge {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 24px;
-            height: 24px;
-            background: #10b981;
-            border-radius: 50%;
-            color: white;
-          }
-
-          .verified-badge svg {
-            width: 14px;
-            height: 14px;
-          }
-        `}</style>
+        <p className="mt-4 text-xs text-content-faint">
+          Registered on Base as an NFT you own. Wallets that resolve ethcali.eth names on Base
+          will show it; mainnet resolution switches on when ethcali.eth points at its L2 resolver.
+        </p>
+        <ContractLine />
       </div>
     );
   }
 
-  // Show loading state
-  if (isLoadingUserENS) {
+  /* ── Loading: a static block, no shimmer ── */
+  if (isLoading) {
     return (
-      <div className="ens-section">
-        <div className="ens-loading">
-          <div className="loading-spinner" />
-          <span>Checking ENS...</span>
-        </div>
-
-        <style jsx>{`
-          .ens-section {
-            margin-bottom: 1rem;
-          }
-
-          .ens-loading {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.75rem;
-            padding: 1rem;
-            background: rgba(17, 24, 39, 0.6);
-            border: 1px solid rgba(75, 85, 99, 0.3);
-            border-radius: 12px;
-            color: #9ca3af;
-            font-size: 0.875rem;
-          }
-
-          .loading-spinner {
-            width: 16px;
-            height: 16px;
-            border: 2px solid rgba(6, 182, 212, 0.3);
-            border-top-color: #06b6d4;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-          }
-
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
-        `}</style>
+      <div className="flex min-h-[96px] items-center justify-center gap-3 rounded-card border border-line-hairline bg-surface-slab text-sm text-content-muted">
+        <Spinner className="h-4 w-4 text-eth-blue" />
+        Checking your name…
       </div>
     );
   }
 
-  // Show mint form
-  return (
-    <div className="ens-section">
-      <div className="ens-mint-card">
-        {/* Header */}
-        <div className="mint-header">
-          <div className="header-left">
-            <div className="header-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                <path d="M2 17l10 5 10-5" />
-                <path d="M2 12l10 5 10-5" />
-              </svg>
-            </div>
-            <div className="header-text">
-              <h4>Claim Your ENS Name</h4>
-              <span className="header-subtitle">Free subdomain on Base</span>
-            </div>
-          </div>
-          <span className="gas-badge">GAS SPONSORED</span>
+  /* ── Confirmed: status panel, then the card above takes over on refetch ── */
+  if (phase === 'confirmed' && hash) {
+    return (
+      <div className="rounded-card border border-signal-confirmed/35 bg-surface-slab p-5">
+        <div className="flex h-[52px] w-[52px] items-center justify-center rounded-full bg-signal-confirmed/10 text-signal-confirmed">
+          <CheckIcon className="h-6 w-6" strokeWidth={2.2} />
         </div>
-
-        {/* Wrong Chain Warning */}
-        {isWrongChain && (
-          <div className="chain-warning">
-            <svg viewBox="0 0 24 24" fill="currentColor" className="warning-icon">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
-            </svg>
-            <span>Switch to Base network to mint</span>
-          </div>
-        )}
-
-        {/* Input */}
-        <div className="input-section">
-          <label className="input-label">Choose your subdomain</label>
-          <div className="input-wrapper">
-            <input
-              type="text"
-              placeholder="yourname"
-              value={label}
-              onChange={handleLabelChange}
-              className="subdomain-input"
-              disabled={isWrongChain || isPending}
-              maxLength={32}
-            />
-            <span className="input-suffix">.{ENS_CONFIG.parentName}</span>
-          </div>
-          <p className="preview-text">Preview: {previewName}</p>
-        </div>
-
-        {/* Availability Status */}
-        {label && !isWrongChain && (
-          <div className="availability-status">
-            {isCheckingAvailability ? (
-              <span className="status checking">
-                <div className="status-spinner" />
-                Checking availability...
-              </span>
-            ) : isAvailable ? (
-              <span className="status available">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                </svg>
-                Available
-              </span>
-            ) : isAvailable === false ? (
-              <span className="status taken">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-                </svg>
-                Already taken
-              </span>
-            ) : null}
-          </div>
-        )}
-
-        {/* Mint Button */}
-        <button
-          onClick={handleMint}
-          disabled={!canMint || isWrongChain}
-          className={`mint-button ${canMint && !isWrongChain ? 'enabled' : 'disabled'}`}
+        <h3 className="mt-4 text-[22px] font-bold text-content-primary">Your name is ready.</h3>
+        <p className="mt-1 text-sm text-content-muted">
+          <span className="font-mono text-eth-blue-text">{availability.label}.{ENS_CONFIG.parentName}</span>{' '}
+          is registered to this wallet on Base.
+        </p>
+        <a
+          href={getTxUrl(CHAIN_IDS.BASE, hash)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 inline-block font-mono text-xs text-eth-blue-text hover:underline"
         >
-          {isPending ? (
-            <>
-              <div className="button-spinner" />
-              Minting...
-            </>
-          ) : (
-            'Mint for Free'
-          )}
-        </button>
+          {truncate(hash)} ↗
+        </a>
+      </div>
+    );
+  }
 
-        {/* Success Message */}
-        {isSuccess && hash && (
-          <div className="success-message">
-            <svg viewBox="0 0 24 24" fill="currentColor" className="success-icon">
-              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-            </svg>
-            <div className="success-content">
-              <span className="success-title">Successfully minted!</span>
-              <a
-                href={`${EXPLORER_URLS[CHAIN_IDS.BASE]}/tx/${hash}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="tx-link"
-              >
-                View transaction
-              </a>
-            </div>
-          </div>
-        )}
+  /* ── Claim form ── */
+  const statusLine = (() => {
+    switch (availability.status) {
+      case 'checking':
+        return (
+          <span className="inline-flex items-center gap-2 text-content-muted">
+            <Spinner className="h-3 w-3" /> Checking…
+          </span>
+        );
+      case 'available':
+        return (
+          <span className="inline-flex items-center gap-1.5 text-signal-confirmed">
+            <CheckIcon className="h-3.5 w-3.5" strokeWidth={2.2} /> Available
+          </span>
+        );
+      case 'taken':
+        return <span className="text-content-muted">Already taken</span>;
+      case 'invalid':
+        return <span className="text-content-muted">{availability.reason}</span>;
+      case 'error':
+        return <span className="text-signal-reverted">{availability.reason}</span>;
+      default:
+        return null;
+    }
+  })();
 
-        {/* Error Message */}
-        {error && (
-          <div className="error-message">
-            <svg viewBox="0 0 24 24" fill="currentColor" className="error-icon">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
-            </svg>
-            <span>{error.message}</span>
-          </div>
-        )}
+  return (
+    <div className="rounded-card border border-line-hairline bg-surface-slab p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-xl font-bold text-content-primary">Claim your ethcali.eth name</h3>
+          <p className="mt-1 text-sm text-content-muted">
+            Free, on Base. One name per claim, yours to keep.
+          </p>
+        </div>
+        <span className="shrink-0 rounded-chip bg-eth-blue-wash px-2 py-1 font-mono text-[11px] uppercase tracking-[0.12em] text-eth-blue-text">
+          Gas sponsored
+        </span>
       </div>
 
-      <style jsx>{`
-        .ens-section {
-          margin-bottom: 1rem;
-        }
+      <label htmlFor="ens-label" className="mt-5 block font-mono text-[11px] uppercase tracking-[0.16em] text-content-faint">
+        Choose a name
+      </label>
+      <div
+        className="mt-2 flex min-h-[52px] items-center rounded-control border border-line-strong bg-surface-inset px-4 transition-colors duration-base focus-within:border-eth-blue focus-within:ring-[3px] focus-within:ring-eth-blue-ring"
+      >
+        <input
+          id="ens-label"
+          type="text"
+          inputMode="text"
+          autoComplete="off"
+          autoCapitalize="none"
+          spellCheck={false}
+          placeholder="yourname"
+          value={input}
+          onChange={handleInput}
+          disabled={busy}
+          maxLength={32}
+          className="min-w-0 flex-1 border-0 bg-transparent p-0 font-mono text-[15px] text-content-primary outline-none placeholder:text-content-faint focus:ring-0 disabled:opacity-60"
+        />
+        <span className="shrink-0 font-mono text-[15px] text-content-faint">.{ENS_CONFIG.parentName}</span>
+      </div>
+      <div className="mt-2 min-h-[20px] text-xs">{statusLine}</div>
 
-        .ens-mint-card {
-          background: rgba(17, 24, 39, 0.8);
-          border: 1px solid rgba(75, 85, 99, 0.3);
-          border-radius: 16px;
-          padding: 1.25rem;
-        }
+      {phase === 'failed' && error && (
+        <div className="mt-3 rounded-control border border-signal-reverted/30 bg-signal-reverted/10 p-3 text-sm text-signal-reverted">
+          {error}
+        </div>
+      )}
 
-        .mint-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 1rem;
-        }
-
-        .header-left {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-        }
-
-        .header-icon {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 40px;
-          height: 40px;
-          background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(139, 92, 246, 0.2));
-          border-radius: 10px;
-          color: #06b6d4;
-        }
-
-        .header-icon svg {
-          width: 20px;
-          height: 20px;
-        }
-
-        .header-text h4 {
-          margin: 0;
-          font-size: 0.9375rem;
-          font-weight: 600;
-          color: #e5e7eb;
-        }
-
-        .header-subtitle {
-          font-size: 0.75rem;
-          color: #6b7280;
-        }
-
-        .gas-badge {
-          font-size: 0.625rem;
-          font-weight: 600;
-          color: #10b981;
-          background: rgba(16, 185, 129, 0.1);
-          border: 1px solid rgba(16, 185, 129, 0.3);
-          padding: 0.25rem 0.5rem;
-          border-radius: 4px;
-          letter-spacing: 0.05em;
-        }
-
-        .chain-warning {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.75rem;
-          background: rgba(245, 158, 11, 0.1);
-          border: 1px solid rgba(245, 158, 11, 0.3);
-          border-radius: 8px;
-          margin-bottom: 1rem;
-          color: #f59e0b;
-          font-size: 0.8125rem;
-        }
-
-        .warning-icon {
-          width: 18px;
-          height: 18px;
-          flex-shrink: 0;
-        }
-
-        .input-section {
-          margin-bottom: 1rem;
-        }
-
-        .input-label {
-          display: block;
-          font-size: 0.75rem;
-          font-weight: 500;
-          color: #6b7280;
-          margin-bottom: 0.5rem;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-        }
-
-        .input-wrapper {
-          display: flex;
-          align-items: center;
-          background: rgba(0, 0, 0, 0.3);
-          border: 1px solid rgba(75, 85, 99, 0.4);
-          border-radius: 8px;
-          overflow: hidden;
-          transition: border-color 0.2s;
-        }
-
-        .input-wrapper:focus-within {
-          border-color: rgba(6, 182, 212, 0.5);
-        }
-
-        .subdomain-input {
-          flex: 1;
-          background: transparent;
-          border: none;
-          padding: 0.75rem 1rem;
-          font-size: 0.9375rem;
-          color: #e5e7eb;
-          font-family: 'SF Mono', 'Menlo', monospace;
-          outline: none;
-        }
-
-        .subdomain-input::placeholder {
-          color: #4b5563;
-        }
-
-        .subdomain-input:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        .input-suffix {
-          padding: 0.75rem 1rem;
-          font-size: 0.875rem;
-          color: #6b7280;
-          background: rgba(55, 65, 81, 0.3);
-          border-left: 1px solid rgba(75, 85, 99, 0.4);
-          font-family: 'SF Mono', 'Menlo', monospace;
-        }
-
-        .preview-text {
-          margin: 0.5rem 0 0 0;
-          font-size: 0.75rem;
-          color: #4b5563;
-        }
-
-        .availability-status {
-          margin-bottom: 1rem;
-        }
-
-        .status {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.375rem;
-          font-size: 0.8125rem;
-          font-weight: 500;
-        }
-
-        .status svg {
-          width: 14px;
-          height: 14px;
-        }
-
-        .status.checking {
-          color: #9ca3af;
-        }
-
-        .status-spinner {
-          width: 12px;
-          height: 12px;
-          border: 2px solid rgba(156, 163, 175, 0.3);
-          border-top-color: #9ca3af;
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
-        }
-
-        .status.available {
-          color: #10b981;
-        }
-
-        .status.taken {
-          color: #ef4444;
-        }
-
-        .mint-button {
-          width: 100%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.5rem;
-          padding: 0.875rem 1.5rem;
-          font-size: 0.9375rem;
-          font-weight: 600;
-          border: none;
-          border-radius: 10px;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .mint-button.enabled {
-          background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(139, 92, 246, 0.3));
-          border: 1px solid rgba(6, 182, 212, 0.5);
-          color: #06b6d4;
-        }
-
-        .mint-button.enabled:hover {
-          background: linear-gradient(135deg, rgba(6, 182, 212, 0.4), rgba(139, 92, 246, 0.4));
-          transform: translateY(-1px);
-        }
-
-        .mint-button.disabled {
-          background: rgba(55, 65, 81, 0.5);
-          border: 1px solid rgba(75, 85, 99, 0.3);
-          color: #6b7280;
-          cursor: not-allowed;
-        }
-
-        .button-spinner {
-          width: 16px;
-          height: 16px;
-          border: 2px solid rgba(6, 182, 212, 0.3);
-          border-top-color: #06b6d4;
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
-        }
-
-        .success-message {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          margin-top: 1rem;
-          padding: 0.875rem;
-          background: rgba(16, 185, 129, 0.1);
-          border: 1px solid rgba(16, 185, 129, 0.3);
-          border-radius: 8px;
-        }
-
-        .success-icon {
-          width: 20px;
-          height: 20px;
-          color: #10b981;
-          flex-shrink: 0;
-        }
-
-        .success-content {
-          display: flex;
-          flex-direction: column;
-          gap: 0.25rem;
-        }
-
-        .success-title {
-          font-size: 0.875rem;
-          font-weight: 500;
-          color: #10b981;
-        }
-
-        .tx-link {
-          font-size: 0.75rem;
-          color: #06b6d4;
-          text-decoration: none;
-        }
-
-        .tx-link:hover {
-          text-decoration: underline;
-        }
-
-        .error-message {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          margin-top: 1rem;
-          padding: 0.75rem;
-          background: rgba(239, 68, 68, 0.1);
-          border: 1px solid rgba(239, 68, 68, 0.3);
-          border-radius: 8px;
-          color: #ef4444;
-          font-size: 0.8125rem;
-        }
-
-        .error-icon {
-          width: 18px;
-          height: 18px;
-          flex-shrink: 0;
-        }
-
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-
-        @media (max-width: 480px) {
-          .ens-mint-card {
-            padding: 1rem;
-          }
-
-          .mint-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 0.75rem;
-          }
-
-          .gas-badge {
-            align-self: flex-start;
-          }
-
-          .input-wrapper {
-            flex-direction: column;
-          }
-
-          .input-suffix {
-            width: 100%;
-            text-align: center;
-            border-left: none;
-            border-top: 1px solid rgba(75, 85, 99, 0.4);
-          }
-        }
-      `}</style>
+      <button
+        type="button"
+        onClick={() => canClaim && register(availability.label, owner)}
+        disabled={!canClaim}
+        className="mt-4 inline-flex min-h-tap w-full items-center justify-center gap-2 rounded-control bg-eth-blue px-6 text-[15px] font-semibold text-on-brand transition-colors duration-base hover:bg-eth-blue-lift active:bg-eth-blue-deep disabled:cursor-not-allowed disabled:bg-surface-ridge disabled:text-content-faint"
+      >
+        {phase === 'submitting' && (
+          <>
+            <Spinner /> Confirm in your wallet…
+          </>
+        )}
+        {phase === 'confirming' && (
+          <>
+            <Spinner /> Registering…
+          </>
+        )}
+        {!busy && (phase === 'failed' ? 'Try again' : 'Claim name')}
+      </button>
+      <p className="mt-2 text-center font-mono text-xs text-content-faint">
+        Fee <span className="text-signal-confirmed">0.00 · sponsored</span>
+      </p>
+      <ContractLine />
     </div>
   );
 };
