@@ -182,10 +182,23 @@ function score(event, poster) {
   return overlap + (exact ? 1 : sameMonth ? 0.15 : 0);
 }
 
-/** Best-first one-to-one assignment. No poster is ever used twice. */
+/**
+ * Best-first one-to-one assignment. No poster is ever used twice.
+ *
+ * Filenames are used verbatim, never URL-encoded. They are URL-safe by
+ * construction now — YYYY-MM-DD-title.ext, lowercase, hyphens only. They used to
+ * be the artwork names, with spaces and '#', and encoding them here is exactly
+ * what made next/image double-encode and 400 on four events. If a filename ever
+ * looks like it needs encoding, rename the file instead.
+ */
 function assignPosters(events, manifest) {
   const posters = manifest.map((file) => {
-    const m = file.match(/^(\d{4})\s+(\d{1,2})\s+(\d{1,2})\s+(.*?)\.[a-z0-9]+$/i);
+    // Posters are named YYYY-MM-DD-title.ext. The old ' YYYY MM DD Title.png'
+    // form is still accepted so a folder that has not been renamed still matches
+    // rather than silently losing every date bonus in the scoring below.
+    const m =
+      file.match(/^(\d{4})-(\d{2})-(\d{2})-(.*?)\.[a-z0-9]+$/i) ??
+      file.match(/^(\d{4})\s+(\d{1,2})\s+(\d{1,2})\s+(.*?)\.[a-z0-9]+$/i);
     return {
       file,
       ymd: m ? `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}` : null,
@@ -210,7 +223,7 @@ function assignPosters(events, manifest) {
     if (takenEvent.has(row.event) || takenPoster.has(poster.file)) continue;
     takenEvent.add(row.event);
     takenPoster.add(poster.file);
-    row.event.poster_path = `/events/${encodeURIComponent(poster.file)}`;
+    row.event.poster_path = `/events/${poster.file}`;
   }
   return { assigned: takenPoster.size, posters: posters.length };
 }
@@ -440,14 +453,15 @@ for (const r of eventRows) {
   }
 }
 
-const manifest = JSON.parse(read('events/manifest.json'));
+// Assets moved under public/ when the site became a Next.js app.
+const manifest = JSON.parse(read('public/events/manifest.json'));
 const posterStats = assignPosters(events, manifest);
 
 // ── write ───────────────────────────────────────────────────────────────────
 
 const header = `-- ETH Cali site content seed — GENERATED, do not edit by hand.
 --
--- Source: ethcaliorg/databases/*.csv and ethcaliorg/events/manifest.json
+-- Source: ethcaliorg/databases/*.csv and ethcaliorg/public/events/manifest.json
 -- Regenerate: node scripts/build-content-seed.mjs
 -- Apply:      psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/seed/site_content_seed.sql
 --
