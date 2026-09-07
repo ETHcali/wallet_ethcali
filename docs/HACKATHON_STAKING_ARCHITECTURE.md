@@ -1,11 +1,25 @@
 # Hackathon Staking — Architecture & Goal
 
-Status: **specification, not implemented.** Written for the agent that builds this module.
+Status: **specification, not implemented, and not used for the event it was written for.**
 
-**Target event:** *Road to ShanHaiWoo Pop-up City* hackathon, **Cali, Sep 5–6, 2026**.
-Originally scheduled for Aug 15–16 and **rescheduled** to align with the **EAG Ethereum Builders Tour** stop in Cali. Co-hosted by **ETH Cali × ShanHaiWoo × Ethereum Applications Guild**. Tracks: Ethereum, Applied AI, Open Hardware, with EAG framing the stop around real-world Ethereum applications.
+> **The dates below are historical.** This spec was written on 9 August 2026 targeting
+> a hackathon on **Sep 5–6**. That date moved again: the event is the **Ethereum
+> Builders Tour: Cali on 19–20 September 2026**, and registration for it runs through
+> **Luma** (the seat) and **Devfolio** (the submission) — not through a stake contract.
+> None of the delivery timeline in §12 happened.
+>
+> The document is kept because the *mechanism* is still worth building for a future
+> edition, and because the reasoning about no-shows, refundability and Colombian
+> consent law does not expire. Read §1–§11 as a design; read every date as a record of
+> what was planned in August, not as a commitment.
+>
+> Anything that needs a live date should read it from `public.events` in Supabase,
+> which is now the source of truth for the event calendar, rather than from prose here.
 
-Any date, headcount or deadline inherited from the August planning documents is stale — treat Sep 5–6 as authoritative.
+**Original target event:** *Road to ShanHaiWoo Pop-up City* hackathon, Cali, Sep 5–6 2026 —
+itself a reschedule from Aug 15–16, to align with the **EAG Ethereum Builders Tour** stop in
+Cali. Co-hosted by **ETH Cali × ShanHaiWoo × Ethereum Applications Guild**. Tracks:
+Ethereum, Applied AI, Open Hardware.
 
 ---
 
@@ -263,11 +277,14 @@ Run `npm run typecheck` after every change — strict mode with `noUnusedLocals`
 
 ---
 
-## 9. Timeline
+## 9. Timeline — did not happen, kept as a record
 
-The event is **Sep 5–6, 2026** — 27 days out as of Aug 9. The reschedule from Aug 15–16 bought exactly the runway this module needs; it did not exist before.
+**None of this was built.** The schedule below was written on 9 August against a Sep 5–6
+event. Every milestone in it has passed unbuilt, and the event itself is now the
+**Ethereum Builders Tour: Cali, 19–20 September 2026**.
 
-Working backwards:
+<details>
+<summary>The August plan, for the record</summary>
 
 | By | What |
 |---|---|
@@ -275,9 +292,19 @@ Working backwards:
 | **Aug 20** | Contract written, tested, deployed to Base testnet; ABI + address committed |
 | **Aug 24** | Builder-facing page live on testnet — register, submit, claim all working end-to-end |
 | **Aug 27** | Mainnet deploy, **registration opens** |
-| Aug 27 → Sep 4 | Promotion window (the marketing copy is already written and waiting on a URL) |
+| Aug 27 → Sep 4 | Promotion window |
 | **Sep 2** | Suggested `withdrawDeadline` — 72h before, seat freed for waitlist |
 | **Sep 5–6** | Event: QR check-in, submissions, delivery marking |
 | Sep 8+ | Settlement: refunds claimable, forfeited stakes swept |
 
-If the contract slips past ~Aug 27, ship the read-only event page plus a non-staking registration path and add staking after. A page that collects registrations beats a perfect staking flow that lands on Sep 4.
+</details>
+
+The fallback in the original plan is what actually happened, and it was the right call:
+
+> If the contract slips, ship the event page plus a non-staking registration path and add
+> staking after. A page that collects registrations beats a perfect staking flow that lands
+> too late.
+
+Registration for 19–20 September runs on **Luma** for the seat and **Devfolio** for the
+submission, and the event page is live at `ethcali.org/builders-tour`. Whoever picks this
+spec up for a future edition should start from §7's open questions, not from this table.
