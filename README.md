@@ -274,7 +274,7 @@ eth-cali-wallet/
    ```
 
 ### Live Demo
-🌐 **[wallet.ethcali.org](https://wallet.ethcali.org)**
+🌐 **[app.ethcali.org](https://app.ethcali.org)**
 
 ## 🔐 Security Features
 
@@ -361,7 +361,7 @@ ISC License - see the [LICENSE](LICENSE) file for details.
 ## 🔗 Links
 
 - **GitHub**: [https://github.com/ETHcali/eth-cali-wallet](https://github.com/ETHcali/eth-cali-wallet)
-- **Live Demo**: [https://wallet.ethcali.org](https://wallet.ethcali.org)
+- **Live Demo**: [https://app.ethcali.org](https://app.ethcali.org)
 - **ETH CALI**: [Learn more about ETH CALI](https://ethcali.org)
 
 ## 💡 About ETH CALI

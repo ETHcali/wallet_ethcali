@@ -39,3 +39,4 @@
 .vscode/
 .qodo/ 
 .vercel
+.env*

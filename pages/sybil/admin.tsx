@@ -199,7 +199,7 @@ export default function IdentityAdminPage() {
                     <div className="flex gap-2">
                       <input
                         type="text"
-                        placeholder="e.g. wallet.ethcali.org"
+                        placeholder="e.g. app.ethcali.org"
                         value={settingsInput.domain}
                         onChange={(e) => setSettingsInput((s) => ({ ...s, domain: e.target.value }))}
                         className="flex-1 bg-black/40 border border-line-hairline rounded-chip px-3 py-2 text-[10px] font-mono text-content-secondary placeholder-content-faint focus:border-eth-blue/50 focus:outline-none"

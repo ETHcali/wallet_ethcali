@@ -25,7 +25,9 @@ function MyApp({ Component, pageProps }: AppProps) {
   // Define metadata constants
   const title = 'ETH CALI - Web3 Wallet';
   const description = 'Fully open-sourced Web3 wallet for the ETH CALI community.';
-  const siteUrl = 'https://wallet.ethcali.org';
+  // Canonical host. wallet.ethcali.org stays pointed here so old links and any
+  // shared OG cards keep resolving; app.ethcali.org is what gets published.
+  const siteUrl = 'https://app.ethcali.org';
   const imageUrl = `${siteUrl}/branding/Banner1200x400.png`;
 
   return (
