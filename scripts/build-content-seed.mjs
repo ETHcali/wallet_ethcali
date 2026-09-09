@@ -116,6 +116,31 @@ function urlOf(cell) {
   return s?.match(/https?:\/\/[^\s,]+/)?.[0] ?? null;
 }
 
+/**
+ * A public asset path, with the filename normalised.
+ *
+ * The CSV carries the original filenames, three of which have spaces
+ * ('team/juan jose bailon.png'). next/image percent-decodes the url parameter
+ * before fetching, so anything needing an escape is a bug waiting to happen —
+ * the same one that made four event posters 400. Directory structure is kept;
+ * only the filename is slugified.
+ */
+function assetPath(value) {
+  const s = clean(value);
+  if (!s) return null;
+  const parts = s.split('/');
+  const file = parts.pop() ?? '';
+  const dot = file.lastIndexOf('.');
+  const stem = dot > 0 ? file.slice(0, dot) : file;
+  const ext = dot > 0 ? file.slice(dot).toLowerCase() : '';
+  const safe = stem
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Za-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase();
+  return `/${[...parts, safe + ext].join('/')}`;
+}
+
 // ── slugs ───────────────────────────────────────────────────────────────────
 
 /**
@@ -378,7 +403,7 @@ const team = teamRows
     role_en: null,
     status: clean(r[2]),
     since: isoDate(r[3]),
-    image_path: clean(r[4]) ? `/${clean(r[4])}` : null,
+    image_path: assetPath(r[4]),
     linkedin_url: url(r[5]),
     twitter_url: url(r[6]),
     github_url: url(r[7]),
