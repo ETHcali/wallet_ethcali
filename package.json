@@ -29,8 +29,8 @@
     "autoprefixer": "10.4.21",
     "ethers": "6.16.0",
     "jose": "4.15.9",
-    "next": "16.1.6",
-    "postcss": "8.5.3",
+    "next": "^16.3.4",
+    "postcss": "8.5.28",
     "qrcode.react": "4.2.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
@@ -52,7 +52,13 @@
     "axios": "^1.7.9",
     "glob": "^11.0.0",
     "preact": "^10.25.0",
-    "brace-expansion": "^2.0.1"
+    "brace-expansion": "^2.0.1",
+    "form-data": "^4.0.6",
+    "sharp": "^0.35.4",
+    "decode-uri-component": "^0.5.0",
+    "uuid": "^11.1.1",
+    "@privy-io/js-sdk-core": "0.60.0",
+    "@privy-io/api-types": "0.4.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
