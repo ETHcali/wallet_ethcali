@@ -18,7 +18,13 @@ export default function FaucetPage() {
 
   useEffect(() => {
     if (ready && !authenticated) {
-      router.push('/');
+      // With the destination attached. Bouncing to a bare '/' threw away where
+      // the visitor was going, so a link to this page from ethcali.org signed
+      // them in and landed them on the wallet instead.
+      //
+      // `replace`, not `push`: this route will bounce again the moment Back
+      // returns to it, which traps the Back button.
+      router.replace(`/?next=${encodeURIComponent(router.pathname)}`);
     }
   }, [ready, authenticated, router]);
 

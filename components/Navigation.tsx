@@ -74,12 +74,14 @@ const Navigation: React.FC<NavigationProps> = ({
   onChainChange
 }) => {
   const router = useRouter();
-  const { authenticated, logout } = usePrivy();
+  const { authenticated, login, logout } = usePrivy();
   const { wallets } = useWallets();
   const [displayChainId, setDisplayChainId] = useState(currentChainId);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSwitching, setIsSwitching] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [signingIn, setSigningIn] = useState(false);
+  const signInRelease = useRef<number>();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
 
@@ -159,6 +161,25 @@ const Navigation: React.FC<NavigationProps> = ({
   const closeMobileMenu = useCallback(() => {
     setIsMobileMenuOpen(false);
   }, []);
+
+  /**
+   * Sign in, with its own pending state — never a shared one.
+   *
+   * The release is a timer rather than only the two callbacks, and that is the
+   * point: dismissing the Privy modal without signing in fires neither
+   * `onComplete` nor `onError`, so a button released only by those would sit
+   * disabled forever after one closed modal. Same failure as an onchain button
+   * with no `finally`, and the same fix — something always releases it.
+   */
+  const startSignIn = useCallback(() => {
+    setSigningIn(true);
+    window.clearTimeout(signInRelease.current);
+    signInRelease.current = window.setTimeout(() => setSigningIn(false), 4000);
+    login();
+  }, [login]);
+
+  // Clear on unmount, so a pending release cannot fire against a gone component.
+  useEffect(() => () => window.clearTimeout(signInRelease.current), []);
 
   const isActive = (href: string) => router.pathname === href || router.pathname.startsWith(href + '/');
   const currentChain = SUPPORTED_CHAINS.find(c => c.id === displayChainId) || SUPPORTED_CHAINS[0];
@@ -294,7 +315,60 @@ const Navigation: React.FC<NavigationProps> = ({
     }
   };
 
-  if (!authenticated) return null;
+  // Signed out, this component used to render nothing at all.
+  //
+  // `/donations` and `/swag` mount it unconditionally and are readable without a
+  // session, so a visitor arriving on one from ethcali.org got a page with no
+  // header: no way to sign in, no way back, not even the ETH Cali mark. A
+  // stranded view rather than a page.
+  //
+  // Same bar as the signed-in one — same height, same hairline, same blur — so
+  // nothing shifts when a session appears. What it drops is everything that
+  // needs a wallet to mean anything: the chain switcher (which would read
+  // `userWallet` as undefined), the address chip and Sign out.
+  if (!authenticated) {
+    return (
+      <nav className={`sticky top-0 z-50 border-b border-line-hairline bg-surface-void/85 backdrop-blur-[14px] ${className}`}>
+        <div className="mx-auto max-w-page px-3 sm:px-4">
+          <div className="flex h-nav items-center justify-between gap-3">
+            <Link href="/" className="flex shrink-0 items-center gap-2" aria-label="ETH Cali">
+              <Image
+                src="/logotethcali.png"
+                alt="ETH Cali"
+                width={200}
+                height={96}
+                className="h-8 w-auto"
+                priority
+                unoptimized
+              />
+            </Link>
+
+            <div className="flex items-center gap-2">
+              {/* The way back. The apex 307s to the `www` host — only that one
+                  serves the page — so this is the spelling that does not cost a
+                  redirect. Hidden on the narrowest phones, where the sign-in
+                  button is the thing that has to fit. */}
+              <a
+                href="https://www.ethcali.org"
+                className="hidden min-h-[36px] items-center rounded-chip px-3 font-mono text-[11px] uppercase tracking-[0.12em] text-content-muted transition-colors duration-base hover:bg-surface-inset hover:text-content-primary sm:inline-flex"
+              >
+                ← ethcali.org
+              </a>
+
+              {/* The only primary action a signed-out visitor has. */}
+              <button
+                onClick={startSignIn}
+                disabled={signingIn}
+                className="inline-flex min-h-tap items-center rounded-control bg-eth-blue px-5 text-sm font-semibold text-on-brand transition-colors duration-base hover:bg-eth-blue-lift disabled:opacity-60"
+              >
+                {signingIn ? 'Opening…' : 'Sign in'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </nav>
+    );
+  }
 
   return (
     <nav className={`sticky top-0 z-50 border-b border-line-hairline bg-surface-void/85 backdrop-blur-[14px] ${className}`}>

@@ -3,6 +3,7 @@ import { usePrivy } from '@privy-io/react-auth';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
 import Loading from '../components/shared/Loading';
+import { safeNext, DEFAULT_NEXT } from '../lib/returnTo';
 import Navigation from '../components/Navigation';
 import {
   ArrowRightIcon,
@@ -60,6 +61,27 @@ const INFRA = [
 
 const NETWORKS = ['Base', 'Ethereum', 'Optimism', 'Unichain', 'Celo'];
 
+/**
+ * What the sign-in button says, per destination.
+ *
+ * A visitor sent here from ethcali.org's "Donate" link arrives at a page whose
+ * only button said "Open your wallet", which is not what they clicked and reads
+ * as the wrong page. The button should name the thing they asked for; the wallet
+ * is what they get either way, but that is not the errand they are on.
+ *
+ * Keyed by the routes `lib/returnTo.ts` allows. Any route without an entry falls
+ * back to the wallet wording, so adding one to the allowlist cannot break this.
+ */
+const DESTINATIONS: Record<string, { cta: string; opening: string }> = {
+  '/wallet': { cta: 'Open your wallet', opening: 'Opening your wallet…' },
+  '/faucet': { cta: 'Sign in to use the faucet', opening: 'Opening the faucet…' },
+  '/sybil': { cta: 'Sign in to verify your identity', opening: 'Opening identity…' },
+  '/swag': { cta: 'Sign in to shop', opening: 'Opening the store…' },
+  '/donations': { cta: 'Sign in to donate', opening: 'Opening donations…' },
+  '/profile': { cta: 'Sign in to your profile', opening: 'Opening your profile…' },
+  '/admin': { cta: 'Sign in to the admin area', opening: 'Opening admin…' },
+};
+
 const SOCIAL = [
   { href: 'https://twitter.com/ethcali_org', label: 'X', Icon: XIcon },
   { href: 'https://www.linkedin.com/company/eth-cali/', label: 'LinkedIn', Icon: LinkedInIcon },
@@ -91,13 +113,30 @@ export default function Home() {
   const { login, ready, authenticated } = usePrivy();
   const router = useRouter();
 
-  // Auto-redirect authenticated users to wallet.
+  // Where this visit was actually headed.
+  //
+  // `/wallet`, `/faucet` and `/sybil` send a signed-out visitor here, and
+  // ethcali.org links in through `?next=` as well. Without this the destination
+  // was lost at the door: you asked for the faucet and arrived at the wallet.
+  // `safeNext` returns null for anything not on its allowlist, so an untrusted
+  // value degrades to the wallet rather than redirecting off-site.
+  const next = safeNext(router.query.next) ?? DEFAULT_NEXT;
+  const destination = DESTINATIONS[next] ?? DESTINATIONS[DEFAULT_NEXT];
+
+  // Auto-redirect authenticated users to where they were going.
   // The Privy session token alone is enough — no need to wait for a wallet object.
+  //
+  // `replace`, not `push`: this page only ever bounces an authenticated visitor
+  // onward, so leaving it in history means Back lands on a page that immediately
+  // throws you forward again and you can never leave the app with the Back
+  // button. `router.isReady` because `query.next` is empty on the first render
+  // of a static page — without the guard every deep link redirects to the
+  // default before the parameter has arrived.
   React.useEffect(() => {
-    if (ready && authenticated) {
-      router.push('/wallet');
+    if (ready && authenticated && router.isReady) {
+      router.replace(next);
     }
-  }, [ready, authenticated, router]);
+  }, [ready, authenticated, router, next]);
 
   // Loading timeout state
   const [loadingTimeout, setLoadingTimeout] = React.useState(false);
@@ -135,7 +174,7 @@ export default function Home() {
     return (
       <div className="min-h-screen bg-surface-void">
         <Navigation />
-        <Loading fullScreen={true} text="Opening your wallet…" />
+        <Loading fullScreen={true} text={destination.opening} />
       </div>
     );
   }
@@ -178,7 +217,7 @@ export default function Home() {
               onClick={login}
               className="inline-flex min-h-[56px] items-center justify-center gap-2 rounded-control bg-eth-blue px-7 text-base font-semibold text-on-brand transition-colors duration-base hover:bg-eth-blue-lift active:bg-eth-blue-deep"
             >
-              Open your wallet
+              {destination.cta}
               <ArrowRightIcon className="h-5 w-5" />
             </button>
             <p className="font-mono text-xs text-content-faint">
@@ -254,7 +293,17 @@ export default function Home() {
                 className="mb-4 h-9 w-auto"
                 unoptimized
               />
-              <p className="mb-6 text-base text-content-muted">El Jardín Infinito del Pacífico Colombiano</p>
+              <p className="mb-4 text-base text-content-muted">El Jardín Infinito del Pacífico Colombiano</p>
+              {/* The way back to the community site. This page is where every
+                  link from ethcali.org lands and where every protected route
+                  bounces a signed-out visitor, and it had no route home — only
+                  social profiles. The `www` host, because the apex 307s. */}
+              <a
+                href="https://www.ethcali.org"
+                className="mb-6 inline-flex text-sm font-semibold text-eth-blue-text transition-colors duration-fast hover:text-content-primary"
+              >
+                ← ethcali.org
+              </a>
               <div className="flex flex-wrap gap-1">
                 {SOCIAL.map(({ href, label, Icon }) => (
                   <a
