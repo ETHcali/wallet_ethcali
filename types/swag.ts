@@ -1,3 +1,4 @@
+import type { SwagOrderView } from './swag-orders';
 /**
  * Swag store types.
  *
@@ -87,27 +88,12 @@ export interface SwagClaimVoucher {
   signature: string;
 }
 
-export interface SwagOrder {
-  id: number;
-  channel: SwagOrderChannel;
-  product_id: number;
-  variant_id: number | null;
-  quantity: number;
-  size: SwagSize | null;
-  buyer_wallet: string | null;
-  buyer_email: string | null;
-  shipping: SwagShipping | null;
-  status: SwagOrderStatus;
-  tx_hash: string | null;
-  shopify_order_id: string | null;
-  shopify_line_item_id: string | null;
-  /** bytes32 hex, the claim key. */
-  order_ref: string;
-  voucher: SwagClaimVoucher | null;
-  claim_tx_hash: string | null;
-  created_at: string;
-  updated_at: string;
-}
+/**
+ * What GET /api/swag/orders returns: the API's PII-free view, not the
+ * swag_orders row. Address, email and the signed voucher never reach the
+ * browser list; the claim page fetches its voucher per order on demand.
+ */
+export type SwagOrder = SwagOrderView;
 
 /** What POST /api/swag/orders takes after a confirmed on-chain buy. */
 export interface CreateSwagOrderInput {

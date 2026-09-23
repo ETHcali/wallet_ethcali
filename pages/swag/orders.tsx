@@ -34,10 +34,10 @@ const PRIMARY =
 function OrderRow({ order }: { order: SwagOrder }) {
   const locale = useSwagLocale();
   const { products } = useSwagCatalogue();
-  const product = products.find((p) => p.id === order.product_id) ?? null;
+  const product = products.find((p) => p.sku === order.product.sku) ?? null;
   const status = STATUS_LABEL[order.status] ?? STATUS_LABEL.paid;
   const image = product ? productImageUrl(product) : null;
-  const tokenId = product?.variant?.token_id ?? null;
+  const tokenId = order.tokenId;
 
   return (
     <li className="flex gap-3 rounded-card border border-line-hairline bg-surface-slab p-4">
@@ -47,7 +47,7 @@ function OrderRow({ order }: { order: SwagOrder }) {
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
           <p className="truncate font-semibold text-content-primary" title={product ? productAltName(product, locale) : undefined}>
-            {product ? productName(product, locale) : `#${order.product_id}`}
+            {product ? productName(product, locale) : locale === 'es' ? order.product.nameEs : order.product.nameEn}
           </p>
           <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold ${status.className}`}>
             {status[locale]}
@@ -57,26 +57,26 @@ function OrderRow({ order }: { order: SwagOrder }) {
           {CHANNEL_LABEL[order.channel][locale]}
           {order.size && ` · ${order.size}`}
           {order.quantity > 1 && ` · ×${order.quantity}`}
-          {tokenId !== null && ` · #${tokenId}`}
+          {` · #${tokenId}`}
         </p>
         <p className="mt-1 text-xs text-content-faint">
-          {new Date(order.created_at).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
+          {new Date(order.createdAt).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
             year: 'numeric',
             month: 'short',
             day: 'numeric',
           })}
         </p>
-        {order.tx_hash && (
+        {order.txHash && (
           <p className="mt-2 text-xs text-content-muted">
-            {locale === 'es' ? 'Compra' : 'Purchase'} <HashChip hash={order.tx_hash} />
+            {locale === 'es' ? 'Compra' : 'Purchase'} <HashChip hash={order.txHash} />
           </p>
         )}
-        {order.claim_tx_hash && (
+        {order.claimTxHash && (
           <p className="mt-1 text-xs text-content-muted">
-            {locale === 'es' ? 'Reclamo' : 'Claim'} <HashChip hash={order.claim_tx_hash} />
+            {locale === 'es' ? 'Reclamo' : 'Claim'} <HashChip hash={order.claimTxHash} />
           </p>
         )}
-        {order.channel !== 'onchain' && !order.claim_tx_hash && order.status !== 'cancelled' && (
+        {order.claimable && (
           <Link href="/swag/claim" className="mt-2 inline-block text-xs font-semibold text-eth-blue-text hover:underline">
             {locale === 'es' ? 'Reclamar el NFT' : 'Claim the NFT'}
           </Link>
