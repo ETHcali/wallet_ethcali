@@ -22,7 +22,7 @@ const SIZE_ORDER: SwagSize[] = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
 /** Photos live in the site's public/ folder; the row stores the path under it. */
 export function productImageUrl(product: SwagProduct): string | null {
-  return product.image_path ? `https://ethcali.org/${product.image_path.replace(/^\/+/, '')}` : null;
+  return product.image_path ? `https://www.ethcali.org/${product.image_path.replace(/^\/+/, '')}` : null;
 }
 
 /** The website's product page: the canonical URL and where the OG image is served from. */
