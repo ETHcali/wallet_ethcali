@@ -1,7 +1,9 @@
 /**
  * Shopify → swag_orders.
  *
- *   POST /api/shopify/webhook     topics: orders/paid, refunds/create
+ *   POST /api/shopify/webhook     topics: orders/paid, refunds/create,
+ *                                 orders/fulfilled, fulfillments/update
+ *                                 (fulfillments/create is handled if subscribed)
  *
  * Register it once in the Shopify admin (docs/SWAG_ORDERS.md has the steps).
  * There is no session here: the caller is Shopify, and the proof is the HMAC
@@ -19,25 +21,36 @@
  * orders/paid   one row per line item whose SKU is in the catalogue. Unknown
  *               SKUs are logged and skipped — the store may sell things that
  *               are not NFTs. Idempotent on (order, line item): a redelivered
- *               webhook finds its rows already there.
+ *               webhook finds its rows already there. An order this app
+ *               created itself — the Shopify mirror of a USDC purchase, tagged
+ *               usdc-onchain with gateway "USDC on Base" — is skipped: its row
+ *               already exists on the onchain channel.
  * refunds/create the matching rows go to cancelled. If a voucher had been
  *               issued and not yet redeemed, the row is flagged
  *               voucher_needs_cancel=true for an operator to burn the orderRef
  *               on chain with cancelOrder(); the ops key is not on this
  *               server, on purpose.
+ * orders/fulfilled, fulfillments/create, fulfillments/update
+ *               shipping happens in Shopify and flows back: every row that
+ *               carries the order's GID (card line items and USDC mirrors
+ *               alike) goes paid → shipped and takes the tracking number, URL
+ *               and carrier into shipping.tracking. Rows already shipped only
+ *               pick up new tracking; the status trigger owns the rest.
  */
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { getSupabaseAdmin } from '../../../lib/supabase';
 import {
   appendNote,
+  applyFulfilment,
   insertOrder,
   OrderError,
   resolveVariantBySku,
 } from '../../../lib/swag/orders';
+import { MIRROR_GATEWAY, MIRROR_TAG } from '../../../lib/swag/shopifyMirror';
 import { orderRefFor } from '../../../lib/swag/voucher';
 import { logger } from '../../../utils/logger';
-import { SWAG_SIZES, type SwagShipping, type SwagSize } from '../../../types/swag-orders';
+import { SWAG_SIZES, type SwagShipping, type SwagSize, type SwagTracking } from '../../../types/swag-orders';
 
 export const config = { api: { bodyParser: false } };
 
@@ -65,6 +78,25 @@ interface ShopifyLineItem {
   title?: string | null;
 }
 
+/**
+ * A fulfillment as Shopify serialises it, both nested in an order payload
+ * (orders/fulfilled) and on its own (fulfillments/create, fulfillments/update).
+ * Tracking comes singular and plural; the plural is authoritative when a
+ * fulfillment has several shipments.
+ */
+interface ShopifyFulfillment {
+  id: number | string;
+  order_id?: number | string;
+  /** pending | open | success | cancelled | error | failure */
+  status?: string | null;
+  tracking_company?: string | null;
+  tracking_number?: string | null;
+  tracking_numbers?: string[] | null;
+  tracking_url?: string | null;
+  tracking_urls?: string[] | null;
+  updated_at?: string | null;
+}
+
 interface ShopifyOrder {
   id: number | string;
   admin_graphql_api_id?: string;
@@ -73,9 +105,14 @@ interface ShopifyOrder {
   customer?: { email?: string | null } | null;
   phone?: string | null;
   note?: string | null;
+  /** Comma-separated in the REST payload, e.g. "usdc-onchain, swag-2026". */
+  tags?: string | null;
+  gateway?: string | null;
+  payment_gateway_names?: string[] | null;
   shipping_address?: ShopifyAddress | null;
   billing_address?: ShopifyAddress | null;
   line_items?: ShopifyLineItem[];
+  fulfillments?: ShopifyFulfillment[] | null;
 }
 
 interface ShopifyRefund {
@@ -146,6 +183,45 @@ function sizeFromTitle(title: string | null | undefined): SwagSize | null {
   return (SWAG_SIZES as readonly string[]).includes(t) ? (t as SwagSize) : null;
 }
 
+/**
+ * An order this app created as the mirror of a USDC purchase. Either signal
+ * is enough: the tag (what the mirror sets) or the gateway (what the SALE
+ * transaction records), because an operator can edit tags in the admin.
+ */
+function isOwnMirror(order: ShopifyOrder): boolean {
+  const tags = (order.tags ?? '')
+    .split(',')
+    .map((t) => t.trim().toLowerCase())
+    .filter(Boolean);
+  if (tags.includes(MIRROR_TAG)) return true;
+  const gateways = [order.gateway ?? '', ...(order.payment_gateway_names ?? [])].map((g) => g.trim().toLowerCase());
+  return gateways.includes(MIRROR_GATEWAY.toLowerCase());
+}
+
+/** One fulfillment's tracking, or null when it carries none. */
+function trackingOf(f: ShopifyFulfillment): SwagTracking | null {
+  const numbers = (f.tracking_numbers ?? []).filter(Boolean);
+  const urls = (f.tracking_urls ?? []).filter(Boolean);
+  const number = (numbers[0] ?? f.tracking_number ?? '').trim();
+  const url = (urls[0] ?? f.tracking_url ?? '').trim();
+  const company = (f.tracking_company ?? '').trim();
+  if (!number && !url && !company) return null;
+  return { number: number || null, url: url || null, company: company || null };
+}
+
+/**
+ * The tracking to record for an order with possibly several fulfillments:
+ * the newest live one that has a number wins; failing that, the newest live
+ * one at all. Cancelled or failed fulfillments never contribute.
+ */
+function bestTracking(fulfillments: ShopifyFulfillment[] | null | undefined): SwagTracking | null {
+  const live = (fulfillments ?? [])
+    .filter((f) => !['cancelled', 'error', 'failure'].includes((f.status ?? '').toLowerCase()))
+    .sort((a, b) => String(b.updated_at ?? '').localeCompare(String(a.updated_at ?? '')));
+  const withNumber = live.map(trackingOf).find((t) => t?.number);
+  return withNumber ?? live.map(trackingOf).find((t) => t !== null) ?? null;
+}
+
 // ── Handlers ────────────────────────────────────────────────────────────────
 
 async function onOrderPaid(order: ShopifyOrder) {
@@ -154,6 +230,13 @@ async function onOrderPaid(order: ShopifyOrder) {
   const email = buyerEmail(order);
   const shipping = toShipping(order);
   const result = { created: 0, existing: 0, skipped: 0 };
+
+  if (isOwnMirror(order)) {
+    // Our own mirror of a USDC purchase coming back to us. The onchain row
+    // already exists and already points at this order; nothing to record.
+    logger.info(`[shopify/webhook] ${gid} is a USDC mirror; skipped`);
+    return { ...result, skipped: order.line_items?.length ?? 0, mirror: true };
+  }
 
   if (!email) {
     // The row cannot exist without an email (it is the claim identity), and
@@ -263,6 +346,36 @@ async function onRefundCreated(refund: ShopifyRefund) {
   return result;
 }
 
+/** orders/fulfilled: the whole order, with its fulfillments nested. */
+async function onOrderFulfilled(order: ShopifyOrder) {
+  const db = getSupabaseAdmin();
+  const gid = orderGid(order);
+  const outcome = await applyFulfilment(db, gid, bestTracking(order.fulfillments));
+  if (outcome.unknown) logger.warn(`[shopify/webhook] ${gid} fulfilled, but no swag_orders row points at it`);
+  return outcome;
+}
+
+/**
+ * fulfillments/create and fulfillments/update: one fulfillment, with the
+ * order id beside it. An update that cancels or fails the fulfillment is not
+ * a shipment and is ignored; the operator sorts that out in Shopify.
+ */
+async function onFulfillment(f: ShopifyFulfillment) {
+  if (f.order_id === undefined || f.order_id === null) {
+    logger.warn(`[shopify/webhook] fulfillment ${f.id} carries no order_id; ignored`);
+    return { ignored: true };
+  }
+  const status = (f.status ?? '').toLowerCase();
+  if (['cancelled', 'error', 'failure'].includes(status)) {
+    return { ignored: true, status };
+  }
+  const db = getSupabaseAdmin();
+  const gid = `gid://shopify/Order/${f.order_id}`;
+  const outcome = await applyFulfilment(db, gid, trackingOf(f));
+  if (outcome.unknown) logger.warn(`[shopify/webhook] ${gid} fulfillment ${f.id}, but no swag_orders row points at it`);
+  return outcome;
+}
+
 // ── Route ───────────────────────────────────────────────────────────────────
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -313,6 +426,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
     if (topic === 'refunds/create') {
       const result = await onRefundCreated(payload as ShopifyRefund);
+      return res.status(200).json({ ok: true, topic, ...result });
+    }
+    if (topic === 'orders/fulfilled') {
+      const result = await onOrderFulfilled(payload as ShopifyOrder);
+      return res.status(200).json({ ok: true, topic, ...result });
+    }
+    if (topic === 'fulfillments/create' || topic === 'fulfillments/update') {
+      const result = await onFulfillment(payload as ShopifyFulfillment);
       return res.status(200).json({ ok: true, topic, ...result });
     }
     // Subscribed to something we do not handle. Acknowledge so Shopify does

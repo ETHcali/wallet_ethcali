@@ -11,11 +11,21 @@
  * store's Notifications signing secret); the route accepts either. Run
  * `create` only once the URL is live: Shopify retries a failing endpoint for
  * 48 hours and then drops the subscription.
+ *
+ * `create` is idempotent per topic — it skips a topic already subscribed at
+ * the URL — so re-run it after a deploy that adds a topic. A topic Shopify
+ * refuses (typically a missing scope: FULFILLMENTS_UPDATE needs
+ * read_fulfillments) is reported and the others still go through.
  */
 import { gql } from '../lib/shopify.mjs';
 
 const DEFAULT_URL = 'https://app.ethcali.org/api/shopify/webhook';
-const TOPICS = ['ORDERS_PAID', 'REFUNDS_CREATE'];
+const TOPICS = [
+  'ORDERS_PAID', // card sale → swag_orders row per line item
+  'REFUNDS_CREATE', // refund → row cancelled / voucher flagged
+  'ORDERS_FULFILLED', // shipped in Shopify → row shipped, tracking recorded
+  'FULFILLMENTS_UPDATE', // tracking added or changed after the fact
+];
 
 const [cmd, arg] = process.argv.slice(2);
 
@@ -38,24 +48,33 @@ async function list() {
 
 async function create(url) {
   const existing = await list();
+  const failed = [];
   for (const topic of TOPICS) {
     if (existing.some((r) => r.topic === topic && r.url === url)) {
       console.log(`${topic}: already subscribed at ${url}`);
       continue;
     }
-    const data = await gql(
-      `mutation ($topic: WebhookSubscriptionTopic!, $sub: WebhookSubscriptionInput!) {
-        webhookSubscriptionCreate(topic: $topic, webhookSubscription: $sub) {
-          webhookSubscription { id topic }
-          userErrors { field message }
-        }
-      }`,
-      { topic, sub: { callbackUrl: url, format: 'JSON' } }
-    );
-    const r = data.webhookSubscriptionCreate;
-    if (r.userErrors?.length) throw new Error(`${topic}: ${JSON.stringify(r.userErrors)}`);
-    console.log(`${topic}: created ${r.webhookSubscription.id}`);
+    try {
+      const data = await gql(
+        `mutation ($topic: WebhookSubscriptionTopic!, $sub: WebhookSubscriptionInput!) {
+          webhookSubscriptionCreate(topic: $topic, webhookSubscription: $sub) {
+            webhookSubscription { id topic }
+            userErrors { field message }
+          }
+        }`,
+        { topic, sub: { callbackUrl: url, format: 'JSON' } }
+      );
+      const r = data.webhookSubscriptionCreate;
+      if (r.userErrors?.length) throw new Error(JSON.stringify(r.userErrors));
+      console.log(`${topic}: created ${r.webhookSubscription.id}`);
+    } catch (e) {
+      // gql() already throws on userErrors; either way the other topics
+      // still deserve their subscription.
+      console.error(`${topic}: NOT created — ${e.message}`);
+      failed.push(topic);
+    }
   }
+  if (failed.length) throw new Error(`${failed.length} topic(s) not subscribed: ${failed.join(', ')}`);
 }
 
 async function remove(id) {

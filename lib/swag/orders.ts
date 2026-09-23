@@ -10,8 +10,11 @@
  * deliberate step.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { getSwagCollection, SWAG_CHAIN_ID } from './onchain';
+import { getSwagCollection, SWAG_CHAIN_ID, type PurchasedLog } from './onchain';
+import { createMirrorOrder, type MirrorPurchase } from './shopifyMirror';
+import { logger } from '../../utils/logger';
 import {
+  NOTE_MIRROR_FAILED,
   NOTE_VOUCHER_CANCELLED_TX,
   NOTE_VOUCHER_NEEDS_CANCEL,
   SWAG_SIZES,
@@ -19,12 +22,15 @@ import {
   type SwagAdminOrderView,
   type SwagAdminOrdersResponse,
   type SwagAdminShipping,
+  type SwagMirrorResult,
   type SwagOrderChannel,
   type SwagOrderRow,
   type SwagOrderStatus,
   type SwagOrderView,
   type SwagShipping,
   type SwagSize,
+  type SwagStoredShipping,
+  type SwagTracking,
 } from '../../types/swag-orders';
 
 export class OrderError extends Error {
@@ -216,19 +222,55 @@ export async function resolveVariantBySku(
   return variant ? { variant, size } : null;
 }
 
+/**
+ * The Shopify variant for (design, size): the line item a USDC order is
+ * mirrored as. An unsized design has exactly one row with size null.
+ */
+export async function resolveShopifyVariantId(
+  db: SupabaseClient,
+  productId: number,
+  size: SwagSize | null
+): Promise<string | null> {
+  let query = db.from('swag_shopify_variants').select('shopify_variant_id').eq('product_id', productId);
+  query = size === null ? query.is('size', null) : query.eq('size', size);
+  const { data, error } = await query.maybeSingle();
+  if (error) throw new OrderError(error.message, 500);
+  return (data?.shopify_variant_id as string | undefined) ?? null;
+}
+
 // ── Rows in and out ─────────────────────────────────────────────────────────
 
 const ORDER_SELECT =
   '*, product:swag_products!inner(sku, name_es, name_en, image_path), variant:swag_variants!inner(token_id)';
 
-type OrderJoined = SwagOrderRow & {
+export type OrderJoined = SwagOrderRow & {
   product: { sku: string; name_es: string; name_en: string; image_path: string | null };
   variant: { token_id: number };
 };
 
+/**
+ * shipping.tracking as stored → one shape. An operator's PATCH writes a bare
+ * string; the fulfilment webhook writes { number, url, company }. Empty
+ * either way is null.
+ */
+export function normaliseTracking(value: unknown): SwagTracking | null {
+  if (typeof value === 'string') {
+    const number = value.trim();
+    return number ? { number, url: null, company: null } : null;
+  }
+  if (value && typeof value === 'object') {
+    const v = value as Record<string, unknown>;
+    const pick = (k: string) => (typeof v[k] === 'string' && (v[k] as string).trim() ? (v[k] as string).trim() : null);
+    const tracking = { number: pick('number'), url: pick('url'), company: pick('company') };
+    return tracking.number || tracking.url || tracking.company ? tracking : null;
+  }
+  return null;
+}
+
 /** The row as the buyer may see it: no address, no email, no signature. */
 export function toOrderView(row: OrderJoined): SwagOrderView {
-  return {
+  const tracking = normaliseTracking((row.shipping as SwagStoredShipping).tracking);
+  const view: SwagOrderView = {
     id: row.id,
     channel: row.channel,
     status: row.status,
@@ -249,6 +291,8 @@ export function toOrderView(row: OrderJoined): SwagOrderView {
       imagePath: row.product.image_path,
     },
   };
+  if (tracking) view.tracking = tracking;
+  return view;
 }
 
 export async function getOrderById(db: SupabaseClient, id: number): Promise<OrderJoined | null> {
@@ -331,6 +375,14 @@ export function appendNote(existing: string | null, line: string): string {
   return existing.includes(line) ? existing : `${existing}\n${line}`;
 }
 
+/** Drop every notes line that starts with `prefix`; null when nothing is left. */
+export function removeNote(existing: string | null, prefix: string): string | null {
+  if (!existing) return null;
+  const kept = existing.split('\n').filter((line) => !line.startsWith(prefix));
+  const joined = kept.join('\n').trim();
+  return joined || null;
+}
+
 // ── Admin ───────────────────────────────────────────────────────────────────
 //
 // Everything below is reached only through requireSwagAdmin. It returns the
@@ -354,6 +406,12 @@ export function needsVoucherCancel(row: Pick<SwagOrderRow, 'notes' | 'claim_tx_h
 }
 
 export function toAdminOrderView(row: OrderJoined): SwagAdminOrderView {
+  const stored = (row.shipping ?? {}) as SwagStoredShipping;
+  const tracking = normaliseTracking(stored.tracking);
+  // The order page renders and edits `shipping.tracking` as a string, so the
+  // stored object is flattened to its number here and offered whole beside it.
+  const shipping: SwagAdminShipping = { ...stored, tracking: tracking?.number ?? undefined };
+  if (shipping.tracking === undefined) delete shipping.tracking;
   return {
     id: row.id,
     channel: row.channel,
@@ -363,7 +421,7 @@ export function toAdminOrderView(row: OrderJoined): SwagAdminOrderView {
     tokenId: row.variant.token_id,
     product: { sku: row.product.sku, nameEs: row.product.name_es, nameEn: row.product.name_en },
     buyer: { wallet: row.buyer_wallet, email: row.buyer_email },
-    shipping: (row.shipping ?? {}) as SwagAdminShipping,
+    shipping,
     txHash: row.tx_hash,
     claimTxHash: row.claim_tx_hash,
     orderRef: row.order_ref,
@@ -374,6 +432,8 @@ export function toAdminOrderView(row: OrderJoined): SwagAdminOrderView {
     notes: row.notes,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    trackingDetail: tracking,
+    mirrorFailed: Boolean(row.notes?.includes(NOTE_MIRROR_FAILED)),
   };
 }
 
@@ -553,4 +613,148 @@ export async function listVoucherCancelQueue(db: SupabaseClient): Promise<OrderJ
     .order('id', { ascending: false });
   if (error) throw new OrderError(error.message, 500);
   return ((data ?? []) as unknown as OrderJoined[]).filter(needsVoucherCancel);
+}
+
+// ── Shopify mirror (USDC orders) ────────────────────────────────────────────
+//
+// A USDC order is packed from the same Shopify queue as a card order, so
+// POST /api/swag/orders creates a Shopify order for it (lib/swag/shopifyMirror.ts)
+// and records the GID on the onchain row. The chain remains the receipt; the
+// mirror is where the parcel is managed.
+
+const NOTE_MIRROR_ERROR = 'mirror_error=';
+
+/**
+ * Mirror one onchain row into Shopify, at most once.
+ *
+ * Idempotent on `shopify_order_id`: a row that already has one is skipped.
+ * The GID is written with `shopify_order_id IS NULL` as the condition, so if
+ * two retries ever raced past the read, the loser learns it and says so in
+ * the log rather than overwriting the winner. A failed mirror never fails
+ * the order: it is flagged `mirror_failed=true` in notes for the order desk
+ * and the reason is returned to the client.
+ */
+export async function mirrorOnchainOrder(
+  db: SupabaseClient,
+  row: OrderJoined,
+  purchased: PurchasedLog,
+  email: string | null
+): Promise<SwagMirrorResult> {
+  if (row.channel !== 'onchain' || !row.tx_hash || !row.buyer_wallet) {
+    return { ok: false, error: 'Only onchain orders are mirrored' };
+  }
+  if (row.shopify_order_id) return { ok: true, shopifyOrderId: row.shopify_order_id, skipped: true };
+
+  try {
+    const shopifyVariantId = await resolveShopifyVariantId(db, row.product_id, row.size);
+    if (!shopifyVariantId) {
+      throw new Error(`no Shopify variant for ${row.product.sku}${row.size ? ` size ${row.size}` : ''}`);
+    }
+
+    const purchase: MirrorPurchase = {
+      txHash: row.tx_hash,
+      tokenId: purchased.tokenId.toString(),
+      buyerWallet: row.buyer_wallet,
+      paidUsdc: purchased.paid.toString(),
+      quantity: row.quantity,
+      shopifyVariantId,
+      sku: row.product.sku,
+      size: row.size,
+      shipping: row.shipping as SwagShipping,
+      email,
+    };
+
+    const created = await createMirrorOrder(purchase);
+
+    const notes = removeNote(removeNote(row.notes, NOTE_MIRROR_ERROR), NOTE_MIRROR_FAILED);
+    const { data, error } = await db
+      .from('swag_orders')
+      .update({ shopify_order_id: created.shopifyOrderId, notes })
+      .eq('id', row.id)
+      .is('shopify_order_id', null)
+      .select('id');
+    if (error) throw new OrderError(`mirrored as ${created.shopifyOrderId} but could not record it: ${error.message}`, 500);
+    if (!data || data.length === 0) {
+      // Someone else recorded a mirror between our read and our write. Both
+      // Shopify orders exist; the one not on the row needs cancelling by hand.
+      logger.error(
+        `[swag/mirror] order ${row.id}: duplicate mirror ${created.shopifyOrderId} (${created.name}); another mirror is already recorded`
+      );
+      return { ok: false, shopifyOrderId: created.shopifyOrderId, error: 'A mirror was already recorded for this order' };
+    }
+
+    if (created.degradedAddress) {
+      logger.warn(`[swag/mirror] order ${row.id}: Shopify refused the full address; sent it reduced (${created.name})`);
+    }
+    logger.info(`[swag/mirror] order ${row.id} → ${created.shopifyOrderId} (${created.name}) COP ${created.pricing.totalCop}`);
+    return { ok: true, shopifyOrderId: created.shopifyOrderId };
+  } catch (e) {
+    const reason = (e as Error).message.slice(0, 300);
+    logger.error(`[swag/mirror] order ${row.id} (${row.tx_hash}) not mirrored: ${reason}`);
+    const notes = appendNote(appendNote(removeNote(row.notes, NOTE_MIRROR_ERROR), NOTE_MIRROR_FAILED), `${NOTE_MIRROR_ERROR}${reason}`);
+    const { error } = await db.from('swag_orders').update({ notes }).eq('id', row.id);
+    if (error) logger.error(`[swag/mirror] order ${row.id}: could not flag the failure (${error.message})`);
+    return { ok: false, error: reason };
+  }
+}
+
+// ── Fulfilment from Shopify ─────────────────────────────────────────────────
+
+export interface FulfilmentOutcome {
+  /** Rows moved paid → shipped. */
+  shipped: number;
+  /** Rows already shipped whose tracking was updated. */
+  tracked: number;
+  /** Rows left alone: delivered, cancelled, or nothing new to record. */
+  skipped: number;
+  /** No swag_orders row carries this Shopify order id. */
+  unknown: boolean;
+}
+
+/**
+ * Shopify says an order shipped. Every row that points at it — a card order's
+ * line items or a USDC order's mirror — goes paid → shipped with the tracking
+ * merged into `shipping`. Rows already shipped only pick up new tracking;
+ * delivered and cancelled rows are not touched. The transition trigger has
+ * the last word on status.
+ */
+export async function applyFulfilment(
+  db: SupabaseClient,
+  shopifyOrderId: string,
+  tracking: SwagTracking | null
+): Promise<FulfilmentOutcome> {
+  const { data, error } = await db
+    .from('swag_orders')
+    .select('id, status, shipping')
+    .eq('shopify_order_id', shopifyOrderId);
+  if (error) throw new OrderError(error.message, 500);
+
+  const rows = (data ?? []) as Array<Pick<SwagOrderRow, 'id' | 'status' | 'shipping'>>;
+  const outcome: FulfilmentOutcome = { shipped: 0, tracked: 0, skipped: 0, unknown: rows.length === 0 };
+
+  for (const row of rows) {
+    const stored = (row.shipping ?? {}) as SwagStoredShipping;
+    const current = normaliseTracking(stored.tracking);
+    const changed = Boolean(tracking) && JSON.stringify(tracking) !== JSON.stringify(current);
+    const shipping: SwagStoredShipping = { ...stored };
+    if (tracking && changed) shipping.tracking = tracking;
+
+    if (row.status === 'paid') {
+      const { error: updateError } = await db
+        .from('swag_orders')
+        .update({ status: 'shipped', shipping })
+        .eq('id', row.id)
+        .eq('status', 'paid');
+      if (updateError) throw new OrderError(updateError.message, 500);
+      outcome.shipped += 1;
+    } else if (row.status === 'shipped' && changed) {
+      const { error: updateError } = await db.from('swag_orders').update({ shipping }).eq('id', row.id);
+      if (updateError) throw new OrderError(updateError.message, 500);
+      outcome.tracked += 1;
+    } else {
+      outcome.skipped += 1;
+    }
+  }
+
+  return outcome;
 }

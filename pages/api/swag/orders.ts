@@ -15,9 +15,14 @@
  * the log is not one of the caller's wallets, there is no order — someone is
  * trying to attach a shipping address to a purchase that is not theirs.
  *
+ * Once the row exists it is mirrored into Shopify (lib/swag/shopifyMirror.ts)
+ * so the parcel is packed from the same queue as a card order. The mirror is
+ * best-effort: a Shopify failure is reported in the response (`mirror`) and
+ * flagged on the row, but the order — a paid order — is never lost over it.
+ *
  * Idempotent on tx_hash: a second POST for the same receipt returns the row
  * that exists, so a retried request after a flaky response does not produce
- * two parcels.
+ * two parcels. If that row is still missing its mirror, the retry mirrors it.
  */
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getSupabaseAdmin } from '../../../lib/supabase';
@@ -27,16 +32,19 @@ import {
   getOrderByTxHash,
   insertOrder,
   listOrdersFor,
+  mirrorOnchainOrder,
   OrderError,
   parseShipping,
   parseSize,
   resolveVariantByToken,
   toOrderView,
+  type OrderJoined,
 } from '../../../lib/swag/orders';
 import { logger } from '../../../utils/logger';
 import type {
   CreateSwagOrderBody,
   CreateSwagOrderResponse,
+  SwagMirrorResult,
   SwagOrdersResponse,
 } from '../../../types/swag-orders';
 
@@ -56,6 +64,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
   }
 
   const db = getSupabaseAdmin();
+  // The email Shopify shows on the mirrored order, when Privy has verified one.
+  const email = user.emails[0] ?? null;
 
   try {
     if (req.method === 'GET') {
@@ -80,7 +90,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       if (!existing.buyer_wallet || !user.wallets.includes(existing.buyer_wallet)) {
         return res.status(409).json({ error: 'This purchase is already recorded to another account' });
       }
-      return res.status(200).json({ order: toOrderView(existing), existing: true });
+      const mirror = await mirrorExisting(db, existing, txHash, email);
+      return res.status(200).json({ order: toOrderView(existing), existing: true, mirror });
     }
 
     const purchased = await findPurchased(txHash);
@@ -113,8 +124,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       return res.status(400).json({ error: 'This design has no sizes' });
     }
 
+    let row: OrderJoined;
     try {
-      const row = await insertOrder(db, {
+      row = await insertOrder(db, {
         channel: 'onchain',
         product_id: variant.productId,
         variant_id: variant.variantId,
@@ -127,21 +139,51 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         // idempotency spine, so it gets the receipt's own identity.
         order_ref: txHash,
       });
-      return res.status(201).json({ order: toOrderView(row), existing: false });
     } catch (e) {
       // Two requests for the same receipt raced past the check above. The
       // unique constraint decided; hand back the winner.
       if (e instanceof OrderError && e.status === 409) {
         const winner = await getOrderByTxHash(db, txHash);
-        if (winner) return res.status(200).json({ order: toOrderView(winner), existing: true });
+        if (winner) {
+          const mirror = await mirrorExisting(db, winner, txHash, email);
+          return res.status(200).json({ order: toOrderView(winner), existing: true, mirror });
+        }
       }
       throw e;
     }
+
+    // The row is safe. Whatever Shopify says next, the answer is 201.
+    const mirror = await mirrorOnchainOrder(db, row, purchased, email);
+    return res.status(201).json({ order: toOrderView(row), existing: false, mirror });
   } catch (e) {
     if (e instanceof UserAuthError || e instanceof OrderError || e instanceof ReceiptError) {
       return res.status(e.status).json({ error: e.message });
     }
     logger.error('[swag/orders] failed', e);
     return res.status(500).json({ error: 'Could not process the order' });
+  }
+}
+
+/**
+ * A retry for a row that exists. If it already has its mirror, say so; if
+ * not, read the receipt again (the amount paid comes from the log, never the
+ * row) and mirror it now. A receipt that cannot be read is a mirror failure,
+ * not an order failure — the row is already on file.
+ */
+async function mirrorExisting(
+  db: ReturnType<typeof getSupabaseAdmin>,
+  row: OrderJoined,
+  txHash: `0x${string}`,
+  email: string | null
+): Promise<SwagMirrorResult> {
+  if (row.shopify_order_id) return { ok: true, shopifyOrderId: row.shopify_order_id, skipped: true };
+  try {
+    const purchased = await findPurchased(txHash);
+    if (!purchased) return { ok: false, error: 'Purchased log not found on the receipt' };
+    return await mirrorOnchainOrder(db, row, purchased, email);
+  } catch (e) {
+    const reason = (e as Error).message;
+    logger.error(`[swag/orders] order ${row.id}: mirror retry could not read the receipt: ${reason}`);
+    return { ok: false, error: reason };
   }
 }

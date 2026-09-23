@@ -65,6 +65,17 @@ export interface SwagOrderRow {
   updated_at: string;
 }
 
+/**
+ * Where the parcel is. Written into `shipping.tracking` by the Shopify
+ * fulfilment webhooks (orders/fulfilled, fulfillments/update); an operator's
+ * PATCH may still store a bare string there, which reads back as `{ number }`.
+ */
+export interface SwagTracking {
+  number: string | null;
+  url: string | null;
+  company: string | null;
+}
+
 /** What GET /api/swag/orders returns per row: the row minus PII, plus the design. */
 export interface SwagOrderView {
   id: number;
@@ -86,6 +97,8 @@ export interface SwagOrderView {
     nameEn: string;
     imagePath: string | null;
   };
+  /** Present once Shopify has fulfilled the order (or an operator added a reference). */
+  tracking?: SwagTracking;
 }
 
 export interface SwagOrdersResponse {
@@ -101,10 +114,26 @@ export interface CreateSwagOrderBody {
   quantity?: number;
 }
 
+/**
+ * Outcome of mirroring a USDC purchase into Shopify (lib/swag/shopifyMirror.ts).
+ * A failed mirror never fails the order: the row exists, the response is still
+ * 201, and `notes` carries `mirror_failed=true` for the order desk.
+ */
+export interface SwagMirrorResult {
+  ok: boolean;
+  /** The Shopify order GID, once created (or already on the row). */
+  shopifyOrderId?: string;
+  /** True when the row already carried a shopify_order_id and nothing was sent. */
+  skipped?: boolean;
+  error?: string;
+}
+
 export interface CreateSwagOrderResponse {
   order: SwagOrderView;
   /** True when the tx_hash was already on file and the existing row is returned. */
   existing: boolean;
+  /** Only on onchain orders: whether the Shopify fulfilment mirror exists. */
+  mirror?: SwagMirrorResult;
 }
 
 /** POST /api/swag/claim — issue a voucher. */
@@ -143,13 +172,25 @@ export interface ClaimConfirmResponse {
  */
 export const NOTE_VOUCHER_NEEDS_CANCEL = 'voucher_needs_cancel=true';
 export const NOTE_VOUCHER_CANCELLED_TX = 'voucher_cancelled_tx=';
+/** POST /api/swag/orders could not create the Shopify mirror; the order desk creates it by hand. */
+export const NOTE_MIRROR_FAILED = 'mirror_failed=true';
 
 /**
- * shipping as stored: what the buyer or Shopify gave us, plus the tracking
- * reference an operator adds when the parcel leaves. Partial because a Shopify
- * address can arrive with fields missing and the row is still worth shipping.
+ * shipping as the admin page sees it: what the buyer or Shopify gave us, plus
+ * the tracking reference an operator adds when the parcel leaves. Partial
+ * because a Shopify address can arrive with fields missing and the row is
+ * still worth shipping. `tracking` is flattened to the number here (the order
+ * page renders and edits a string); the full object is `trackingDetail` on
+ * the view.
  */
 export type SwagAdminShipping = Partial<SwagShipping> & { tracking?: string };
+
+/**
+ * shipping exactly as the jsonb column holds it. `tracking` is a bare string
+ * when an operator typed it and a SwagTracking object when a Shopify
+ * fulfilment webhook wrote it.
+ */
+export type SwagStoredShipping = Partial<SwagShipping> & { tracking?: string | SwagTracking };
 
 /** A row as an operator sees it. The address and email are here on purpose. */
 export interface SwagAdminOrderView {
@@ -174,6 +215,10 @@ export interface SwagAdminOrderView {
   notes: string | null;
   createdAt: string;
   updatedAt: string;
+  /** Carrier, number and link as Shopify reported them; null until fulfilled. */
+  trackingDetail: SwagTracking | null;
+  /** The Shopify mirror of a USDC order failed and has to be created by hand. */
+  mirrorFailed: boolean;
 }
 
 /** GET /api/swag/admin/orders?status=&channel=&q=&cursor= — pages of 50, newest first. */

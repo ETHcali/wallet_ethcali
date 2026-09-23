@@ -33,6 +33,31 @@ the caller is read from a request body.
    Size is required for sized designs and must be one of the product's sizes.
 6. Insert `channel='onchain'`, `status='paid'`, `tx_hash`, `order_ref = tx_hash`.
    Idempotent: a second POST for the same hash returns the existing row.
+7. **Mirrored into Shopify (tag `usdc-onchain`).** `lib/swag/shopifyMirror.ts`
+   runs `orderCreate` (Admin API 2026-07) with the `swag_shopify_variants`
+   variant for (design, size), `financialStatus: PAID`, one `SALE`/`SUCCESS`
+   transaction with gateway **`USDC on Base`**, the shipping address, the buyer's
+   Privy-verified email when there is one, a note
+   `USDC on Base · tx <hash> · token #<id>`, tags `usdc-onchain`, `swag-2026`,
+   and options `inventoryBehaviour: BYPASS` (the unit came from on-chain stock),
+   `sendReceipt: false`, `sendFulfillmentReceipt: false`. The COP amounts are the
+   USDC `paid` from the Purchased log × the TRM of the day (`fetchTrm()` in
+   `lib/shopify.mjs`, the same source as `/api/fx/trm`), computed per unit so
+   line × quantity equals the transaction. The order GID lands in
+   `swag_orders.shopify_order_id` (allowed on onchain rows since
+   `20260923120000_swag_usdc_price_and_fulfilment_mirror.sql`).
+   - Idempotent: a row with `shopify_order_id` is skipped; the write is
+     conditional on `shopify_order_id IS NULL`, so a raced duplicate is logged,
+     never silently overwritten.
+   - Best-effort: a Shopify failure still answers **201** with
+     `mirror: { ok: false, error }`, and `notes` gets `mirror_failed=true` plus
+     `mirror_error=<reason>` (the admin view exposes `mirrorFailed`). The next
+     POST for the same hash retries the mirror and clears both lines on success.
+   - If Shopify refuses the address (phone format, unknown province) the mirror
+     retries once with the minimal address and writes the dropped fields into
+     the order note.
+   - `scripts/swag-mirror-selftest.mjs --dry-run --variant <gid>` prints the
+     exact variables for a fake receipt without creating anything.
 
 ## Flow 2 — card purchase (Shopify)
 
@@ -52,6 +77,9 @@ the caller is read from a request body.
 5. No voucher yet — `to` is unknown until the buyer signs in.
 6. Always answers 200 (`{ ok: false }` on a database error) so Shopify never
    disables the subscription. Only a bad signature or shop returns 401.
+7. An order whose `tags` include `usdc-onchain` or whose gateway is
+   `USDC on Base` is **our own mirror** of a USDC purchase (Flow 1, step 7) and
+   is skipped: the onchain row already exists and already points at it.
 
 `refunds/create`: matching rows go to `cancelled`. If a voucher was issued and
 not claimed, `notes` gets `voucher_needs_cancel=true` — an operator must call
@@ -84,6 +112,30 @@ annotate (`partial_refund=<n>`).
   contract's `hashVoucher()` on Base and that the signer recovers. Run it with
   `--env-file=.env` to also confirm the real key holds `SIGNER_ROLE`.
 
+## Fulfilment — shipping happens in Shopify and flows back
+
+Every order, card or USDC, is a Shopify order (the card one natively, the USDC
+one as its mirror), so **Shopify is the single fulfilment queue**. The team
+fulfils there — Orders → Fulfil item, tracking number and carrier — and the
+result comes back through the webhook:
+
+| Topic | Payload | What happens |
+|---|---|---|
+| `orders/fulfilled` | the order, `fulfillments[]` nested | every `swag_orders` row with that `shopify_order_id` goes `paid → shipped`; `shipping.tracking = { number, url, company }` |
+| `fulfillments/update` | one fulfillment with `order_id` | same rows: tracking merged; a `paid` row also moves to `shipped` |
+| `fulfillments/create` | one fulfillment with `order_id` | handled identically if ever subscribed (not registered by default — `orders/fulfilled` covers it) |
+
+Rows already `shipped` only pick up new tracking; `delivered` and `cancelled`
+rows are never touched; a fulfillment whose status is `cancelled`, `error` or
+`failure` is ignored. The status trigger still has the last word.
+`GET /api/swag/orders` then carries `tracking` on the row, and the admin view
+carries `trackingDetail` beside the flattened `shipping.tracking` string the
+order page renders.
+
+The admin page keeps **Mark shipped** / **Mark delivered** for exceptions
+(a parcel handed over at an event, a USDC order whose mirror failed), but the
+normal path is Shopify.
+
 ## Status
 
 `paid → shipped → delivered`; `cancelled` from `paid` or `shipped`. The trigger
@@ -104,10 +156,14 @@ button by the contract itself. Nothing on the page grants anything.
 | `PATCH /api/swag/admin/orders/[id]` `{ status?, tracking?, notes? }` | status through the transition trigger (refusal → 409 with its sentence); `tracking` stored in `shipping.tracking`; `notes` replaced |
 | `GET /api/swag/admin/summary` | counts by status and channel, `getVariant` + USDC price per live token, `paused`, `treasury`, and the voucher-cancel queue with `orderClaimed(orderRef)` per row |
 
-**Ship a parcel.** Orders → the row → *Shipping address* to see where it goes →
-**Mark shipped**, paste the carrier reference if there is one, **Confirm shipped**.
-When it arrives, **Mark delivered**. The trigger refuses `paid → delivered`, so a
-row cannot skip the shipped step.
+**Ship a parcel.** In Shopify: the order (card orders natively; USDC orders are
+the ones tagged `usdc-onchain`) → fulfil, with tracking. The `orders/fulfilled`
+webhook moves the row to `shipped` and records the tracking. The buttons here —
+Orders → the row → *Shipping address* → **Mark shipped** → **Confirm shipped**,
+then **Mark delivered** — are for exceptions and for a USDC order flagged
+*mirror failed* (create its Shopify order by hand from the note's tx hash, or
+ship it from here). The trigger refuses `paid → delivered`, so a row cannot skip
+the shipped step either way.
 
 **Cancel an order.** **Cancel order** on a `paid` or `shipped` row closes the
 fulfilment record. It does not move money: a card refund is issued in Shopify
@@ -161,16 +217,25 @@ JSON response lists the reason per design in the Vercel function log.
 They are **app-owned**, created through the Admin API by
 `scripts/shopify-webhooks.mjs`, and were registered on 2026-09-23:
 
-| Topic | Format | URL |
-|---|---|---|
-| `ORDERS_PAID` (`orders/paid`) | JSON | `https://app.ethcali.org/api/shopify/webhook` |
-| `REFUNDS_CREATE` (`refunds/create`) | JSON | `https://app.ethcali.org/api/shopify/webhook` |
+| Topic | Format | URL | Since |
+|---|---|---|---|
+| `ORDERS_PAID` (`orders/paid`) | JSON | `https://app.ethcali.org/api/shopify/webhook` | 2026-09-23 |
+| `REFUNDS_CREATE` (`refunds/create`) | JSON | `https://app.ethcali.org/api/shopify/webhook` | 2026-09-23 |
+| `ORDERS_FULFILLED` (`orders/fulfilled`) | JSON | `https://app.ethcali.org/api/shopify/webhook` | Phase 2 — **run `create` once after deploy** |
+| `FULFILLMENTS_UPDATE` (`fulfillments/update`) | JSON | `https://app.ethcali.org/api/shopify/webhook` | Phase 2 — **run `create` once after deploy**; needs the `read_fulfillments` scope |
 
 ```bash
 node --env-file=.env scripts/shopify-webhooks.mjs list            # what Shopify has now
-node --env-file=.env scripts/shopify-webhooks.mjs create [url]    # register both topics
+node --env-file=.env scripts/shopify-webhooks.mjs create [url]    # register every topic in TOPICS; skips ones already there
 node --env-file=.env scripts/shopify-webhooks.mjs delete <gid>
 ```
+
+`create` is per-topic idempotent, so after the Phase 2 deploy it adds the two
+fulfilment topics and reports the first two as already subscribed. A topic
+Shopify refuses (a missing scope) is printed and the rest still go through;
+the command exits 1 so the gap is not missed. The mirror itself needs
+`write_orders` on the app (validate.mjs lists `write_orders, read_orders` for
+the `orderCreate` document).
 
 App-owned subscriptions are signed with `SHOPIFY_CLIENT_SECRET`; the route
 accepts that or `SHOPIFY_WEBHOOK_SECRET`, so `SHOPIFY_WEBHOOK_SECRET` is only
@@ -192,4 +257,4 @@ Run `create` only against a live URL: Shopify retries a failing endpoint for
 | `SWAG_COLLECTION_ADDRESS` | optional; defaults to `0xA5C02Ee3029Ce7f0FdD147734D11905E3cA99479` |
 | `NEXT_PUBLIC_BASE_RPC_URL` | optional; the server reads receipts through it |
 | `CRON_SECRET` | bearer token Vercel sends to `/api/cron/swag-prices`; the route refuses everything when unset |
-| `SHOPIFY_CLIENT_ID`, `SHOPIFY_CLIENT_SECRET`, `SHOPIFY_API_VERSION` (`2026-07`) | the cron and the scripts exchange them for a 24h Admin API token; the client secret also verifies app-owned webhooks |
+| `SHOPIFY_CLIENT_ID`, `SHOPIFY_CLIENT_SECRET`, `SHOPIFY_API_VERSION` (`2026-07`) | the cron, the scripts **and `POST /api/swag/orders` (the mirror)** exchange them for a 24h Admin API token; the client secret also verifies app-owned webhooks |
