@@ -1,13 +1,11 @@
 import { useState } from 'react';
 import { useWallets } from '@privy-io/react-auth';
 import AdminShell from '../../components/admin/AdminShell';
-import ChainPicker from '../../components/shared/ChainPicker';
 import SwitchChainButton from '../../components/shared/SwitchChainButton';
 import { VaultList } from '../../components/faucet/VaultList';
 import { CreateVaultForm } from '../../components/faucet/CreateVaultForm';
 import { VaultWhitelistManager } from '../../components/faucet/VaultWhitelistManager';
-import { explorerAddress } from '../../config/chains';
-import { useChainQuery } from '../../hooks/useChainQuery';
+import { DEFAULT_CHAIN, explorerAddress } from '../../config/chains';
 import { useRequireChain } from '../../hooks/useRequireChain';
 import { useFaucetManagerAdmin, useFaucetPaused, useAllVaults, useFaucetPause } from '../../hooks/faucet';
 import { formatEther } from 'viem';
@@ -15,10 +13,9 @@ import { formatEther } from 'viem';
 type AdminTab = 'vaults' | 'create' | 'whitelist' | 'settings';
 
 export default function FaucetAdminPage() {
-  // This page picks its chain from the chains FaucetManager is deployed on,
-  // remembered in `?chain=`. Every read and write below is on that chain.
-  const { chainId, chain: chainInfo, chains, setChainId } = useChainQuery('faucet');
-  const faucetManager = chainInfo.contracts.FaucetManager;
+  // Every read and write below is on Ethereum; the wallet is moved once, here.
+  const chainId = DEFAULT_CHAIN.id;
+  const faucetManager = DEFAULT_CHAIN.contracts.FaucetManager;
   const chain = useRequireChain(chainId);
 
   const { ready } = useWallets();
@@ -52,12 +49,9 @@ export default function FaucetAdminPage() {
   const totalClaimed = vaults.reduce((sum, v) => sum + v.totalClaimed, 0n);
   const activeVaults = vaults.filter(v => v.active).length;
 
-  const picker = <ChainPicker chains={chains} value={chainId} onChange={setChainId} className="mb-6" />;
-
   if (!ready || isCheckingAdmin) {
     return (
       <AdminShell active="faucet" title="Faucet">
-          {picker}
           <div className="flex items-center justify-center py-20">
             <div className="w-3 h-3 border-2 border-eth-blue border-t-transparent rounded-full animate-spin" />
             <span className="ml-3 text-eth-blue-text font-mono text-[10px] tracking-wider">VERIFYING...</span>
@@ -69,12 +63,11 @@ export default function FaucetAdminPage() {
   if (!isAdmin && !isSuperAdmin) {
     return (
       <AdminShell active="faucet" title="Faucet">
-          {picker}
           <div className="flex flex-col items-center justify-center py-20">
             <div className="bg-black/60 border border-signal-reverted/30 rounded-control p-4 max-w-sm">
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-2 h-2 bg-signal-reverted rounded-full"></div>
-                <span className="text-[10px] text-signal-reverted font-mono tracking-wider">Access denied on {chainInfo.name}</span>
+                <span className="text-[10px] text-signal-reverted font-mono tracking-wider">Access denied</span>
               </div>
               <div className="space-y-2 text-[10px] font-mono">
                 <p className="text-content-faint">contract: <span className="text-content-faint">{faucetManager?.slice(0, 10)}…</span></p>
@@ -88,13 +81,11 @@ export default function FaucetAdminPage() {
 
   return (
     <AdminShell active="faucet" title="Faucet">
-        {picker}
-
         {/* Reads work from anywhere; the wallet only has to be here to sign. */}
         {!chain.ready && (
           <div className="mb-6 max-w-sm">
             <p className="mb-2 text-xs text-content-muted">
-              Reads come from {chain.chainName}; to sign anything below your wallet has to be there too.
+              Your wallet is on another network; to sign anything below it has to be on {chain.chainName}.
             </p>
             <SwitchChainButton chain={chain} />
           </div>
@@ -108,7 +99,7 @@ export default function FaucetAdminPage() {
             )}
           </div>
           <p className="text-content-faint font-mono text-[10px] tracking-widest uppercase">
-            VAULT_MANAGEMENT • {chainInfo.name} • {vaults.length} VAULTS
+            VAULT_MANAGEMENT • {vaults.length} VAULTS
           </p>
         </div>
 
@@ -269,10 +260,6 @@ export default function FaucetAdminPage() {
                         {faucetManager.slice(0, 10)}…{faucetManager.slice(-8)}
                       </a>
                     )}
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-content-faint">network</span>
-                    <span className="text-content-muted">{chainInfo.name}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-content-faint">your_wallet</span>

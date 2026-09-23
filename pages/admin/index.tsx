@@ -1,18 +1,16 @@
-import { useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import AdminShell from '../../components/admin/AdminShell';
-import ChainPicker from '../../components/shared/ChainPicker';
 import {
   useActiveCampaigns,
   useCampaignTotals,
   useDonationAddresses,
   useDonationAdmin,
-  DONATION_CHAINS,
+  DONATION_CHAIN_ID,
   useDisplayCurrency,
 } from '../../hooks/donations';
 import { useAdminRoles } from '../../hooks/useAdminStatus';
-import { CHAIN_IDS, explorerAddress, getChain } from '../../config/chains';
+import { explorerAddress } from '../../config/chains';
 import type { Campaign } from '../../types/donations';
 
 /** One headline number. Never renders a raw base unit — callers format first. */
@@ -78,7 +76,7 @@ function CampaignSummary({ campaign, chainId }: { campaign: Campaign; chainId: n
           >
             <span className="font-semibold text-content-secondary">{t.token.symbol}</span>
             <span className="text-content-primary">
-              {/* formatToken uses the token's own decimals — COPm 18, USDC 6. */}
+              {/* formatToken uses the token's own decimals — ETH 18, USDC 6. */}
               {formatToken(t.raised, t.token)}
               <span className="ml-2 text-xs text-content-faint">
                 ≈ {format(t.raised, t.token)}
@@ -99,13 +97,12 @@ function CampaignSummary({ campaign, chainId }: { campaign: Campaign; chainId: n
 }
 
 export default function AdminOverviewPage() {
-  const [chainId, setChainId] = useState<number>(DONATION_CHAINS[0]?.id ?? CHAIN_IDS.CELO);
+  const chainId = DONATION_CHAIN_ID;
 
   const { vault, receiptCollection, isDeployed, tokens } = useDonationAddresses(chainId);
   const { data: campaigns = [], isLoading } = useActiveCampaigns(chainId);
   const { isPaused, isSuperAdmin } = useDonationAdmin(chainId);
-  // Other areas are linked when the wallet holds the role on ANY chain that
-  // contract is deployed on; each area picks its own chain once inside.
+  // Other areas are linked when the wallet holds the role on that contract.
   const { isSwagAdmin, isFaucetAdmin, isFaucetSuperAdmin, isZKPassportOwner } = useAdminRoles();
 
   const otherAreas = [
@@ -124,14 +121,10 @@ export default function AdminOverviewPage() {
         <title>Admin · ETH Cali</title>
       </Head>
 
-      <ChainPicker chains={DONATION_CHAINS} value={chainId} onChange={setChainId} className="mb-6" />
-
       {!isDeployed ? (
         <div className="rounded-card border border-line-hairline bg-surface-inset/50 p-6 text-center sm:p-8">
-          <h2 className="mb-2 text-lg font-bold text-content-primary">Nothing deployed here</h2>
-          <p className="text-sm text-content-muted">
-            No DonationVault on {getChain(chainId)?.name ?? 'this network'}.
-          </p>
+          <h2 className="mb-2 text-lg font-bold text-content-primary">Nothing deployed</h2>
+          <p className="text-sm text-content-muted">No DonationVault is deployed.</p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -141,7 +134,7 @@ export default function AdminOverviewPage() {
             <StatTile
               label="Campaigns"
               value={isLoading ? '…' : String(campaigns.length)}
-              hint="Active on this chain"
+              hint="Active"
             />
             <StatTile
               label="Donors"

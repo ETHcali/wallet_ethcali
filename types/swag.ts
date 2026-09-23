@@ -35,7 +35,7 @@ export interface SwagShopifyVariant {
   price_cop: number | null;
 }
 
-/** public.swag_products joined with its Base variant and its Shopify variants. */
+/** public.swag_products joined with its variant on the live collection and its Shopify variants. */
 export interface SwagProduct {
   id: number;
   sku: string;
@@ -62,7 +62,7 @@ export interface SwagProduct {
   shopify_handle: string | null;
   sort_order: number;
   active: boolean;
-  /** The live Base (8453) variant, or null when the design is not on chain yet. */
+  /** The live variant on the collection's chain, or null when the design is not on chain yet. */
   variant: SwagChainVariant | null;
   shopify: SwagShopifyVariant[];
 }

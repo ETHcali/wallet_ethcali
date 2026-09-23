@@ -6,7 +6,7 @@ import Navigation from '../../components/Navigation';
 import Loading from '../../components/shared/Loading';
 import { SwagCard } from '../../components/swag/SwagCard';
 import { SwagCheckoutModal } from '../../components/swag/SwagCheckoutModal';
-import { useSwagCatalogue, useSwagLocale, useSwagOnchain, useTrm, utmFromQuery } from '../../hooks/swag';
+import { SWAG_CHAIN, useSwagCatalogue, useSwagLocale, useSwagOnchain, useTrm, utmFromQuery } from '../../hooks/swag';
 import type { SwagProduct, SwagSize } from '../../types/swag';
 
 interface Checkout {
@@ -17,9 +17,8 @@ interface Checkout {
 
 /**
  * The public storefront. No auth gate: the catalogue and the chain are both
- * readable by anyone, and the USDC button starts with Connect. Swag is
- * Base-only, so the page never reads or sets a global chain — Navigation gets
- * no chain prop and the hooks pin 8453 themselves.
+ * readable by anyone, and the USDC button starts with Connect. The hooks pin
+ * the collection's chain themselves; the page never reads the wallet's.
  */
 export default function SwagStorePage() {
   const router = useRouter();
@@ -37,7 +36,7 @@ export default function SwagStorePage() {
         <title>Swag — ETH Cali</title>
         <meta
           name="description"
-          content="Official ETH Cali merch. Pay with card or with USDC on Base; every purchase mints the design as an NFT."
+          content="Official ETH Cali merch. Pay with card or with USDC; every purchase mints the design as an NFT."
         />
       </Head>
       <Navigation />
@@ -53,8 +52,8 @@ export default function SwagStorePage() {
             </h1>
             <p className="mt-2 max-w-xl text-sm text-content-muted">
               {locale === 'es'
-                ? 'Paga con tarjeta o con USDC en Base. Cada compra en la cadena acuña el diseño como NFT; la talla y el envío van en el pedido.'
-                : 'Pay with card or with USDC on Base. Every on-chain purchase mints the design as an NFT; size and shipping live on the order.'}
+                ? 'Paga con tarjeta o con USDC. Cada compra en la cadena acuña el diseño como NFT; la talla y el envío van en el pedido.'
+                : 'Pay with card or with USDC. Every on-chain purchase mints the design as an NFT; size and shipping live on the order.'}
             </p>
           </div>
           <Link
@@ -115,7 +114,7 @@ export default function SwagStorePage() {
         )}
 
         <p className="mt-10 text-center font-mono text-[10px] uppercase tracking-wide text-content-faint">
-          Base · USDC · ETH Cali Swag 2026
+          {SWAG_CHAIN.name} · USDC · ETH Cali Swag 2026
         </p>
       </main>
 

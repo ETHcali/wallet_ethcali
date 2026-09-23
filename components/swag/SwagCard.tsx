@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { formatUnits } from 'viem';
-import { SWAG_COLLECTION_BASE } from '../../config/constants';
+import { SWAG_COLLECTION } from '../../config/constants';
 import type { SwagProduct, SwagSize } from '../../types/swag';
 import type { SwagTokenState, UtmParams } from '../../hooks/swag';
 import {
@@ -124,7 +124,7 @@ export function SwagCard({
   // with USDC's 6 decimals, falling back to the mirrored column until it loads.
   const listUsd = product.price_usd;
   const chainUsd =
-    onchain && onchain.price > 0n ? Number(formatUnits(onchain.price, SWAG_COLLECTION_BASE.usdcDecimals)) : null;
+    onchain && onchain.price > 0n ? Number(formatUnits(onchain.price, SWAG_COLLECTION.usdcDecimals)) : null;
   const usdcUsd = chainUsd ?? product.price_usdc;
   const discount = usdcDiscountPct(listUsd, usdcUsd);
   const cop = trm ? formatCop(listUsd * trm) : null;
@@ -205,7 +205,7 @@ export function SwagCard({
 
         <ul className="space-y-1 text-xs">
           <li className="flex items-center justify-between">
-            <span className="text-content-muted">USDC on Base</span>
+            <span className="text-content-muted">{es ? 'Con USDC' : 'USDC'}</span>
             <span className={`font-mono ${soldOutOnchain ? 'text-content-faint' : 'text-content-secondary'}`}>
               {remaining === null
                 ? tokenId === null ? '—' : '…'
@@ -215,7 +215,7 @@ export function SwagCard({
             </span>
           </li>
           <li className="flex items-center justify-between">
-            <span className="text-content-muted">{es ? 'Con tarjeta' : 'Card checkout'}</span>
+            <span className="text-content-muted">{es ? 'Con tarjeta' : 'Card'}</span>
             <span className={`font-mono ${cardOpen ? 'text-content-secondary' : 'text-content-faint'}`}>
               {cardOpen ? (es ? 'Abierto' : 'Open') : es ? 'No disponible' : 'Unavailable'}
             </span>

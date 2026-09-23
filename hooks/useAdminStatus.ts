@@ -1,12 +1,11 @@
 /**
- * Which admin roles the active wallet holds, read from the contracts.
+ * Which admin roles the active wallet holds, read from the contracts on
+ * Ethereum.
  *
  * Two hooks over one reader:
- *   useAdminStatus(chainId)  the roles on one chain — for an admin page that
- *                            has picked its chain
- *   useAdminRoles()          the roles OR'd across every chain each contract is
- *                            deployed on — for navigation, which must not
- *                            depend on any selected chain
+ *   useAdminStatus(chainId)  the roles on one chain — for an admin page
+ *   useAdminRoles()          the roles on the chain — for navigation and the
+ *                            admin menu, cached once per wallet
  *
  * These decide what is *shown*. The contract re-checks on every write, so a
  * link hidden here has never been, and must never become, the access control.
@@ -16,7 +15,7 @@ import { swag1155Abi } from '../frontend/abis/swag';
 import FaucetManagerABI from '../frontend/abis/FaucetManager.json';
 import ZKPassportNFTABI from '../frontend/abis/ZKPassportNFT.json';
 import DonationVaultABI from '../frontend/abis/DonationVault.json';
-import { CHAINS, getChain, publicClientFor, type ChainInfo } from '../config/chains';
+import { DEFAULT_CHAIN, getChain, publicClientFor, type ChainInfo } from '../config/chains';
 import { logger } from '../utils/logger';
 import { useActiveWallet } from './useActiveWallet';
 
@@ -86,17 +85,6 @@ async function readAdminStatus(chain: ChainInfo, wallet: `0x${string}`): Promise
   });
 }
 
-function or(a: AdminStatus, b: AdminStatus): AdminStatus {
-  return withAny({
-    isSwagAdmin: a.isSwagAdmin || b.isSwagAdmin,
-    isFaucetAdmin: a.isFaucetAdmin || b.isFaucetAdmin,
-    isFaucetSuperAdmin: a.isFaucetSuperAdmin || b.isFaucetSuperAdmin,
-    isZKPassportOwner: a.isZKPassportOwner || b.isZKPassportOwner,
-    isDonationAdmin: a.isDonationAdmin || b.isDonationAdmin,
-    isDonationSuperAdmin: a.isDonationSuperAdmin || b.isDonationSuperAdmin,
-  });
-}
-
 /** Roles on one chain. Unsupported chain → no roles. */
 export function useAdminStatus(chainId: number) {
   const { address } = useActiveWallet();
@@ -126,8 +114,8 @@ export function useAdminStatus(chainId: number) {
 }
 
 /**
- * Roles OR'd across every chain. One query per wallet, cached, so the top bar
- * and the admin sidebar share the result instead of each firing five RPCs.
+ * Roles on the chain. One query per wallet, cached, so the top bar and the
+ * admin sidebar share the result instead of each firing the reads again.
  */
 export function useAdminRoles() {
   const { address } = useActiveWallet();
@@ -136,14 +124,7 @@ export function useAdminRoles() {
     queryKey: ['admin-roles', address?.toLowerCase()],
     queryFn: async (): Promise<AdminStatus> => {
       if (!address) return NONE;
-      const wallet = address as `0x${string}`;
-      // Only chains with at least one role-bearing contract are worth a call.
-      const relevant = CHAINS.filter((c) => {
-        const { Swag1155, FaucetManager, ZKPassportNFT, DonationVault } = c.contracts;
-        return Boolean(Swag1155 || FaucetManager || ZKPassportNFT || DonationVault);
-      });
-      const perChain = await Promise.all(relevant.map((c) => readAdminStatus(c, wallet)));
-      return perChain.reduce(or, NONE);
+      return readAdminStatus(DEFAULT_CHAIN, address as `0x${string}`);
     },
     enabled: Boolean(address),
     staleTime: 1000 * 60 * 2,

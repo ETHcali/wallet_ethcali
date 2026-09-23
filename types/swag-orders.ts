@@ -147,7 +147,7 @@ export interface ClaimIssueResponse {
   orderId: number;
   voucher: ClaimVoucherFields;
   signature: `0x${string}`;
-  /** Where to send claim(): the collection on Base. */
+  /** Where to send claim(): the collection, on `chainId`. */
   collection: `0x${string}`;
   chainId: number;
 }

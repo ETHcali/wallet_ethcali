@@ -10,8 +10,8 @@
  *     COP equivalent of what was actually paid (USDC × the TRM of the day, the
  *     same rate the card channel is priced with);
  *   - the order is PAID through a SALE transaction whose gateway is
- *     "USDC on Base", so the orders/paid webhook can recognise it as ours and
- *     not record it a second time;
+ *     "USDC on Ethereum", so the orders/paid webhook can recognise it as ours
+ *     and not record it a second time;
  *   - the tags carry `usdc-onchain` for the same reason, and for filtering
  *     in the Shopify admin;
  *   - inventory is BYPASSed: the unit was minted from on-chain stock, and
@@ -31,7 +31,7 @@ import type { SwagShipping } from '../../types/swag-orders';
 export const MIRROR_TAG = 'usdc-onchain';
 export const MIRROR_TAGS = [MIRROR_TAG, 'swag-2026'] as const;
 /** The transaction gateway; the second thing the webhook keys on. */
-export const MIRROR_GATEWAY = 'USDC on Base';
+export const MIRROR_GATEWAY = 'USDC on Ethereum';
 export const MIRROR_CURRENCY = 'COP';
 
 /**
@@ -56,7 +56,7 @@ export const ORDER_CREATE = /* GraphQL */ `
 
 /** Everything the mirror needs, already verified by the route. */
 export interface MirrorPurchase {
-  /** Lowercase 0x hash of the buy() transaction on Base. */
+  /** Lowercase 0x hash of the buy() transaction on the collection's chain. */
   txHash: string;
   /** The ERC-1155 token id, decimal. */
   tokenId: string;

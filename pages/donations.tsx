@@ -8,21 +8,16 @@ import DonorWall from '../components/donations/DonorWall';
 import BeneficiaryCard from '../components/donations/BeneficiaryCard';
 import BankTransferPanel from '../components/donations/BankTransferPanel';
 import CurrencyToggle from '../components/donations/CurrencyToggle';
-import ChainPicker from '../components/shared/ChainPicker';
 import {
   useActiveCampaigns,
   useCampaignRowId,
   useDonationAddresses,
-  DONATION_CHAINS,
+  DONATION_CHAIN_ID,
 } from '../hooks/donations';
-import { CHAIN_IDS, getChain } from '../config/chains';
 import type { Campaign } from '../types/donations';
 
 export default function DonationsPage() {
-  // Celo first — it is where COPm lives, the natural currency for local donors.
-  const defaultChainId = DONATION_CHAINS[0]?.id ?? CHAIN_IDS.CELO;
-  const [chainId, setChainId] = useState<number>(defaultChainId);
-
+  const chainId = DONATION_CHAIN_ID;
   const { tokens, isDeployed, vault } = useDonationAddresses(chainId);
   const { data: campaigns = [], isLoading } = useActiveCampaigns(chainId);
 
@@ -45,7 +40,7 @@ export default function DonationsPage() {
           <title>Donate · ETH Cali</title>
           <meta
             name="description"
-            content="Support ETH Cali relief campaigns. Donate in ETH, USDC or COPm — funds go straight to the ethcali.eth multisig."
+            content="Support ETH Cali relief campaigns. Donate in ETH or USDC — funds go straight to the ethcali.eth multisig."
           />
         </Head>
 
@@ -67,28 +62,15 @@ export default function DonationsPage() {
             <CurrencyToggle />
           </header>
 
-          {/* Network picker — only chains with a deployed vault */}
-          <ChainPicker
-            chains={DONATION_CHAINS}
-            value={chainId}
-            onChange={(id) => {
-              setChainId(id);
-              setWallToken(0);
-            }}
-            className="mb-6"
-          />
-
-          {/* Not deployed anywhere yet — an honest empty state, not a broken page */}
+          {/* Not deployed yet — an honest empty state, not a broken page */}
           {!isDeployed && (
             <div className="rounded-card border border-line-hairline bg-surface-inset/50 p-8 text-center">
-              
               <h2 className="mb-2 text-lg font-bold text-content-primary">
                 Not live yet
               </h2>
               <p className="mx-auto max-w-md text-sm text-content-muted">
-                The donation contract has not been deployed to{' '}
-                {getChain(chainId)?.name ?? 'this network'} yet. Once
-                it is, campaigns will appear here automatically.
+                The donation contract has not been deployed yet. Once it is,
+                campaigns will appear here automatically.
               </p>
             </div>
           )}
@@ -105,8 +87,7 @@ export default function DonationsPage() {
                 No open campaigns
               </h2>
               <p className="text-sm text-content-muted">
-                There are no active campaigns on{' '}
-                {getChain(chainId)?.name ?? 'this network'} right now.
+                There are no active campaigns right now.
               </p>
             </div>
           )}

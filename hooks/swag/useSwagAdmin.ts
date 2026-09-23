@@ -6,11 +6,12 @@
  *   Reads of the fulfilment record go through /api/swag/admin/* with the
  *   Privy token; the server checks ADMIN_ROLE on the collection before it
  *   answers. Reads of the collection itself (caps, price, paused, roles) come
- *   straight from Base through the shared client, exactly as the storefront
- *   reads them — an admin sees the same chain a buyer does.
+ *   straight from the chain through the shared client, exactly as the
+ *   storefront reads them — an admin sees the same chain a buyer does.
  *
  *   Writes to the collection are transactions from the admin's own wallet,
- *   sponsored and pinned to Base. useSwagAdminTx is the one write primitive:
+ *   sponsored and pinned to the collection's chain. useSwagAdminTx is the one
+ *   write primitive:
  *   each button calls it separately, so each button owns its own two flags
  *   (`submitting` click → hash, `cooldown` hash → refetch) and a rejected
  *   transaction on one row never locks a button on another.
@@ -18,11 +19,10 @@
 import { useCallback, useMemo, useState } from 'react';
 import { usePrivy, useSendTransaction } from '@privy-io/react-auth';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createPublicClient, http, isAddress, type Address, type Hex } from 'viem';
-import { mainnet } from 'viem/chains';
+import { isAddress, type Address, type Hex } from 'viem';
 import { normalize } from 'viem/ens';
 import { swag1155Abi } from '../../frontend/abis/swag';
-import { CHAIN_IDS, getRpcUrl } from '../../config/constants';
+import { CHAIN_IDS, publicClientFor } from '../../config/chains';
 import { logger } from '../../utils/logger';
 import { useActiveWallet } from '../useActiveWallet';
 import { useRequireChain } from '../useRequireChain';
@@ -119,7 +119,7 @@ export function useSwagAdminSummary() {
   });
 }
 
-// ── Collection reads (straight from Base) ───────────────────────────────────
+// ── Collection reads (straight from the chain) ──────────────────────────────
 
 export interface SwagTokenStock {
   tokenId: number;
@@ -235,8 +235,7 @@ export async function resolveAddressInput(value: string): Promise<Address | null
   if (isAddress(v)) return v as Address;
   if (!/\.eth$/i.test(v)) return null;
   try {
-    const client = createPublicClient({ chain: mainnet, transport: http(getRpcUrl(CHAIN_IDS.ETHEREUM)) });
-    return await client.getEnsAddress({ name: normalize(v) });
+    return await publicClientFor(CHAIN_IDS.ETHEREUM).getEnsAddress({ name: normalize(v) });
   } catch (e) {
     logger.debug('[useSwagAdmin] ENS lookup failed', e);
     return null;
@@ -269,7 +268,7 @@ export interface SwagAdminTxResult {
 export function useSwagAdminTx(): SwagAdminTxResult {
   const { authenticated } = usePrivy();
   const { wallet } = useActiveWallet();
-  const chain = useRequireChain(CHAIN_IDS.BASE);
+  const chain = useRequireChain(SWAG.chainId);
   const { sendTransaction } = useSendTransaction();
   const queryClient = useQueryClient();
 
@@ -281,7 +280,7 @@ export function useSwagAdminTx(): SwagAdminTxResult {
   const blocked = !authenticated || !wallet
     ? 'Connect a wallet first.'
     : !chain.ready
-      ? 'Switch to Base first.'
+      ? `Switch to ${chain.chainName} first.`
       : null;
 
   const reset = useCallback(() => {
@@ -302,7 +301,7 @@ export function useSwagAdminTx(): SwagAdminTxResult {
 
       try {
         const result = await sendTransaction(
-          { to: SWAG.address, data, chainId: CHAIN_IDS.BASE },
+          { to: SWAG.address, data, chainId: SWAG.chainId },
           { sponsor: true }
         );
         hash = result.hash as Hex;

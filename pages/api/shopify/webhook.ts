@@ -23,7 +23,7 @@
  *               are not NFTs. Idempotent on (order, line item): a redelivered
  *               webhook finds its rows already there. An order this app
  *               created itself — the Shopify mirror of a USDC purchase, tagged
- *               usdc-onchain with gateway "USDC on Base" — is skipped: its row
+ *               usdc-onchain with gateway "USDC on Ethereum" — is skipped: its row
  *               already exists on the onchain channel.
  * refunds/create the matching rows go to cancelled. If a voucher had been
  *               issued and not yet redeemed, the row is flagged

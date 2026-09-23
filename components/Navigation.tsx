@@ -57,10 +57,9 @@ interface NavigationProps {
 /* COMPONENTS.md — Nav (topbar): 60px, --surface-void at 86% + blur, bottom
    hairline. Items are mono 11 uppercase; the active one sits on --eth-blue-wash.
 
-   There is no chain selector here. Every feature owns its chain: it picks one
-   in-page from `chainsFor(feature)` and moves the wallet with `useRequireChain`
-   right before signing. The bar shows the connected wallet and nothing about
-   networks. */
+   There is no chain selector here or anywhere: the app is Ethereum only, and
+   every feature moves the wallet with `useRequireChain` right before signing.
+   The bar shows the connected wallet and nothing about networks. */
 const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
   const router = useRouter();
   const { authenticated, login, logout } = usePrivy();
@@ -75,7 +74,7 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
     setIsMobileMenuOpen(false);
   }, [router.pathname]);
 
-  // Admin roles OR'd across every chain each contract is deployed on, so the
+  // Admin roles read from the contracts on Ethereum, cached per wallet, so the
   // entry does not appear and vanish with a network choice made elsewhere.
   const { hasAnyAdmin } = useAdminRoles();
 

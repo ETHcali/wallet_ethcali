@@ -32,6 +32,7 @@ import {
   useTrm,
   utmFromQuery,
   withUtm,
+  SWAG_CHAIN,
   SWAG_SITE_ORIGIN,
 } from '../../hooks/swag';
 import { supabase } from '../../lib/supabase';
@@ -145,8 +146,8 @@ export default function SwagProductPage({ meta }: ProductPageProps) {
   const description =
     headDescription ??
     (es
-      ? 'Merch oficial de ETH Cali. Paga con tarjeta o con USDC en Base.'
-      : 'Official ETH Cali merch. Pay with card or with USDC on Base.');
+      ? 'Merch oficial de ETH Cali. Paga con tarjeta o con USDC.'
+      : 'Official ETH Cali merch. Pay with card or with USDC.');
 
   const notFound = router.isReady && !catalogue.isLoading && !catalogue.error && !product;
 
@@ -246,7 +247,7 @@ export default function SwagProductPage({ meta }: ProductPageProps) {
         )}
 
         <p className="mt-10 text-center font-mono text-[10px] uppercase tracking-wide text-content-faint">
-          Base · USDC · ETH Cali Swag 2026
+          {SWAG_CHAIN.name} · USDC · ETH Cali Swag 2026
         </p>
       </main>
 

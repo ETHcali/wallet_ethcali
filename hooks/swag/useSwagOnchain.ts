@@ -3,7 +3,8 @@
  * for crypto buyers, what USDC the contract will charge, whether a buy of one
  * would go through, and whether the store is paused.
  *
- * One multicall on Base per refresh, whatever the wallet is connected to.
+ * One multicall on the collection's chain per refresh, whatever the wallet is
+ * connected to.
  */
 import { useQuery } from '@tanstack/react-query';
 import { swag1155Abi } from '../../frontend/abis/swag';

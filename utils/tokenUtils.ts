@@ -1,8 +1,6 @@
-// CoinGecko ids for the tokens the wallet prices. COPm has no stable id and is
-// valued through the USD→COP rate instead (hooks/donations/useDisplayCurrency).
+// CoinGecko ids for the tokens the wallet prices.
 export const COINGECKO_IDS: Record<string, string> = {
   ETH: 'ethereum',
-  CELO: 'celo',
   USDC: 'usd-coin',
   EURC: 'euro-coin',
   USDT: 'tether',
@@ -33,8 +31,6 @@ export function getTokenLogoUrl(tokenSymbol: string): string {
       return `${COINGECKO_IMAGE_URL}/26045/large/euro-coin.png`;
     case 'USDT':
       return `${COINGECKO_IMAGE_URL}/325/large/Tether.png`;
-    case 'CELO':
-      return `${COINGECKO_IMAGE_URL}/11090/large/InjXBNx9_400x400.jpg`;
     default:
       return FALLBACK_IMAGES[symbol] || FALLBACK_IMAGES.DEFAULT;
   }

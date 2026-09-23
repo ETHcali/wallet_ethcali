@@ -2,7 +2,6 @@
  * VerifiedStep - Shows verification result and mint button
  */
 import React from 'react';
-import { getChain } from '../../../config/chains';
 import type { RequireChainResult } from '../../../hooks/useRequireChain';
 import SwitchChainButton from '../../shared/SwitchChainButton';
 
@@ -10,7 +9,6 @@ interface VerifiedStepProps {
   uniqueIdentifier: `0x${string}` | null;
   isOver18: boolean;
   nationality: string | null;
-  chainId: number;
   /** Wallet-vs-chain state from the verification hook. */
   chain: RequireChainResult;
   isMinting: boolean;
@@ -29,7 +27,6 @@ export const VerifiedStep: React.FC<VerifiedStepProps> = ({
   uniqueIdentifier,
   isOver18,
   nationality,
-  chainId,
   chain,
   isMinting,
   errorMessage,
@@ -69,7 +66,7 @@ export const VerifiedStep: React.FC<VerifiedStepProps> = ({
 
         <div className="mt-2 pt-2 border-t border-line-hairline">
           <span className="text-[9px] text-content-faint font-mono">
-            {(getChain(chainId)?.name ?? 'Unsupported network').toUpperCase()} • SOULBOUND
+            SOULBOUND
           </span>
         </div>
       </div>

@@ -1,15 +1,14 @@
 /**
- * Send the native coin or a registry ERC-20 on an explicit chain.
+ * Send ETH or a registry ERC-20 on Ethereum.
  *
- * The chain comes with each transfer, not from the wallet: the send form picks
- * it from the balance the user chose, and `useRequireChain(chainId)` has moved
- * the wallet before this is called. The transaction still pins `chainId` so a
- * wallet that drifted cannot sign on the wrong network.
+ * `useRequireChain(DEFAULT_CHAIN.id)` has moved the wallet before this is
+ * called. The transaction still pins the chain id so a wallet that drifted
+ * cannot sign on the wrong network.
  */
 import { useState, useCallback } from 'react';
 import { useSendTransaction } from '@privy-io/react-auth';
 import { parseUnits, encodeFunctionData } from 'viem';
-import { findToken, getChain } from '../config/chains';
+import { DEFAULT_CHAIN, findToken } from '../config/chains';
 import { useActiveWallet } from './useActiveWallet';
 
 const ERC20_TRANSFER_ABI = [
@@ -26,7 +25,6 @@ const ERC20_TRANSFER_ABI = [
 ] as const;
 
 export interface TransferRequest {
-  chainId: number;
   recipient: string;
   /** Human amount, e.g. "0.25" — parsed with the token's own decimals here. */
   amount: string;
@@ -50,11 +48,9 @@ export function useTokenTransfer(): UseTokenTransferResult {
   const [error, setError] = useState<Error | null>(null);
 
   const sendToken = useCallback(
-    async ({ chainId, recipient, amount, symbol }: TransferRequest): Promise<string> => {
+    async ({ recipient, amount, symbol }: TransferRequest): Promise<string> => {
       if (!wallet) throw new Error('No wallet connected');
-
-      const chain = getChain(chainId);
-      if (!chain) throw new Error(`Chain ${chainId} is not supported`);
+      const chain = DEFAULT_CHAIN;
 
       setIsSending(true);
       setTxHash(null);
@@ -71,7 +67,7 @@ export function useTokenTransfer(): UseTokenTransferResult {
           hash = result.hash;
         } else {
           const token = findToken(chain.id, symbol);
-          if (!token) throw new Error(`${symbol} is not available on ${chain.name}`);
+          if (!token) throw new Error(`${symbol} is not a token this wallet knows.`);
 
           const data = encodeFunctionData({
             abi: ERC20_TRANSFER_ABI,

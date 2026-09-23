@@ -1,11 +1,12 @@
 /**
  * "Is the active wallet on the chain this action needs, and if not, move it."
  *
- * The one chain-switch primitive. A feature never reads a global network
- * selector: it picks its chain from `chainsFor(feature)`, reads with that id,
- * and asks this hook right before signing. When `ready` is false the UI shows
- * a single "Switch to <chain>" primary button (frontend-ux rule 2: the
- * wrong-network check comes before approve and execute).
+ * The one chain-switch primitive. A feature never reads the wallet's network:
+ * it reads with an explicit chain id and asks this hook right before signing.
+ * When `ready` is false the UI shows a single "Switch to <chain>" primary
+ * button (frontend-ux rule 2: the wrong-network check comes before approve
+ * and execute). Every feature signs on Ethereum; the ethcali.eth claim is the
+ * one that asks for Base.
  *
  * Switching goes through Privy's `wallet.switchChain`, which adds the chain to
  * an external wallet when it is missing and is a no-op prompt for an embedded

@@ -12,7 +12,8 @@
  * What it writes:
  *   swag_products   one row per design, upserted by sku. sort_order is the
  *                   design's position in the catalogue.
- *   swag_variants   one row per design for Base (8453), upserted by
+ *   swag_variants   one row per design on the collection's chain (from
+ *                   frontend/swag-collection.json), upserted by
  *                   (product_id, chain_id). token_id is the same position.
  *                   status is 'pinned' when the design has a metadata CID and
  *                   'draft' otherwise. Pass --collection 0x… (the deployed
@@ -29,9 +30,15 @@
  * left as they are — deactivating is an admin decision, not a side effect.
  */
 import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createClient } from '@supabase/supabase-js';
 
-const LAUNCH_CHAIN_ID = 8453;
+// The chain the app sells on, from the same file the app reads. Never typed here.
+const here = path.dirname(fileURLToPath(import.meta.url));
+const LAUNCH_CHAIN_ID = JSON.parse(
+  fs.readFileSync(path.join(here, '..', 'frontend', 'swag-collection.json'), 'utf8')
+).chainId;
 
 const args = process.argv.slice(2);
 const collectionFlag = args.indexOf('--collection');

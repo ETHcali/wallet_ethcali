@@ -4,15 +4,16 @@ import { useRouter } from 'next/router';
 import Layout from '../../components/shared/Layout';
 import Loading from '../../components/shared/Loading';
 import Navigation from '../../components/Navigation';
-import ChainPicker from '../../components/shared/ChainPicker';
 import SybilVerification from '../../components/sybil/SybilVerification';
 import NFTCard from '../../components/sybil/NFTCard';
 import VerifiedState from '../../components/sybil/VerifiedState';
 import ENSSection from '../../components/ens/ENSSection';
-import { explorerAddress } from '../../config/chains';
+import { DEFAULT_CHAIN, explorerAddress } from '../../config/chains';
 import { useActiveWallet } from '../../hooks/useActiveWallet';
-import { useChainQuery } from '../../hooks/useChainQuery';
 import { useZKPassportNFT } from '../../hooks/useZKPassportNFT';
+
+/** Identity lives on Ethereum; the wallet moves only when the mint is signed. */
+const chainId = DEFAULT_CHAIN.id;
 
 /**
  * Stands in for the verification flow until the NFT check has answered.
@@ -34,10 +35,7 @@ export default function SybilPage() {
   const router = useRouter();
   const { ready, authenticated } = usePrivy();
   const { address } = useActiveWallet();
-  // Identity owns its chain: picked from the chains ZKPassportNFT is deployed
-  // on, remembered in `?chain=`; the wallet moves only when the mint is signed.
-  const { chainId, chain, chains, setChainId } = useChainQuery('identity');
-  const zkpassport = chain.contracts.ZKPassportNFT;
+  const zkpassport = DEFAULT_CHAIN.contracts.ZKPassportNFT;
 
   const {
     alreadyHasNFT,
@@ -89,16 +87,13 @@ export default function SybilPage() {
               </h1>
             </div>
             <p className="text-content-faint font-mono text-[10px] tracking-widest uppercase">
-              ZK • {chain.name} • SOULBOUND
+              ZK • SOULBOUND
             </p>
           </div>
-
-          <ChainPicker chains={chains} value={chainId} onChange={setChainId} />
 
           {/* NFT Card Section */}
           <section className="mb-6">
             <NFTCard
-              chainId={chainId}
               alreadyHasNFT={alreadyHasNFT}
               isLoading={isNFTLoading || !address}
               tokenId={tokenId}
@@ -113,11 +108,9 @@ export default function SybilPage() {
           {checking ? (
             <FlowSkeleton />
           ) : alreadyHasNFT ? (
-            <VerifiedState chainId={chainId} mintedAt={mintedAt} />
+            <VerifiedState mintedAt={mintedAt} />
           ) : (
-            // Remounts per chain so a proof never crosses chains
             <SybilVerification
-              key={chainId}
               chainId={chainId}
               onMintSuccess={() => {
                 setTimeout(() => refreshNFTData(), 2000);
@@ -154,14 +147,15 @@ export default function SybilPage() {
             </div>
           )}
 
-          {/* ENS name — the other half of identity. Base only, regardless of
-              the chain picked above; ENSSection pins ENS_CONFIG.chainId itself. */}
+          {/* ENS name — the other half of identity. The registrar is on Base,
+              the one exception to Ethereum-only; ENSSection switches the
+              wallet there right before signing. */}
           {address && (
             <section className="pt-6" aria-label="ENS name">
               <div className="mb-3">
                 <h2 className="text-lg font-bold text-eth-blue-text font-mono tracking-wider">ENS_NAME</h2>
                 <p className="text-content-faint font-mono text-[10px] tracking-widest uppercase">
-                  ethcali.eth • Base • Gas sponsored
+                  ethcali.eth • Gas sponsored
                 </p>
               </div>
               <ENSSection userAddress={address} />

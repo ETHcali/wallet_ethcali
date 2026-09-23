@@ -64,8 +64,9 @@ function MyApp({ Component, pageProps }: AppProps) {
           // 'wallet' enables Sign-In With Ethereum (SIWE) for external wallets
           loginMethods: ['email', 'passkey', 'wallet', 'google'],
           // The registry's chains, and nothing else: `wallet.switchChain` and
-          // `sendTransaction({ chainId })` throw for a chain outside this list,
-          // and embedded wallets start on Base.
+          // `sendTransaction({ chainId })` throw for a chain outside this list.
+          // Embedded wallets start on Ethereum; Base is listed only so the
+          // ethcali.eth claim can switch there.
           defaultChain: PRIVY_DEFAULT_CHAIN,
           supportedChains: PRIVY_SUPPORTED_CHAINS,
           appearance: {

@@ -9,7 +9,6 @@ import { AdminOrders } from '../../components/swag/AdminOrders';
 import { AdminStock } from '../../components/swag/AdminStock';
 import { CARD, buttonClass } from '../../components/swag/AdminPrimitives';
 import { HashChip } from '../../components/swag/HashChip';
-import { CHAIN_IDS } from '../../config/constants';
 import { useAdminStatus } from '../../hooks/useAdminStatus';
 import { SWAG, useSwagAdminSummary } from '../../hooks/swag';
 
@@ -55,7 +54,7 @@ function Summary() {
 export default function SwagAdminPage() {
   const router = useRouter();
   const { ready, authenticated, login } = usePrivy();
-  const { isSwagAdmin, isLoading, walletAddress } = useAdminStatus(CHAIN_IDS.BASE);
+  const { isSwagAdmin, isLoading, walletAddress } = useAdminStatus(SWAG.chainId);
 
   const [tab, setTab] = useState<Tab>('orders');
   useEffect(() => {
@@ -126,7 +125,7 @@ export default function SwagAdminPage() {
       <AdminShell
         active="swag"
         title="Swag"
-        subtitle="Orders, caps and treasury for the Base collection. Stock and money are read from the chain; the order desk is the fulfilment record."
+        subtitle="Orders, caps and treasury for the collection. Stock and money are read from the chain; the order desk is the fulfilment record."
       >
         {body}
       </AdminShell>

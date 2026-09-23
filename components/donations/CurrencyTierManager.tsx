@@ -24,11 +24,11 @@ interface TierDraft {
  * Configure which currencies a campaign accepts and what each one's reward
  * thresholds are.
  *
- * Thresholds are set PER CURRENCY on purpose. 10 USDC is 10e6 while a comparable
- * COPm amount is ~40_000e18 — reusing one number across both would make every
- * COPm donation clear the top tier by a factor of ~10^12. This form always parses
- * against the selected token's own decimals and shows the resulting base units so
- * the admin can see what is actually being written on-chain.
+ * Thresholds are set PER CURRENCY on purpose. 10 USDC is 10e6 while 0.01 ETH is
+ * 1e16 — reusing one number across both would put every ETH donation in the top
+ * tier. This form always parses against the selected token's own decimals and
+ * shows the resulting base units so the admin can see what is actually being
+ * written on-chain.
  */
 const CurrencyTierManager: React.FC<CurrencyTierManagerProps> = ({
   campaign,
@@ -188,7 +188,7 @@ const CurrencyTierManager: React.FC<CurrencyTierManagerProps> = ({
                     next[i] = { ...next[i], amount: e.target.value.replace(/[^0-9.]/g, '') };
                     setDrafts(next);
                   }}
-                  placeholder={selected.symbol === 'COPm' ? '40000' : '10'}
+                  placeholder={selected.isNative ? '0.01' : '10'}
                   className="w-full rounded-chip border border-line-hairline bg-surface-inset px-2 py-1.5 text-xs text-content-primary outline-none focus:border-eth-blue"
                 />
                 {/* Show the real base units so a decimals mistake is visible */}

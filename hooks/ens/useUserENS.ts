@@ -35,7 +35,7 @@ interface UserENSResult {
 }
 
 function baseClient() {
-  return publicClientFor(CHAIN_IDS.BASE);
+  return publicClientFor(ENS_CONFIG.chainId);
 }
 
 /** True when the registry says this node's address record is `address`. */

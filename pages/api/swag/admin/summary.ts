@@ -16,9 +16,9 @@
  */
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { swag1155Abi } from '../../../../frontend/abis/swag';
-import { SWAG_COLLECTION_BASE } from '../../../../config/constants';
+import { SWAG_COLLECTION } from '../../../../config/constants';
 import { getSupabaseAdmin } from '../../../../lib/supabase';
-import { getBaseClient, getSwagCollection, SWAG_CHAIN_ID } from '../../../../lib/swag/onchain';
+import { getSwagClient, getSwagCollection, SWAG_CHAIN_ID } from '../../../../lib/swag/onchain';
 import { listVoucherCancelQueue, OrderError } from '../../../../lib/swag/orders';
 import { requireSwagAdmin } from '../../../../lib/swag/requireSwagAdmin';
 import { sendAuthError } from '../../../../lib/swag/requireUser';
@@ -41,7 +41,7 @@ type VariantTuple = {
 };
 
 async function readCollection(): Promise<SwagAdminSummary['collection']> {
-  const client = getBaseClient();
+  const client = getSwagClient();
   const address = getSwagCollection();
   const target = { address, abi: swag1155Abi } as const;
 
@@ -56,7 +56,7 @@ async function readCollection(): Promise<SwagAdminSummary['collection']> {
     allowFailure: true,
     contracts: ids.flatMap((id) => [
       { ...target, functionName: 'getVariant', args: [id] },
-      { ...target, functionName: 'getTokenPrice', args: [id, SWAG_COLLECTION_BASE.usdc] },
+      { ...target, functionName: 'getTokenPrice', args: [id, SWAG_COLLECTION.usdc] },
     ]),
   });
 
@@ -96,7 +96,7 @@ async function readQueue(): Promise<SwagAdminSummary['voucherCancelQueue']> {
   if (rows.length === 0) return [];
 
   const address = getSwagCollection();
-  const claimed = await getBaseClient().multicall({
+  const claimed = await getSwagClient().multicall({
     allowFailure: true,
     contracts: rows.map((row) => ({
       address,

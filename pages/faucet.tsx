@@ -4,19 +4,17 @@ import { useRouter } from 'next/router';
 import Layout from '../components/shared/Layout';
 import Loading from '../components/shared/Loading';
 import Navigation from '../components/Navigation';
-import ChainPicker from '../components/shared/ChainPicker';
 import FaucetClaim from '../components/faucet/FaucetClaim';
-import { explorerAddress } from '../config/chains';
-import { useChainQuery } from '../hooks/useChainQuery';
+import { DEFAULT_CHAIN, explorerAddress } from '../config/chains';
 import { logger } from '../utils/logger';
+
+/** The faucet reads from Ethereum; the wallet is only moved when a claim is signed. */
+const chainId = DEFAULT_CHAIN.id;
 
 export default function FaucetPage() {
   const router = useRouter();
   const { ready, authenticated } = usePrivy();
-  // The faucet owns its chain: picked here from the chains it is deployed on,
-  // remembered in `?chain=`, and the wallet is only moved when a claim is signed.
-  const { chainId, chain, chains, setChainId } = useChainQuery('faucet');
-  const faucetManager = chain.contracts.FaucetManager;
+  const faucetManager = DEFAULT_CHAIN.contracts.FaucetManager;
 
   useEffect(() => {
     if (ready && !authenticated) {
@@ -49,15 +47,11 @@ export default function FaucetPage() {
               <h1 className="text-xl font-bold text-content-primary">Faucet</h1>
             </div>
             <p className="text-content-faint font-mono text-[10px] tracking-widest uppercase">
-              ETH • {chain.name} • Sybil gated
+              ETH • Sybil gated
             </p>
           </div>
 
-          <ChainPicker chains={chains} value={chainId} onChange={setChainId} />
-
-          {/* Faucet Claim Component — remounts per chain so no state leaks across */}
           <FaucetClaim
-            key={`claim-${chainId}`}
             chainId={chainId}
             onClaimSuccess={() => {
               logger.info('Faucet claim successful');

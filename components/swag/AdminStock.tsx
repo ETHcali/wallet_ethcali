@@ -1,5 +1,5 @@
 /**
- * Stock: one row per live token, read from getVariant() on Base.
+ * Stock: one row per live token, read from getVariant() on the collection.
  *
  * The two caps and the active flag are edited inline and written together
  * with setVariant(tokenId, onchainCap, voucherCap, active) — the contract has
@@ -196,7 +196,7 @@ export function AdminStock() {
       {stockError && <p className="text-sm text-signal-reverted">Could not read the collection: {stockError}</p>}
       {!isLoading && live.length === 0 && (
         <div className={`${CARD} text-center`}>
-          <p className="text-sm text-content-muted">No design is live on Base yet.</p>
+          <p className="text-sm text-content-muted">No design is live on chain yet.</p>
         </div>
       )}
       <ul className="space-y-3">

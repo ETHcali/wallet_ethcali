@@ -21,7 +21,7 @@
  * package.json has no "type": "module"; it is harmless here.
  */
 import { spawnSync } from 'node:child_process';
-import { ORDER_CREATE, buildOrderCreateVariables, copAmounts } from '../lib/swag/shopifyMirror.ts';
+import { MIRROR_GATEWAY, ORDER_CREATE, buildOrderCreateVariables, copAmounts } from '../lib/swag/shopifyMirror.ts';
 import { fetchTrm } from '../lib/shopify.mjs';
 
 const args = process.argv.slice(2);
@@ -97,7 +97,7 @@ const total = BigInt(tx.amountSet.shopMoney.amount.replace('.', ''));
 const checks = [
   ['line × quantity equals transaction amount', unit * BigInt(line.quantity) === total],
   ['tag usdc-onchain present', variables.order.tags.includes('usdc-onchain')],
-  ['gateway is "USDC on Base"', tx.gateway === 'USDC on Base'],
+  [`gateway is "${MIRROR_GATEWAY}"`, tx.gateway === MIRROR_GATEWAY],
   ['inventory bypassed, no receipts', variables.options.inventoryBehaviour === 'BYPASS' && variables.options.sendReceipt === false && variables.options.sendFulfillmentReceipt === false],
   ['note carries the tx hash', variables.order.note.includes(purchase.txHash)],
   ['no email key unless given', purchase.email ? variables.order.email === purchase.email : !('email' in variables.order)],

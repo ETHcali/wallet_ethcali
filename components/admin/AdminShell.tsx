@@ -52,10 +52,8 @@ function truncate(address?: string): string {
  * sheet on a phone.
  *
  * Visibility here is presentation only. A section appears because the contract
- * says this address holds the role on at least one chain it is deployed on;
- * the contract re-checks on every write — hiding a link has never been, and
- * must never become, the access control. Each admin page picks its own chain
- * in-page; the shell knows nothing about networks.
+ * says this address holds the role; the contract re-checks on every write —
+ * hiding a link has never been, and must never become, the access control.
  */
 const AdminShell: React.FC<AdminShellProps> = ({ active, title, subtitle, children }) => {
   const [navOpen, setNavOpen] = useState(false);
@@ -124,8 +122,8 @@ const AdminShell: React.FC<AdminShellProps> = ({ active, title, subtitle, childr
       </p>
       <p className="mt-1 font-mono text-xs text-content-muted">{truncate(address)}</p>
       <p className="mt-2 text-[10px] leading-relaxed text-content-faint">
-        Roles are read from the contracts on every chain they are deployed on.
-        The chain rejects a call your address cannot make, whatever this menu shows.
+        Roles are read from the contracts. The chain rejects a call your address
+        cannot make, whatever this menu shows.
       </p>
     </div>
   );

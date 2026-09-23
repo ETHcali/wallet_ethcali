@@ -6,7 +6,7 @@ import Loading from '../components/shared/Loading';
 import WalletInfo from '../components/wallet/WalletInfo';
 import IdentityHeader from '../components/wallet/IdentityHeader';
 import Navigation from '../components/Navigation';
-import { useChainBalances } from '../hooks/useChainBalances';
+import { useBalances } from '../hooks/useBalances';
 import { useActiveWallet } from '../hooks/useActiveWallet';
 
 export default function WalletPage() {
@@ -56,9 +56,9 @@ export default function WalletPage() {
     }
   };
 
-  // Every chain in `chainsFor('send')`, each read with its own client. The
-  // wallet's current network plays no part in what is shown.
-  const { balances, isLoading: isBalanceLoading, refetch: refreshBalances } = useChainBalances(
+  // Read with the registry's own client; the wallet's current network plays
+  // no part in what is shown.
+  const { rows, isLoading: isBalanceLoading, isError: isBalanceError, refetch: refreshBalances } = useBalances(
     activeWallet?.address
   );
 
@@ -82,8 +82,9 @@ export default function WalletPage() {
               <IdentityHeader address={activeWallet.address} />
               <WalletInfo
                 address={activeWallet.address}
-                balances={balances}
+                rows={rows}
                 isLoading={isBalanceLoading}
+                isError={isBalanceError}
                 onRefresh={refreshBalances}
               />
             </>

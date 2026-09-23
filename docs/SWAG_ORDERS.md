@@ -23,22 +23,22 @@ the caller is read from a request body.
 
 ## Flow 1 — crypto purchase
 
-1. The app calls `buy(tokenId, qty, USDC)` on the collection (Base, sponsored).
+1. The app calls `buy(tokenId, qty, USDC)` on the collection (Ethereum mainnet, sponsored).
 2. After the receipt, the app shows a shipping form and `POST /api/swag/orders`
    `{ txHash, shipping, size?, quantity? }` with the Privy token.
-3. The server reads the receipt on Base (`lib/swag/onchain.ts › findPurchased`):
+3. The server reads the receipt on Ethereum (`lib/swag/onchain.ts › findPurchased`):
    `status === 'success'`, a `Purchased` log emitted **by the collection**.
 4. The log's `buyer` must be one of the caller's linked wallets, else 403.
-5. `tokenId` → `swag_variants` on 8453 for this collection → the design.
+5. `tokenId` → `swag_variants` on chain 1 for this collection → the design.
    Size is required for sized designs and must be one of the product's sizes.
 6. Insert `channel='onchain'`, `status='paid'`, `tx_hash`, `order_ref = tx_hash`.
    Idempotent: a second POST for the same hash returns the existing row.
 7. **Mirrored into Shopify (tag `usdc-onchain`).** `lib/swag/shopifyMirror.ts`
    runs `orderCreate` (Admin API 2026-07) with the `swag_shopify_variants`
    variant for (design, size), `financialStatus: PAID`, one `SALE`/`SUCCESS`
-   transaction with gateway **`USDC on Base`**, the shipping address, the buyer's
+   transaction with gateway **`USDC on Ethereum`**, the shipping address, the buyer's
    Privy-verified email when there is one, a note
-   `USDC on Base · tx <hash> · token #<id>`, tags `usdc-onchain`, `swag-2026`,
+   `USDC on Ethereum · tx <hash> · token #<id>`, tags `usdc-onchain`, `swag-2026`,
    and options `inventoryBehaviour: BYPASS` (the unit came from on-chain stock),
    `sendReceipt: false`, `sendFulfillmentReceipt: false`. The COP amounts are the
    USDC `paid` from the Purchased log × the TRM of the day (`fetchTrm()` in
@@ -68,7 +68,7 @@ the caller is read from a request body.
    `SHOPIFY_CLIENT_SECRET`, whichever is set, `timingSafeEqual`) and
    `X-Shopify-Shop-Domain === SHOPIFY_STORE_DOMAIN`, else 401.
 3. Per line item: SKU → `swag_shopify_variants` (exact, knows the size) or the
-   convention `<designSku>-<SIZE>` → `swag_products` → `swag_variants` on 8453.
+   convention `<designSku>-<SIZE>` → `swag_products` → `swag_variants` on chain 1.
    Unknown SKUs are logged and skipped.
 4. Insert `channel='shopify'`, `status='paid'`, `buyer_email` (lowercased),
    `shipping` from `shipping_address`, `shopify_order_id` (order GID),
@@ -78,7 +78,7 @@ the caller is read from a request body.
 6. Always answers 200 (`{ ok: false }` on a database error) so Shopify never
    disables the subscription. Only a bad signature or shop returns 401.
 7. An order whose `tags` include `usdc-onchain` or whose gateway is
-   `USDC on Base` is **our own mirror** of a USDC purchase (Flow 1, step 7) and
+   `USDC on Ethereum` is **our own mirror** of a USDC purchase (Flow 1, step 7) and
    is skipped: the onchain row already exists and already points at it.
 
 `refunds/create`: matching rows go to `cancelled`. If a voucher was issued and
@@ -97,7 +97,7 @@ annotate (`partial_refund=<n>`).
    sets `deadline = now + 7 days`, signs the EIP-712 `Claim` struct
    (`lib/swag/voucher.ts`) and stores `{ voucher, signature, issuedAt }` on the
    row. Re-issuing overwrites with the same `orderRef`, so it can never double-mint.
-4. The app sends `claim(voucher, signature)` to the collection on Base,
+4. The app sends `claim(voucher, signature)` to the collection on Ethereum,
    sponsored, and waits for the receipt.
 5. `POST /api/swag/claim { orderId, txHash }`. The server finds the `Claimed`
    log from the collection, checks `orderRef`, `to` and `tokenId` match the
@@ -105,11 +105,11 @@ annotate (`partial_refund=<n>`).
 
 ### The voucher, exactly
 
-- Domain: `{ name: 'ETHCaliSwag', version: '1', chainId: 8453, verifyingContract: <collection> }`
+- Domain: `{ name: 'ETHCaliSwag', version: '1', chainId: 1, verifyingContract: <collection> }` — the chain id comes from `frontend/swag-collection.json`, never typed by hand
 - Primary type **`Claim`** — not `ClaimVoucher`. The Solidity struct is named
   `ClaimVoucher`, but `CLAIM_TYPEHASH` hashes `Claim(uint256 tokenId,address to,uint256 quantity,bytes32 orderRef,uint256 deadline)`.
 - `scripts/swag-voucher-selftest.mjs` proves the local digest equals the
-  contract's `hashVoucher()` on Base and that the signer recovers. Run it with
+  contract's `hashVoucher()` on Ethereum, that the contract's own `eip712Domain()` agrees, and that the signer recovers. Run it with
   `--env-file=.env` to also confirm the real key holds `SIGNER_ROLE`.
 
 ## Fulfilment — shipping happens in Shopify and flows back
@@ -147,7 +147,7 @@ and any move out of `cancelled`.
 The order desk is `app.ethcali.org/swag/admin`. The menu shows it to a wallet
 that `isAdmin()` on the collection says yes for; every call behind it is checked
 again — `pages/api/swag/admin/*` by `lib/swag/requireSwagAdmin.ts` (Privy token
-→ linked wallets → `isAdmin()` on the collection on Base), and every onchain
+→ linked wallets → `isAdmin()` on the collection), and every onchain
 button by the contract itself. Nothing on the page grants anything.
 
 | Route | What it does |
@@ -173,7 +173,7 @@ refund is a transfer from the treasury Safe.
 **Cancel a voucher on chain.** A row tagged *Voucher needs cancel* is a refunded
 card order whose voucher was issued and never redeemed — the buyer could still
 mint. **Cancel voucher on chain** sends `cancelOrder(orderRef)` from your wallet
-(ADMIN_ROLE, Base, sponsored); after the receipt the page writes
+(ADMIN_ROLE, Ethereum, sponsored); after the receipt the page writes
 `voucher_cancelled_tx=<hash>` to notes and the row leaves the queue. The summary
 tile counts the queue by the chain's answer (`orderClaimed`), not by the note, so
 a voucher cancelled from a Safe or a script still drops off. `VoucherAlreadyClaimed`

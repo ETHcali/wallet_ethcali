@@ -10,9 +10,11 @@ import swagCollection from '../frontend/swag-collection.json';
 import {
   ALL_CHAINS,
   CHAIN_IDS,
+  ENS_CHAIN_ID,
   NATIVE_TOKEN_SENTINEL,
   findToken,
   getChain,
+  isChainId,
   type ChainId,
 } from './chains';
 
@@ -26,32 +28,43 @@ export const TOKEN_DECIMALS = {
   USDC: 6,
   USDT: 6,
   EURC: 6,
-  // COPm (Mento Colombian Peso) is 18 decimals, unlike the 6-decimal
-  // stablecoins above. Never assume 6 for a "stablecoin".
-  COPm: 18,
 } as const;
 
 // =============================================================================
 // SWAG COLLECTION
 // =============================================================================
 /**
- * The live Swag1155 clone on Base, `ETHCALI-SWAG-2026`. Swag is Base-only and
- * priced in USDC only; there is no chain selector anywhere in the swag UI.
+ * The live Swag1155 clone, `ETHCALI-SWAG-2026`, on one chain — Ethereum
+ * mainnet today — priced in USDC only. There is no chain selector anywhere in
+ * the swag UI: every read, write and explorer link takes `SWAG_COLLECTION.chainId`.
  *
- * The address is not typed here by hand: `frontend/swag-collection.json` is
- * written by `npm run sync:contracts` from scs-ethcali/deployments/base-latest.json,
- * so a redeploy shows up as a diff in that file rather than as a stale literal.
+ * Nothing here is typed by hand. `frontend/swag-collection.json` is written by
+ * `npm run sync:contracts` (SWAG_CHAIN=ethereum) from the contracts repo's
+ * deployment record, so moving the store or redeploying the clone shows up as
+ * a diff in that file rather than as a stale literal. The USDC the collection
+ * was deployed against must be the registry's USDC for that chain; a mismatch
+ * fails the build here instead of a buyer's approve().
  */
-const baseUsdc = findToken(CHAIN_IDS.BASE, 'USDC');
-if (!baseUsdc) throw new Error('config/chains.ts: Base has no USDC entry');
+if (!isChainId(swagCollection.chainId)) {
+  throw new Error(`frontend/swag-collection.json names chain ${swagCollection.chainId}, which config/chains.ts does not know`);
+}
+const swagChainId: ChainId = swagCollection.chainId;
+const swagUsdc = findToken(swagChainId, 'USDC');
+if (!swagUsdc) throw new Error(`config/chains.ts: chain ${swagChainId} has no USDC entry`);
+if (swagUsdc.address.toLowerCase() !== swagCollection.usdc.toLowerCase()) {
+  throw new Error(
+    `frontend/swag-collection.json says the collection takes USDC ${swagCollection.usdc}, the registry lists ${swagUsdc.address}`
+  );
+}
 
-export const SWAG_COLLECTION_BASE = {
+export const SWAG_COLLECTION = {
   name: swagCollection.name,
-  chainId: CHAIN_IDS.BASE,
+  chainId: swagChainId,
   address: swagCollection.address as `0x${string}`,
-  /** Base USDC — the only payment token the collection accepts. */
-  usdc: baseUsdc.address,
-  usdcDecimals: baseUsdc.decimals,
+  /** The chain's USDC — the only payment token the collection accepts. */
+  usdc: swagUsdc.address,
+  /** 6. Read from the registry's token entry, never assumed. */
+  usdcDecimals: swagUsdc.decimals,
 } as const;
 
 /** The Shopify store behind "Pay with card". COP, Stripe connected. */
@@ -67,10 +80,13 @@ export const SWAG_SHOPIFY_STORE = 'store.ethcali.org';
  * registry.registrars(registrar) == true. The mainnet resolver for ethcali.eth is
  * still the ENS PublicResolver, so L1 resolution of these names is not wired yet;
  * the wallet reads the Base registry directly and treats that as the truth.
+ *
+ * The app is Ethereum only; the name claim is the one deliberate exception
+ * and switches the wallet to Base lazily, right before signing.
  */
 export const ENS_CONFIG = {
   parentName: 'ethcali.eth',
-  chainId: CHAIN_IDS.BASE,
+  chainId: ENS_CHAIN_ID,
   registrar: '0x7103595fc32b4072b775e9f6b438921c8cf532ed',
   registry: '0x58f23036463463f947aeadab97eeecf5a76049c7',
 } as const;
@@ -86,8 +102,6 @@ export function getRpcUrl(chainId: ChainId): string {
   return chain.rpcUrl;
 }
 
-// Built from ALL_CHAINS, hidden ones included: an API route decoding an old
-// order or an indexed row may still meet an Optimism id and must not throw.
 export const EXPLORER_URLS: Record<ChainId, string> = Object.fromEntries(
   ALL_CHAINS.map((c) => [c.id, c.explorerUrl])
 ) as Record<ChainId, string>;

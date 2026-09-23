@@ -1,5 +1,8 @@
 /**
- * useENSMint - Register `<label>.ethcali.eth` through the Base registrar.
+ * useENSMint - Register `<label>.ethcali.eth` through the Durin registrar on
+ * Base — the one transaction this app signs off Ethereum. The section that
+ * calls `register` has already moved the wallet with
+ * `useRequireChain(ENS_CONFIG.chainId)`; the transaction pins the chain too.
  *
  * Two pending phases, per the frontend-ux rule for onchain buttons:
  *   submitting  click → wallet returned a hash
@@ -13,7 +16,7 @@ import { useSendTransaction } from '@privy-io/react-auth';
 import { encodeFunctionData } from 'viem';
 import L2RegistrarABI from '../../frontend/abis/l2registar.json';
 import { ENS_CONFIG } from '../../config/constants';
-import { CHAIN_IDS, publicClientFor } from '../../config/chains';
+import { publicClientFor } from '../../config/chains';
 import { logger } from '../../utils/logger';
 
 export type MintPhase = 'idle' | 'submitting' | 'confirming' | 'confirmed' | 'failed';
@@ -53,14 +56,14 @@ export function useENSMint() {
 
         logger.info('[useENSMint] Registering', { label, owner });
         const result = await sendTransaction(
-          { to: ENS_CONFIG.registrar, data, chainId: CHAIN_IDS.BASE },
+          { to: ENS_CONFIG.registrar, data, chainId: ENS_CONFIG.chainId },
           { sponsor: true }
         );
         const txHash = result.hash as `0x${string}`;
         setHash(txHash);
         setPhase('confirming');
 
-        const client = publicClientFor(CHAIN_IDS.BASE);
+        const client = publicClientFor(ENS_CONFIG.chainId);
         const receipt = await client.waitForTransactionReceipt({ hash: txHash });
         if (receipt.status !== 'success') {
           throw new Error('reverted');

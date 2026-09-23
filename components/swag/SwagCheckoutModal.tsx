@@ -14,7 +14,7 @@ import {
   useTrm,
 } from '../../hooks/swag';
 import { formatUnits } from 'viem';
-import { SWAG_COLLECTION_BASE } from '../../config/constants';
+import { SWAG_COLLECTION } from '../../config/constants';
 import { HashChip } from './HashChip';
 import { ShippingForm } from './ShippingForm';
 
@@ -33,7 +33,7 @@ const PRIMARY =
 
 /**
  * The USDC checkout for one design. One primary action at a time:
- * Connect → Switch to Base → Approve → Buy, then the shipping form once the
+ * Connect → Switch chain → Approve → Buy, then the shipping form once the
  * receipt is in. Every button owns its own pending state.
  */
 export function SwagCheckoutModal({ product, tokenId, size, onClose }: SwagCheckoutModalProps) {
@@ -54,7 +54,7 @@ export function SwagCheckoutModal({ product, tokenId, size, onClose }: SwagCheck
 
   const image = productImageUrl(product);
   const name = productName(product, locale);
-  const usd = Number(formatUnits(flow.total, SWAG_COLLECTION_BASE.usdcDecimals));
+  const usd = Number(formatUnits(flow.total, SWAG_COLLECTION.usdcDecimals));
   const busy = flow.isApproving || flow.approveCooldown || flow.isBuying || flow.buyCooldown;
 
   const header = (
@@ -71,7 +71,7 @@ export function SwagCheckoutModal({ product, tokenId, size, onClose }: SwagCheck
           {rate && flow.total > 0n && <span className="text-content-faint"> · {formatCop(usd * rate)}</span>}
           {size && <span className="text-content-faint"> · {size}</span>}
         </p>
-        <p className="mt-0.5 font-mono text-[10px] uppercase tracking-wide text-content-faint">Base · USDC</p>
+        <p className="mt-0.5 font-mono text-[10px] uppercase tracking-wide text-content-faint">USDC</p>
       </div>
       <button
         type="button"
@@ -139,8 +139,8 @@ export function SwagCheckoutModal({ product, tokenId, size, onClose }: SwagCheck
       break;
     case 'switch':
       action = (
-        <button type="button" onClick={flow.switchToBase} disabled={flow.isSwitching} className={PRIMARY}>
-          {flow.isSwitching ? 'Switching…' : 'Switch to Base'}
+        <button type="button" onClick={flow.switchChain} disabled={flow.isSwitching} className={PRIMARY}>
+          {flow.isSwitching ? 'Switching…' : `Switch to ${flow.chainName}`}
         </button>
       );
       break;
@@ -193,7 +193,7 @@ export function SwagCheckoutModal({ product, tokenId, size, onClose }: SwagCheck
             )}
             {flow.step !== 'connect' && (
               <div className="flex justify-between">
-                <dt className="text-content-muted">Your USDC on Base</dt>
+                <dt className="text-content-muted">Your USDC</dt>
                 <dd className="font-mono text-content-secondary">{formatUsdc(flow.usdcBalance)}</dd>
               </div>
             )}
@@ -217,7 +217,7 @@ export function SwagCheckoutModal({ product, tokenId, size, onClose }: SwagCheck
 
           {flow.txHash && !flow.confirmed && (
             <p className="mb-3 text-sm text-content-muted">
-              Submitted <HashChip hash={flow.txHash} /> — waiting for Base to confirm.
+              Submitted <HashChip hash={flow.txHash} /> — waiting for confirmation.
             </p>
           )}
 

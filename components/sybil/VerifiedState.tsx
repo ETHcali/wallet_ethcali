@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { CheckIcon } from '../shared/icons';
 
 interface VerifiedStateProps {
-  chainId: number;
   /** From the mint's block; null when the RPC refused the log range. */
   mintedAt: Date | null;
 }
@@ -43,7 +42,7 @@ const dateFormat = new Intl.DateTimeFormat('en-US', { dateStyle: 'long' });
  * "start verification" here: the proof was made once and the token is
  * soulbound, so asking again would only produce a `duplicate` revert.
  */
-const VerifiedState: React.FC<VerifiedStateProps> = ({ chainId, mintedAt }) => (
+const VerifiedState: React.FC<VerifiedStateProps> = ({ mintedAt }) => (
   <section className="rounded-card border border-line-hairline bg-surface-slab p-5" aria-label="Verified">
     <div className="flex items-start justify-between gap-3">
       <div>
@@ -73,7 +72,7 @@ const VerifiedState: React.FC<VerifiedStateProps> = ({ chainId, mintedAt }) => (
           <div className="min-w-0 flex-1">
             {item.href ? (
               <Link
-                href={{ pathname: item.href, query: { chain: String(chainId) } }}
+                href={item.href}
                 className="text-sm text-eth-blue-text hover:underline"
               >
                 {item.title} →

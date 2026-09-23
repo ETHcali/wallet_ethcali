@@ -57,7 +57,7 @@ export interface FxRates {
 const STALE_TRM = 3062.96;
 
 const FALLBACK_RATES: FxRates = {
-  usd: { ethereum: 3500, 'usd-coin': 1, celo: 0.5 },
+  usd: { ethereum: 3500, 'usd-coin': 1 },
   usdToCop: STALE_TRM,
   usdToCopIsStale: true,
   ethUsd: 3500,
@@ -69,7 +69,7 @@ const FALLBACK_RATES: FxRates = {
  * single one is both authoritative for COP and useful for crypto.
  */
 async function fetchFxRates(): Promise<FxRates> {
-  const ids = 'ethereum,usd-coin,celo';
+  const ids = 'ethereum,usd-coin';
 
   const [priceRes, trmRes] = await Promise.allSettled([
     fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`),
@@ -85,7 +85,6 @@ async function fetchFxRates(): Promise<FxRates> {
     usd = {
       ethereum: ethUsd,
       'usd-coin': data['usd-coin']?.usd ?? 1,
-      celo: data.celo?.usd ?? FALLBACK_RATES.usd.celo,
     };
   } else {
     logger.debug('[useDisplayCurrency] CoinGecko unavailable, using fallback USD prices');
@@ -138,17 +137,10 @@ export interface CurrencyFormatter {
  *
  * Module-level and pure so a component that has to show several currencies at
  * once (the campaign page shows the token amount, the dollar value and the peso
- * value side by side) can reuse it instead of re-deriving prices. Re-deriving
- * is how the COPm special case below gets forgotten in one place and not
- * another.
+ * value side by side) can reuse it instead of re-deriving prices.
  */
 export function tokenToUsd(amount: bigint, token: DonationToken, fx: FxRates): number {
   const units = Number(formatUnits(amount, token.decimals));
-
-  // COPm is a Colombian peso stablecoin: 1 COPm ≈ 1 COP.
-  if (token.symbol === 'COPm') {
-    return fx.usdToCop > 0 ? units / fx.usdToCop : 0;
-  }
 
   if (!token.coingeckoId) {
     logger.debug('[useDisplayCurrency] no price source for token', token.symbol);
@@ -205,7 +197,7 @@ export function useDisplayCurrency(): CurrencyFormatter {
   );
 
   const formatToken = useCallback((amount: bigint, token: DonationToken): string => {
-    // The token's OWN decimals. USDC 6, COPm 18 — assuming 18 here would be a
+    // The token's OWN decimals. USDC is 6 — assuming 18 here would be a
     // 10^12 error on a USDC total.
     const units = Number(formatUnits(amount, token.decimals));
     const digits = units > 0 && units < 0.01 ? 6 : 2;

@@ -1,20 +1,21 @@
 /**
  * The one place the swag hooks touch the chain from.
  *
- * Swag is Base-only. The client is built with an explicit chain and the RPC
- * from config, never from the wallet — a wallet on Optimism still reads the
- * Base collection and is asked to switch only when it is about to sign.
+ * The collection lives on one chain, `SWAG_COLLECTION.chainId`, and nothing
+ * in the swag code names that chain any other way. The client is the
+ * registry's, built from its RPC and never from the wallet — a wallet
+ * elsewhere still reads the collection and is asked to switch only when it
+ * is about to sign.
  */
-import { createPublicClient, http } from 'viem';
-import { base } from 'viem/chains';
-import { CHAIN_IDS, SWAG_COLLECTION_BASE, getRpcUrl } from '../../config/constants';
+import { getChain, publicClientFor } from '../../config/chains';
+import { SWAG_COLLECTION } from '../../config/constants';
 
-export const SWAG = SWAG_COLLECTION_BASE;
+export const SWAG = SWAG_COLLECTION;
 
-export const swagClient = createPublicClient({
-  chain: base,
-  transport: http(getRpcUrl(CHAIN_IDS.BASE)),
-});
+/** The registry entry for the collection's chain: name, explorer, client. */
+export const SWAG_CHAIN = getChain(SWAG.chainId);
+
+export const swagClient = publicClientFor(SWAG.chainId);
 
 /**
  * Minimal ERC-20 surface for USDC. Declared here rather than imported from

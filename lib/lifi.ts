@@ -110,13 +110,13 @@ export interface SwapToken {
 }
 
 /**
- * The tokens the swap UI offers on a chain: native first, then the registry's
- * ERC-20s. Empty for a chain without `features.swap`, so callers can hide the
- * button instead of quoting into the void.
+ * The tokens the swap UI offers: native first, then the registry's ERC-20s.
+ * Empty for a chain the registry does not know, so callers can hide the button
+ * instead of quoting into the void.
  */
 export function getSwapTokens(chainId: number): SwapToken[] {
   const chain = getChain(chainId);
-  if (!chain || !chain.features.swap) return [];
+  if (!chain) return [];
 
   return [
     {

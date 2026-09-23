@@ -28,7 +28,7 @@ Do not copy it here. The wallet consumes the contract through the typed ABI in
 copy of the reference would only disagree with what the compiler enforces.
 
 The product rules the app follows (one tokenId per design, split caps, USDC
-only, Base only, size on the order) are in the workspace spec:
+only, one chain — Ethereum mainnet — size on the order) are in the workspace spec:
 `../../docs/swag-rebuild-spec.md`.
 
 ## Contract bindings
@@ -36,6 +36,7 @@ only, Base only, size on the order) are in the workspace spec:
 `frontend/` is generated. `npm run sync:contracts` copies `abis/*.json`,
 `addresses.json` and `contracts.ts` from `../scs-ethcali/frontend`, emits the
 typed `abis/swag.ts`, reads the live collection from
-`../scs-ethcali/deployments/base-latest.json` into `swag-collection.json`, and
-records the source commit in `CONTRACTS_SOURCE.json`. Commit the outputs so
+`../scs-ethcali/deployments/<SWAG_CHAIN>-latest.json` (`ethereum` by default)
+into `swag-collection.json`, and records the source commit in
+`CONTRACTS_SOURCE.json`. Commit the outputs so
 Vercel builds without the sibling checkout.

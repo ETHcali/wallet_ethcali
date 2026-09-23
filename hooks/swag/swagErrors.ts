@@ -32,8 +32,8 @@ const CONTRACT_ERRORS: Partial<Record<SwagErrorName, (args: readonly unknown[]) 
         };
   },
   PaymentTokenNotAccepted: () => ({
-    es: 'Este diseño solo se vende en USDC en Base.',
-    en: 'This design is only sold in USDC on Base.',
+    es: 'Este diseño solo se vende en USDC.',
+    en: 'This design is only sold in USDC.',
   }),
   VariantNotActive: () => ({
     es: 'Este diseño no está a la venta en este momento.',

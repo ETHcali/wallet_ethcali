@@ -102,7 +102,6 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({
               uniqueIdentifier={uniqueIdentifier}
               isOver18={isOver18}
               nationality={nationality}
-              chainId={chainId}
               chain={chain}
               isMinting={isMinting}
               errorMessage={errorMessage}

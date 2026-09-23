@@ -70,9 +70,9 @@ wallet_ethcali/
 │   │   ├── SybilVerification.tsx
 │   │   ├── NFTCard.tsx
 │   │   └── steps/       # Verification step sub-components
-│   ├── swag/            # Merchandise store (Base only, USDC only)
+│   ├── swag/            # Merchandise store (Ethereum mainnet, USDC only)
 │   │   ├── SwagCard.tsx          # One design: photo, USD + COP, both stocks, two buttons
-│   │   ├── SwagCheckoutModal.tsx # Connect → Switch to Base → Approve → Buy, then shipping
+│   │   ├── SwagCheckoutModal.tsx # Connect → Switch to Ethereum → Approve → Buy, then shipping
 │   │   ├── ShippingForm.tsx      # POST /api/swag/orders after a confirmed buy
 │   │   ├── HashChip.tsx          # 0x55C9…711d with copy + Basescan link
 │   │   ├── AdminPrimitives.tsx   # TxButton (two flags), ChainGate, AddressForm
@@ -92,8 +92,8 @@ wallet_ethcali/
 │   │   └── useVaultWhitelist.ts
 │   ├── swag/           # Swag-specific hooks
 │   │   ├── index.ts
-│   │   ├── client.ts             # Base public client, USDC ABI, query keys
-│   │   ├── useSwagCatalogue.ts   # Supabase anon read: products + Base variant + Shopify variants
+│   │   ├── client.ts             # SWAG, SWAG_CHAIN, the registry client for the collection's chain, USDC ABI, query keys
+│   │   ├── useSwagCatalogue.ts   # Supabase anon read: products + the live collection's variant + Shopify variants
 │   │   ├── useSwagOnchain.ts     # One multicall: remainingOnchain, getTokenPrice, canBuy, paused
 │   │   ├── useBuySwag.ts         # Four-state USDC flow, two flags per step, sponsored
 │   │   ├── useMySwag.ts          # balanceOfBatch + my orders
@@ -107,7 +107,7 @@ wallet_ethcali/
 │   ├── useActiveWallet.ts
 │   ├── useRequireChain.ts        # { ready, switching, switchTo } for a chain-pinned feature
 │   ├── useAdminStatus.ts
-│   ├── useChainBalances.ts
+│   ├── useBalances.ts
 │   ├── useSwapQuote.ts
 │   ├── useTokenPrices.ts
 │   ├── useTokenTransfer.ts
@@ -118,11 +118,11 @@ wallet_ethcali/
 │
 ├── lib/                 # Server-side integrations
 │   ├── swag/
-│   │   ├── onchain.ts      # Base public client for the server: findPurchased / findClaimed logs
+│   │   ├── onchain.ts      # SWAG_CHAIN_ID + the server's client: findPurchased / findClaimed logs
 │   │   ├── orders.ts       # swag_orders reads/writes with the service role
 │   │   ├── voucher.ts      # EIP-712 `Claim` signing (ETHCaliSwag v1), 7-day deadline
 │   │   ├── requireUser.ts  # Privy token → DID → linked wallets and verified emails
-│   │   └── requireSwagAdmin.ts  # requireUser + isAdmin() on the collection on Base
+│   │   └── requireSwagAdmin.ts  # requireUser + isAdmin() on the collection
 │   ├── shopify.mjs         # client-credentials token, gql(), fetchTrm / copPrice / repriceDesign
 │   ├── adminAuth.ts, supabase.ts, pinata.ts, lifi.ts, returnTo.ts
 │
@@ -135,14 +135,14 @@ wallet_ethcali/
 │   └── logger.ts       # Logging utility
 │
 ├── config/              # Configuration
-│   ├── constants.ts    # App-wide constants, SWAG_COLLECTION_BASE, SWAG_SHOPIFY_STORE
-│   └── chains.ts       # Chain configs
+│   ├── constants.ts    # App-wide constants, SWAG_COLLECTION, ENS_CONFIG, SWAG_SHOPIFY_STORE
+│   └── chains.ts       # The chain registry: ETHEREUM (default) + ENS_CHAIN (Base, registrar only)
 │
 ├── frontend/            # Contract bindings, synced from scs-ethcali (npm run sync:contracts)
 │   ├── abis/           # ABI JSON + abis/swag.ts (typed `as const` Swag1155 ABI)
 │   ├── addresses.json  # Per-network addresses
 │   ├── contracts.ts    # `as const` CONTRACTS + ADDRESSES
-│   ├── swag-collection.json  # The live ETHCALI-SWAG-2026 clone on Base
+│   ├── swag-collection.json  # The live ETHCALI-SWAG-2026 clone: chainId 1, address, usdc
 │   └── CONTRACTS_SOURCE.json # { repo, commit, generatedAt } of the last sync
 │
 ├── pages/               # Next.js pages
@@ -229,19 +229,23 @@ Single source of truth for:
 
 ### Deployed Contracts
 
-| Contract | Purpose | Networks |
-|----------|---------|----------|
-| Swag1155 | ERC-1155 merchandise NFTs (clone `ETHCALI-SWAG-2026`, USDC only) | Base only |
-| FaucetManager | Multi-vault ETH faucet | Base, Ethereum, Unichain |
-| ZKPassportNFT | Soulbound identity NFTs | Base, Ethereum, Unichain |
+| Contract | Purpose | Network the app uses |
+|----------|---------|----------------------|
+| Swag1155 | ERC-1155 merchandise NFTs (clone `ETHCALI-SWAG-2026`, USDC only) | Ethereum mainnet (`0x5a1012486764c217a20B5D1b97508E1de83179E7`) |
+| DonationVault + DonationReceipt1155 | Campaign donations in ETH/USDC, soulbound receipts | Ethereum mainnet |
+| FaucetManager | Multi-vault ETH faucet | Ethereum mainnet |
+| ZKPassportNFT | Soulbound identity NFTs | Ethereum mainnet |
+| Durin L2Registrar / L2Registry | `<label>.ethcali.eth` subnames | Base — the one exception |
+
+Other deployments in `frontend/addresses.json` (Base, Optimism, Unichain, Celo) are not offered by this app.
 
 ### Contract Addresses
 
 Loaded from `frontend/addresses.json` (synced from scs-ethcali):
 ```json
 {
-  "base": {
-    "chainId": 8453,
+  "ethereum": {
+    "chainId": 1,
     "addresses": {
       "SwagFactory": "0x...",
       "FaucetManager": "0x...",
@@ -252,17 +256,18 @@ Loaded from `frontend/addresses.json` (synced from scs-ethcali):
 ```
 
 The Swag1155 collection is a clone created by `SwagFactory`, so it is not in
-`addresses.json`; it lives in `frontend/swag-collection.json` and is exposed as
-`SWAG_COLLECTION_BASE` from `config/constants.ts`.
+`addresses.json`; it lives in `frontend/swag-collection.json` (written by
+`scripts/sync-contracts.mjs`, `SWAG_CHAIN=ethereum`) and is exposed as
+`SWAG_COLLECTION` from `config/constants.ts`.
 
 ## Network Support
 
-| Network | Chain ID | Gas Sponsorship | Explorer |
-|---------|----------|-----------------|----------|
-| Base | 8453 | Yes | basescan.org |
-| Ethereum | 1 | Yes | etherscan.io |
-| Optimism | 10 | Yes | optimistic.etherscan.io |
-| Unichain | 130 | Yes | unichain.blockscout.com |
+| Network | Chain ID | Role | Explorer |
+|---------|----------|------|----------|
+| Ethereum | 1 | The chain. Default, every feature. | etherscan.io |
+| Base | 8453 | `ethcali.eth` registrar only; switched to lazily by the ENS claim | basescan.org |
+
+There is no multi-chain UI. Adding a chain is a deliberate future change.
 
 ## External Dependencies
 

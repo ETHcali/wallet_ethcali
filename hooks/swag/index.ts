@@ -1,5 +1,6 @@
 /**
- * Swag hooks. Base-only, USDC-only; see docs/swag-rebuild-spec.md in the workspace.
+ * Swag hooks. One chain (`SWAG_COLLECTION.chainId`), USDC-only; see
+ * docs/swag-rebuild-spec.md in the workspace.
  */
 
 export {
@@ -27,7 +28,7 @@ export { useTrm, formatUsd, formatCop } from './useTrm';
 export { useSwagLocale, productName, productDescription, productAltName } from './useSwagLocale';
 export type { SwagLocale } from './useSwagLocale';
 export { translateSwagError, describeBlockedReason, formatUsdc } from './swagErrors';
-export { SWAG, swagClient, swagKeys } from './client';
+export { SWAG, SWAG_CHAIN, swagClient, swagKeys } from './client';
 
 // Admin surface (/swag/admin)
 export {

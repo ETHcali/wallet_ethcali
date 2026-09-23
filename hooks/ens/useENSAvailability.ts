@@ -10,7 +10,7 @@ import { useQuery } from '@tanstack/react-query';
 import { normalize } from 'viem/ens';
 import L2RegistrarABI from '../../frontend/abis/l2registar.json';
 import { ENS_CONFIG } from '../../config/constants';
-import { CHAIN_IDS, publicClientFor } from '../../config/chains';
+import { publicClientFor } from '../../config/chains';
 import { labelOf } from '../../utils/ens';
 
 export type AvailabilityStatus = 'idle' | 'invalid' | 'checking' | 'available' | 'taken' | 'error';
@@ -56,7 +56,7 @@ export function useENSAvailability(rawLabel: string): Availability {
     enabled: label.length > 0,
     staleTime: 10_000,
     queryFn: async () => {
-      const client = publicClientFor(CHAIN_IDS.BASE);
+      const client = publicClientFor(ENS_CONFIG.chainId);
       return (await client.readContract({
         address: ENS_CONFIG.registrar,
         abi: L2RegistrarABI,

@@ -2,7 +2,6 @@ import { useState } from 'react';
 import Head from 'next/head';
 import { useWallets } from '@privy-io/react-auth';
 import AdminShell from '../../components/admin/AdminShell';
-import ChainPicker from '../../components/shared/ChainPicker';
 import SwitchChainButton from '../../components/shared/SwitchChainButton';
 import { useRequireChain } from '../../hooks/useRequireChain';
 import CampaignAdminForm from '../../components/donations/CampaignAdminForm';
@@ -13,7 +12,7 @@ import {
   useCampaignTotals,
   useCampaignRowId,
   useDonationAddresses,
-  DONATION_CHAINS,
+  DONATION_CHAIN_ID,
   useDisplayCurrency,
 } from '../../hooks/donations';
 import {
@@ -21,13 +20,12 @@ import {
   useDonationAdminActions,
   useReceiptMinterStatus,
 } from '../../hooks/donations/useDonationAdmin';
-import { CHAIN_IDS, getChain } from '../../config/chains';
 
 type Tab = 'campaigns' | 'create' | 'receipts' | 'bank';
 
 export default function DonationsAdminPage() {
   const { ready } = useWallets();
-  const [chainId, setChainId] = useState<number>(DONATION_CHAINS[0]?.id ?? CHAIN_IDS.CELO);
+  const chainId = DONATION_CHAIN_ID;
   // Every write on this page is on `chainId`; the wallet is moved here, once,
   // before any of them is reachable.
   const chain = useRequireChain(chainId);
@@ -67,8 +65,7 @@ export default function DonationsAdminPage() {
         <div className="rounded-card border border-line-hairline bg-surface-inset/50 p-6 text-center sm:p-8">
           <h2 className="mb-2 text-lg font-bold text-content-primary">Not deployed</h2>
             <p className="text-sm text-content-muted">
-              DonationVault is not deployed on{' '}
-              {getChain(chainId)?.name ?? 'this network'} yet.
+              DonationVault is not deployed yet.
             </p>
         </div>
       </AdminShell>
@@ -158,12 +155,10 @@ export default function DonationsAdminPage() {
           </div>
         )}
 
-        <ChainPicker chains={DONATION_CHAINS} value={chainId} onChange={setChainId} className="mb-6" />
-
         {!chain.ready && (
           <div className="mb-6 max-w-sm">
             <p className="mb-2 text-xs text-content-muted">
-              Reads come from {chain.chainName}; to sign anything below your wallet has to be there too.
+              Your wallet is on another network; to sign anything below it has to be on {chain.chainName}.
             </p>
             <SwitchChainButton chain={chain} />
           </div>
@@ -294,7 +289,7 @@ export default function DonationsAdminPage() {
 
               {!receiptCollection && (
                 <p className="text-xs text-signal-pending">
-                  No receipt collection deployed on this network.
+                  No receipt collection deployed.
                 </p>
               )}
 

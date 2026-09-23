@@ -20,7 +20,7 @@ import SwitchChainButton from '../shared/SwitchChainButton';
 import { VaultType } from '../../types/faucet';
 
 interface FaucetClaimProps {
-  /** The chain the page picked from `chainsFor('faucet')`. Every read below uses it. */
+  /** The chain the page reads from (Ethereum). Every read below uses it. */
   chainId: number;
   onClaimSuccess?: () => void;
 }
@@ -182,10 +182,7 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
       <div className="bg-black/60 border border-line-hairline rounded-control p-4">
         <div className="flex items-center gap-3 mb-3">
           <div className="w-3 h-3 bg-surface-ridge rounded-full"></div>
-          <div>
-            <h2 className="text-sm font-bold text-content-muted font-mono tracking-wide">NO_FAUCET</h2>
-            <p className="text-content-faint text-[10px] font-mono">{networkName.toUpperCase()}</p>
-          </div>
+          <h2 className="text-sm font-bold text-content-muted font-mono tracking-wide">NO_FAUCET</h2>
         </div>
         <div className="text-center py-6">
           <div className="text-content-faint text-[10px] font-mono mb-2">
@@ -203,15 +200,10 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
     <div className="space-y-4">
       {/* Status Bar */}
       <div className="bg-black/60 border border-line-hairline rounded-control p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <div className={`w-1.5 h-1.5 rounded-full ${isPaused ? 'bg-signal-reverted' : 'bg-signal-confirmed'}`}></div>
-            <span className="text-[10px] font-mono text-content-faint tracking-wider">
-              {isPaused ? 'PAUSED' : 'ACTIVE'}
-            </span>
-          </div>
-          <span className="text-[10px] font-mono text-content-faint">
-            {networkName.toUpperCase()}
+        <div className="flex items-center gap-2 mb-3">
+          <div className={`w-1.5 h-1.5 rounded-full ${isPaused ? 'bg-signal-reverted' : 'bg-signal-confirmed'}`}></div>
+          <span className="text-[10px] font-mono text-content-faint tracking-wider">
+            {isPaused ? 'PAUSED' : 'ACTIVE'}
           </span>
         </div>
 

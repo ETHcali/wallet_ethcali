@@ -1,8 +1,8 @@
 /**
  * Owner-only operations on ZKPassportNFT, on one explicit chain.
  *
- * The identity admin page picks its chain from `chainsFor('identity')` and
- * passes it down; nothing here reads the wallet's chain. Writes pin `chainId`
+ * The identity admin page passes the chain (Ethereum) down; nothing here reads
+ * the wallet's chain. Writes pin `chainId`
  * and the page shows "Switch to <chain>" before any of them is reachable.
  */
 import { useQuery, useQueryClient } from '@tanstack/react-query';

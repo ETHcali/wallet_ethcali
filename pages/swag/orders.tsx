@@ -23,7 +23,7 @@ const STATUS_LABEL: Record<SwagOrderStatus, { es: string; en: string; className:
 };
 
 const CHANNEL_LABEL = {
-  onchain: { es: 'USDC en Base', en: 'USDC on Base' },
+  onchain: { es: 'USDC', en: 'USDC' },
   shopify: { es: 'Tarjeta', en: 'Card' },
   event: { es: 'Evento', en: 'Event' },
 } as const;
@@ -132,8 +132,8 @@ export default function SwagOrdersPage() {
             </p>
             <p className="mt-2 text-sm text-content-muted">
               {locale === 'es'
-                ? 'Los NFTs se leen de tu billetera en Base; los pedidos, de tu cuenta.'
-                : 'NFTs are read from your wallet on Base; orders from your account.'}
+                ? 'Los NFTs se leen de tu billetera; los pedidos, de tu cuenta.'
+                : 'NFTs are read from your wallet; orders from your account.'}
             </p>
             <button type="button" onClick={login} className={`${PRIMARY} mt-5`}>
               {locale === 'es' ? 'Iniciar sesión' : 'Sign in'}

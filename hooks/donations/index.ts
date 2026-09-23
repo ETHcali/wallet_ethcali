@@ -8,8 +8,7 @@ export {
   getDonationChainConfig,
   getDonationTokens,
   donationClient,
-  DONATION_CHAINS,
-  DONATION_CHAIN_IDS,
+  DONATION_CHAIN_ID,
   type DonationChainConfig,
 } from './useDonationAddresses';
 

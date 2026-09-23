@@ -1,9 +1,9 @@
 /**
  * Donation indexer.
  *
- * Reads `Donated` events from every deployed DonationVault and upserts them into
- * Supabase, so the donor wall and campaign totals are one fast query instead of a
- * fan-out of RPC calls per page load.
+ * Reads `Donated` events from the DonationVault on Ethereum and upserts them
+ * into Supabase, so the donor wall and campaign totals are one fast query
+ * instead of a fan-out of RPC calls per page load.
  *
  * Design constraints (see ethskills:indexing):
  *   - NEVER scan from genesis. Each (chain, contract) pair keeps a cursor in
@@ -25,28 +25,22 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createPublicClient, http, parseAbiItem, type Log, type PublicClient } from 'viem';
 import { getSupabaseAdmin } from '../../../lib/supabase';
-import {
-  CHAIN_IDS,
-  getRpcUrl,
-  NATIVE_SYMBOLS,
-  NATIVE_TOKEN_SENTINEL,
-  type ChainId,
-} from '../../../config/constants';
-import addresses from '../../../frontend/addresses.json';
+import { DEFAULT_CHAIN, type ChainId } from '../../../config/chains';
+import { getRpcUrl, NATIVE_SYMBOLS, NATIVE_TOKEN_SENTINEL } from '../../../config/constants';
 import { logger } from '../../../utils/logger';
 
 /**
- * eth_getLogs window. Celo's public RPC (forno) hard-caps this at 5000 blocks
- * and returns -32602 for anything wider — verified against forno.celo.org, not
- * assumed. The range is inclusive, so 4000 leaves margin under every provider
- * cap we deploy against.
+ * eth_getLogs window. Public mainnet RPCs cap this anywhere from 5k to 10k
+ * blocks; the range is inclusive, so 4000 leaves margin under every provider
+ * we deploy against.
  */
 const BLOCK_CHUNK = 4_000n;
 
 /**
  * Safety bound so one invocation cannot run forever on a cold start.
- * 40 × 4000 = 160k blocks per run. Celo produces ~86k blocks/day, so an hourly
- * cron stays a single chunk behind and a cold start catches up in a few runs.
+ * 40 × 4000 = 160k blocks per run. Ethereum produces ~7.2k blocks/day, so an
+ * hourly cron is always a single chunk and a cold start from the deployment
+ * block catches up in a handful of runs.
  */
 const MAX_CHUNKS_PER_RUN = 40;
 
@@ -56,16 +50,6 @@ const DONATED_EVENT = parseAbiItem(
 
 const ERC20_SYMBOL = parseAbiItem('function symbol() view returns (string)');
 const ERC20_DECIMALS = parseAbiItem('function decimals() view returns (uint8)');
-
-type NetworkKey = keyof typeof addresses;
-
-const NETWORK_TO_CHAIN_ID: Record<string, ChainId> = {
-  base: CHAIN_IDS.BASE,
-  ethereum: CHAIN_IDS.ETHEREUM,
-  optimism: CHAIN_IDS.OPTIMISM,
-  unichain: CHAIN_IDS.UNICHAIN,
-  celo: CHAIN_IDS.CELO,
-};
 
 interface ChainSyncResult {
   network: string;
@@ -79,53 +63,33 @@ interface ChainSyncResult {
 }
 
 /**
- * Resolve each network's DonationVault from the generated addresses file.
- * Networks without a deployed vault are skipped rather than erroring — the
- * relief campaign may go live on some chains before others.
+ * The DonationVault to index, from the registry (which reads the generated
+ * addresses file). Empty when no vault is deployed — the route answers "nothing
+ * to index" rather than erroring.
  */
 function getDeployedVaults(): Array<{ network: string; chainId: ChainId; vault: string }> {
-  const out: Array<{ network: string; chainId: ChainId; vault: string }> = [];
-
-  for (const [network, chainId] of Object.entries(NETWORK_TO_CHAIN_ID)) {
-    const entry = (addresses as Record<string, { addresses?: Record<string, string> }>)[
-      network as NetworkKey
-    ];
-    const vault = entry?.addresses?.DonationVault;
-    if (vault) {
-      out.push({ network, chainId, vault: vault.toLowerCase() });
-    }
-  }
-
-  return out;
+  const vault = DEFAULT_CHAIN.contracts.DonationVault;
+  return vault ? [{ network: DEFAULT_CHAIN.key, chainId: DEFAULT_CHAIN.id, vault: vault.toLowerCase() }] : [];
 }
 
 /**
- * Block each chain's DonationVault was created in — the cursor's starting point
- * for a contract we have never indexed before.
+ * Block the vault was created in — the cursor's starting point for a contract
+ * we have never indexed before.
  *
  * Committed rather than left to env alone because the old fallback was `0n`:
- * a chain with no env var set would try to scan Ethereum from genesis in 4k
- * chunks and never reach the tip. A wrong-but-late start block loses donations
- * silently; a missing one wedges the indexer. Both are worse than a constant.
+ * with no env var set the indexer would try to scan Ethereum from genesis in
+ * 4k chunks and never reach the tip. A wrong-but-late start block loses
+ * donations silently; a missing one wedges the indexer. Both are worse than a
+ * constant.
  *
- * The vault has the same address on all four chains (CREATE2), so only the
- * block differs.
- *
- * Found by binary search on `getCode` against ARCHIVE nodes, and each result
- * checked two ways: the receipt contract must be created no later than the
- * vault (it is deployed first in the same run), and the timestamps must follow
- * the launch order celo → optimism → base → ethereum. An earlier pass used
- * non-archive RPCs, whose errors read as "no code" and converged on each node's
- * retention edge — producing blocks up to 757 too late here, and elsewhere
- * "creation" blocks that postdated the contract they belonged to. Too late is
- * the dangerous direction: the indexer starts after real events and never sees
- * them.
+ * Found by binary search on `getCode` against an ARCHIVE node and checked
+ * against the receipt contract, which is deployed first in the same run. A
+ * non-archive RPC answers "no code" past its retention edge and converges on
+ * a block that is too late — the dangerous direction, because the indexer
+ * then starts after real events and never sees them.
  */
 const VAULT_DEPLOY_BLOCK: Record<number, bigint> = {
   1: 25_801_675n, // ethereum, 2026-08-21T06:20:23Z
-  10: 155_847_027n, // optimism, 2026-08-21T06:13:47Z
-  8453: 50_251_816n, // base,     2026-08-21T06:16:17Z
-  42220: 75_391_791n, // celo,     2026-08-21T06:08:49Z
 };
 
 /** Deployment block for a chain's vault — the cursor's starting point. */

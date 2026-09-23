@@ -34,7 +34,7 @@ const STATUS_TONE: Record<SwagOrderStatus, { label: string; tone: 'pending' | 'b
 };
 
 const CHANNEL_LABEL: Record<SwagOrderChannel, string> = {
-  onchain: 'USDC on Base',
+  onchain: 'USDC',
   shopify: 'Card',
   event: 'Event',
 };
@@ -265,7 +265,7 @@ function OrderRow({ order }: { order: SwagAdminOrderView }) {
             <div className="rounded-chip border border-signal-pending/40 bg-signal-pending/10 p-3">
               <p className="mb-2 text-xs text-content-secondary">
                 This order was refunded after a voucher was issued. Until <span className="font-mono">cancelOrder</span> runs on
-                Base the buyer could still mint it.
+                chain the buyer could still mint it.
               </p>
               <TxButton
                 label="Cancel voucher on chain"
@@ -317,7 +317,7 @@ export function AdminOrders() {
           <span className={LABEL}>Channel</span>
           <select value={filters.channel} onChange={(e) => setFilters((f) => ({ ...f, channel: e.target.value as AdminOrderFilters['channel'] }))} className={SELECT}>
             <option value="">All</option>
-            <option value="onchain">USDC on Base</option>
+            <option value="onchain">USDC</option>
             <option value="shopify">Card</option>
             <option value="event">Event</option>
           </select>

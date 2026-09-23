@@ -12,15 +12,16 @@
  *   3. Check ADMIN_ROLE on chain. The contract is the authority — a Privy
  *      login proves identity, never permission.
  *
- * Note the authority contract is DonationVault. Swag collections are not
- * deployed yet, so there is no swag-specific role to check; the vault's
- * ADMIN_ROLE is the ETH Cali operator set today. Once a swag collection
- * exists, point AUTHORITY at it instead.
+ * The authority contract is the DonationVault on Ethereum: its ADMIN_ROLE is
+ * the ETH Cali operator set for donations and site content. Verified on chain
+ * 2026-09-23 that the ops key (0x3B89…415B) and the operator (0x35b0…BC6B)
+ * both hold it there. Swag routes have their own gate against the swag
+ * collection (lib/swag/requireSwagAdmin.ts).
  */
 import type { NextApiRequest } from 'next';
 import * as jose from 'jose';
 import DonationVaultABI from '../frontend/abis/DonationVault.json';
-import { CHAIN_IDS, getChain, publicClientFor } from '../config/chains';
+import { DEFAULT_CHAIN, publicClientFor } from '../config/chains';
 
 export class AdminAuthError extends Error {
   constructor(
@@ -33,8 +34,8 @@ export class AdminAuthError extends Error {
 
 /** The contract whose ADMIN_ROLE defines "an ETH Cali operator". */
 const AUTHORITY = {
-  chainId: CHAIN_IDS.CELO,
-  address: getChain(CHAIN_IDS.CELO).contracts.DonationVault,
+  chainId: DEFAULT_CHAIN.id,
+  address: DEFAULT_CHAIN.contracts.DonationVault,
 };
 
 let jwks: ReturnType<typeof jose.createRemoteJWKSet> | null = null;

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { CheckIcon, ClipboardIcon } from '../shared/icons';
-import { EXPLORER_URLS, CHAIN_IDS } from '../../config/constants';
+import { explorerAddress, explorerTx } from '../../config/chains';
+import { SWAG_COLLECTION } from '../../config/constants';
 
 interface HashChipProps {
   hash: string;
@@ -9,14 +10,14 @@ interface HashChipProps {
   className?: string;
 }
 
-/** `0x55C9…711d` — a real ellipsis, mono, with copy and the explorer link. */
+/** `0x55C9…711d` — a real ellipsis, mono, with copy and the explorer link on the collection's chain. */
 export function truncateHex(value: string): string {
   return `${value.slice(0, 6)}…${value.slice(-4)}`;
 }
 
 export function HashChip({ hash, kind = 'tx', className = '' }: HashChipProps) {
   const [copied, setCopied] = useState(false);
-  const href = `${EXPLORER_URLS[CHAIN_IDS.BASE]}/${kind}/${hash}`;
+  const href = kind === 'tx' ? explorerTx(SWAG_COLLECTION.chainId, hash) : explorerAddress(SWAG_COLLECTION.chainId, hash);
 
   const copy = async () => {
     try {

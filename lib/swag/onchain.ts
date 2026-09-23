@@ -1,5 +1,6 @@
 /**
- * Reading the swag collection on Base from the server.
+ * Reading the swag collection from the server, on the chain
+ * `frontend/swag-collection.json` names.
  *
  * The chain is the receipt. Before an order row is written the API re-reads
  * the transaction the client named and takes buyer, tokenId and quantity from
@@ -12,30 +13,31 @@
  * this file is the one that has to change with them, loudly.
  */
 import {
-  createPublicClient,
   decodeEventLog,
   getAddress,
-  http,
   isAddress,
   TransactionReceiptNotFoundError,
   type Address,
   type Hex,
 } from 'viem';
-import { base } from 'viem/chains';
-import { CHAIN_IDS, getRpcUrl } from '../../config/constants';
-
-/** Swag is Base-only. The wallet's chain is never consulted. */
-export const SWAG_CHAIN_ID: number = CHAIN_IDS.BASE;
+import swagCollection from '../../frontend/swag-collection.json';
+import { publicClientFor, type ChainId } from '../../config/chains';
+import { SWAG_COLLECTION } from '../../config/constants';
 
 /**
- * ETHCALI-SWAG-2026, the Swag1155 clone on Base. Overridable through
- * SWAG_COLLECTION_ADDRESS for a staging collection; the default is the one
- * whose eip712Domain() was read on chain when this was written.
+ * The collection's chain, from the generated json (Ethereum mainnet today).
+ * The wallet's chain is never consulted, and the EIP-712 domain in voucher.ts
+ * carries this id — the on-chain `eip712Domain()` was read to confirm it.
  */
-const DEFAULT_COLLECTION = '0xA5C02Ee3029Ce7f0FdD147734D11905E3cA99479';
+export const SWAG_CHAIN_ID: ChainId = SWAG_COLLECTION.chainId;
 
+/**
+ * ETHCALI-SWAG-2026, the live Swag1155 clone. Overridable through
+ * SWAG_COLLECTION_ADDRESS for a staging collection; the default is the
+ * address `npm run sync:contracts` wrote from the deployment record.
+ */
 export function getSwagCollection(): Address {
-  const raw = process.env.SWAG_COLLECTION_ADDRESS?.trim() || DEFAULT_COLLECTION;
+  const raw = process.env.SWAG_COLLECTION_ADDRESS?.trim() || swagCollection.address;
   if (!isAddress(raw)) {
     throw new Error('SWAG_COLLECTION_ADDRESS is not a valid address');
   }
@@ -68,17 +70,9 @@ export const SWAG_EVENTS_ABI = [
   },
 ] as const;
 
-function makeBaseClient() {
-  return createPublicClient({ chain: base, transport: http(getRpcUrl(CHAIN_IDS.BASE)) });
-}
-
-// viem 1.x types a client by its chain; the plain `PublicClient` alias is not
-// assignable from it, so the cache carries the inferred type.
-let client: ReturnType<typeof makeBaseClient> | null = null;
-
-export function getBaseClient() {
-  if (!client) client = makeBaseClient();
-  return client;
+/** The registry's client for the collection's chain (cached by the registry). */
+export function getSwagClient() {
+  return publicClientFor(SWAG_CHAIN_ID);
 }
 
 /** A receipt that cannot serve as proof, with the HTTP status the route should send. */
@@ -118,12 +112,12 @@ export interface ClaimedLog {
 async function successfulReceipt(txHash: Hex) {
   let receipt;
   try {
-    receipt = await getBaseClient().getTransactionReceipt({ hash: txHash });
+    receipt = await getSwagClient().getTransactionReceipt({ hash: txHash });
   } catch (e) {
     if (e instanceof TransactionReceiptNotFoundError) {
-      throw new ReceiptError('Transaction not found on Base yet. Try again in a moment.', 404);
+      throw new ReceiptError('Transaction not found on chain yet. Try again in a moment.', 404);
     }
-    throw new ReceiptError('Could not read the transaction from Base', 502);
+    throw new ReceiptError('Could not read the transaction from the chain', 502);
   }
   if (receipt.status !== 'success') {
     throw new ReceiptError('Transaction reverted. Nothing was bought.', 409);

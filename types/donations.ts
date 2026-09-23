@@ -3,8 +3,8 @@
  *
  * Amounts are always raw base units (bigint) end to end. They are converted for
  * display exactly once, at the render boundary, using the token's OWN decimals.
- * USDC is 6 and COPm is 18 — a hardcoded 18 would show a COPm donor a figure
- * 10^12 too large.
+ * USDC is 6 and ETH is 18 — a hardcoded 18 would show a USDC donor a figure
+ * 10^12 too small.
  */
 
 /** Display currency the user has selected for totals. */

@@ -6,7 +6,7 @@
  * Every order through every channel, newest first, 50 at a time. Unlike
  * /api/swag/orders this returns the shipping address and the buyer's email,
  * because the caller is the person putting the parcel in the post — and the
- * caller is that person because requireSwagAdmin asked the collection on Base,
+ * caller is that person because requireSwagAdmin asked the collection,
  * not because a table said so.
  */
 import type { NextApiRequest, NextApiResponse } from 'next';

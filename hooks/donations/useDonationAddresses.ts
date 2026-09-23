@@ -1,34 +1,20 @@
 /**
- * Resolves the DonationVault deployment and accepted currencies for a chain,
- * from the chain registry.
+ * Resolves the DonationVault deployment and accepted currencies, from the
+ * chain registry.
  *
- * Donations ship to every chain `frontend/addresses.json` lists a vault on,
- * and must degrade gracefully on any chain where it is not deployed rather
- * than throwing.
+ * Donations live on Ethereum (`DONATION_CHAIN_ID`). Every hook still takes an
+ * explicit chain id — a read never guesses — and degrades to "not deployed"
+ * rather than throwing for a chain without a vault.
  */
 import { useMemo } from 'react';
-import {
-  CHAIN_IDS,
-  NATIVE_TOKEN_SENTINEL,
-  chainsFor,
-  getChain,
-  publicClientFor,
-  type ChainInfo,
-} from '../../config/chains';
+import { DEFAULT_CHAIN, NATIVE_TOKEN_SENTINEL, getChain, publicClientFor } from '../../config/chains';
 import type { DonationToken } from '../../types/donations';
 
 /** The registry tokens a campaign can accept. USDT/EURC are wallet-only. */
-const DONATION_SYMBOLS: ReadonlySet<string> = new Set(['USDC', 'COPm']);
+const DONATION_SYMBOLS: ReadonlySet<string> = new Set(['USDC']);
 
-/**
- * Every chain with a deployed vault. Celo first — it is where COPm lives, the
- * natural currency for local donors — then registry order.
- */
-export const DONATION_CHAINS: readonly ChainInfo[] = [...chainsFor('donations')].sort(
-  (a, b) => Number(b.id === CHAIN_IDS.CELO) - Number(a.id === CHAIN_IDS.CELO)
-);
-
-export const DONATION_CHAIN_IDS: number[] = DONATION_CHAINS.map((c) => c.id);
+/** The chain the vault is offered on. The one chain there is. */
+export const DONATION_CHAIN_ID = DEFAULT_CHAIN.id;
 
 /** A client for a chain the vault is deployed on. Throws for an unknown chain rather than guessing. */
 export function donationClient(chainId: number) {
@@ -96,7 +82,7 @@ export function getDonationChainConfig(chainId: number): DonationChainConfig {
   };
 }
 
-/** Config for the chosen chain; Celo when none is given. */
+/** Config for the chosen chain; the donation chain when none is given. */
 export function useDonationAddresses(chainId?: number): DonationChainConfig {
-  return useMemo(() => getDonationChainConfig(chainId ?? CHAIN_IDS.CELO), [chainId]);
+  return useMemo(() => getDonationChainConfig(chainId ?? DONATION_CHAIN_ID), [chainId]);
 }

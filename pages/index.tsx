@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Loading from '../components/shared/Loading';
 import { safeNext, DEFAULT_NEXT } from '../lib/returnTo';
 import Navigation from '../components/Navigation';
-import { CHAINS } from '../config/chains';
+import { DEFAULT_CHAIN } from '../config/chains';
 import {
   ArrowRightIcon,
   BagIcon,
@@ -22,13 +22,13 @@ import {
 
 /* UX_GUIDELINES.md §1 — Landing (signed out): display headline, one-paragraph
    promise, one primary CTA, then four numbered feature cells in a hairline
-   grid, an infrastructure logo strip, network pills and the footer. */
+   grid, an infrastructure logo strip, the network line and the footer. */
 
 const FEATURES = [
   {
     n: '01',
     title: 'Gas paid by the community',
-    body: 'Every transaction on Base, Optimism and Unichain is sponsored. You never buy ETH just to move.',
+    body: `Every transaction on ${DEFAULT_CHAIN.name} is sponsored. You never buy ETH just to move.`,
     Icon: GasIcon,
   },
   {
@@ -60,8 +60,6 @@ const INFRA = [
   { src: '/infraused/opensea.png', name: 'OpenSea' },
 ];
 
-/** Straight from the registry, so a chain added there shows up here. */
-const NETWORKS = CHAINS.map((chain) => chain.name);
 
 /**
  * What the sign-in button says, per destination.
@@ -264,21 +262,12 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Networks ── */}
+      {/* ── Network: one line, straight from the registry ── */}
       <section className="mx-auto max-w-page px-6 pb-20 lg:pb-28">
-        <p className="mb-6 font-mono text-[11px] uppercase tracking-[0.16em] text-content-faint">
-          Same address on
+        <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.16em] text-content-faint">
+          Network
         </p>
-        <div className="flex flex-wrap gap-2">
-          {NETWORKS.map((name) => (
-            <span
-              key={name}
-              className="inline-flex min-h-[36px] items-center rounded-full border border-line-strong px-4 font-mono text-sm text-content-secondary"
-            >
-              {name}
-            </span>
-          ))}
-        </div>
+        <p className="font-mono text-sm text-content-secondary">{DEFAULT_CHAIN.name} mainnet</p>
       </section>
 
       {/* ── Footer ── */}

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useENSAvailability, useENSMint, useUserENS } from '../../hooks/ens';
+import { useRequireChain } from '../../hooks/useRequireChain';
 import { ENS_CONFIG } from '../../config/constants';
-import { explorerAddress, explorerTx } from '../../config/chains';
+import { ENS_CHAIN, explorerAddress, explorerTx } from '../../config/chains';
 import { CheckIcon } from '../shared/icons';
 
 interface ENSSectionProps {
@@ -31,21 +32,24 @@ const ContractLine = () => (
     >
       {truncate(ENS_CONFIG.registrar)}
     </a>{' '}
-    · Base
+    · {ENS_CHAIN.name}
   </p>
 );
 
 /**
  * Claim and show the user's `<label>.ethcali.eth` name.
  *
- * Registration happens on Base and only there (`chainsFor('ens')`), so there
- * is no network picker. The transaction pins `ENS_CONFIG.chainId`; Privy moves
- * an embedded wallet itself and prompts an external one.
+ * The registrar exists on Base and nowhere else, which makes this the one
+ * action the app signs off Ethereum. There is no network picker: the claim
+ * button moves the wallet to Base right before signing through
+ * `useRequireChain(ENS_CONFIG.chainId)`, and the transaction pins that chain.
  */
 const ENSSection: React.FC<ENSSectionProps> = ({ userAddress }) => {
   const owner = userAddress as `0x${string}`;
   const [input, setInput] = useState('');
   const [copied, setCopied] = useState(false);
+  const [switchError, setSwitchError] = useState<string | null>(null);
+  const chain = useRequireChain(ENS_CONFIG.chainId);
   const { register, phase, hash, error, reset } = useENSMint();
   const availability = useENSAvailability(input);
 
@@ -54,8 +58,22 @@ const ENSSection: React.FC<ENSSectionProps> = ({ userAddress }) => {
   const justClaimed = phase === 'confirmed' ? availability.label : null;
   const { subdomain, fullName, node, isLoading } = useUserENS(userAddress, justClaimed);
 
-  const busy = phase === 'submitting' || phase === 'confirming';
+  const busy = phase === 'submitting' || phase === 'confirming' || chain.switching;
   const canClaim = availability.status === 'available' && !busy;
+
+  /** Switch to Base if the wallet is elsewhere, then register. One click, one primary action. */
+  const claim = async () => {
+    if (!canClaim) return;
+    setSwitchError(null);
+    if (!chain.ready) {
+      const moved = await chain.switchTo();
+      if (!moved) {
+        setSwitchError(chain.error ?? `Could not switch to ${chain.chainName}.`);
+        return;
+      }
+    }
+    await register(availability.label, owner);
+  };
 
   const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Lowercase as they type; ENSIP-15 normalisation does the rest in the hook.
@@ -115,7 +133,7 @@ const ENSSection: React.FC<ENSSectionProps> = ({ userAddress }) => {
         </div>
 
         <p className="mt-4 text-xs text-content-faint">
-          Registered on Base as an NFT you own. Wallets that resolve ethcali.eth names on Base
+          Registered on {ENS_CHAIN.name} as an NFT you own. Wallets that resolve ethcali.eth names there
           will show it; mainnet resolution switches on when ethcali.eth points at its L2 resolver.
         </p>
         <ContractLine />
@@ -143,7 +161,7 @@ const ENSSection: React.FC<ENSSectionProps> = ({ userAddress }) => {
         <h3 className="mt-4 text-[22px] font-bold text-content-primary">Your name is ready.</h3>
         <p className="mt-1 text-sm text-content-muted">
           <span className="font-mono text-eth-blue-text">{availability.label}.{ENS_CONFIG.parentName}</span>{' '}
-          is registered to this wallet on Base.
+          is registered to this wallet.
         </p>
         <a
           href={explorerTx(ENS_CONFIG.chainId, hash)}
@@ -189,7 +207,7 @@ const ENSSection: React.FC<ENSSectionProps> = ({ userAddress }) => {
         <div>
           <h3 className="text-xl font-bold text-content-primary">Claim your ethcali.eth name</h3>
           <p className="mt-1 text-sm text-content-muted">
-            Free, on Base. One name per claim, yours to keep.
+            Free. One name per claim, yours to keep.
           </p>
         </div>
         <span className="shrink-0 rounded-chip bg-eth-blue-wash px-2 py-1 font-mono text-[11px] uppercase tracking-[0.12em] text-eth-blue-text">
@@ -221,18 +239,23 @@ const ENSSection: React.FC<ENSSectionProps> = ({ userAddress }) => {
       </div>
       <div className="mt-2 min-h-[20px] text-xs">{statusLine}</div>
 
-      {phase === 'failed' && error && (
+      {((phase === 'failed' && error) || switchError) && (
         <div className="mt-3 rounded-control border border-signal-reverted/30 bg-signal-reverted/10 p-3 text-sm text-signal-reverted">
-          {error}
+          {switchError ?? error}
         </div>
       )}
 
       <button
         type="button"
-        onClick={() => canClaim && register(availability.label, owner)}
+        onClick={() => void claim()}
         disabled={!canClaim}
         className="mt-4 inline-flex min-h-tap w-full items-center justify-center gap-2 rounded-control bg-eth-blue px-6 text-[15px] font-semibold text-on-brand transition-colors duration-base hover:bg-eth-blue-lift active:bg-eth-blue-deep disabled:cursor-not-allowed disabled:bg-surface-ridge disabled:text-content-faint"
       >
+        {chain.switching && (
+          <>
+            <Spinner /> Switching to {chain.chainName}…
+          </>
+        )}
         {phase === 'submitting' && (
           <>
             <Spinner /> Confirm in your wallet…
@@ -247,6 +270,9 @@ const ENSSection: React.FC<ENSSectionProps> = ({ userAddress }) => {
       </button>
       <p className="mt-2 text-center font-mono text-xs text-content-faint">
         Fee <span className="text-signal-confirmed">0.00 · sponsored</span>
+      </p>
+      <p className="mt-2 text-center text-xs text-content-faint">
+        Names live on {ENS_CHAIN.name}; we switch you there to sign.
       </p>
       <ContractLine />
     </div>

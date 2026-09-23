@@ -10,10 +10,9 @@
 import { useState } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
 import type { Address } from 'viem';
-import { CHAIN_IDS } from '../../config/constants';
 import { useActiveWallet } from '../../hooks/useActiveWallet';
 import { useRequireChain } from '../../hooks/useRequireChain';
-import { looksLikeAddressInput, resolveAddressInput, type SwagAdminTxResult } from '../../hooks/swag';
+import { SWAG, looksLikeAddressInput, resolveAddressInput, type SwagAdminTxResult } from '../../hooks/swag';
 import { HashChip } from './HashChip';
 
 export const FIELD =
@@ -91,13 +90,13 @@ export function TxButton({ label, pendingLabel, tx, onClick, reason = null, vari
 
 /**
  * Rule 2: the wrong-network check comes before every action. When the wallet
- * is elsewhere this is the only primary button on the tab; when it is on Base
- * it renders nothing.
+ * is elsewhere this is the only primary button on the tab; when it is on the
+ * collection's chain it renders nothing.
  */
 export function ChainGate() {
   const { ready, authenticated, login } = usePrivy();
   const { wallet } = useActiveWallet();
-  const chain = useRequireChain(CHAIN_IDS.BASE);
+  const chain = useRequireChain(SWAG.chainId);
 
   if (!ready) return null;
   if (!authenticated) {
@@ -115,12 +114,12 @@ export function ChainGate() {
   return (
     <div className={`${CARD} flex flex-wrap items-center justify-between gap-3`}>
       <p className="text-sm text-content-muted">
-        The collection is on Base. Every button below signs there.
+        Your wallet is on another network. Every button below signs on {chain.chainName}.
       </p>
       <div>
         <button type="button" onClick={() => void chain.switchTo()} disabled={chain.switching} className={buttonClass('primary')}>
           {chain.switching && <Spinner />}
-          {chain.switching ? 'Switching…' : 'Switch to Base'}
+          {chain.switching ? 'Switching…' : `Switch to ${chain.chainName}`}
         </button>
         {chain.error && <p className="mt-1 text-xs text-signal-reverted">{chain.error}</p>}
       </div>

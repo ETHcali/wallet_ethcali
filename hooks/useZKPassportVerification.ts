@@ -4,7 +4,7 @@
  * Uses on-chain ZK proof verification (mode: "compressed-evm").
  * The proof is passed directly to the contract's mint(ProofVerificationParams, isIDCard) function.
  *
- * The chain is explicit: the identity page picks it from `chainsFor('identity')`.
+ * The chain is explicit: the identity page passes it down (Ethereum).
  * The mint is gated by `useRequireChain(chainId)` — the UI shows "Switch to
  * <chain>" until the wallet is there, and `mintNFT` refuses to sign elsewhere.
  */

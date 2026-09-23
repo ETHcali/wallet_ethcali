@@ -1,13 +1,14 @@
 /**
  * The swag NFTs a wallet holds, for the wallet page's collectibles tab.
  *
- * Fetched across every chain in `chainsFor('swag')` (Base only today), each
- * with that chain's own client. Reads go through the typed ABI: a function the
- * contract no longer has (redemption status, for one) fails typecheck rather
- * than the tab.
+ * Read from the live collection on its chain (`SWAG_COLLECTION`) with the
+ * registry's client. Reads go through the typed ABI: a function the contract
+ * no longer has (redemption status, for one) fails typecheck rather than the
+ * tab.
  */
 import { useQuery } from '@tanstack/react-query';
-import { chainsFor, publicClientFor, type ChainInfo } from '../config/chains';
+import { publicClientFor } from '../config/chains';
+import { SWAG_COLLECTION } from '../config/constants';
 import { getIPFSGatewayUrl } from '../lib/pinata';
 import { swag1155Abi } from '../frontend/abis/swag';
 import { logger } from '../utils/logger';
@@ -22,7 +23,6 @@ export interface UserNFT {
   attributes: Array<{ trait_type: string; value: string }>;
   /** The collection this token lives in. */
   designAddress: string;
-  chainId: number;
 }
 
 interface TokenMetadata {
@@ -31,8 +31,6 @@ interface TokenMetadata {
   image: string;
   attributes: Array<{ trait_type: string; value: string }>;
 }
-
-const SWAG_CHAINS = chainsFor('swag');
 
 async function fetchTokenMetadata(uri: string, tokenId: bigint): Promise<TokenMetadata | null> {
   const gatewayUrl = getIPFSGatewayUrl(uri);
@@ -54,10 +52,9 @@ async function fetchTokenMetadata(uri: string, tokenId: bigint): Promise<TokenMe
   }
 }
 
-async function readCollection(chain: ChainInfo, owner: `0x${string}`): Promise<UserNFT[]> {
-  const collection = chain.contracts.Swag1155;
-  if (!collection) return [];
-  const client = publicClientFor(chain.id);
+async function readCollection(owner: `0x${string}`): Promise<UserNFT[]> {
+  const collection = SWAG_COLLECTION.address;
+  const client = publicClientFor(SWAG_COLLECTION.chainId);
 
   const tokenIds = await client.readContract({
     address: collection,
@@ -100,7 +97,6 @@ async function readCollection(chain: ChainInfo, owner: `0x${string}`): Promise<U
         image: metadata?.image || '',
         attributes: metadata?.attributes || [],
         designAddress: collection,
-        chainId: chain.id,
       };
     })
   );
@@ -113,13 +109,11 @@ export function useUserNFTs() {
     queryKey: ['user-nfts', address?.toLowerCase()],
     queryFn: async (): Promise<UserNFT[]> => {
       if (!address) return [];
-      const owner = address as `0x${string}`;
-      const perChain = await Promise.all(SWAG_CHAINS.map((chain) => readCollection(chain, owner)));
-      const nfts = perChain.flat();
+      const nfts = await readCollection(address as `0x${string}`);
       logger.debug('Swag NFTs loaded', { count: nfts.length });
       return nfts;
     },
-    enabled: Boolean(address) && SWAG_CHAINS.length > 0,
+    enabled: Boolean(address),
     staleTime: 1000 * 60 * 2,
     refetchOnWindowFocus: false,
     retry: 2,

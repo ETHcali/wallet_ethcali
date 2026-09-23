@@ -2,11 +2,11 @@
  * Server-side admin gate for the swag routes.
  *
  * The same three steps as lib/adminAuth.ts — Privy token, linked wallets,
- * role on chain — with a different authority. lib/adminAuth.ts asks the Celo
+ * role on chain — with a different authority. lib/adminAuth.ts asks the
  * DonationVault, because that is the operator set for donations and site
  * content. Swag has its own contract with its own ADMIN_ROLE, held by the
- * people who ship parcels and set caps, so swag routes ask the collection on
- * Base and nothing else. Steps 1 and 2 are requireUser; this file adds step 3.
+ * people who ship parcels and set caps, so swag routes ask the collection and
+ * nothing else. Steps 1 and 2 are requireUser; this file adds step 3.
  *
  * The contract is the authority. A wallet that isAdmin() says no for is not an
  * operator whatever any table says, and a route behind this gate holds the
@@ -14,7 +14,7 @@
  */
 import type { NextApiRequest } from 'next';
 import { swag1155Abi } from '../../frontend/abis/swag';
-import { getBaseClient, getSwagCollection } from './onchain';
+import { getSwagClient, getSwagCollection } from './onchain';
 import { requireUser, UserAuthError, type VerifiedUser } from './requireUser';
 
 export interface SwagAdmin extends VerifiedUser {
@@ -25,7 +25,7 @@ export interface SwagAdmin extends VerifiedUser {
 /** Step 3: which of these wallets does the collection recognise as an admin? */
 async function adminWalletOf(wallets: string[]): Promise<string | null> {
   if (wallets.length === 0) return null;
-  const client = getBaseClient();
+  const client = getSwagClient();
   const collection = getSwagCollection();
 
   for (const wallet of wallets) {

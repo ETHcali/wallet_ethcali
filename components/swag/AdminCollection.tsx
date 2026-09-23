@@ -10,8 +10,8 @@
  */
 import { encodeFunctionData, type Address } from 'viem';
 import { swag1155Abi } from '../../frontend/abis/swag';
-import { SWAG, useSwagAdminTx, useSwagCollectionState } from '../../hooks/swag';
-import { EXPLORER_URLS } from '../../config/constants';
+import { SWAG, SWAG_CHAIN, useSwagAdminTx, useSwagCollectionState } from '../../hooks/swag';
+import { explorerAddress } from '../../config/chains';
 import { HashChip } from './HashChip';
 import { AddressForm, CARD, ChainGate, Pill, TxButton } from './AdminPrimitives';
 
@@ -78,8 +78,8 @@ export function AdminCollection() {
         <p className="mt-3 text-[11px] leading-relaxed text-content-faint">
           Every USDC sale is forwarded to the treasury in the same transaction. Changing it is a
           DEFAULT_ADMIN action and is done from the Safe, not from here.{' '}
-          <a href={`${EXPLORER_URLS[SWAG.chainId]}/address/${SWAG.address}#writeContract`} target="_blank" rel="noopener noreferrer" className="text-eth-blue-text hover:underline">
-            Contract on Basescan ↗
+          <a href={`${explorerAddress(SWAG.chainId, SWAG.address)}#writeContract`} target="_blank" rel="noopener noreferrer" className="text-eth-blue-text hover:underline">
+            Contract on {SWAG_CHAIN.explorerName} ↗
           </a>
         </p>
       </section>

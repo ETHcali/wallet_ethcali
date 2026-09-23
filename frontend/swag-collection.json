@@ -1,7 +1,8 @@
 {
   "name": "ETHCALI-SWAG-2026",
-  "chainId": 8453,
-  "address": "0xF602C085F6bD354b9D3e26b055682bF1B9fF5442",
-  "factory": "0xb11813d12810f3d432dee99a4f1ef581cf151b37",
-  "deployedAt": "2026-09-23T03:56:12.397Z"
+  "chainId": 1,
+  "address": "0x5a1012486764c217a20B5D1b97508E1de83179E7",
+  "factory": "0x4c8d9e90350ec1556fe8471a7cee1860968fce0e",
+  "usdc": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+  "deployedAt": "2026-09-23T07:50:17.097Z"
 }

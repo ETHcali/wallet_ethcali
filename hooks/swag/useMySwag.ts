@@ -1,8 +1,8 @@
 /**
  * What the active wallet holds from the collection, plus its orders.
  *
- * Balances come from one `balanceOfBatch` over every live token id on Base —
- * the chain is the receipt. Orders come from the API, which is the fulfilment
+ * Balances come from one `balanceOfBatch` over every live token id on the
+ * collection — the chain is the receipt. Orders come from the API, which is the fulfilment
  * record (shipping, size, status) and never the proof of purchase.
  */
 import { useMemo } from 'react';

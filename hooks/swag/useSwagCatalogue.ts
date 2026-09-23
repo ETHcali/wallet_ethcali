@@ -1,6 +1,6 @@
 /**
- * The catalogue: every active design, joined with its Base variant and its
- * Shopify variants. One anon Supabase read, cached for a minute.
+ * The catalogue: every active design, joined with its on-chain variant on the
+ * collection's chain and its Shopify variants. One anon Supabase read, cached for a minute.
  *
  * Supabase is presentation here — names, photos, list price, the card-channel
  * ids. Stock and the price the contract actually charges come from the chain
@@ -9,14 +9,14 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
-import { CHAIN_IDS, SWAG_SHOPIFY_STORE } from '../../config/constants';
+import { SWAG_SHOPIFY_STORE } from '../../config/constants';
 import type {
   SwagChainVariant,
   SwagProduct,
   SwagShopifyVariant,
   SwagSize,
 } from '../../types/swag';
-import { swagKeys } from './client';
+import { SWAG, swagKeys } from './client';
 
 const SIZE_ORDER: SwagSize[] = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
@@ -111,7 +111,12 @@ interface CatalogueRow
 
 function toProduct(row: CatalogueRow): SwagProduct {
   const variant =
-    row.variants?.find((v) => v.chain_id === CHAIN_IDS.BASE && v.status === 'live') ?? null;
+    row.variants?.find(
+      (v) =>
+        v.chain_id === SWAG.chainId &&
+        v.status === 'live' &&
+        v.collection_address?.toLowerCase() === SWAG.address.toLowerCase()
+    ) ?? null;
 
   const shopify: SwagShopifyVariant[] = (row.shopify ?? [])
     .map((s) => ({ ...s, price_cop: s.price_cop === null ? null : Number(s.price_cop) }))
@@ -131,8 +136,10 @@ async function fetchCatalogue(): Promise<SwagProduct[]> {
   if (!supabase) throw new Error('The catalogue is not configured on this deployment.');
 
   // No embedded filter on chain_id: RLS already restricts swag_variants to
-  // status = 'live', and toProduct() picks the Base row. One fewer PostgREST
-  // feature to depend on for a payload that is 17 rows either way.
+  // status = 'live', and toProduct() picks the row for the live collection on
+  // its chain — the retired Base rows are also 'live' in the table and must
+  // not win. One fewer PostgREST feature to depend on for a payload that is a
+  // few dozen rows either way.
   const { data, error } = await supabase
     .from('swag_products')
     .select(SELECT)
@@ -153,7 +160,7 @@ export function useSwagCatalogue() {
 
   const products = useMemo(() => query.data ?? [], [query.data]);
 
-  /** Token ids of the designs that are live on Base, in catalogue order. */
+  /** Token ids of the designs that are live on the collection, in catalogue order. */
   const tokenIds = useMemo(
     () => products.flatMap((p) => (p.variant ? [p.variant.token_id] : [])),
     [products]

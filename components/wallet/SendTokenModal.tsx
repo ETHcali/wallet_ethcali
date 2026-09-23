@@ -1,18 +1,15 @@
 import React, { useMemo, useState } from 'react';
 import { formatUnits, isAddress, parseUnits } from 'viem';
 import { CameraIcon, ClipboardIcon, CloseIcon } from '../shared/icons';
-import ChainPicker from '../shared/ChainPicker';
 import SwitchChainButton from '../shared/SwitchChainButton';
 import QRScanner from './QRScanner';
-import { explorerTx, getChain, type ChainId, type ChainInfo } from '../../config/chains';
+import { DEFAULT_CHAIN, explorerTx } from '../../config/chains';
 import { useRequireChain } from '../../hooks/useRequireChain';
 import { useTokenTransfer } from '../../hooks/useTokenTransfer';
 import { formatTokenBalance } from '../../utils/tokenUtils';
 
-/** One sendable balance: a token on a chain. Built from `useChainBalances`. */
+/** One sendable balance. Built from `useBalances`. */
 export interface SendOption {
-  chainId: ChainId;
-  chainName: string;
   symbol: string;
   name: string;
   decimals: number;
@@ -21,8 +18,8 @@ export interface SendOption {
 
 interface SendTokenModalProps {
   options: SendOption[];
-  /** Which balance to start on — the row the user tapped. */
-  initial?: { chainId: number; symbol: string };
+  /** Which token to start on — the row the user tapped. */
+  initialSymbol?: string;
   initialRecipient?: string;
   /** USD per whole token, or null when unknown; drives the fiat preview. */
   priceOf: (symbol: string) => number | null;
@@ -34,50 +31,33 @@ const formatUsd = (value: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
 
 /**
- * Send the native coin or an ERC-20 on one explicit chain.
+ * Send ETH or an ERC-20 on Ethereum.
  *
- * The chain is chosen per transfer — it is whichever balance the user picked,
- * never the wallet's current network. If the wallet is elsewhere, the single
- * primary action becomes "Switch to <chain>" and the send button only appears
- * once it is there (frontend-ux rule 2).
+ * The transaction pins the chain; the wallet's current network is never
+ * consulted. If the wallet is elsewhere, the single primary action becomes
+ * "Switch to Ethereum" and the send button only appears once it is there
+ * (frontend-ux rule 2).
  */
 const SendTokenModal: React.FC<SendTokenModalProps> = ({
   options,
-  initial,
+  initialSymbol,
   initialRecipient = '',
   priceOf,
   onClose,
   onSent,
 }) => {
-  const chains = useMemo<ChainInfo[]>(() => {
-    const seen = new Set<number>();
-    return options
-      .filter((o) => (seen.has(o.chainId) ? false : (seen.add(o.chainId), true)))
-      .map((o) => getChain(o.chainId));
-  }, [options]);
+  const firstOption = options.find((o) => o.symbol === initialSymbol) ?? options[0];
 
-  const firstOption = options.find((o) => o.chainId === initial?.chainId && o.symbol === initial?.symbol) ?? options[0];
-
-  const [chainId, setChainId] = useState<ChainId>(firstOption?.chainId ?? chains[0]?.id ?? 8453);
   const [symbol, setSymbol] = useState<string>(firstOption?.symbol ?? '');
   const [recipient, setRecipient] = useState(initialRecipient);
   const [amount, setAmount] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
 
-  const chain = useRequireChain(chainId);
+  const chain = useRequireChain(DEFAULT_CHAIN.id);
   const { sendToken, isSending, txHash } = useTokenTransfer();
 
-  const chainOptions = options.filter((o) => o.chainId === chainId);
-  const selected = chainOptions.find((o) => o.symbol === symbol) ?? chainOptions[0];
-
-  const pickChain = (id: ChainId) => {
-    setChainId(id);
-    const next = options.find((o) => o.chainId === id && o.symbol === symbol) ?? options.find((o) => o.chainId === id);
-    setSymbol(next?.symbol ?? '');
-    setAmount('');
-    setError(null);
-  };
+  const selected = options.find((o) => o.symbol === symbol) ?? options[0];
 
   // Parse against the token's OWN decimals; a fixed 18 would turn 1 USDC into 10^12.
   const parsedAmount = useMemo(() => {
@@ -96,7 +76,7 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
     : parsedAmount === null || parsedAmount <= 0n
       ? 'Enter a valid amount.'
       : selected && parsedAmount > selected.balance
-        ? `Not enough ${selected.symbol} on ${selected.chainName}.`
+        ? `Not enough ${selected.symbol}.`
         : null;
 
   const price = selected ? priceOf(selected.symbol) : null;
@@ -117,7 +97,7 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
     if (!selected || !canSend) return;
     setError(null);
     try {
-      await sendToken({ chainId: selected.chainId, recipient, amount, symbol: selected.symbol });
+      await sendToken({ recipient, amount, symbol: selected.symbol });
       onSent?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Transfer failed. Nothing left your wallet.');
@@ -138,7 +118,7 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
     }
   };
 
-  const explorerLink = txHash && selected ? explorerTx(selected.chainId, txHash) : undefined;
+  const explorerLink = txHash ? explorerTx(DEFAULT_CHAIN.id, txHash) : undefined;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 p-0 backdrop-blur-sm sm:items-center sm:p-4">
@@ -146,11 +126,7 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
         <div className="flex items-start justify-between border-b border-line-hairline px-5 py-4">
           <div>
             <h3 className="text-lg font-bold text-content-primary">Send</h3>
-            {selected && (
-              <p className="font-mono text-xs text-content-muted">
-                {selected.symbol} on {selected.chainName}
-              </p>
-            )}
+            {selected && <p className="font-mono text-xs text-content-muted">{selected.symbol}</p>}
           </div>
           <button
             type="button"
@@ -165,7 +141,7 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
         {txHash && selected ? (
           <div className="space-y-4 px-5 py-6 text-center">
             <p className="text-sm text-content-primary">
-              Sent. {amount} {selected.symbol} is on its way on {selected.chainName}.
+              Sent. {amount} {selected.symbol} is on its way.
             </p>
             <p className="break-all font-mono text-xs text-content-muted">{txHash}</p>
             {explorerLink && (
@@ -189,17 +165,11 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
         ) : (
           <>
             <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-4">
-              {/* Network — the chain this transfer settles on */}
-              <div>
-                <label className="mb-2 block text-xs font-semibold text-content-muted">Network</label>
-                <ChainPicker chains={chains} value={chainId} onChange={pickChain} alwaysShow />
-              </div>
-
-              {/* Token on that network */}
+              {/* Token */}
               <div>
                 <label className="mb-2 block text-xs font-semibold text-content-muted">Token</label>
                 <div className="flex flex-wrap gap-2">
-                  {chainOptions.map((option) => {
+                  {options.map((option) => {
                     const active = option.symbol === selected?.symbol;
                     const empty = option.balance === 0n;
                     return (
@@ -331,7 +301,7 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
                   {isSending
                     ? 'Sending…'
                     : selected
-                      ? `Send ${selected.symbol} on ${selected.chainName}`
+                      ? `Send ${selected.symbol}`
                       : 'Nothing to send'}
                 </button>
               )}

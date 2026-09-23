@@ -1,8 +1,8 @@
 /**
- * Buying one design with USDC on Base.
+ * Buying one design with USDC.
  *
  * Four states, one primary action at a time:
- *   connect → switch to Base → approve exact price × qty → buy(tokenId, qty, USDC)
+ *   connect → switch chain → approve exact price × qty → buy(tokenId, qty, USDC)
  *
  * Approval timing is the subtle part. The wallet returns a hash BEFORE the
  * allowance is readable, so each write is guarded by two flags:
@@ -12,15 +12,14 @@
  * Both go on `disabled`. The finally{} is not optional: without it a rejected
  * transaction locks the button for good.
  *
- * Both writes are sponsored and pinned to Base with { chainId: 8453 }; the
- * hook never reads a global chain selector.
+ * Both writes are sponsored and pinned to the collection's chain with
+ * { chainId: SWAG.chainId }; the hook never reads the wallet's network.
  */
 import { useCallback, useMemo, useState } from 'react';
 import { usePrivy, useSendTransaction } from '@privy-io/react-auth';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { encodeFunctionData } from 'viem';
 import { swag1155Abi } from '../../frontend/abis/swag';
-import { CHAIN_IDS } from '../../config/constants';
 import { logger } from '../../utils/logger';
 import { useActiveWallet } from '../useActiveWallet';
 import { useRequireChain } from '../useRequireChain';
@@ -48,7 +47,10 @@ export interface UseBuySwagResult {
   /** Why the buy button is disabled before any click, or null if it is not. */
   blocked: string | null;
   connect: () => void;
-  switchToBase: () => Promise<boolean>;
+  /** Move the wallet to the collection's chain. */
+  switchChain: () => Promise<boolean>;
+  /** The chain's name, for the one button that names it. */
+  chainName: string;
   approve: () => Promise<void>;
   buy: () => Promise<void>;
   isSwitching: boolean;
@@ -67,7 +69,7 @@ export function useBuySwag(tokenId: number, quantity = 1): UseBuySwagResult {
   const locale = useSwagLocale();
   const { authenticated, login } = usePrivy();
   const { wallet, address } = useActiveWallet();
-  const chain = useRequireChain(CHAIN_IDS.BASE);
+  const chain = useRequireChain(SWAG.chainId);
   const { sendTransaction } = useSendTransaction();
   const queryClient = useQueryClient();
 
@@ -137,8 +139,8 @@ export function useBuySwag(tokenId: number, quantity = 1): UseBuySwagResult {
         ? describeBlockedReason('payment token not accepted', locale)
         : insufficientBalance
           ? locale === 'es'
-            ? 'No tienes suficiente USDC en Base para este pago.'
-            : 'Not enough USDC on Base for this payment.'
+            ? 'No tienes suficiente USDC para este pago.'
+            : 'Not enough USDC for this payment.'
           : null;
 
   const reset = useCallback(() => {
@@ -152,7 +154,7 @@ export function useBuySwag(tokenId: number, quantity = 1): UseBuySwagResult {
     login();
   }, [login]);
 
-  const switchToBase = useCallback(async () => {
+  const switchChain = useCallback(async () => {
     setError(null);
     const ok = await chain.switchTo();
     if (!ok && chain.error) setError(chain.error);
@@ -173,7 +175,7 @@ export function useBuySwag(tokenId: number, quantity = 1): UseBuySwagResult {
       });
 
       const result = await sendTransaction(
-        { to: SWAG.usdc, data, chainId: CHAIN_IDS.BASE },
+        { to: SWAG.usdc, data, chainId: SWAG.chainId },
         { sponsor: true }
       );
 
@@ -215,7 +217,7 @@ export function useBuySwag(tokenId: number, quantity = 1): UseBuySwagResult {
       });
 
       const result = await sendTransaction(
-        { to: SWAG.address, data, chainId: CHAIN_IDS.BASE },
+        { to: SWAG.address, data, chainId: SWAG.chainId },
         { sponsor: true }
       );
       setTxHash(result.hash);
@@ -257,7 +259,8 @@ export function useBuySwag(tokenId: number, quantity = 1): UseBuySwagResult {
     insufficientBalance,
     blocked,
     connect,
-    switchToBase,
+    switchChain,
+    chainName: chain.chainName,
     approve,
     buy,
     isSwitching: chain.switching,

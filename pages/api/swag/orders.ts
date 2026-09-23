@@ -10,7 +10,7 @@
  *
  * POST is where the architecture rule bites. The client sends a transaction
  * hash and an address to ship to; it does not get to say what it bought. The
- * server reads the receipt on Base, finds the Purchased log the collection
+ * server reads the receipt on the collection's chain, finds the Purchased log the collection
  * emitted, and takes buyer, tokenId and quantity from there. If the buyer in
  * the log is not one of the caller's wallets, there is no order — someone is
  * trying to attach a shipping address to a purchase that is not theirs.

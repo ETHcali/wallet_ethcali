@@ -140,7 +140,7 @@ function toResolved(row: VariantJoinRow): ResolvedVariant | null {
 
 const VARIANT_SELECT = 'id, product_id, token_id, product:swag_products!inner(sku, sized, sizes)';
 
-/** The design behind a tokenId on the Base collection. */
+/** The design behind a tokenId on the live collection. */
 export async function resolveVariantByToken(
   db: SupabaseClient,
   tokenId: number
@@ -156,7 +156,7 @@ export async function resolveVariantByToken(
   return data ? toResolved(data as unknown as VariantJoinRow) : null;
 }
 
-/** The Base deployment of a design. */
+/** The live collection's deployment of a design. */
 export async function resolveVariantByProduct(
   db: SupabaseClient,
   productId: number
@@ -173,7 +173,7 @@ export async function resolveVariantByProduct(
 }
 
 /**
- * A Shopify line-item SKU → the design on Base and the size it names.
+ * A Shopify line-item SKU → the design on the collection and the size it names.
  *
  * First the exact mapping the sync wrote (swag_shopify_variants), which knows
  * the size outright. Failing that, the convention: strip a trailing -<SIZE>

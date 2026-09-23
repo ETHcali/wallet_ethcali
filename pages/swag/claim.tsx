@@ -7,27 +7,27 @@
  * the button owns every one of them:
  *
  *   1. POST /api/swag/claim { orderId }     the server signs a voucher
- *   2. claim(voucher, signature) on Base     sponsored, via Privy
+ *   2. claim(voucher, signature)             sponsored, via Privy, on the
+ *                                            collection's chain
  *   3. POST /api/swag/claim { orderId, txHash }   the server reads the Claimed
  *                                                 log and records the tx
  *
- * Swag is Base-only: the chain id is fixed on the transaction, never read from
- * the wallet.
+ * The chain id is fixed on the transaction (`SWAG.chainId`), never read from
+ * the wallet; the server's answer must name the same chain.
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { usePrivy, useSendTransaction } from '@privy-io/react-auth';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { createPublicClient, encodeFunctionData, http } from 'viem';
-import { base } from 'viem/chains';
+import { encodeFunctionData } from 'viem';
 import Navigation from '../../components/Navigation';
 import Layout from '../../components/shared/Layout';
 import Loading from '../../components/shared/Loading';
 import Button from '../../components/shared/Button';
 import { ArrowRightIcon, CheckIcon } from '../../components/shared/icons';
 import Swag1155ABI from '../../frontend/abis/Swag1155.json';
-import { CHAIN_IDS, getRpcUrl } from '../../config/constants';
-import { getTxUrl } from '../../utils/explorer';
+import { explorerTx } from '../../config/chains';
+import { SWAG, swagClient } from '../../hooks/swag';
 import type {
   ClaimConfirmResponse,
   ClaimIssueResponse,
@@ -35,7 +35,6 @@ import type {
   SwagOrdersResponse,
 } from '../../types/swag-orders';
 
-const BASE = CHAIN_IDS.BASE;
 /** Product photos live on the website; imagePath is a path under its public/. */
 const SITE_ASSETS = 'https://ethcali.org';
 
@@ -75,7 +74,7 @@ async function api<T>(path: string, token: string, body?: unknown): Promise<T> {
 const STEP_LABEL: Record<Step, string> = {
   signing: 'Preparing voucher…',
   sending: 'Confirm in your wallet…',
-  confirming: 'Confirming on Base…',
+  confirming: 'Confirming…',
 };
 
 export default function SwagClaimPage() {
@@ -117,6 +116,9 @@ export default function SwagClaimPage() {
         if (!token) throw new Error('Not signed in');
 
         const issued = await api<ClaimIssueResponse>('/api/swag/claim', token, { orderId: id });
+        if (issued.chainId !== SWAG.chainId) {
+          throw new Error(`The server signed for chain ${issued.chainId}, this app claims on ${SWAG.chainId}.`);
+        }
 
         const data = encodeFunctionData({
           abi: Swag1155ABI,
@@ -135,13 +137,12 @@ export default function SwagClaimPage() {
 
         setPending((prev) => ({ ...prev, [id]: 'sending' }));
         const { hash } = await sendTransaction(
-          { to: issued.collection, data, chainId: issued.chainId },
+          { to: issued.collection, data, chainId: SWAG.chainId },
           { sponsor: true }
         );
 
         setPending((prev) => ({ ...prev, [id]: 'confirming' }));
-        const client = createPublicClient({ chain: base, transport: http(getRpcUrl(BASE)) });
-        const receipt = await client.waitForTransactionReceipt({ hash });
+        const receipt = await swagClient.waitForTransactionReceipt({ hash });
         if (receipt.status !== 'success') throw new Error('Transaction reverted');
 
         const confirmed = await api<ClaimConfirmResponse>('/api/swag/claim', token, {
@@ -177,7 +178,7 @@ export default function SwagClaimPage() {
       <Layout>
         <div className="mb-8">
           <p className="mb-1 font-mono text-xs font-semibold uppercase tracking-widest text-eth-blue-text">
-            Swag · Base
+            Swag
           </p>
           <h1 className="text-3xl font-bold text-content-primary sm:text-4xl">Claim your swag NFT</h1>
           <p className="mt-2 text-sm text-content-muted">
@@ -265,7 +266,7 @@ export default function SwagClaimPage() {
                     </span>
                     {hash && (
                       <a
-                        href={getTxUrl(BASE, hash)}
+                        href={explorerTx(SWAG.chainId, hash)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="font-mono text-xs text-eth-blue-text hover:underline"

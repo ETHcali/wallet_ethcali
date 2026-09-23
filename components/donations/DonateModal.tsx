@@ -25,9 +25,7 @@ interface DonateModalProps {
 
 const QUICK_AMOUNTS: Record<string, string[]> = {
   USDC: ['10', '25', '100'],
-  COPm: ['40000', '100000', '400000'],
   ETH: ['0.01', '0.05', '0.1'],
-  CELO: ['5', '25', '100'],
 };
 
 /**
@@ -70,8 +68,8 @@ const DonateModal: React.FC<DonateModalProps> = ({ campaign, chainId, onClose })
     reset,
   } = useDonate(chainId);
 
-  // Parse against the token's OWN decimals. USDC is 6 and COPm is 18 — a fixed
-  // 18 here would silently multiply a USDC donation by 10^12.
+  // Parse against the token's OWN decimals. USDC is 6 — a fixed 18 here would
+  // silently multiply a USDC donation by 10^12.
   const amount = useMemo(() => {
     if (!amountInput || Number.isNaN(Number(amountInput))) return 0n;
     try {
@@ -230,8 +228,6 @@ const DonateModal: React.FC<DonateModalProps> = ({ campaign, chainId, onClose })
           <label className="mb-2 block text-xs font-semibold text-content-muted" htmlFor="donate-amount">
             Amount
           </label>
-          {/* grid, not flex: COPm presets like 400,000 blow out a flex row on a
-              narrow phone. Equal columns keep them readable. */}
           <div className="mb-2 grid grid-cols-3 gap-2">
             {(QUICK_AMOUNTS[token.symbol] ?? []).map((preset) => (
               <button

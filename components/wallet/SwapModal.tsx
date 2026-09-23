@@ -1,11 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import Image from 'next/image';
 import { useSendTransaction } from '@privy-io/react-auth';
 import { useSwapQuote } from '../../hooks/useSwapQuote';
 import { useRequireChain } from '../../hooks/useRequireChain';
 import { getSwapTokens, parseTokenAmount, formatTokenAmount, type SwapToken } from '../../lib/lifi';
-import { chainsFor, explorerTx, type ChainId } from '../../config/chains';
-import ChainPicker from '../shared/ChainPicker';
+import { DEFAULT_CHAIN, explorerTx } from '../../config/chains';
 import SwitchChainButton from '../shared/SwitchChainButton';
 import { logger } from '../../utils/logger';
 
@@ -15,18 +14,14 @@ interface SwapModalProps {
   onSuccess?: () => void;
 }
 
-/** Only chains with a LI.FI token list. Empty means the Swap button is not rendered at all. */
-const SWAP_CHAINS = chainsFor('swap');
+/** LI.FI on Ethereum. The wallet is moved here right before signing. */
+const chainId = DEFAULT_CHAIN.id;
 
 export default function SwapModal({ onClose, userAddress, onSuccess }: SwapModalProps) {
   const { sendTransaction } = useSendTransaction();
-
-  // The swap owns its chain. Picked here, never read from the wallet; the
-  // wallet is moved right before signing.
-  const [chainId, setChainId] = useState<ChainId>(SWAP_CHAINS[0].id);
   const chain = useRequireChain(chainId);
 
-  const tokens = useMemo(() => getSwapTokens(chainId), [chainId]);
+  const tokens = useMemo(() => getSwapTokens(chainId), []);
 
   // Form state
   const [fromToken, setFromToken] = useState<SwapToken>(tokens[0]);
@@ -39,15 +34,6 @@ export default function SwapModal({ onClose, userAddress, onSuccess }: SwapModal
   const [isSwapping, setIsSwapping] = useState(false);
   const [txHash, setTxHash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  // Reset tokens when the chain changes
-  useEffect(() => {
-    setFromToken(tokens[0]);
-    setToToken(tokens[1] ?? tokens[0]);
-    setFromAmount('');
-    setTxHash(null);
-    setError(null);
-  }, [tokens]);
 
   // Calculate from amount in smallest unit
   const fromAmountWei = useMemo(() => {
@@ -162,9 +148,6 @@ export default function SwapModal({ onClose, userAddress, onSuccess }: SwapModal
         </div>
 
         <div className="p-4 space-y-3">
-          {/* Network */}
-          <ChainPicker chains={SWAP_CHAINS} value={chainId} onChange={setChainId} alwaysShow />
-
           {/* From Token */}
           <div className="rounded-card bg-surface-inset p-4">
             <div className="flex items-center justify-between mb-2">

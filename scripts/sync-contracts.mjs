@@ -15,10 +15,19 @@
  *                                    The Swag1155 collection is a clone, so it
  *                                    has no entry in ADDRESSES/CONTRACTS; this is
  *                                    what lets viem type-check every swag call.
- *   frontend/swag-collection.json    the live collection on Base, read from
- *                                    deployments/base-latest.json
+ *   frontend/swag-collection.json    the live collection, read from
+ *                                    deployments/<SWAG_CHAIN>-latest.json. This
+ *                                    file is the one place the swag chain is
+ *                                    chosen: config/chains.ts derives
+ *                                    `features.swag` from its chainId and
+ *                                    config/constants.ts builds SWAG_COLLECTION
+ *                                    from it.
  *   frontend/CONTRACTS_SOURCE.json   { repo, commit, generatedAt } so a stale
  *                                    copy can be traced to the commit it came from
+ *
+ * The swag chain is `SWAG_CHAIN` (env or first argument), a network key from
+ * addresses.json: `ethereum` (default) or `base`. Moving the store to another
+ * chain is re-running this with a different key and committing the diff.
  *
  * The copies are committed so Vercel builds without the sibling checkout.
  * Never hand-edit the outputs; re-run this instead.
@@ -35,12 +44,14 @@ const srcFrontend = path.join(contractsRoot, 'frontend');
 const dstFrontend = path.join(walletRoot, 'frontend');
 
 const SWAG_COLLECTION_NAME = 'ETHCALI-SWAG-2026';
-const SWAG_CHAIN_ID = 8453;
+const SWAG_CHAIN = (process.argv[2] || process.env.SWAG_CHAIN || 'ethereum').trim().toLowerCase();
 
 function fail(message) {
   console.error(`sync-contracts: ${message}`);
   process.exit(1);
 }
+
+if (!/^[a-z]+$/.test(SWAG_CHAIN)) fail(`SWAG_CHAIN "${SWAG_CHAIN}" is not a network key`);
 
 if (!fs.existsSync(srcFrontend)) {
   fail(`${srcFrontend} not found — clone ETHcali/scs-ethcali next to this repo first`);
@@ -77,23 +88,37 @@ export const swag1155Abi = ${JSON.stringify(swagAbi, null, 2)} as const;
 `;
 fs.writeFileSync(path.join(dstAbis, 'swag.ts'), swagTs);
 
-// ── Live swag collection on Base ────────────────────────────────────────────
-const deploymentPath = path.join(contractsRoot, 'deployments', 'base-latest.json');
+// ── Live swag collection ────────────────────────────────────────────────────
+// The chain id comes from the address book just copied, so the json can never
+// name a chain the registry does not know; the USDC address is the payment
+// token the collection was deployed against (deployment config), which
+// config/constants.ts checks against the registry's USDC entry at build time.
+const isAddress = (value) => /^0x[0-9a-fA-F]{40}$/.test(String(value ?? ''));
+
+const addressBook = JSON.parse(fs.readFileSync(path.join(dstFrontend, 'addresses.json'), 'utf8'));
+const swagChainId = addressBook?.[SWAG_CHAIN]?.chainId;
+if (!Number.isInteger(swagChainId)) fail(`addresses.json has no network "${SWAG_CHAIN}"`);
+
+const deploymentFile = `${SWAG_CHAIN}-latest.json`;
+const deploymentPath = path.join(contractsRoot, 'deployments', deploymentFile);
 if (!fs.existsSync(deploymentPath)) fail(`${deploymentPath} missing`);
 const deployment = JSON.parse(fs.readFileSync(deploymentPath, 'utf8'));
 const collectionAddress = deployment?.swagCollections?.[SWAG_COLLECTION_NAME];
-if (!/^0x[0-9a-fA-F]{40}$/.test(String(collectionAddress ?? ''))) {
-  fail(`deployments/base-latest.json has no swagCollections["${SWAG_COLLECTION_NAME}"]`);
+if (!isAddress(collectionAddress)) {
+  fail(`deployments/${deploymentFile} has no swagCollections["${SWAG_COLLECTION_NAME}"]`);
 }
+const usdcAddress = deployment?.config?.usdcAddress;
+if (!isAddress(usdcAddress)) fail(`deployments/${deploymentFile} has no config.usdcAddress`);
 
 fs.writeFileSync(
   path.join(dstFrontend, 'swag-collection.json'),
   JSON.stringify(
     {
       name: SWAG_COLLECTION_NAME,
-      chainId: SWAG_CHAIN_ID,
+      chainId: swagChainId,
       address: collectionAddress,
       factory: deployment.swagFactory ?? null,
+      usdc: usdcAddress,
       deployedAt: deployment.timestamp ?? null,
     },
     null,
@@ -120,5 +145,5 @@ fs.writeFileSync(
 
 console.log(
   `sync-contracts: ${abiFiles.length} ABIs, addresses.json, contracts.ts, abis/swag.ts, ` +
-    `swag-collection.json (${collectionAddress}) from ${commit.slice(0, 12)}`
+    `swag-collection.json (${SWAG_CHAIN} ${swagChainId} · ${collectionAddress}) from ${commit.slice(0, 12)}`
 );

@@ -14,7 +14,7 @@
  * bytes32 orderRef,uint256 deadline)"). Signing under the struct's name
  * produces a signature the contract rejects as InvalidSignature. The primary
  * type here is `Claim`, and scripts/swag-voucher-selftest.mjs proves the
- * local digest equals the contract's hashVoucher() on Base.
+ * local digest equals the contract's hashVoucher() on the deployed collection.
  *
  * The key lives in SWAG_VOUCHER_SIGNER_KEY and is never logged, returned or
  * compared in the clear. Rotating it means granting SIGNER_ROLE to the new
@@ -43,7 +43,7 @@ export const CLAIM_TYPES = {
   ],
 } as const;
 
-/** EIP712("ETHCaliSwag", "1") in the constructor; chain and contract from the deployment. */
+/** EIP712("ETHCaliSwag", "1") in the constructor; chain id and contract from frontend/swag-collection.json. */
 export function claimDomain(collection: Address = getSwagCollection()) {
   return {
     name: 'ETHCaliSwag',
