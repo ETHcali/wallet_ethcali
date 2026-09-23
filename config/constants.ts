@@ -8,7 +8,7 @@
  */
 import swagCollection from '../frontend/swag-collection.json';
 import {
-  CHAINS,
+  ALL_CHAINS,
   CHAIN_IDS,
   NATIVE_TOKEN_SENTINEL,
   findToken,
@@ -86,10 +86,12 @@ export function getRpcUrl(chainId: ChainId): string {
   return chain.rpcUrl;
 }
 
+// Built from ALL_CHAINS, hidden ones included: an API route decoding an old
+// order or an indexed row may still meet an Optimism id and must not throw.
 export const EXPLORER_URLS: Record<ChainId, string> = Object.fromEntries(
-  CHAINS.map((c) => [c.id, c.explorerUrl])
+  ALL_CHAINS.map((c) => [c.id, c.explorerUrl])
 ) as Record<ChainId, string>;
 
 export const NATIVE_SYMBOLS: Record<ChainId, string> = Object.fromEntries(
-  CHAINS.map((c) => [c.id, c.nativeSymbol])
+  ALL_CHAINS.map((c) => [c.id, c.nativeSymbol])
 ) as Record<ChainId, string>;

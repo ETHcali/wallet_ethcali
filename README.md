@@ -1,6 +1,6 @@
 # ETH Cali Wallet
 
-A secure and easy-to-use Ethereum wallet application built with Next.js and Privy for authentication. This wallet allows users to access web3 easily with **native gas sponsorship by Privy**, supporting multiple tokens across Base, Ethereum, Optimism, and Unichain networks.
+A secure and easy-to-use Ethereum wallet application built with Next.js and Privy for authentication. This wallet allows users to access web3 easily with **native gas sponsorship by Privy**, supporting multiple tokens across Base, Ethereum and Celo.
 
 ## 🌟 Features
 
@@ -30,10 +30,9 @@ A secure and easy-to-use Ethereum wallet application built with Next.js and Priv
 
 ### 🔗 **Network Support**
 - **Base** (8453) — default everywhere; faucet, identity, swag, ENS, donations, send, swap
-- **Optimism** (10) — faucet, identity, donations, send, swap
-- **Unichain** (130) — faucet, identity, send
 - **Celo** (42220) — donations (COPm), send
 - **Ethereum** (1) — faucet, identity, donations, send, swap (gas not sponsored)
+- **Optimism** (10) and **Unichain** (130) are defined in `config/chains.ts` but `hidden: true`: contracts stay deployed, nothing in the app offers them
 - The matrix above is not hand-maintained: `config/chains.ts` derives each chain's features from the generated `frontend/addresses.json` (see [Chains](#-chains))
 
 ## 🚀 Quick Start
@@ -118,7 +117,7 @@ wallet_ethcali/
 │   │   ├── fx/trm.ts            # today's TRM from datos.gov.co
 │   │   ├── indexer/sync.ts      # donation index
 │   │   ├── pinata/, poap/, ens/, cms/, donations/, check-personhood/, register-personhood.ts
-│   ├── index.tsx, wallet.tsx, profile.tsx
+│   ├── index.tsx, wallet.tsx
 │   ├── faucet.tsx, faucet/admin.tsx
 │   ├── sybil/index.tsx, sybil/admin.tsx
 │   ├── donations.tsx, donations/admin.tsx

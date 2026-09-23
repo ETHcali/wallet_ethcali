@@ -33,6 +33,8 @@ const ALLOWED = [
   '/sybil',
   '/swag',
   '/donations',
+  // No page any more — next.config.js 308s it to /wallet — but ethcali.org
+  // still links it, and a link the site sends must survive this list.
   '/profile',
   '/admin',
 ] as const;

@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import Layout from '../components/shared/Layout';
 import Loading from '../components/shared/Loading';
 import WalletInfo from '../components/wallet/WalletInfo';
+import IdentityHeader from '../components/wallet/IdentityHeader';
 import Navigation from '../components/Navigation';
 import { useChainBalances } from '../hooks/useChainBalances';
 import { useActiveWallet } from '../hooks/useActiveWallet';
@@ -77,12 +78,15 @@ export default function WalletPage() {
       <Layout>
         <div className="space-y-6">
           {activeWallet ? (
-            <WalletInfo
-              address={activeWallet.address}
-              balances={balances}
-              isLoading={isBalanceLoading}
-              onRefresh={refreshBalances}
-            />
+            <>
+              <IdentityHeader address={activeWallet.address} />
+              <WalletInfo
+                address={activeWallet.address}
+                balances={balances}
+                isLoading={isBalanceLoading}
+                onRefresh={refreshBalances}
+              />
+            </>
           ) : (
             <div className="rounded-control border border-eth-blue/30 bg-surface-slab p-5 text-center  sm:p-8">
               {needsWalletReconnect ? (

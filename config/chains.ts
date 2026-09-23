@@ -95,6 +95,13 @@ export interface ChainInfo {
   tokens: readonly TokenInfo[];
   contracts: ChainContracts;
   features: Readonly<Record<Feature, boolean>>;
+  /**
+   * Defined but not offered. A hidden chain still resolves through `getChain`,
+   * `publicClientFor` and the explorer helpers — an old link or an indexed row
+   * can name it — but it is absent from `CHAINS`, `chainsFor`, every picker and
+   * every balance list. Nothing that shows a chain shows a hidden one.
+   */
+  hidden: boolean;
 }
 
 // ── Inputs ──────────────────────────────────────────────────────────────────
@@ -136,6 +143,8 @@ interface ChainDef {
   nativeName: string;
   nativeCoingeckoId: string;
   tokens: readonly TokenInfo[];
+  /** See `ChainInfo.hidden`. Contracts stay deployed; the UI just stops offering the chain. */
+  hidden?: boolean;
 }
 
 const USDC = (address: `0x${string}`): TokenInfo => ({
@@ -163,6 +172,9 @@ const EURC = (address: `0x${string}`): TokenInfo => ({
 /**
  * Order matters: it is the order every picker shows and Base is the default
  * everywhere. Ethereum is last because gas is not sponsored there.
+ *
+ * Optimism and Unichain are `hidden`: their deployments are untouched, but the
+ * app shows Ethereum, Base and Celo only. Flip the flag to bring one back.
  */
 const CHAIN_DEFS: readonly ChainDef[] = [
   {
@@ -186,6 +198,7 @@ const CHAIN_DEFS: readonly ChainDef[] = [
     key: 'optimism',
     name: 'Optimism',
     shortName: 'OP',
+    hidden: true,
     explorerName: 'Etherscan',
     explorerUrl: 'https://optimistic.etherscan.io',
     nativeSymbol: 'ETH',
@@ -206,6 +219,7 @@ const CHAIN_DEFS: readonly ChainDef[] = [
     key: 'unichain',
     name: 'Unichain',
     shortName: 'UNI',
+    hidden: true,
     explorerName: 'Blockscout',
     explorerUrl: 'https://unichain.blockscout.com',
     nativeSymbol: 'ETH',
@@ -320,13 +334,21 @@ function build(def: ChainDef): ChainInfo {
       send: true,
       swap: SWAP_VERIFIED.has(def.key),
     },
+    hidden: def.hidden ?? false,
   };
 }
 
-/** Every supported chain, in display order. */
-export const CHAINS: readonly ChainInfo[] = CHAIN_DEFS.map(build);
+/**
+ * Every chain the registry can resolve, hidden ones included. For lookups by
+ * id (explorer links, API routes, decoding an indexed row) — never for a list
+ * a user sees. Display code reads `CHAINS`.
+ */
+export const ALL_CHAINS: readonly ChainInfo[] = CHAIN_DEFS.map(build);
 
-const BY_ID: ReadonlyMap<number, ChainInfo> = new Map(CHAINS.map((c) => [c.id, c]));
+/** Every chain the app offers, in display order. Hidden chains are not here. */
+export const CHAINS: readonly ChainInfo[] = ALL_CHAINS.filter((c) => !c.hidden);
+
+const BY_ID: ReadonlyMap<number, ChainInfo> = new Map(ALL_CHAINS.map((c) => [c.id, c]));
 
 export const DEFAULT_CHAIN: ChainInfo = CHAINS[0];
 
@@ -343,14 +365,15 @@ export function getChain(id: number | undefined | null): ChainInfo | undefined {
   return id === undefined || id === null ? undefined : BY_ID.get(id);
 }
 
-/** The chains a feature is actually deployed on, in display order. */
+/** The chains a feature is offered on, in display order. Hidden chains are never offered. */
 export function chainsFor(feature: Feature): ChainInfo[] {
   return CHAINS.filter((c) => c.features[feature]);
 }
 
-/** True when `id` names a chain with `feature`. */
+/** True when `id` names a chain the app offers with `feature`. False for a hidden chain. */
 export function hasFeature(id: number | undefined | null, feature: Feature): boolean {
-  return getChain(id)?.features[feature] ?? false;
+  const chain = getChain(id);
+  return chain !== undefined && !chain.hidden && chain.features[feature];
 }
 
 export function findToken(id: number | undefined | null, symbol: string): TokenInfo | undefined {
@@ -402,6 +425,10 @@ export function explorerAddress(id: number | undefined | null, address: string):
 
 // ── Privy ───────────────────────────────────────────────────────────────────
 
-/** What `PrivyProvider` is told it may sign on. Same objects, one list. */
+/**
+ * What `PrivyProvider` is told it may sign on: the offered chains, same
+ * objects, one list. A hidden chain is not here because nothing asks the
+ * wallet to switch to it.
+ */
 export const PRIVY_SUPPORTED_CHAINS: ChainDefinition[] = CHAINS.map((c) => c.viem);
 export const PRIVY_DEFAULT_CHAIN: ChainDefinition = DEFAULT_CHAIN.viem;

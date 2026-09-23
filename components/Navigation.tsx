@@ -229,7 +229,7 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
           <div className="flex items-center gap-2">
             {userWallet && (
               <Link
-                href="/profile"
+                href="/wallet"
                 className="hidden min-h-[36px] items-center rounded-full border border-line-hairline bg-surface-slab px-3 font-mono text-xs text-eth-blue-text transition-colors duration-base hover:border-line-brand sm:inline-flex"
                 title={userWallet.address}
               >

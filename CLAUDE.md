@@ -66,6 +66,14 @@ shows the connected wallet and nothing about networks.
 4. **No silent fallback.** `getChain(id)` returns `undefined` for an unsupported id
    and the UI says so. Admin visibility (`useAdminRoles`) is OR'd across every chain a
    contract is deployed on, so it never depends on a network choice made elsewhere.
+5. **Hidden chains.** A `CHAIN_DEFS` entry can carry `hidden: true` (Optimism and
+   Unichain today). The deployments stay where they are and `getChain`,
+   `publicClientFor` and the explorer helpers still resolve the id — an old link or an
+   indexed row can name it — but the chain is absent from `CHAINS`, `chainsFor`,
+   `hasFeature`, `PRIVY_SUPPORTED_CHAINS`, every picker and every balance list. The
+   app shows Ethereum, Base and Celo. `ALL_CHAINS` (hidden included) exists for
+   lookups by id only, never for a list a user sees. Base stays the default and the
+   chain of every sponsored action the app starts (swag, ENS, faucet).
 
 ### Contract Interactions
 

@@ -45,6 +45,10 @@ const nextConfig = {
   env: {
     PRIVY_APP_SECRET: process.env.PRIVY_APP_SECRET,
   },
+  // The profile page folded into the wallet page; old links keep working.
+  async redirects() {
+    return [{ source: '/profile', destination: '/wallet', permanent: true }];
+  },
   // Configure headers for security
   async headers() {
     return [

@@ -10,7 +10,8 @@ import { useActiveWallet } from './useActiveWallet';
  * The active wallet's ZKPassport NFT on one explicit chain.
  * - Checks ownership via hasNFTByAddress()
  * - Reads global metadata via nftImageURI(), nftDescription(), nftExternalURL()
- * - Queries the NFTMinted event for tokenId and verification data
+ * - Queries the NFTMinted event for tokenId and verification data, and the
+ *   block it landed in for the verification date (the token stores none)
  */
 export function useZKPassportNFT(chainId: number) {
   const { address } = useActiveWallet();
@@ -41,6 +42,7 @@ export function useZKPassportNFT(chainId: number) {
 
         let tokenId: bigint | null = null;
         let tokenData: TokenData | null = null;
+        let mintedAt: Date | null = null;
 
         try {
           const logs = await client.getLogs({
@@ -62,6 +64,10 @@ export function useZKPassportNFT(chainId: number) {
               isOver18: latestLog.args.isOver18 ?? false,
               nationality: latestLog.args.nationality ?? '',
             };
+            if (latestLog.blockNumber !== null) {
+              const block = await client.getBlock({ blockNumber: latestLog.blockNumber });
+              mintedAt = new Date(Number(block.timestamp) * 1000);
+            }
           }
         } catch (eventErr) {
           // Some RPCs reject wide log ranges; the card still renders without the event data.
@@ -71,6 +77,7 @@ export function useZKPassportNFT(chainId: number) {
         return {
           tokenId,
           tokenData,
+          mintedAt,
           tokenURI: null,
           nftMetadata: {
             name: 'ZKPassport NFT',
@@ -96,6 +103,8 @@ export function useZKPassportNFT(chainId: number) {
     isFetched: query.isFetched,
     tokenId: query.data?.tokenId ?? null,
     tokenData: query.data?.tokenData ?? null,
+    /** When the mint landed, from its block. Null when the RPC refused the log range. */
+    mintedAt: query.data?.mintedAt ?? null,
     nftMetadata: query.data?.nftMetadata ?? null,
     tokenURI: query.data?.tokenURI ?? null,
     refreshNFTData: query.refetch,

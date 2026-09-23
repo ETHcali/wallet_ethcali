@@ -80,7 +80,6 @@ const DESTINATIONS: Record<string, { cta: string; opening: string }> = {
   '/sybil': { cta: 'Sign in to verify your identity', opening: 'Opening identity…' },
   '/swag': { cta: 'Sign in to shop', opening: 'Opening the store…' },
   '/donations': { cta: 'Sign in to donate', opening: 'Opening donations…' },
-  '/profile': { cta: 'Sign in to your profile', opening: 'Opening your profile…' },
   '/admin': { cta: 'Sign in to the admin area', opening: 'Opening admin…' },
 };
 
