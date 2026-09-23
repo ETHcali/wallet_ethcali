@@ -4,7 +4,6 @@ import { useRouter } from 'next/router';
 import Layout from '../components/shared/Layout';
 import Loading from '../components/shared/Loading';
 import WalletInfo from '../components/wallet/WalletInfo';
-import IdentityHeader from '../components/wallet/IdentityHeader';
 import Navigation from '../components/Navigation';
 import { useBalances } from '../hooks/useBalances';
 import { useActiveWallet } from '../hooks/useActiveWallet';
@@ -79,7 +78,6 @@ export default function WalletPage() {
         <div className="space-y-6">
           {activeWallet ? (
             <>
-              <IdentityHeader address={activeWallet.address} />
               <WalletInfo
                 address={activeWallet.address}
                 rows={rows}
