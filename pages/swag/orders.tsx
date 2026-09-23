@@ -107,7 +107,7 @@ export default function SwagOrdersPage() {
       <main className="mx-auto w-full max-w-4xl px-4 py-6 md:px-6 md:py-8">
         <header className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="mb-1 font-mono text-xs uppercase tracking-widest text-eth-blue-text">ETHCALI-SWAG-2026</p>
+            <p className="mb-1 font-mono text-xs uppercase tracking-widest text-eth-blue-text">ETH Cali Swag 2026</p>
             <h1 className="text-3xl font-bold text-content-primary">{title}</h1>
             <p className="mt-2 text-sm text-content-muted">
               {locale === 'es'
