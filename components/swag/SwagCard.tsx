@@ -1,20 +1,22 @@
 import { useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { formatUnits } from 'viem';
 import { SWAG_COLLECTION_BASE } from '../../config/constants';
 import type { SwagProduct, SwagSize } from '../../types/swag';
-import type { SwagTokenState } from '../../hooks/swag';
+import type { SwagTokenState, UtmParams } from '../../hooks/swag';
 import {
+  appProductPath,
   describeBlockedReason,
   formatCop,
-  formatUsd,
-  formatUsdc,
   productAltName,
   productDescription,
   productImageUrl,
   productName,
   shopifyCartUrl,
   shopifyVariantFor,
+  usdcDiscountPct,
+  withUtm,
   type SwagLocale,
 } from '../../hooks/swag';
 
@@ -27,6 +29,14 @@ interface SwagCardProps {
   trm: number | null;
   locale: SwagLocale;
   onPayWithUsdc: (product: SwagProduct, tokenId: number, size: SwagSize | null) => void;
+  /** Campaign parameters from the page URL, forwarded onto the card checkout link. */
+  utm?: UtmParams;
+  /** The product page: large photo, full copy, an h1. The grid renders the compact card. */
+  expanded?: boolean;
+  /** Size to start with (from `?size=`); ignored for unsized designs. */
+  initialSize?: SwagSize | null;
+  /** Ask for a size straight away — the page was opened to pay but no valid size came with it. */
+  promptSize?: boolean;
 }
 
 const SECONDARY =
@@ -34,15 +44,45 @@ const SECONDARY =
 const PRIMARY =
   'flex min-h-tap w-full items-center justify-center rounded-control bg-eth-blue px-4 text-sm font-semibold text-on-brand transition-colors hover:bg-eth-blue-lift disabled:cursor-not-allowed disabled:bg-surface-ridge disabled:text-content-faint';
 
-/**
- * One design. Two channels with split stock: the chain says what is left for
- * USDC, Shopify says whether card checkout is open (its live count is not
- * readable anonymously, so no number is shown for it).
- */
-export function SwagCard({ product, onchain, paused, trm, locale, onPayWithUsdc }: SwagCardProps) {
-  const [size, setSize] = useState<SwagSize | null>(null);
-  const [needsSize, setNeedsSize] = useState(false);
+/** `US$ 12.00` — the currency spelled out because the page shows pesos beside it. */
+function usdLabel(value: number): string {
+  return `US$ ${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
 
+/** `−10 %` with a real minus and a non-breaking space, the way a price tag prints it. */
+function discountLabel(pct: number): string {
+  return `−${pct} %`;
+}
+
+/**
+ * One design, one purchase module, two surfaces: the compact grid card and the
+ * expanded product page render the same thing. Two channels with split stock:
+ * the chain says what is left for USDC, Shopify says whether card checkout is
+ * open (its live count is not readable anonymously, so no number is shown).
+ *
+ * Two prices. The list price is what the card charges; the USDC price is what
+ * the contract charges (`getTokenPrice`), with the catalogue's `price_usdc`
+ * standing in until the chain answers. The discount is computed from the two,
+ * never assumed.
+ */
+export function SwagCard({
+  product,
+  onchain,
+  paused,
+  trm,
+  locale,
+  onPayWithUsdc,
+  utm = {},
+  expanded = false,
+  initialSize = null,
+  promptSize = false,
+}: SwagCardProps) {
+  const [size, setSize] = useState<SwagSize | null>(
+    product.sized && initialSize && product.sizes.includes(initialSize) ? initialSize : null
+  );
+  const [needsSize, setNeedsSize] = useState(promptSize && product.sized);
+
+  const es = locale === 'es';
   const image = productImageUrl(product);
   const name = productName(product, locale);
   const tokenId = product.variant?.token_id ?? null;
@@ -50,7 +90,7 @@ export function SwagCard({ product, onchain, paused, trm, locale, onPayWithUsdc 
   const remaining = onchain ? Number(onchain.remaining) : null;
   const soldOutOnchain = remaining !== null && remaining <= 0;
   const usdcBlocked: string | null = !tokenId
-    ? locale === 'es' ? 'Aún no está en la cadena.' : 'Not on chain yet.'
+    ? es ? 'Aún no está en la cadena.' : 'Not on chain yet.'
     : paused
       ? describeBlockedReason('paused', locale)
       : onchain && !onchain.canBuy
@@ -70,7 +110,9 @@ export function SwagCard({ product, onchain, paused, trm, locale, onPayWithUsdc 
 
   const payWithCard = () => {
     if (!requireSize() || !cardVariant) return;
-    window.open(shopifyCartUrl(cardVariant, 1), '_blank', 'noopener,noreferrer');
+    // Straight into Shopify checkout (the cart permalink 302s there), with the
+    // campaign that brought the buyer still attached.
+    window.open(withUtm(shopifyCartUrl(cardVariant, 1), utm), '_blank', 'noopener,noreferrer');
   };
 
   const payWithUsdc = () => {
@@ -78,57 +120,86 @@ export function SwagCard({ product, onchain, paused, trm, locale, onPayWithUsdc 
     onPayWithUsdc(product, tokenId, product.sized ? size : null);
   };
 
-  // The contract's USDC price is the one a crypto buyer pays; the list price
-  // is the fallback until the chain answers. Formatted with USDC's 6 decimals.
-  const usd = onchain && onchain.price > 0n
-    ? Number(formatUnits(onchain.price, SWAG_COLLECTION_BASE.usdcDecimals))
-    : product.price_usd;
-  const cop = trm ? formatCop(usd * trm) : null;
+  // List price from the catalogue; USDC price from the contract, formatted
+  // with USDC's 6 decimals, falling back to the mirrored column until it loads.
+  const listUsd = product.price_usd;
+  const chainUsd =
+    onchain && onchain.price > 0n ? Number(formatUnits(onchain.price, SWAG_COLLECTION_BASE.usdcDecimals)) : null;
+  const usdcUsd = chainUsd ?? product.price_usdc;
+  const discount = usdcDiscountPct(listUsd, usdcUsd);
+  const cop = trm ? formatCop(listUsd * trm) : null;
+
+  const usdcCta = `${es ? 'Pagar con USDC' : 'Pay with USDC'}${discount ? ` ${discountLabel(discount)}` : ''}`;
+
+  const title = (
+    <span title={productAltName(product, locale)} lang={locale}>
+      {name}
+    </span>
+  );
+
+  const photo = (
+    <div className={`relative w-full bg-surface-inset ${expanded ? 'aspect-square md:min-h-[420px]' : 'aspect-square'}`}>
+      {image ? (
+        <Image
+          src={image}
+          alt={name}
+          fill
+          priority={expanded}
+          className="object-cover"
+          sizes={expanded ? '(min-width: 768px) 50vw, 100vw' : '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw'}
+        />
+      ) : (
+        <div className="flex h-full items-center justify-center font-mono text-xs uppercase tracking-wide text-content-faint">
+          {product.category}
+        </div>
+      )}
+      {tokenId !== null && (
+        <span className="absolute left-3 top-3 rounded-chip bg-surface-void/80 px-2 py-1 font-mono text-[10px] uppercase tracking-wide text-content-secondary backdrop-blur-sm">
+          #{tokenId}
+        </span>
+      )}
+    </div>
+  );
 
   return (
     <article
       id={product.sku}
-      className="flex flex-col overflow-hidden rounded-card border border-line-hairline bg-surface-slab"
+      className={`flex flex-col overflow-hidden rounded-card border border-line-hairline bg-surface-slab ${
+        expanded ? 'md:grid md:grid-cols-2' : ''
+      }`}
     >
-      <div className="relative aspect-square w-full bg-surface-inset">
-        {image ? (
-          <Image
-            src={image}
-            alt={name}
-            fill
-            className="object-cover"
-            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center font-mono text-xs uppercase tracking-wide text-content-faint">
-            {product.category}
-          </div>
-        )}
-        {tokenId !== null && (
-          <span className="absolute left-3 top-3 rounded-chip bg-surface-void/80 px-2 py-1 font-mono text-[10px] uppercase tracking-wide text-content-secondary backdrop-blur-sm">
-            #{tokenId}
-          </span>
-        )}
-      </div>
+      {photo}
 
-      <div className="flex flex-1 flex-col gap-3 p-4">
+      <div className={`flex flex-1 flex-col ${expanded ? 'gap-5 p-5 md:p-8' : 'gap-3 p-4'}`}>
         <div>
           <p className="font-mono text-[10px] uppercase tracking-wide text-content-faint">{product.category}</p>
-          <h2
-            className="mt-1 text-base font-semibold leading-snug text-content-primary"
-            title={productAltName(product, locale)}
-            lang={locale}
-          >
-            {name}
-          </h2>
-          <p className="mt-1 line-clamp-2 text-sm text-content-muted">{productDescription(product, locale)}</p>
+          {expanded ? (
+            <h1 className="mt-1 text-2xl font-bold leading-tight text-content-primary sm:text-3xl">{title}</h1>
+          ) : (
+            <h2 className="mt-1 text-base font-semibold leading-snug text-content-primary">
+              <Link
+                href={appProductPath(product)}
+                className="transition-colors hover:text-eth-blue-text focus-visible:text-eth-blue-text"
+              >
+                {title}
+              </Link>
+            </h2>
+          )}
+          <p className={`mt-1 text-content-muted ${expanded ? 'text-base leading-relaxed' : 'line-clamp-2 text-sm'}`}>
+            {productDescription(product, locale)}
+          </p>
         </div>
 
-        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-          <span className="font-mono text-lg text-content-primary">{formatUsd(usd)}</span>
-          <span className="font-mono text-sm text-content-muted">{cop ?? 'COP unavailable'}</span>
-          {onchain && onchain.price > 0n && (
-            <span className="w-full font-mono text-[11px] text-content-faint">{formatUsdc(onchain.price)} on Base</span>
+        <div className="space-y-0.5">
+          <div className="flex flex-wrap items-baseline gap-x-2">
+            <span className={`font-mono text-content-primary ${expanded ? 'text-2xl' : 'text-lg'}`}>{usdLabel(listUsd)}</span>
+            <span className="font-mono text-sm text-content-muted">{cop ?? 'COP unavailable'}</span>
+          </div>
+          {usdcUsd !== null && (
+            <p className={`font-mono text-eth-blue-text ${expanded ? 'text-base' : 'text-sm'}`}>
+              {usdLabel(usdcUsd)} {es ? 'con USDC' : 'with USDC'}
+              {discount && <span className="text-content-secondary"> ({discountLabel(discount)})</span>}
+            </p>
           )}
         </div>
 
@@ -139,14 +210,14 @@ export function SwagCard({ product, onchain, paused, trm, locale, onPayWithUsdc 
               {remaining === null
                 ? tokenId === null ? '—' : '…'
                 : soldOutOnchain
-                  ? locale === 'es' ? 'Agotado' : 'Sold out'
-                  : locale === 'es' ? `${remaining} disponible${remaining === 1 ? '' : 's'}` : `${remaining} left`}
+                  ? es ? 'Agotado' : 'Sold out'
+                  : es ? `${remaining} disponible${remaining === 1 ? '' : 's'}` : `${remaining} left`}
             </span>
           </li>
           <li className="flex items-center justify-between">
-            <span className="text-content-muted">{locale === 'es' ? 'Con tarjeta' : 'Card checkout'}</span>
+            <span className="text-content-muted">{es ? 'Con tarjeta' : 'Card checkout'}</span>
             <span className={`font-mono ${cardOpen ? 'text-content-secondary' : 'text-content-faint'}`}>
-              {cardOpen ? (locale === 'es' ? 'Abierto' : 'Open') : locale === 'es' ? 'No disponible' : 'Unavailable'}
+              {cardOpen ? (es ? 'Abierto' : 'Open') : es ? 'No disponible' : 'Unavailable'}
             </span>
           </li>
         </ul>
@@ -154,8 +225,8 @@ export function SwagCard({ product, onchain, paused, trm, locale, onPayWithUsdc 
         {product.sized && product.sizes.length > 0 && (
           <div>
             <p className={`mb-1.5 text-xs font-semibold ${needsSize && !size ? 'text-signal-reverted' : 'text-content-secondary'}`}>
-              {locale === 'es' ? 'Talla' : 'Size'}
-              {needsSize && !size && (locale === 'es' ? ' — elige una' : ' — pick one')}
+              {es ? 'Talla' : 'Size'}
+              {needsSize && !size && (es ? ' — elige una' : ' — pick one')}
             </p>
             <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Size">
               {product.sizes.map((s) => {
@@ -185,15 +256,20 @@ export function SwagCard({ product, onchain, paused, trm, locale, onPayWithUsdc 
         )}
 
         <div className="mt-auto grid grid-cols-1 gap-2 pt-1">
-          <button
-            type="button"
-            onClick={payWithCard}
-            disabled={!cardOpen}
-            className={SECONDARY}
-            title={cardOpen ? undefined : locale === 'es' ? 'Sin variante en la tienda' : 'No store variant yet'}
-          >
-            {locale === 'es' ? 'Pagar con tarjeta' : 'Pay with card'}
-          </button>
+          <div>
+            <button
+              type="button"
+              onClick={payWithCard}
+              disabled={!cardOpen}
+              className={SECONDARY}
+              title={cardOpen ? undefined : es ? 'Sin variante en la tienda' : 'No store variant yet'}
+            >
+              {es ? 'Pagar con tarjeta' : 'Pay with card'}
+            </button>
+            <p className="mt-1 text-center text-[11px] text-content-faint">
+              {es ? 'Envío gestionado por la tienda · Stripe' : 'Shipping handled by the store · Stripe'}
+            </p>
+          </div>
           <button
             type="button"
             onClick={payWithUsdc}
@@ -201,7 +277,7 @@ export function SwagCard({ product, onchain, paused, trm, locale, onPayWithUsdc 
             className={PRIMARY}
             title={usdcBlocked ?? undefined}
           >
-            {locale === 'es' ? 'Pagar con USDC' : 'Pay with USDC'}
+            {usdcCta}
           </button>
           {usdcBlocked && tokenId !== null && (
             <p className="text-center text-xs text-content-faint">{usdcBlocked}</p>

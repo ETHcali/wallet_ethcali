@@ -5,9 +5,17 @@
 export {
   useSwagCatalogue,
   productImageUrl,
+  productOgImageUrl,
+  siteProductUrl,
+  appProductPath,
   shopifyCartUrl,
   shopifyVariantFor,
+  utmFromQuery,
+  withUtm,
+  usdcDiscountPct,
+  SWAG_SITE_ORIGIN,
 } from './useSwagCatalogue';
+export type { UtmParams } from './useSwagCatalogue';
 export { useSwagOnchain } from './useSwagOnchain';
 export type { SwagTokenState, SwagOnchainState } from './useSwagOnchain';
 export { useBuySwag } from './useBuySwag';

@@ -25,6 +25,56 @@ export function productImageUrl(product: SwagProduct): string | null {
   return product.image_path ? `https://ethcali.org/${product.image_path.replace(/^\/+/, '')}` : null;
 }
 
+/** The website's product page: the canonical URL and where the OG image is served from. */
+export const SWAG_SITE_ORIGIN = 'https://www.ethcali.org';
+
+export function siteProductUrl(product: SwagProduct): string {
+  return `${SWAG_SITE_ORIGIN}/swag/${product.sku.toLowerCase()}`;
+}
+
+/** Absolute photo URL for Open Graph, on the www host the site publishes under. */
+export function productOgImageUrl(product: Pick<SwagProduct, 'image_path'>): string | null {
+  return product.image_path ? `${SWAG_SITE_ORIGIN}/${product.image_path.replace(/^\/+/, '')}` : null;
+}
+
+/** The app's own route for a design: the checkout surface behind the site page. */
+export function appProductPath(product: SwagProduct): string {
+  return `/swag/${product.sku.toLowerCase()}`;
+}
+
+/** Per-query UTM parameters, as an attribution-preserving bag for outbound links. */
+export type UtmParams = Record<string, string>;
+
+/** Only the utm_* keys of a router query, first value each, non-empty. */
+export function utmFromQuery(query: Record<string, string | string[] | undefined>): UtmParams {
+  const utm: UtmParams = {};
+  for (const [key, value] of Object.entries(query)) {
+    if (!key.startsWith('utm_')) continue;
+    const first = Array.isArray(value) ? value[0] : value;
+    if (first) utm[key] = first;
+  }
+  return utm;
+}
+
+/** Appends the campaign parameters to an outbound URL so the ad that brought the buyer is credited at checkout. */
+export function withUtm(url: string, utm: UtmParams): string {
+  const entries = Object.entries(utm);
+  if (entries.length === 0) return url;
+  const u = new URL(url);
+  for (const [key, value] of entries) u.searchParams.set(key, value);
+  return u.toString();
+}
+
+/**
+ * The USDC discount as the two prices imply it, in whole percent. Null when
+ * either price is missing or USDC is not cheaper — a "−0 %" is not a discount.
+ */
+export function usdcDiscountPct(listUsd: number, usdcUsd: number | null): number | null {
+  if (usdcUsd === null || !(listUsd > 0) || !(usdcUsd > 0) || usdcUsd >= listUsd) return null;
+  const pct = Math.round((1 - usdcUsd / listUsd) * 100);
+  return pct > 0 ? pct : null;
+}
+
 /**
  * Shopify's cart permalink takes the numeric variant id; the row stores the
  * GID (gid://shopify/ProductVariant/123), so take the numeric tail.
@@ -43,15 +93,17 @@ export function shopifyVariantFor(product: SwagProduct, size: SwagSize | null): 
 
 const SELECT = [
   'id, sku, category, name_es, name_en, description_es, description_en',
-  'image_path, image_cid, metadata_cid, price_usd, sized, sizes',
+  'image_path, image_cid, metadata_cid, price_usd, price_usdc, sized, sizes',
   'shopify_product_id, shopify_handle, sort_order, active',
   'variants:swag_variants(id, chain_id, token_id, collection_address, status)',
   'shopify:swag_shopify_variants(id, shopify_variant_id, sku, size, price_cop)',
 ].join(', ');
 
 /** The row as PostgREST returns it: numerics may arrive as strings. */
-interface CatalogueRow extends Omit<SwagProduct, 'price_usd' | 'variant' | 'shopify' | 'sizes'> {
+interface CatalogueRow
+  extends Omit<SwagProduct, 'price_usd' | 'price_usdc' | 'variant' | 'shopify' | 'sizes'> {
   price_usd: number | string;
+  price_usdc: number | string | null;
   sizes: string[] | null;
   variants: SwagChainVariant[] | null;
   shopify: Array<Omit<SwagShopifyVariant, 'price_cop'> & { price_cop: number | string | null }> | null;
@@ -68,6 +120,7 @@ function toProduct(row: CatalogueRow): SwagProduct {
   return {
     ...row,
     price_usd: Number(row.price_usd),
+    price_usdc: row.price_usdc === null || row.price_usdc === undefined ? null : Number(row.price_usdc),
     sizes: (row.sizes ?? []) as SwagSize[],
     variant,
     shopify,

@@ -48,7 +48,14 @@ export interface SwagProduct {
   image_path: string | null;
   image_cid: string | null;
   metadata_cid: string | null;
+  /** List price, what the card channel charges. */
   price_usd: number;
+  /**
+   * The discounted USDC price (price_usd × 0.9), mirrored from the chain so the
+   * catalogue can show it before the RPC answers. Null until synced; the
+   * contract's getTokenPrice() is what a buyer actually pays.
+   */
+  price_usdc: number | null;
   sized: boolean;
   sizes: SwagSize[];
   shopify_product_id: string | null;

@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import Navigation from '../../components/Navigation';
 import Loading from '../../components/shared/Loading';
 import { SwagCard } from '../../components/swag/SwagCard';
 import { SwagCheckoutModal } from '../../components/swag/SwagCheckoutModal';
-import { useSwagCatalogue, useSwagLocale, useSwagOnchain, useTrm } from '../../hooks/swag';
+import { useSwagCatalogue, useSwagLocale, useSwagOnchain, useTrm, utmFromQuery } from '../../hooks/swag';
 import type { SwagProduct, SwagSize } from '../../types/swag';
 
 interface Checkout {
@@ -21,11 +22,14 @@ interface Checkout {
  * no chain prop and the hooks pin 8453 themselves.
  */
 export default function SwagStorePage() {
+  const router = useRouter();
   const locale = useSwagLocale();
   const catalogue = useSwagCatalogue();
   const onchain = useSwagOnchain(catalogue.tokenIds);
   const { rate } = useTrm();
   const [checkout, setCheckout] = useState<Checkout | null>(null);
+  // Campaign parameters ride along to the card checkout so the ad gets credit.
+  const utm = useMemo(() => utmFromQuery(router.query), [router.query]);
 
   return (
     <div className="min-h-screen bg-surface-void">
@@ -103,6 +107,7 @@ export default function SwagStorePage() {
                 paused={onchain.paused}
                 trm={rate}
                 locale={locale}
+                utm={utm}
                 onPayWithUsdc={(p, tokenId, size) => setCheckout({ product: p, tokenId, size })}
               />
             ))}

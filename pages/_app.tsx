@@ -40,18 +40,18 @@ function MyApp({ Component, pageProps }: AppProps) {
         <link rel="icon" type="image/svg+xml" href="/branding/favicon.svg" />
         
         {/* Open Graph / Facebook */}
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content={siteUrl} />
-        <meta property="og:title" content={title} />
-        <meta property="og:description" content={description} />
-        <meta property="og:image" content={imageUrl} />
+        <meta key="og:type" property="og:type" content="website" />
+        <meta key="og:url" property="og:url" content={siteUrl} />
+        <meta key="og:title" property="og:title" content={title} />
+        <meta key="og:description" property="og:description" content={description} />
+        <meta key="og:image" property="og:image" content={imageUrl} />
         
         {/* Twitter */}
-        <meta property="twitter:card" content="summary_large_image" />
-        <meta property="twitter:url" content={siteUrl} />
-        <meta property="twitter:title" content={title} />
-        <meta property="twitter:description" content={description} />
-        <meta property="twitter:image" content={imageUrl} />
+        <meta key="twitter:card" property="twitter:card" content="summary_large_image" />
+        <meta key="twitter:url" property="twitter:url" content={siteUrl} />
+        <meta key="twitter:title" property="twitter:title" content={title} />
+        <meta key="twitter:description" property="twitter:description" content={description} />
+        <meta key="twitter:image" property="twitter:image" content={imageUrl} />
         
         {/* Additional SEO metadata */}
         <meta name="keywords" content="ethereum, wallet, crypto, blockchain, web3, optimism, ETHCALI" />
