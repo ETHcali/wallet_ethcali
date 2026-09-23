@@ -109,6 +109,16 @@ export const BagIcon: React.FC<IconProps> = (p) => (
   </svg>
 );
 
+/* Three sliders: settings, without borrowing the cog the admin entry uses. */
+export const SlidersIcon: React.FC<IconProps> = (p) => (
+  <svg {...svgProps(p)}>
+    <path d="M4 7h10M18 7h2M4 12h3M11 12h9M4 17h12M20 17h0" />
+    <circle cx="16" cy="7" r="2" />
+    <circle cx="9" cy="12" r="2" />
+    <circle cx="18" cy="17" r="2" />
+  </svg>
+);
+
 /* Brand marks for the footer. Filled, so they read at 20px. */
 function brandProps({ className = 'h-5 w-5' }: IconProps) {
   return { className, viewBox: '0 0 24 24', fill: 'currentColor', 'aria-hidden': true };

@@ -3,9 +3,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { usePrivy } from '@privy-io/react-auth';
-import { useActiveWallet } from '../hooks/useActiveWallet';
 import { useAdminRoles } from '../hooks/useAdminStatus';
-import { CloseIcon } from './shared/icons';
+import { CloseIcon, SlidersIcon } from './shared/icons';
 
 // Icons as simple SVG components for cleaner mobile menu
 const WalletIcon = () => (
@@ -45,11 +44,6 @@ const LogoutIcon = () => (
   </svg>
 );
 
-/** Real ellipsis, per BRAND.md: `0x55C9…711d`. */
-function truncateAddress(address: string): string {
-  return `${address.slice(0, 6)}…${address.slice(-4)}`;
-}
-
 interface NavigationProps {
   className?: string;
 }
@@ -59,11 +53,12 @@ interface NavigationProps {
 
    There is no chain selector here or anywhere: the app is Ethereum only, and
    every feature moves the wallet with `useRequireChain` right before signing.
-   The bar shows the connected wallet and nothing about networks. */
+   Nothing about networks, and no address either: the wallet page's identity
+   header is where the address lives, with copy and an explorer link. The bar
+   holds the routes and the one Sign out. */
 const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
   const router = useRouter();
   const { authenticated, login, logout } = usePrivy();
-  const { wallet: userWallet } = useActiveWallet();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
   const signInRelease = useRef<number>();
@@ -84,6 +79,7 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
     { href: '/sybil', label: 'Identity', icon: IdentityIcon },
     { href: '/swag', label: 'Swag', icon: SwagIcon },
     { href: '/donations', label: 'Donate', icon: DonateIcon },
+    { href: '/settings', label: 'Settings', icon: SlidersIcon },
   ];
 
   // One entry, not four. The admin areas are reachable from the dashboard
@@ -144,7 +140,7 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
   //
   // Same bar as the signed-in one — same height, same hairline, same blur — so
   // nothing shifts when a session appears. What it drops is everything that
-  // needs a wallet to mean anything: the address chip and Sign out.
+  // needs a session to mean anything: the routes and Sign out.
   if (!authenticated) {
     return (
       <nav className={`sticky top-0 z-50 border-b border-line-hairline bg-surface-void/85 backdrop-blur-[14px] ${className}`}>
@@ -224,19 +220,9 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
             ))}
           </div>
 
-          {/* Right side: the connected wallet, Sign out, and the menu on a phone */}
+          {/* Right side: Sign out, and the menu on a phone */}
           <div className="flex items-center gap-2">
-            {userWallet && (
-              <Link
-                href="/wallet"
-                className="hidden min-h-[36px] items-center rounded-full border border-line-hairline bg-surface-slab px-3 font-mono text-xs text-eth-blue-text transition-colors duration-base hover:border-line-brand sm:inline-flex"
-                title={userWallet.address}
-              >
-                {truncateAddress(userWallet.address)}
-              </Link>
-            )}
-
-            {/* Sign out - Desktop (destructive-quiet) */}
+            {/* Sign out - Desktop (destructive-quiet). The only one in the app. */}
             <button
               onClick={logout}
               className="hidden min-h-[36px] items-center gap-1.5 rounded-control border border-signal-reverted/30 bg-signal-reverted/10 px-3 text-xs font-medium text-signal-reverted transition-colors duration-base hover:bg-signal-reverted/20 sm:inline-flex"
@@ -286,16 +272,7 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
         >
           {/* Header with close button */}
           <div className="flex flex-shrink-0 items-center justify-between border-b border-line-hairline px-4 py-3">
-            <div className="min-w-0">
-              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-content-faint">Signed in as</p>
-              {userWallet ? (
-                <p className="truncate font-mono text-xs text-eth-blue-text">
-                  {truncateAddress(userWallet.address)}
-                </p>
-              ) : (
-                <p className="font-mono text-xs text-content-muted">Setting up your wallet…</p>
-              )}
-            </div>
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-content-faint">Menu</p>
             <button
               onClick={closeMobileMenu}
               className="-mr-2 flex min-h-tap min-w-tap items-center justify-center rounded-full text-content-muted transition-colors hover:text-content-primary"

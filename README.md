@@ -104,6 +104,7 @@ wallet_ethcali/
 │   ├── faucet/              # FaucetClaim, VaultList, admin forms
 │   ├── sybil/, zkpassport/  # ZKPassport verification and admin
 │   ├── swag/                # SwagCard, SwagCheckoutModal, ShippingForm, HashChip, Admin{Orders,Stock,Collection,Primitives}
+│   ├── settings/            # AccountSection, PasskeysSection, SecuritySection
 │   ├── donations/, ens/, admin/
 │   └── Navigation.tsx
 ├── pages/
@@ -115,7 +116,7 @@ wallet_ethcali/
 │   │   ├── fx/trm.ts            # today's TRM from datos.gov.co
 │   │   ├── indexer/sync.ts      # donation index
 │   │   ├── pinata/, poap/, ens/, cms/, donations/, check-personhood/, register-personhood.ts
-│   ├── index.tsx, wallet.tsx
+│   ├── index.tsx, wallet.tsx, settings.tsx
 │   ├── faucet.tsx, faucet/admin.tsx
 │   ├── sybil/index.tsx, sybil/admin.tsx
 │   ├── donations.tsx, donations/admin.tsx

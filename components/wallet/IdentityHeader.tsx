@@ -19,14 +19,14 @@ const smallControl =
 
 /**
  * Who is signed in, compactly: the account they signed in with, their
- * ethcali.eth name if they hold one, the active address, and the way out.
- * This replaced the profile page; the ENS claim itself lives on Identity.
+ * ethcali.eth name if they hold one, and the active address. This replaced
+ * the profile page; the ENS claim itself lives on Identity, and Sign out lives
+ * in the navigation — the one place, not two.
  */
 const IdentityHeader: React.FC<IdentityHeaderProps> = ({ address }) => {
-  const { user, logout } = usePrivy();
+  const { user } = usePrivy();
   const { fullName, isLoading: isNameLoading } = useUserENS(address);
   const [copied, setCopied] = useState(false);
-  const [signingOut, setSigningOut] = useState(false);
 
   // Email first, then Google, then the method itself. A wallet login has no
   // email to show, and inventing one from the address would be noise.
@@ -48,21 +48,12 @@ const IdentityHeader: React.FC<IdentityHeaderProps> = ({ address }) => {
     }
   };
 
-  const signOut = async () => {
-    setSigningOut(true);
-    try {
-      await logout();
-    } finally {
-      setSigningOut(false);
-    }
-  };
-
   return (
     <section
-      className="flex flex-wrap items-start justify-between gap-3 rounded-card border border-line-hairline bg-surface-slab p-4 sm:p-5"
+      className="rounded-card border border-line-hairline bg-surface-slab p-4 sm:p-5"
       aria-label="Account"
     >
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0">
         <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-content-faint">Signed in as</p>
         <p className="mt-1 truncate text-sm text-content-primary" title={email ?? undefined}>
           {email ?? signedInWith}
@@ -96,15 +87,6 @@ const IdentityHeader: React.FC<IdentityHeaderProps> = ({ address }) => {
           </a>
         </div>
       </div>
-
-      <button
-        type="button"
-        onClick={signOut}
-        disabled={signingOut}
-        className="inline-flex min-h-[40px] items-center rounded-control border border-signal-reverted/30 bg-signal-reverted/10 px-3 text-xs font-medium text-signal-reverted transition-colors hover:bg-signal-reverted/20 disabled:opacity-60"
-      >
-        {signingOut ? 'Signing out…' : 'Sign out'}
-      </button>
     </section>
   );
 };
