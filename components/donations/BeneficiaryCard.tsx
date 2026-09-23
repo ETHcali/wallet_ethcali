@@ -43,11 +43,11 @@ const BeneficiaryCard: React.FC<BeneficiaryCardProps> = ({
   };
 
   return (
-    <div className="rounded-card border border-line-hairline bg-surface-inset/50 p-4">
-      <div className="mb-3 flex items-center justify-between">
+    <div className="rounded-card border border-line-hairline bg-surface-slab p-5">
+      <div className="mb-3 flex items-center justify-between gap-3">
         <h3 className="text-sm font-semibold text-content-secondary">Funds go to</h3>
         {safe && (
-          <span className="rounded-full border border-eth-blue/40 bg-eth-blue/10 px-2 py-0.5 text-[11px] font-semibold text-eth-blue-text">
+          <span className="shrink-0 rounded-full bg-eth-blue-wash px-2 py-0.5 text-xs font-semibold text-eth-blue-text">
             {safe.threshold}-of-{safe.ownerCount} multisig
           </span>
         )}
@@ -71,31 +71,31 @@ const BeneficiaryCard: React.FC<BeneficiaryCardProps> = ({
           <div className="truncate font-semibold text-content-primary">
             {profile?.ensName || truncate(beneficiary)}
           </div>
-          <div className="flex items-center gap-2 text-xs text-content-muted">
+          <div className="flex flex-wrap items-center gap-x-3 text-xs text-content-muted">
             <span className="font-mono">{truncate(beneficiary)}</span>
             <button
               type="button"
               onClick={handleCopy}
-              className="text-content-faint transition-colors hover:text-eth-blue-text"
+              className="inline-flex min-h-[44px] items-center text-content-faint transition-colors hover:text-eth-blue-text"
               title="Copy address"
             >
-              {copied ? 'copied' : 'copy'}
+              {copied ? 'Copied' : 'Copy'}
             </button>
             {explorer && (
               <a
                 href={`${explorer}/address/${beneficiary}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-content-faint transition-colors hover:text-eth-blue-text"
+                className="inline-flex min-h-[44px] items-center text-content-faint transition-colors hover:text-eth-blue-text"
               >
-                explorer ↗
+                Explorer ↗
               </a>
             )}
           </div>
         </div>
       </div>
 
-      <p className="mt-3 text-xs leading-relaxed text-content-muted">
+      <p className="mb-0 mt-2 text-xs leading-relaxed text-content-muted">
         {autoForward ? (
           <>
             Every donation is forwarded to this wallet{' '}

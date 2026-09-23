@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 import { CheckIcon, CloseIcon } from '../shared/icons';
 import type { SwagProduct, SwagSize } from '../../types/swag';
@@ -17,6 +17,7 @@ import { formatUnits } from 'viem';
 import { SWAG_COLLECTION } from '../../config/constants';
 import { HashChip } from './HashChip';
 import { ShippingForm } from './ShippingForm';
+import { Sheet, SHEET_BODY } from '../shared/Sheet';
 
 interface SwagCheckoutModalProps {
   product: SwagProduct;
@@ -25,9 +26,6 @@ interface SwagCheckoutModalProps {
   onClose: () => void;
 }
 
-const OVERLAY = 'fixed inset-0 z-50 flex items-end justify-center bg-black/80 backdrop-blur-sm sm:items-center sm:p-4';
-const SHEET =
-  'flex max-h-[92dvh] w-full max-w-md flex-col overflow-hidden rounded-t-card border border-line-hairline bg-surface-slab sm:rounded-card';
 const PRIMARY =
   'flex min-h-tap w-full items-center justify-center rounded-control bg-eth-blue px-6 text-[15px] font-semibold text-on-brand transition-colors hover:bg-eth-blue-lift disabled:cursor-not-allowed disabled:bg-surface-ridge disabled:text-content-faint';
 
@@ -42,23 +40,13 @@ export function SwagCheckoutModal({ product, tokenId, size, onClose }: SwagCheck
   const flow = useBuySwag(tokenId, 1);
   const [orderSaved, setOrderSaved] = useState(false);
 
-  // Escape closes, but not mid-transaction: a buyer who dismisses the sheet
-  // while the wallet is open should not lose the hash.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !flow.isApproving && !flow.isBuying) onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose, flow.isApproving, flow.isBuying]);
-
   const image = productImageUrl(product);
   const name = productName(product, locale);
   const usd = Number(formatUnits(flow.total, SWAG_COLLECTION.usdcDecimals));
   const busy = flow.isApproving || flow.approveCooldown || flow.isBuying || flow.buyCooldown;
 
   const header = (
-    <div className="flex items-start gap-3 border-b border-line-hairline px-5 py-4 sm:px-6">
+    <div className="flex shrink-0 items-start gap-3 border-b border-line-hairline px-5 pb-3 pt-1 md:px-6 md:pt-4">
       <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-chip border border-line-hairline bg-surface-inset">
         {image && <Image src={image} alt="" fill className="object-cover" sizes="56px" />}
       </div>
@@ -77,7 +65,7 @@ export function SwagCheckoutModal({ product, tokenId, size, onClose }: SwagCheck
         type="button"
         onClick={onClose}
         disabled={flow.isApproving || flow.isBuying}
-        className="-m-2 p-2 text-content-faint transition-colors hover:text-content-primary disabled:opacity-40"
+        className="-mr-2 -mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-content-faint transition-colors hover:text-content-primary disabled:opacity-40"
         aria-label="Close"
       >
         <CloseIcon />
@@ -88,10 +76,9 @@ export function SwagCheckoutModal({ product, tokenId, size, onClose }: SwagCheck
   // ── Confirmed: shipping, then done ───────────────────────────────────────
   if (flow.confirmed && flow.txHash) {
     return (
-      <div className={OVERLAY}>
-        <div className={SHEET}>
+      <Sheet onClose={onClose} label={name}>
           {header}
-          <div className="overflow-y-auto px-5 py-5 sm:px-6">
+          <div className={`${SHEET_BODY} px-5 py-5 md:px-6`}>
             <div className="mb-4 flex items-center gap-3 rounded-chip border border-signal-confirmed/30 bg-signal-confirmed/10 px-3 py-2">
               <CheckIcon className="h-5 w-5 shrink-0 text-signal-confirmed" strokeWidth={2} />
               <div className="min-w-0 text-sm">
@@ -118,8 +105,7 @@ export function SwagCheckoutModal({ product, tokenId, size, onClose }: SwagCheck
               </>
             )}
           </div>
-        </div>
-      </div>
+      </Sheet>
     );
   }
 
@@ -174,10 +160,9 @@ export function SwagCheckoutModal({ product, tokenId, size, onClose }: SwagCheck
   }
 
   return (
-    <div className={OVERLAY} onClick={busy ? undefined : onClose}>
-      <div className={SHEET} onClick={(e) => e.stopPropagation()}>
+    <Sheet onClose={onClose} label={name} dismissable={!busy}>
         {header}
-        <div className="overflow-y-auto px-5 py-5 sm:px-6">
+        <div className={`${SHEET_BODY} px-5 py-5 md:px-6`}>
           <dl className="mb-4 space-y-2 text-sm">
             <div className="flex justify-between">
               <dt className="text-content-muted">Price</dt>
@@ -188,7 +173,7 @@ export function SwagCheckoutModal({ product, tokenId, size, onClose }: SwagCheck
             {rate && flow.total > 0n && (
               <div className="flex justify-between">
                 <dt className="text-content-muted">In pesos (TRM)</dt>
-                <dd className="font-mono text-content-secondary">{formatCop(usd * rate)}</dd>
+                <dd className="font-mono text-content-secondary">{formatCop(usd * rate, { approx: false })}</dd>
               </div>
             )}
             {flow.step !== 'connect' && (
@@ -229,7 +214,6 @@ export function SwagCheckoutModal({ product, tokenId, size, onClose }: SwagCheck
             </p>
           )}
         </div>
-      </div>
-    </div>
+    </Sheet>
   );
 }

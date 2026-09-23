@@ -35,6 +35,7 @@ export default function DonationsPage() {
     // Matches every other page root: globals.css only goes dark under
     // prefers-color-scheme, so a light-mode visitor saw white-on-white.
     <div className="min-h-screen bg-surface-void">
+      <Navigation />
       <Layout>
         <Head>
           <title>Donate · ETH Cali</title>
@@ -44,27 +45,21 @@ export default function DonationsPage() {
           />
         </Head>
 
-        <Navigation />
-
-        {/* No wrapper padding or max-width here: Layout already supplies both.
-          Nesting a second one doubled the gutter on a phone and the inner
-          max-width could never win against the outer one anyway. */}
-        <main>
-          <header className="mb-6 flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h1 className="text-xl font-bold text-content-primary sm:text-2xl">
-                Donations
-              </h1>
-              <p className="mt-1 text-sm text-content-muted">
-                Direct support, settled onchain and visible to everyone.
-              </p>
+        {/* No wrapper padding or max-width here: Layout already supplies both. */}
+        <div>
+          <header className="mb-5 md:mb-6">
+            <div className="flex items-center justify-between gap-3">
+              <h1 className="text-2xl font-bold text-content-primary">Donate</h1>
+              <CurrencyToggle />
             </div>
-            <CurrencyToggle />
+            <p className="mb-0 mt-1 text-sm text-content-muted">
+              Direct support, settled onchain and visible to everyone.
+            </p>
           </header>
 
           {/* Not deployed yet — an honest empty state, not a broken page */}
           {!isDeployed && (
-            <div className="rounded-card border border-line-hairline bg-surface-inset/50 p-8 text-center">
+            <div className="rounded-card border border-line-hairline bg-surface-slab px-5 py-8 text-center">
               <h2 className="mb-2 text-lg font-bold text-content-primary">
                 Not live yet
               </h2>
@@ -82,7 +77,7 @@ export default function DonationsPage() {
           )}
 
           {isDeployed && !isLoading && campaigns.length === 0 && (
-            <div className="rounded-card border border-line-hairline bg-surface-inset/50 p-8 text-center">
+            <div className="rounded-card border border-line-hairline bg-surface-slab px-5 py-8 text-center">
               <h2 className="mb-2 text-lg font-bold text-content-primary">
                 No open campaigns
               </h2>
@@ -93,8 +88,8 @@ export default function DonationsPage() {
           )}
 
           {isDeployed && campaigns.length > 0 && (
-            <div className="grid gap-6 lg:grid-cols-3">
-              <div className="space-y-6 lg:col-span-2">
+            <div className="grid gap-5 lg:grid-cols-3 lg:gap-6">
+              <div className="space-y-5 lg:col-span-2 lg:space-y-6">
                 {campaigns.map((campaign) => (
                   <CampaignCard
                     key={campaign.id}
@@ -113,9 +108,9 @@ export default function DonationsPage() {
                             key={t.address}
                             type="button"
                             onClick={() => setWallToken(i)}
-                            className={`min-h-[40px] rounded-control border px-4 text-xs font-semibold transition-colors ${
+                            className={`min-h-[44px] rounded-control border px-4 text-sm font-semibold transition-colors ${
                               i === wallToken
-                                ? 'border-eth-blue bg-eth-blue/15 text-eth-blue-text'
+                                ? 'border-line-brand bg-eth-blue-wash text-eth-blue-text'
                                 : 'border-line-hairline bg-surface-inset text-content-muted hover:border-line-strong'
                             }`}
                           >
@@ -146,7 +141,7 @@ export default function DonationsPage() {
                 <BankTransferPanel campaignId={featuredRowId ?? null} />
 
                 {vault && (
-                  <div className="rounded-card border border-line-hairline bg-surface-inset/50 p-4 text-xs text-content-muted">
+                  <div className="rounded-card border border-line-hairline bg-surface-slab p-5 text-sm text-content-muted">
                     <h3 className="mb-2 text-sm font-semibold text-content-secondary">
                       How this works
                     </h3>
@@ -167,7 +162,7 @@ export default function DonationsPage() {
               </aside>
             </div>
           )}
-        </main>
+        </div>
 
         {donating && (
           <DonateModal

@@ -11,36 +11,25 @@ interface QRScanStepProps {
 
 export const QRScanStep: React.FC<QRScanStepProps> = ({ verificationUrl, onCancel }) => {
   return (
-    <div className="space-y-3">
-      <div className="bg-black/40 rounded-chip p-4 text-center">
-        <p className="text-[10px] text-content-faint font-mono mb-3 tracking-wider">Scan QR</p>
-        <div className="bg-surface-paper p-3 rounded-chip inline-block">
-          <QRCodeSVG
-            value={verificationUrl}
-            size={160}
-            level="H"
-            includeMargin={false}
-          />
-        </div>
-        <div className="flex items-center justify-center gap-2 mt-3">
-          <div className="w-1.5 h-1.5 bg-eth-blue rounded-full animate-pulse"></div>
-          <span className="text-[10px] text-content-faint font-mono">WAITING...</span>
-        </div>
-        <a
-          href={verificationUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-[10px] text-eth-blue-text/70 hover:text-eth-blue-text font-mono mt-2 block"
-        >
-          open_app →
-        </a>
+    <div className="space-y-3 text-center">
+      <p className="mb-0 text-sm text-content-secondary">Scan with your phone&apos;s camera, or open the app on this device.</p>
+      <div className="inline-block rounded-control bg-surface-paper p-3">
+        <QRCodeSVG value={verificationUrl} size={184} level="H" includeMargin={false} />
       </div>
-
-      <button
-        onClick={onCancel}
-        className="w-full py-2 bg-surface-slab/50 hover:bg-surface-inset border border-line-hairline rounded-chip text-content-faint font-mono text-[10px]"
+      <p className="mb-0 flex items-center justify-center gap-2 text-sm text-content-muted">
+        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-eth-blue" aria-hidden />
+        Waiting for the app…
+      </p>
+      <a
+        href={verificationUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex min-h-tap w-full items-center justify-center rounded-control border border-line-strong text-sm font-semibold text-content-primary transition-colors hover:border-line-brand hover:text-eth-blue-text"
       >
-        CANCEL
+        Open ZKPassport on this phone
+      </a>
+      <button type="button" onClick={onCancel} className="flex min-h-[44px] w-full items-center justify-center rounded-control text-sm font-medium text-content-muted transition-colors hover:text-content-primary disabled:opacity-50">
+        Cancel
       </button>
     </div>
   );

@@ -13,8 +13,8 @@ interface ButtonProps {
 
 /* COMPONENTS.md — Button. Primary is the only filled one; secondary and outline
    are the same hairline-bordered control; destructive is the quiet red used for
-   Sign out and Export key. Every size clears the 48px tap target except small,
-   which is for inline, non-onchain actions only. */
+   Sign out and Export key. Medium and large clear the 48px tap target; small
+   clears 44px and is for inline, non-onchain actions only. */
 const VARIANT: Record<NonNullable<ButtonProps['variant']>, string> = {
   primary:
     'bg-eth-blue text-on-brand hover:bg-eth-blue-lift active:bg-eth-blue-deep disabled:bg-surface-ridge disabled:text-content-faint',
@@ -27,7 +27,7 @@ const VARIANT: Record<NonNullable<ButtonProps['variant']>, string> = {
 };
 
 const SIZE: Record<NonNullable<ButtonProps['size']>, string> = {
-  small: 'min-h-[36px] px-4 text-sm',
+  small: 'min-h-[44px] px-4 text-sm',
   medium: 'min-h-tap px-6 text-[15px]',
   large: 'min-h-[56px] px-8 text-base',
 };

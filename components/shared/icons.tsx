@@ -119,6 +119,105 @@ export const SlidersIcon: React.FC<IconProps> = (p) => (
   </svg>
 );
 
+export const WalletIcon: React.FC<IconProps> = (p) => (
+  <svg {...svgProps(p)}>
+    <path d="M4 7.5A2.5 2.5 0 016.5 5H18a1 1 0 011 1v2" />
+    <path d="M4 7.5v10A2.5 2.5 0 006.5 20H19a1 1 0 001-1v-9a1 1 0 00-1-1H6.5A2.5 2.5 0 014 7.5z" />
+    <circle cx="16" cy="14.5" r="1" fill="currentColor" />
+  </svg>
+);
+
+export const HeartIcon: React.FC<IconProps> = (p) => (
+  <svg {...svgProps(p)}>
+    <path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0112 7.3a4.3 4.3 0 017.5 2.5C19.5 15.4 12 20 12 20z" />
+  </svg>
+);
+
+export const CogIcon: React.FC<IconProps> = (p) => (
+  <svg {...svgProps(p)}>
+    <circle cx="12" cy="12" r="3" />
+    <path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8" />
+  </svg>
+);
+
+export const LogoutIcon: React.FC<IconProps> = (p) => (
+  <svg {...svgProps(p)}>
+    <path d="M15 4h3a2 2 0 012 2v12a2 2 0 01-2 2h-3" />
+    <path d="M10 8l-4 4 4 4M6 12h10" />
+  </svg>
+);
+
+export const ReceiveIcon: React.FC<IconProps> = (p) => (
+  <svg {...svgProps(p)}>
+    <path d="M12 4v12M6 10l6 6 6-6" />
+    <path d="M5 20h14" />
+  </svg>
+);
+
+export const SwapIcon: React.FC<IconProps> = (p) => (
+  <svg {...svgProps(p)}>
+    <path d="M7 4v14M3.5 7.5L7 4l3.5 3.5" />
+    <path d="M17 20V6M13.5 16.5L17 20l3.5-3.5" />
+  </svg>
+);
+
+export const RefreshIcon: React.FC<IconProps> = (p) => (
+  <svg {...svgProps(p)}>
+    <path d="M20 12a8 8 0 01-14.3 4.9M4 12a8 8 0 0114.3-4.9" />
+    <path d="M18.5 3v4.2h-4.2M5.5 21v-4.2h4.2" />
+  </svg>
+);
+
+export const CopyIcon: React.FC<IconProps> = (p) => (
+  <svg {...svgProps(p)}>
+    <rect x="8" y="8" width="12" height="12" rx="2" />
+    <path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2" />
+  </svg>
+);
+
+export const ShareIcon: React.FC<IconProps> = (p) => (
+  <svg {...svgProps(p)}>
+    <path d="M12 15V3M8 7l4-4 4 4" />
+    <path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+  </svg>
+);
+
+export const MailIcon: React.FC<IconProps> = (p) => (
+  <svg {...svgProps(p)}>
+    <rect x="3" y="5" width="18" height="14" rx="2" />
+    <path d="M3.5 6.5l8.5 6 8.5-6" />
+  </svg>
+);
+
+/* A plain "G" in the house stroke — a reference to the sign-in method, not the logo. */
+export const GoogleIcon: React.FC<IconProps> = (p) => (
+  <svg {...svgProps(p)}>
+    <path d="M19.5 12H12.5M19.5 12a7.5 7.5 0 11-2.2-5.3" />
+  </svg>
+);
+
+export const LinkIcon: React.FC<IconProps> = (p) => (
+  <svg {...svgProps(p)}>
+    <path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1" />
+    <path d="M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1" />
+  </svg>
+);
+
+export const ChevronRightIcon: React.FC<IconProps> = (p) => (
+  <svg {...svgProps(p)}><path d="M9 6l6 6-6 6" /></svg>
+);
+
+export const ChevronLeftIcon: React.FC<IconProps> = (p) => (
+  <svg {...svgProps(p)}><path d="M15 6l-6 6 6 6" /></svg>
+);
+
+export const ExternalIcon: React.FC<IconProps> = (p) => (
+  <svg {...svgProps(p)}>
+    <path d="M14 4h6v6M20 4l-9 9" />
+    <path d="M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5" />
+  </svg>
+);
+
 /* Brand marks for the footer. Filled, so they read at 20px. */
 function brandProps({ className = 'h-5 w-5' }: IconProps) {
   return { className, viewBox: '0 0 24 24', fill: 'currentColor', 'aria-hidden': true };

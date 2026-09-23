@@ -73,52 +73,48 @@ const PasskeyRow: React.FC<PasskeyRowProps> = ({ passkey, isNew, blockedReason, 
 
   return (
     <li className="py-3">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-        <div className="min-w-0">
-          <p className="flex flex-wrap items-center gap-2 text-sm text-content-primary">
-            <KeyIcon className="h-4 w-4 shrink-0 text-content-faint" />
-            <span className="break-words">{describePasskey(passkey)}</span>
+      <div className="flex items-center gap-3">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-inset text-content-secondary">
+          <KeyIcon className="h-[18px] w-[18px]" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="mb-0 flex items-center gap-2 text-[15px] leading-tight text-content-primary">
+            <span className="truncate">{describePasskey(passkey)}</span>
             {isNew && (
-              <span className="rounded-chip bg-eth-blue-wash px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-eth-blue-text">
-                New
-              </span>
+              <span className="shrink-0 rounded-chip bg-eth-blue-wash px-1.5 py-0.5 text-[11px] text-eth-blue-text">New</span>
             )}
           </p>
-          <p className="mt-1 font-mono text-[11px] text-content-faint">
+          <p className="mb-0 mt-0.5 text-xs text-content-muted">
             {added ? `Added ${added}` : 'Added date not recorded'}
             {passkey.enrolledInMfa ? ' · also used for MFA' : ''}
           </p>
         </div>
-
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
-          {confirming ? (
-            <>
-              <span className="text-sm text-content-secondary">Remove this passkey?</span>
-              <Button variant="destructive" size="small" onClick={remove} disabled={removing}>
-                {removing ? 'Removing…' : 'Remove'}
-              </Button>
-              <Button variant="outline" size="small" onClick={() => setConfirming(false)} disabled={removing}>
-                Keep
-              </Button>
-            </>
-          ) : (
-            <Button
-              variant="outline"
-              size="small"
-              onClick={() => setConfirming(true)}
-              disabled={blockedReason !== null}
-            >
-              Remove
-            </Button>
-          )}
-        </div>
+        {!confirming && (
+          <Button variant="outline" size="small" onClick={() => setConfirming(true)} disabled={blockedReason !== null}>
+            Remove
+          </Button>
+        )}
       </div>
 
+      {confirming && (
+        <div className="mt-3 rounded-control bg-surface-inset p-3">
+          <p className="mb-2 text-sm text-content-secondary">Remove this passkey? You will not be able to sign in with it.</p>
+          <div className="grid grid-cols-2 gap-2">
+            <Button variant="outline" size="small" onClick={() => setConfirming(false)} disabled={removing}>
+              Keep
+            </Button>
+            <Button variant="destructive" size="small" onClick={remove} disabled={removing}>
+              {removing ? 'Removing…' : 'Remove'}
+            </Button>
+          </div>
+        </div>
+      )}
+
       {blockedReason && !confirming && (
-        <p className="mt-2 text-xs text-content-muted">{blockedReason}</p>
+        <p className="mb-0 mt-2 text-xs text-content-muted">{blockedReason}</p>
       )}
       {error && (
-        <p className="mt-2 text-sm text-signal-reverted" role="alert">
+        <p className="mb-0 mt-2 text-sm text-signal-reverted" role="alert">
           {error}
         </p>
       )}
@@ -220,16 +216,16 @@ const PasskeysSection: React.FC<PasskeysSectionProps> = ({ user }) => {
   const unsupported = supported === false;
 
   return (
-    <section className="rounded-card border border-line-hairline bg-surface-slab p-4 sm:p-5" aria-labelledby="settings-passkeys">
-      <h2 id="settings-passkeys" className="font-mono text-[11px] uppercase tracking-[0.16em] text-content-faint">
+    <section className="rounded-card border border-line-hairline bg-surface-slab p-5" aria-labelledby="settings-passkeys">
+      <h2 id="settings-passkeys" className="text-lg font-bold text-content-primary">
         Passkeys
       </h2>
-      <p className="mt-2 text-sm text-content-secondary">
+      <p className="mb-0 mt-1 text-sm text-content-muted">
         Sign in with Face ID, Touch ID or your device PIN instead of an email code.
       </p>
 
       {passkeys.length > 0 && (
-        <ul className="mt-3 divide-y divide-line-hairline border-t border-line-hairline">
+        <ul className="mt-2 divide-y divide-line-hairline">
           {passkeys.map((p) => (
             <PasskeyRow
               key={p.credentialId}
@@ -242,22 +238,20 @@ const PasskeysSection: React.FC<PasskeysSectionProps> = ({ user }) => {
         </ul>
       )}
 
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <Button onClick={start} disabled={submitting || supported !== true}>
+      <div className="mt-4 space-y-2">
+        <Button onClick={start} disabled={submitting || supported !== true} fullWidth className="md:w-auto">
           {submitting ? 'Waiting for your device…' : passkeys.length > 0 ? 'Add another passkey' : 'Set up a passkey'}
         </Button>
-        {unsupported && (
-          <span className="text-xs text-content-muted">This browser does not support passkeys.</span>
-        )}
+        {unsupported && <p className="mb-0 text-xs text-content-muted">This browser does not support passkeys.</p>}
       </div>
 
       {error && (
-        <p className="mt-3 text-sm text-signal-reverted" role="alert">
+        <p className="mb-0 mt-3 text-sm text-signal-reverted" role="alert">
           {error}
         </p>
       )}
       {addedId && !error && (
-        <p className="mt-3 text-sm text-content-primary" role="status">
+        <p className="mb-0 mt-3 text-sm text-content-primary" role="status">
           Passkey added. It is in the list above and works the next time you sign in.
         </p>
       )}

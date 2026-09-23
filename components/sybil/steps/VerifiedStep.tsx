@@ -20,7 +20,7 @@ interface VerifiedStepProps {
 // Helper to mask unique identifier for privacy
 const maskIdentifier = (uid: string): string => {
   if (!uid || uid.length < 12) return '***';
-  return `${uid.slice(0, 6)}...${uid.slice(-4)}`;
+  return `${uid.slice(0, 6)}…${uid.slice(-4)}`;
 };
 
 export const VerifiedStep: React.FC<VerifiedStepProps> = ({
@@ -34,76 +34,43 @@ export const VerifiedStep: React.FC<VerifiedStepProps> = ({
   onReset,
 }) => {
   return (
-    <div className="space-y-3">
-      {/* Success Badge */}
-      <div className="flex items-center gap-2 p-2 bg-signal-confirmed/10 border border-signal-confirmed/30 rounded-chip">
-        <div className="w-2 h-2 bg-signal-confirmed rounded-full"></div>
-        <span className="text-[10px] text-signal-confirmed font-mono tracking-wider">VERIFIED</span>
+    <div className="space-y-4">
+      <div className="rounded-control border border-signal-confirmed/30 bg-signal-confirmed/10 px-4 py-3">
+        <p className="mb-0 text-sm font-medium text-content-primary">Passport checked. One step left: mint.</p>
+        <dl className="mt-2 grid grid-cols-3 gap-2 text-xs">
+          <div className="min-w-0">
+            <dt className="text-content-muted">ID</dt>
+            <dd className="truncate font-mono text-content-primary">{maskIdentifier(uniqueIdentifier ?? '')}</dd>
+          </div>
+          <div>
+            <dt className="text-content-muted">Age</dt>
+            <dd className="font-mono text-content-primary">{isOver18 ? '18+' : '—'}</dd>
+          </div>
+          <div>
+            <dt className="text-content-muted">Nationality</dt>
+            <dd className="font-mono text-content-primary">{nationality ?? '—'}</dd>
+          </div>
+        </dl>
       </div>
 
-      {/* NFT Preview - Compact */}
-      <div className="bg-eth-blue-wash border border-eth-blue/20 rounded-chip p-3">
-        <div className="text-[10px] text-content-faint font-mono mb-2 tracking-wider">NFT traits</div>
-
-        <div className="space-y-1.5 text-[11px] font-mono">
-          <div className="flex justify-between items-center py-1.5 border-b border-line-hairline">
-            <span className="text-content-faint">uid</span>
-            <span className="text-eth-blue-text">{maskIdentifier(uniqueIdentifier ?? '')}</span>
-          </div>
-          <div className="flex justify-between items-center py-1.5 border-b border-line-hairline">
-            <span className="text-content-faint">age</span>
-            <span className={isOver18 ? 'text-signal-confirmed' : 'text-content-faint'}>
-              {isOver18 ? '18+' : 'N/A'}
-            </span>
-          </div>
-          <div className="flex justify-between items-center py-1.5">
-            <span className="text-content-faint">nationality</span>
-            <span className={nationality ? 'text-signal-confirmed' : 'text-content-faint'}>
-              {nationality ?? 'N/A'}
-            </span>
-          </div>
-        </div>
-
-        <div className="mt-2 pt-2 border-t border-line-hairline">
-          <span className="text-[9px] text-content-faint font-mono">
-            SOULBOUND
-          </span>
-        </div>
-      </div>
-
-      {/* Error */}
       {errorMessage && (
-        <div className="text-[10px] text-signal-reverted font-mono p-2 bg-signal-reverted/10 border border-signal-reverted/20 rounded-chip">
+        <p role="alert" className="mb-0 rounded-control border border-signal-reverted/30 bg-signal-reverted/10 px-4 py-3 text-sm text-signal-reverted">
           {errorMessage}
-        </div>
+        </p>
       )}
 
       {/* One primary action: switch first, then mint */}
       {!chain.ready ? (
         <SwitchChainButton chain={chain} />
       ) : (
-      <button
-        onClick={onMint}
-        disabled={isMinting}
-        className="w-full min-h-tap bg-eth-blue hover:bg-eth-blue-lift rounded-chip text-on-brand font-mono font-bold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {isMinting ? (
-          <span className="flex items-center justify-center gap-2">
-            <div className="w-3 h-3 border-2 border-signal-confirmed border-t-transparent rounded-full animate-spin"></div>
-            MINTING...
-          </span>
-        ) : (
-          'MINT →'
-        )}
-      </button>
+        <button type="button" onClick={onMint} disabled={isMinting} className="flex min-h-tap w-full items-center justify-center gap-2 rounded-control bg-eth-blue px-5 text-[15px] font-semibold text-on-brand transition-colors hover:bg-eth-blue-lift disabled:cursor-not-allowed disabled:bg-surface-ridge disabled:text-content-faint">
+          {isMinting && <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden />}
+          {isMinting ? 'Minting…' : 'Mint identity NFT'}
+        </button>
       )}
 
-      <button
-        onClick={onReset}
-        disabled={isMinting}
-        className="w-full py-2 text-[10px] text-content-faint hover:text-content-muted font-mono disabled:opacity-50"
-      >
-        RESTART
+      <button type="button" onClick={onReset} disabled={isMinting} className="flex min-h-[44px] w-full items-center justify-center rounded-control text-sm font-medium text-content-muted transition-colors hover:text-content-primary disabled:opacity-50">
+        Start over
       </button>
     </div>
   );

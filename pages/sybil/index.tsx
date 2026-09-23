@@ -5,10 +5,9 @@ import Layout from '../../components/shared/Layout';
 import Loading from '../../components/shared/Loading';
 import Navigation from '../../components/Navigation';
 import SybilVerification from '../../components/sybil/SybilVerification';
-import NFTCard from '../../components/sybil/NFTCard';
 import VerifiedState from '../../components/sybil/VerifiedState';
 import ENSSection from '../../components/ens/ENSSection';
-import { DEFAULT_CHAIN, explorerAddress } from '../../config/chains';
+import { DEFAULT_CHAIN } from '../../config/chains';
 import { useActiveWallet } from '../../hooks/useActiveWallet';
 import { useZKPassportNFT } from '../../hooks/useZKPassportNFT';
 
@@ -23,7 +22,7 @@ const chainId = DEFAULT_CHAIN.id;
  */
 function FlowSkeleton() {
   return (
-    <div className="space-y-3 rounded-control border border-line-hairline bg-surface-slab p-4" aria-busy="true">
+    <div className="space-y-3 rounded-card border border-line-hairline bg-surface-slab p-5" aria-busy="true">
       <div className="h-3 w-28 rounded-chip bg-surface-inset" />
       <div className="h-16 rounded-chip bg-surface-inset" />
       <div className="h-12 rounded-chip bg-surface-inset" />
@@ -35,12 +34,11 @@ export default function SybilPage() {
   const router = useRouter();
   const { ready, authenticated } = usePrivy();
   const { address } = useActiveWallet();
-  const zkpassport = DEFAULT_CHAIN.contracts.ZKPassportNFT;
 
   const {
     alreadyHasNFT,
-    isLoading: isNFTLoading,
     isFetched,
+    isFetching,
     tokenId,
     tokenData,
     mintedAt,
@@ -77,38 +75,27 @@ export default function SybilPage() {
     <div className="min-h-screen bg-surface-void">
       <Navigation />
       <Layout>
-        <div className="space-y-4">
-          {/* Header */}
-          <div className="mb-4">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-2 h-2 bg-eth-blue rounded-full animate-pulse"></div>
-              <h1 className="text-lg font-bold text-eth-blue-text font-mono tracking-wider">
-                PRIVATE_ID
-              </h1>
-            </div>
-            <p className="text-content-faint font-mono text-[10px] tracking-widest uppercase">
-              ZK • SOULBOUND
+        <div className="mx-auto max-w-xl space-y-5 md:space-y-6">
+          <header>
+            <h1 className="text-2xl font-bold text-content-primary">Identity</h1>
+            <p className="mb-0 mt-1 text-sm text-content-muted">
+              A private proof that you are one person, and a name people can send to.
             </p>
-          </div>
-
-          {/* NFT Card Section */}
-          <section className="mb-6">
-            <NFTCard
-              alreadyHasNFT={alreadyHasNFT}
-              isLoading={isNFTLoading || !address}
-              tokenId={tokenId}
-              tokenData={tokenData}
-              nftMetadata={nftMetadata}
-              onRefresh={refreshNFTData}
-            />
-          </section>
+          </header>
 
           {/* Three states, one at a time: still checking, already verified, or
               not yet. The start flow only mounts for a wallet with no NFT here. */}
           {checking ? (
             <FlowSkeleton />
           ) : alreadyHasNFT ? (
-            <VerifiedState mintedAt={mintedAt} />
+            <VerifiedState
+              mintedAt={mintedAt}
+              tokenId={tokenId}
+              tokenData={tokenData}
+              nftMetadata={nftMetadata}
+              refreshing={isFetching}
+              onRefresh={() => void refreshNFTData()}
+            />
           ) : (
             <SybilVerification
               chainId={chainId}
@@ -118,49 +105,10 @@ export default function SybilPage() {
             />
           )}
 
-          {/* Info Row */}
-          <div className="flex gap-2 text-[10px] font-mono text-content-faint pt-2">
-            <span className="flex items-center gap-1">
-              No KYC
-            </span>
-            <span className="text-content-faint">·</span>
-            <span className="flex items-center gap-1">
-              Privacy first
-            </span>
-            <span className="text-content-faint">·</span>
-            <span className="flex items-center gap-1">
-              Gas sponsored
-            </span>
-          </div>
-
-          {/* Contract Link */}
-          {zkpassport && (
-            <div className="text-[10px] font-mono text-content-faint pt-1 border-t border-line-hairline">
-              <a
-                href={explorerAddress(chainId, zkpassport)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-content-faint hover:text-eth-blue-text transition-colors"
-              >
-                contract: {zkpassport.slice(0, 8)}…{zkpassport.slice(-6)}
-              </a>
-            </div>
-          )}
-
-          {/* ENS name — the other half of identity. The registrar is on Base,
-              the one exception to Ethereum-only; ENSSection switches the
-              wallet there right before signing. */}
-          {address && (
-            <section className="pt-6" aria-label="ENS name">
-              <div className="mb-3">
-                <h2 className="text-lg font-bold text-eth-blue-text font-mono tracking-wider">ENS_NAME</h2>
-                <p className="text-content-faint font-mono text-[10px] tracking-widest uppercase">
-                  ethcali.eth • Gas sponsored
-                </p>
-              </div>
-              <ENSSection userAddress={address} />
-            </section>
-          )}
+          {/* The ethcali.eth name — the other half of identity. The registrar is
+              on Base, the one exception to Ethereum-only; ENSSection switches
+              the wallet there right before signing. */}
+          {address && <ENSSection userAddress={address} />}
         </div>
       </Layout>
     </div>

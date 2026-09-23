@@ -5,7 +5,7 @@ import Layout from '../components/shared/Layout';
 import Loading from '../components/shared/Loading';
 import Navigation from '../components/Navigation';
 import FaucetClaim from '../components/faucet/FaucetClaim';
-import { DEFAULT_CHAIN, explorerAddress } from '../config/chains';
+import { DEFAULT_CHAIN } from '../config/chains';
 import { logger } from '../utils/logger';
 
 /** The faucet reads from Ethereum; the wallet is only moved when a claim is signed. */
@@ -14,7 +14,6 @@ const chainId = DEFAULT_CHAIN.id;
 export default function FaucetPage() {
   const router = useRouter();
   const { ready, authenticated } = usePrivy();
-  const faucetManager = DEFAULT_CHAIN.contracts.FaucetManager;
 
   useEffect(() => {
     if (ready && !authenticated) {
@@ -40,16 +39,13 @@ export default function FaucetPage() {
     <div className="min-h-screen bg-surface-void">
       <Navigation />
       <Layout>
-        <div className="space-y-4">
-          {/* Minimal Cypherpunk Header */}
-          <div className="mb-4">
-            <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-xl font-bold text-content-primary">Faucet</h1>
-            </div>
-            <p className="text-content-faint font-mono text-[10px] tracking-widest uppercase">
-              ETH • Sybil gated
+        <div className="mx-auto max-w-xl space-y-5 md:space-y-6">
+          <header>
+            <h1 className="text-2xl font-bold text-content-primary">Faucet</h1>
+            <p className="mb-0 mt-1 text-sm text-content-muted">
+              A little ETH for gas, for verified people. One claim per vault; the transaction is sponsored.
             </p>
-          </div>
+          </header>
 
           <FaucetClaim
             chainId={chainId}
@@ -57,35 +53,6 @@ export default function FaucetPage() {
               logger.info('Faucet claim successful');
             }}
           />
-
-          {/* Compact Info Row */}
-          <div className="flex gap-2 text-[10px] font-mono text-content-faint pt-2">
-            <span className="flex items-center gap-1">
-              Verified only
-            </span>
-            <span className="text-content-faint">·</span>
-            <span className="flex items-center gap-1">
-              One claim
-            </span>
-            <span className="text-content-faint">·</span>
-            <span className="flex items-center gap-1">
-              Gas sponsored
-            </span>
-          </div>
-
-          {/* Contract Link - Minimal */}
-          {faucetManager && (
-            <div className="text-[10px] font-mono text-content-faint pt-1 border-t border-line-hairline">
-              <a
-                href={explorerAddress(chainId, faucetManager)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-content-faint hover:text-eth-blue-text transition-colors"
-              >
-                contract: {faucetManager.slice(0, 8)}…{faucetManager.slice(-6)}
-              </a>
-            </div>
-          )}
         </div>
       </Layout>
     </div>

@@ -135,7 +135,7 @@ function StockRow({ product, stock, rate, canWrite }: { product: SwagProduct; st
             {stock ? (stock.priceUsdc > 0n ? formatUsdc(stock.priceUsdc) : 'Not set') : '…'}
             {stock && stock.priceUsdc > 0n && (
               <span className="ml-2 font-sans text-xs text-content-faint">
-                {formatUsd(priceUsd)}{rate ? ` · ≈ ${formatCop(priceUsd * rate)}` : ''}
+                {formatUsd(priceUsd)}{rate ? ` · ${formatCop(priceUsd * rate)}` : ''}
               </span>
             )}
           </dd>
@@ -170,7 +170,7 @@ function StockRow({ product, stock, rate, canWrite }: { product: SwagProduct; st
             <input type="text" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="25.00" className={`${FIELD} font-mono`} disabled={!stock || priceTx.submitting || priceTx.cooldown} />
           </label>
           {priceUnits !== null && priceUnits > 0n && rate && (
-            <p className="text-[11px] text-content-faint">≈ {formatCop(Number(formatUnits(priceUnits, SWAG.usdcDecimals)) * rate)} at today&apos;s TRM</p>
+            <p className="text-[11px] text-content-faint">{formatCop(Number(formatUnits(priceUnits, SWAG.usdcDecimals)) * rate)} at today&apos;s TRM</p>
           )}
           <TxButton label="Set price" pendingLabel="Setting price…" tx={priceTx} onClick={setPriceOnChain} reason={priceReason} variant="secondary" />
         </div>

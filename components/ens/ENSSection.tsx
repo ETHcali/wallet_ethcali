@@ -20,22 +20,6 @@ function truncate(address: string): string {
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
 }
 
-/** The registrar every claim goes through, printed as the spec asks: truncated + explorer link. */
-const ContractLine = () => (
-  <p className="mt-4 font-mono text-[11px] text-content-faint">
-    Registrar{' '}
-    <a
-      href={explorerAddress(ENS_CONFIG.chainId, ENS_CONFIG.registrar)}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="text-eth-blue-text hover:underline"
-    >
-      {truncate(ENS_CONFIG.registrar)}
-    </a>{' '}
-    · {ENS_CHAIN.name}
-  </p>
-);
-
 /**
  * Claim and show the user's `<label>.ethcali.eth` name.
  *
@@ -101,10 +85,8 @@ const ENSSection: React.FC<ENSSectionProps> = ({ userAddress }) => {
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-content-faint">
-              Your ENS name
-            </p>
-            <p className="mt-1 break-all font-mono text-xl font-medium text-eth-blue-text">
+            <h2 className="text-sm font-medium text-content-muted">Your ethcali.eth name</h2>
+            <p className="mb-0 mt-1 break-all font-mono text-xl font-medium text-eth-blue-text">
               {fullName}
             </p>
           </div>
@@ -114,11 +96,11 @@ const ENSSection: React.FC<ENSSectionProps> = ({ userAddress }) => {
           </span>
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-4 grid grid-cols-2 gap-2">
           <button
             type="button"
             onClick={copyName}
-            className="inline-flex min-h-[40px] items-center rounded-control border border-line-strong px-3 text-xs font-semibold text-content-primary transition-colors duration-base hover:border-line-brand hover:text-eth-blue-text"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-control border border-line-strong px-3 text-sm font-semibold text-content-primary transition-colors duration-base hover:border-line-brand hover:text-eth-blue-text"
           >
             {copied ? 'Copied' : 'Copy name'}
           </button>
@@ -126,17 +108,16 @@ const ENSSection: React.FC<ENSSectionProps> = ({ userAddress }) => {
             href={`${explorerAddress(ENS_CONFIG.chainId, ENS_CONFIG.registry)}?a=${BigInt(node).toString()}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-[40px] items-center rounded-control border border-line-strong px-3 text-xs font-semibold text-content-primary transition-colors duration-base hover:border-line-brand hover:text-eth-blue-text"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-control border border-line-strong px-3 text-sm font-semibold text-content-primary transition-colors duration-base hover:border-line-brand hover:text-eth-blue-text"
           >
             View on explorer ↗
           </a>
         </div>
 
-        <p className="mt-4 text-xs text-content-faint">
+        <p className="mb-0 mt-4 text-xs text-content-faint">
           Registered on {ENS_CHAIN.name} as an NFT you own. Wallets that resolve ethcali.eth names there
           will show it; mainnet resolution switches on when ethcali.eth points at its L2 resolver.
         </p>
-        <ContractLine />
       </div>
     );
   }
@@ -158,7 +139,7 @@ const ENSSection: React.FC<ENSSectionProps> = ({ userAddress }) => {
         <div className="flex h-[52px] w-[52px] items-center justify-center rounded-full bg-signal-confirmed/10 text-signal-confirmed">
           <CheckIcon className="h-6 w-6" strokeWidth={2.2} />
         </div>
-        <h3 className="mt-4 text-[22px] font-bold text-content-primary">Your name is ready.</h3>
+        <h3 className="mt-4 text-xl font-bold text-content-primary">Your name is ready.</h3>
         <p className="mt-1 text-sm text-content-muted">
           <span className="font-mono text-eth-blue-text">{availability.label}.{ENS_CONFIG.parentName}</span>{' '}
           is registered to this wallet.
@@ -203,19 +184,10 @@ const ENSSection: React.FC<ENSSectionProps> = ({ userAddress }) => {
 
   return (
     <div className="rounded-card border border-line-hairline bg-surface-slab p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="text-xl font-bold text-content-primary">Claim your ethcali.eth name</h3>
-          <p className="mt-1 text-sm text-content-muted">
-            Free. One name per claim, yours to keep.
-          </p>
-        </div>
-        <span className="shrink-0 rounded-chip bg-eth-blue-wash px-2 py-1 font-mono text-[11px] uppercase tracking-[0.12em] text-eth-blue-text">
-          Gas sponsored
-        </span>
-      </div>
+      <h2 className="text-lg font-bold text-content-primary">Your ethcali.eth name</h2>
+      <p className="mb-0 mt-1 text-sm text-content-muted">Free, and yours to keep. One name per claim.</p>
 
-      <label htmlFor="ens-label" className="mt-5 block font-mono text-[11px] uppercase tracking-[0.16em] text-content-faint">
+      <label htmlFor="ens-label" className="mt-4 block text-sm font-medium text-content-secondary">
         Choose a name
       </label>
       <div
@@ -233,9 +205,9 @@ const ENSSection: React.FC<ENSSectionProps> = ({ userAddress }) => {
           onChange={handleInput}
           disabled={busy}
           maxLength={32}
-          className="min-w-0 flex-1 border-0 bg-transparent p-0 font-mono text-[15px] text-content-primary outline-none placeholder:text-content-faint focus:ring-0 disabled:opacity-60"
+          className="min-w-0 flex-1 border-0 bg-transparent p-0 font-mono text-base text-content-primary outline-none placeholder:text-content-faint focus:shadow-none focus:ring-0 disabled:opacity-60"
         />
-        <span className="shrink-0 font-mono text-[15px] text-content-faint">.{ENS_CONFIG.parentName}</span>
+        <span className="shrink-0 pl-2 font-mono text-base text-content-faint">.{ENS_CONFIG.parentName}</span>
       </div>
       <div className="mt-2 min-h-[20px] text-xs">{statusLine}</div>
 
@@ -268,13 +240,9 @@ const ENSSection: React.FC<ENSSectionProps> = ({ userAddress }) => {
         )}
         {!busy && (phase === 'failed' ? 'Try again' : 'Claim name')}
       </button>
-      <p className="mt-2 text-center font-mono text-xs text-content-faint">
-        Fee <span className="text-signal-confirmed">0.00 · sponsored</span>
+      <p className="mb-0 mt-2 text-center text-xs text-content-faint">
+        No fee, gas sponsored. Names live on {ENS_CHAIN.name}; we switch you there to sign.
       </p>
-      <p className="mt-2 text-center text-xs text-content-faint">
-        Names live on {ENS_CHAIN.name}; we switch you there to sign.
-      </p>
-      <ContractLine />
     </div>
   );
 };

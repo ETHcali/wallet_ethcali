@@ -7,6 +7,8 @@ import { DEFAULT_CHAIN, explorerTx } from '../../config/chains';
 import { useRequireChain } from '../../hooks/useRequireChain';
 import { useTokenTransfer } from '../../hooks/useTokenTransfer';
 import { formatTokenBalance } from '../../utils/tokenUtils';
+import { formatUsd } from '../../utils/money';
+import { Sheet, SHEET_BODY } from '../shared/Sheet';
 
 /** One sendable balance. Built from `useBalances`. */
 export interface SendOption {
@@ -26,9 +28,6 @@ interface SendTokenModalProps {
   onClose: () => void;
   onSent?: () => void;
 }
-
-const formatUsd = (value: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
 
 /**
  * Send ETH or an ERC-20 on Ethereum.
@@ -121,17 +120,17 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
   const explorerLink = txHash ? explorerTx(DEFAULT_CHAIN.id, txHash) : undefined;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 p-0 backdrop-blur-sm sm:items-center sm:p-4">
-      <div className="flex max-h-[92vh] w-full flex-col rounded-t-card border-t border-line-hairline bg-surface-slab sm:max-w-md sm:rounded-card sm:border">
-        <div className="flex items-start justify-between border-b border-line-hairline px-5 py-4">
-          <div>
-            <h3 className="text-lg font-bold text-content-primary">Send</h3>
-            {selected && <p className="font-mono text-xs text-content-muted">{selected.symbol}</p>}
-          </div>
+    <>
+      <Sheet onClose={onClose} label="Send" dismissable={!isSending}>
+        <div className="flex shrink-0 items-center justify-between border-b border-line-hairline px-5 pb-3 pt-1 md:pt-4">
+          <h3 className="text-lg font-bold text-content-primary">
+            Send{selected && <span className="ml-2 font-mono text-sm font-medium text-content-muted">{selected.symbol}</span>}
+          </h3>
           <button
             type="button"
             onClick={onClose}
-            className="-m-2 p-2 text-content-faint transition-colors hover:text-content-primary"
+            disabled={isSending}
+            className="-mr-2 flex h-11 w-11 items-center justify-center rounded-full text-content-faint transition-colors hover:text-content-primary disabled:opacity-40"
             aria-label="Close"
           >
             <CloseIcon />
@@ -164,7 +163,7 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
           </div>
         ) : (
           <>
-            <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-4">
+            <div className={`${SHEET_BODY} space-y-5 px-5 py-4`}>
               {/* Token */}
               <div>
                 <label className="mb-2 block text-xs font-semibold text-content-muted">Token</label>
@@ -182,7 +181,7 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
                           setError(null);
                         }}
                         disabled={isSending}
-                        className={`flex min-h-tap min-w-[88px] flex-col items-center justify-center rounded-control border px-3 transition-colors ${
+                        className={`flex min-h-tap min-w-[84px] flex-1 flex-col items-center justify-center rounded-control border px-3 transition-colors ${
                           active
                             ? 'border-line-brand bg-eth-blue-wash text-eth-blue-text'
                             : 'border-line-hairline bg-surface-inset text-content-secondary hover:border-line-strong'
@@ -285,7 +284,7 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
             </div>
 
             {/* Exactly one primary action: switch first, then send */}
-            <div className="border-t border-line-hairline px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4">
+            <div className="shrink-0 border-t border-line-hairline px-5 py-4">
               {!chain.ready ? (
                 <SwitchChainButton chain={chain} />
               ) : (
@@ -308,7 +307,7 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
             </div>
           </>
         )}
-      </div>
+      </Sheet>
 
       {isQRScannerOpen && (
         <QRScanner
@@ -320,7 +319,7 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
           onClose={() => setIsQRScannerOpen(false)}
         />
       )}
-    </div>
+    </>
   );
 };
 

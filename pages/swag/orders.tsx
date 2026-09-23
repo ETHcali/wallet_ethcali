@@ -40,8 +40,8 @@ function OrderRow({ order }: { order: SwagOrder }) {
   const tokenId = order.tokenId;
 
   return (
-    <li className="flex gap-3 rounded-card border border-line-hairline bg-surface-slab p-4">
-      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-chip border border-line-hairline bg-surface-inset">
+    <li className="flex gap-3 p-4">
+      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-chip bg-surface-inset">
         {image && <Image src={image} alt="" fill className="object-cover" sizes="64px" />}
       </div>
       <div className="min-w-0 flex-1">
@@ -49,7 +49,7 @@ function OrderRow({ order }: { order: SwagOrder }) {
           <p className="truncate font-semibold text-content-primary" title={product ? productAltName(product, locale) : undefined}>
             {product ? productName(product, locale) : locale === 'es' ? order.product.nameEs : order.product.nameEn}
           </p>
-          <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold ${status.className}`}>
+          <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${status.className}`}>
             {status[locale]}
           </span>
         </div>
@@ -77,7 +77,7 @@ function OrderRow({ order }: { order: SwagOrder }) {
           </p>
         )}
         {order.claimable && (
-          <Link href="/swag/claim" className="mt-2 inline-block text-xs font-semibold text-eth-blue-text hover:underline">
+          <Link href="/swag/claim" className="mt-1 inline-flex min-h-[44px] items-center text-sm font-semibold text-eth-blue-text hover:underline">
             {locale === 'es' ? 'Reclamar el NFT' : 'Claim the NFT'}
           </Link>
         )}
@@ -104,12 +104,11 @@ export default function SwagOrdersPage() {
       </Head>
       <Navigation />
 
-      <main className="mx-auto w-full max-w-4xl px-4 py-6 md:px-6 md:py-8">
-        <header className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="mb-1 font-mono text-xs uppercase tracking-widest text-eth-blue-text">ETH Cali Swag 2026</p>
-            <h1 className="text-3xl font-bold text-content-primary">{title}</h1>
-            <p className="mt-2 text-sm text-content-muted">
+      <main className="mx-auto w-full max-w-4xl px-4 pb-8 pt-5 md:px-6 md:py-8">
+        <header className="mb-5 flex items-start justify-between gap-4 md:mb-8">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold text-content-primary md:text-3xl">{title}</h1>
+            <p className="mb-0 mt-1 text-sm text-content-muted">
               {locale === 'es'
                 ? 'Tus NFTs de la colección y el estado de envío de cada pedido.'
                 : 'Your NFTs from the collection and the shipping status of each order.'}
@@ -117,16 +116,16 @@ export default function SwagOrdersPage() {
           </div>
           <Link
             href="/swag"
-            className="inline-flex min-h-tap items-center justify-center rounded-control border border-line-strong px-5 text-sm font-semibold text-content-primary transition-colors hover:border-line-brand hover:text-eth-blue-text"
+            className="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-control border border-line-strong px-4 text-sm font-semibold text-content-primary transition-colors hover:border-line-brand hover:text-eth-blue-text"
           >
-            {locale === 'es' ? 'Ver la tienda' : 'Back to the store'}
+            {locale === 'es' ? 'Tienda' : 'Store'}
           </Link>
         </header>
 
         {!ready ? (
           <Loading size="medium" />
         ) : !authenticated ? (
-          <div className="rounded-card border border-line-hairline bg-surface-slab p-10 text-center">
+          <div className="rounded-card border border-line-hairline bg-surface-slab px-5 py-8 text-center">
             <p className="font-semibold text-content-primary">
               {locale === 'es' ? 'Inicia sesión para ver tu swag.' : 'Sign in to see your swag.'}
             </p>
@@ -140,7 +139,7 @@ export default function SwagOrdersPage() {
             </button>
           </div>
         ) : (
-          <div className="space-y-10">
+          <div className="space-y-8">
             <section>
               <h2 className="mb-3 text-lg font-semibold text-content-primary">
                 {locale === 'es' ? 'Mis NFTs' : 'My NFTs'}
@@ -148,7 +147,7 @@ export default function SwagOrdersPage() {
               {mine.isLoading ? (
                 <Loading size="small" />
               ) : mine.owned.length === 0 ? (
-                <p className="rounded-card border border-line-hairline bg-surface-slab p-6 text-sm text-content-muted">
+                <p className="mb-0 rounded-card border border-line-hairline bg-surface-slab p-5 text-sm text-content-muted">
                   {locale === 'es'
                     ? 'Esta billetera aún no tiene nada de la colección.'
                     : 'This wallet does not hold anything from the collection yet.'}
@@ -193,17 +192,17 @@ export default function SwagOrdersPage() {
               {mine.isLoading ? (
                 <Loading size="small" />
               ) : !mine.ordersAvailable ? (
-                <p className="rounded-card border border-line-hairline bg-surface-slab p-6 text-sm text-content-muted">
+                <p className="mb-0 rounded-card border border-line-hairline bg-surface-slab p-5 text-sm text-content-muted">
                   {locale === 'es'
                     ? 'El historial de pedidos aún no está disponible. Tus NFTs arriba son la prueba de compra.'
                     : 'Order history is not available yet. Your NFTs above are the proof of purchase.'}
                 </p>
               ) : mine.orders.length === 0 ? (
-                <p className="rounded-card border border-line-hairline bg-surface-slab p-6 text-sm text-content-muted">
+                <p className="mb-0 rounded-card border border-line-hairline bg-surface-slab p-5 text-sm text-content-muted">
                   {locale === 'es' ? 'Todavía no hay pedidos.' : 'No orders yet.'}
                 </p>
               ) : (
-                <ul className="space-y-3">
+                <ul className="divide-y divide-line-hairline rounded-card border border-line-hairline bg-surface-slab">
                   {mine.orders.map((order) => (
                     <OrderRow key={order.id} order={order} />
                   ))}

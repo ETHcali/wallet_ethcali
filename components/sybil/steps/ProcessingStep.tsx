@@ -15,23 +15,23 @@ export const ProcessingStep: React.FC<ProcessingStepProps> = ({
   proofsGenerated,
 }) => {
   return (
-    <div className="bg-black/40 rounded-chip p-4">
-      <div className="flex items-center gap-3 mb-3">
-        <div className="w-4 h-4 border-2 border-eth-blue border-t-transparent rounded-full animate-spin"></div>
-        <span className="text-[10px] text-eth-blue-text font-mono tracking-wider">PROCESSING</span>
-      </div>
-      <div className="space-y-2 text-[10px] font-mono">
-        <div className="flex items-center gap-2">
-          <div className={`w-1.5 h-1.5 rounded-full ${requestReceived ? 'bg-signal-confirmed' : 'bg-surface-ridge'}`}></div>
-          <span className={requestReceived ? 'text-signal-confirmed' : 'text-content-faint'}>REQUEST</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className={`w-1.5 h-1.5 rounded-full ${generatingProof ? 'bg-eth-blue animate-pulse' : 'bg-surface-ridge'}`}></div>
-          <span className={generatingProof ? 'text-eth-blue-text' : 'text-content-faint'}>
-            PROOF {proofsGenerated > 0 && `[${proofsGenerated}/4]`}
+    <div className="space-y-3">
+      <p className="mb-0 flex items-center gap-2 text-sm font-medium text-content-primary">
+        <span className="h-4 w-4 animate-spin rounded-full border-2 border-eth-blue border-t-transparent" aria-hidden />
+        Checking your passport…
+      </p>
+      <ul className="space-y-2 text-sm">
+        <li className="flex items-center gap-2">
+          <span className={`h-2 w-2 rounded-full ${requestReceived ? 'bg-signal-confirmed' : 'bg-surface-ridge'}`} aria-hidden />
+          <span className={requestReceived ? 'text-content-primary' : 'text-content-faint'}>Request received by the app</span>
+        </li>
+        <li className="flex items-center gap-2">
+          <span className={`h-2 w-2 rounded-full ${generatingProof ? 'animate-pulse bg-eth-blue' : 'bg-surface-ridge'}`} aria-hidden />
+          <span className={generatingProof ? 'text-content-primary' : 'text-content-faint'}>
+            Building the proof{proofsGenerated > 0 && <span className="font-mono"> · {proofsGenerated}/4</span>}
           </span>
-        </div>
-      </div>
+        </li>
+      </ul>
     </div>
   );
 };

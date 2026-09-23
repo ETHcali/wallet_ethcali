@@ -101,6 +101,7 @@ export function useZKPassportNFT(chainId: number) {
     alreadyHasNFT: Boolean(query.data),
     isLoading: query.isLoading,
     isFetched: query.isFetched,
+    isFetching: query.isFetching,
     tokenId: query.data?.tokenId ?? null,
     tokenData: query.data?.tokenData ?? null,
     /** When the mint landed, from its block. Null when the RPC refused the log range. */

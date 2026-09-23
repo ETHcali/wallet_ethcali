@@ -192,23 +192,23 @@ export default function Home() {
               'radial-gradient(60% 55% at 78% 18%, rgb(var(--eth-blue-rgb) / 0.16), transparent 70%)',
           }}
         />
-        <div className="relative mx-auto max-w-page px-6 pb-16 pt-10 sm:pt-16 lg:pb-24">
+        <div className="relative mx-auto max-w-page px-4 pb-12 pt-8 sm:px-6 sm:pb-16 sm:pt-16 lg:pb-24">
           <Image
             src="/logotethcali.png"
             alt="ETH Cali"
             width={200}
             height={96}
-            className="mb-12 h-9 w-auto sm:h-10"
+            className="mb-10 h-8 w-auto sm:mb-12 sm:h-10"
             priority
             unoptimized
           />
           <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.16em] text-eth-blue-text">
             Wallet · Cali, Colombia
           </p>
-          <h1 className="max-w-3xl text-5xl font-black leading-[0.98] tracking-[-0.035em] sm:text-6xl lg:text-7xl">
-            Your keys. Our gas.
+          <h1 className="max-w-3xl text-[44px] font-black leading-[0.98] tracking-[-0.035em] sm:text-6xl lg:text-7xl">
+            Your keys.<br /> Our gas.
           </h1>
-          <p className="mt-6 max-w-xl text-base leading-relaxed text-content-secondary sm:text-lg">
+          <p className="mb-0 mt-5 max-w-xl text-base leading-relaxed text-content-secondary sm:mt-6 sm:text-lg">
             A self-custody wallet that feels like a fintech app. Sign in with email or a passkey,
             keep your own keys, and let the ETH Cali community cover the gas.
           </p>
@@ -228,32 +228,32 @@ export default function Home() {
       </section>
 
       {/* ── Features: four numbered cells in a hairline grid ── */}
-      <section className="mx-auto max-w-page px-6 pb-16 lg:pb-24">
+      <section className="mx-auto max-w-page px-4 pb-12 sm:px-6 sm:pb-16 lg:pb-24">
         <div className="grid grid-cols-1 overflow-hidden rounded-card border border-line-hairline sm:grid-cols-2 lg:grid-cols-4">
           {FEATURES.map(({ n, title, body, Icon }) => (
             <div
               key={n}
-              className="border-line-hairline p-6 sm:[&:nth-child(odd)]:border-r lg:[&:not(:last-child)]:border-r [&:not(:last-child)]:border-b sm:[&:nth-child(-n+2)]:border-b lg:[&:not(:last-child)]:border-b-0"
+              className="border-line-hairline p-5 sm:p-6 sm:[&:nth-child(odd)]:border-r lg:[&:not(:last-child)]:border-r [&:not(:last-child)]:border-b sm:[&:nth-child(-n+2)]:border-b lg:[&:not(:last-child)]:border-b-0"
             >
-              <div className="mb-6 flex items-center justify-between">
+              <div className="mb-4 flex items-center justify-between sm:mb-6">
                 <span className="font-mono text-[11px] tracking-[0.16em] text-content-faint">/{n}</span>
                 <span className="flex h-10 w-10 items-center justify-center rounded-control bg-eth-blue-wash text-eth-blue-text">
                   <Icon className="h-5 w-5" />
                 </span>
               </div>
-              <h2 className="mb-2 text-xl font-bold leading-snug">{title}</h2>
-              <p className="text-sm leading-relaxed text-content-muted">{body}</p>
+              <h2 className="mb-2 text-lg font-bold leading-snug sm:text-xl">{title}</h2>
+              <p className="mb-0 text-sm leading-relaxed text-content-muted">{body}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* ── Infrastructure strip ── */}
-      <section className="mx-auto max-w-page px-6 pb-16 lg:pb-24">
+      <section className="mx-auto max-w-page px-4 pb-12 sm:px-6 sm:pb-16 lg:pb-24">
         <p className="mb-6 font-mono text-[11px] uppercase tracking-[0.16em] text-content-faint">
           Built on
         </p>
-        <div className="flex flex-wrap items-center gap-x-10 gap-y-6">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-5 sm:flex sm:flex-wrap sm:items-center sm:gap-x-10 sm:gap-y-6">
           {INFRA.map(({ src, name }) => (
             <div key={name} className="flex items-center gap-3 text-content-muted">
               <Image src={src} alt="" width={28} height={28} className="h-7 w-7 object-contain opacity-80" unoptimized />
@@ -264,7 +264,7 @@ export default function Home() {
       </section>
 
       {/* ── Network: one line, straight from the registry ── */}
-      <section className="mx-auto max-w-page px-6 pb-20 lg:pb-28">
+      <section className="mx-auto max-w-page px-4 pb-14 sm:px-6 sm:pb-20 lg:pb-28">
         <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.16em] text-content-faint">
           Network
         </p>
@@ -273,7 +273,7 @@ export default function Home() {
 
       {/* ── Footer ── */}
       <footer className="border-t border-line-hairline">
-        <div className="mx-auto max-w-page px-6 py-12">
+        <div className="mx-auto max-w-page px-4 py-10 sm:px-6 sm:py-12">
           <div className="grid grid-cols-1 gap-10 md:grid-cols-[1.4fr_1fr_1fr]">
             <div>
               <Image

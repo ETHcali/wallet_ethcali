@@ -123,7 +123,7 @@ export default function IdentityAdminPage() {
         {/* Admin Functions Reference */}
         <div className="bg-black/40 border border-line-hairline rounded-chip p-3 mb-6">
           <p className="text-[9px] text-content-faint font-mono tracking-wider mb-2">Owner functions</p>
-          <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
+          <div className="grid grid-cols-1 gap-2 break-all text-[11px] font-mono sm:grid-cols-2">
             <div className="text-content-faint">
               <span className="text-eth-blue-text">setMetadata</span>(imageURI, desc, url, ipfs)
             </div>
@@ -134,18 +134,18 @@ export default function IdentityAdminPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 mb-4">
+        <div className="no-scrollbar -mx-4 mb-4 flex gap-1 overflow-x-auto px-4 lg:mx-0 lg:px-0">
           {(['metadata', 'ownership', 'settings', 'holders'] as AdminTab[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-3 py-1.5 text-[10px] font-mono rounded-chip transition-all ${
+              className={`min-h-[40px] shrink-0 rounded-chip border px-3 text-sm font-medium capitalize transition-colors ${
                 activeTab === tab
-                  ? 'bg-eth-blue/20 text-eth-blue-text border border-eth-blue/40'
-                  : 'text-content-faint hover:text-content-muted border border-transparent'
+                  ? 'border-line-brand bg-eth-blue-wash text-eth-blue-text'
+                  : 'border-transparent text-content-muted hover:text-content-primary'
               }`}
             >
-              {tab.toUpperCase()}
+              {tab}
             </button>
           ))}
         </div>

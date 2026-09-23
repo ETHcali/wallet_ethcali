@@ -75,52 +75,44 @@ export default function WalletPage() {
     <div className="min-h-screen bg-surface-void">
       <Navigation />
       <Layout>
-        <div className="space-y-6">
-          {activeWallet ? (
-            <>
-              <WalletInfo
-                address={activeWallet.address}
-                rows={rows}
-                isLoading={isBalanceLoading}
-                isError={isBalanceError}
-                onRefresh={refreshBalances}
-              />
-            </>
-          ) : (
-            <div className="rounded-control border border-eth-blue/30 bg-surface-slab p-5 text-center  sm:p-8">
-              {needsWalletReconnect ? (
-                // External wallet was used to log in but is not connected in this session
-                <>
-                  <p className="mb-2 text-eth-blue-text font-mono text-sm">Wallet not connected</p>
-                  <p className="text-content-faint text-xs font-mono mb-1">
-                    {externalWalletAddress?.slice(0, 6)}…{externalWalletAddress?.slice(-4)}
-                  </p>
-                  <p className="text-content-faint text-xs mb-6">
-                    Your external wallet is not connected in this session.
-                  </p>
-                  <button
-                    onClick={handleReconnect}
-                    disabled={isReconnecting}
-                    className="mx-auto flex min-h-tap w-full max-w-xs items-center justify-center gap-2 rounded-control bg-eth-blue px-6 font-mono text-sm text-content-primary transition-all hover:bg-eth-blue-lift disabled:opacity-50 sm:w-auto"
-                  >
-                    {isReconnecting && (
-                      <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    )}
-                    {isReconnecting ? 'Connecting…' : 'Reconnect wallet'}
-                  </button>
-                </>
-              ) : (
-                // Embedded wallet is being created
-                <>
-                  <p className="mb-4 text-eth-blue-text font-mono">Setting up your wallet…</p>
-                  <div className="flex justify-center">
-                    <div className="w-10 h-10 border-2 border-eth-blue border-t-transparent rounded-full animate-spin"></div>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-        </div>
+        {activeWallet ? (
+          <WalletInfo
+            address={activeWallet.address}
+            rows={rows}
+            isLoading={isBalanceLoading}
+            isError={isBalanceError}
+            onRefresh={refreshBalances}
+          />
+        ) : (
+          <div className="mx-auto max-w-xl rounded-card border border-line-hairline bg-surface-slab px-5 py-8 text-center">
+            {needsWalletReconnect ? (
+              // External wallet was used to log in but is not connected in this session
+              <>
+                <p className="mb-0 text-[15px] font-medium text-content-primary">Wallet not connected</p>
+                <p className="mb-0 mt-1 font-mono text-xs text-content-faint">
+                  {externalWalletAddress?.slice(0, 6)}…{externalWalletAddress?.slice(-4)}
+                </p>
+                <p className="mb-0 mt-2 text-sm text-content-muted">Your external wallet is not connected in this session.</p>
+                <button
+                  onClick={handleReconnect}
+                  disabled={isReconnecting}
+                  className="mt-5 flex min-h-tap w-full items-center justify-center gap-2 rounded-control bg-eth-blue px-6 text-sm font-semibold text-on-brand transition-colors hover:bg-eth-blue-lift disabled:opacity-50"
+                >
+                  {isReconnecting && (
+                    <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  )}
+                  {isReconnecting ? 'Connecting…' : 'Reconnect wallet'}
+                </button>
+              </>
+            ) : (
+              // Embedded wallet is being created
+              <>
+                <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-eth-blue border-t-transparent" />
+                <p className="mb-0 mt-4 text-sm text-content-muted">Setting up your wallet…</p>
+              </>
+            )}
+          </div>
+        )}
       </Layout>
     </div>
   );

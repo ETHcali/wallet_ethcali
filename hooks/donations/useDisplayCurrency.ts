@@ -6,6 +6,7 @@
  * amount is normalised to one unit before being added. Formatting always uses the
  * token's own decimals, never a hardcoded 18.
  */
+import { formatCop, formatUsd } from '../../utils/money';
 import { useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { formatUnits } from 'viem';
@@ -180,13 +181,8 @@ export function useDisplayCurrency(): CurrencyFormatter {
         })} ETH`;
       }
 
-      return new Intl.NumberFormat(currency === 'COP' ? 'es-CO' : 'en-US', {
-        style: 'currency',
-        currency,
-        // Pesos are not quoted in cents.
-        minimumFractionDigits: currency === 'COP' ? 0 : 2,
-        maximumFractionDigits: currency === 'COP' ? 0 : 2,
-      }).format(value);
+      // One format for the whole app: utils/money. Pesos here are a conversion.
+      return currency === 'COP' ? formatCop(value) : formatUsd(value, { cents: true });
     },
     [currency]
   );

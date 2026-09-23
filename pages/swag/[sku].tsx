@@ -20,7 +20,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import Navigation from '../../components/Navigation';
 import Loading from '../../components/shared/Loading';
-import { SwagCard } from '../../components/swag/SwagCard';
+import { SwagProductView } from '../../components/swag/SwagCard';
+import { ChevronLeftIcon } from '../../components/shared/icons';
 import { SwagCheckoutModal } from '../../components/swag/SwagCheckoutModal';
 import {
   productOgImageUrl,
@@ -170,17 +171,18 @@ export default function SwagProductPage({ meta }: ProductPageProps) {
       </Head>
       <Navigation />
 
-      <main className="mx-auto w-full max-w-5xl px-4 py-6 md:px-6 md:py-8">
-        <header className="mb-6 flex items-center justify-between gap-4">
+      <main className={`mx-auto w-full max-w-5xl px-4 pt-2 md:px-6 md:py-8 ${product ? 'pb-24' : 'pb-8'}`}>
+        <header className="mb-2 flex items-center justify-between gap-4 md:mb-6">
           <Link
             href="/swag"
-            className="inline-flex min-h-tap items-center text-sm font-semibold text-content-secondary transition-colors hover:text-eth-blue-text"
+            className="-ml-2 inline-flex min-h-[44px] items-center gap-1 px-2 text-sm font-semibold text-content-secondary transition-colors hover:text-eth-blue-text"
           >
-            ← {es ? 'Todo el swag' : 'All swag'}
+            <ChevronLeftIcon className="h-4 w-4" />
+            {es ? 'Todo el swag' : 'All swag'}
           </Link>
           <Link
             href="/swag/orders"
-            className="inline-flex min-h-tap items-center justify-center rounded-control border border-line-strong px-5 text-sm font-semibold text-content-primary transition-colors hover:border-line-brand hover:text-eth-blue-text"
+            className="-mr-2 inline-flex min-h-[44px] items-center px-2 text-sm font-semibold text-content-secondary transition-colors hover:text-eth-blue-text"
           >
             {es ? 'Mi swag' : 'My swag'}
           </Link>
@@ -199,7 +201,7 @@ export default function SwagProductPage({ meta }: ProductPageProps) {
             <Loading size="medium" text={es ? 'Cargando producto…' : 'Loading product…'} />
           </div>
         ) : catalogue.error ? (
-          <div className="rounded-card border border-line-hairline bg-surface-slab p-10 text-center">
+          <div className="rounded-card border border-line-hairline bg-surface-slab px-5 py-8 text-center">
             <p className="font-semibold text-content-primary">
               {es ? 'No pudimos cargar el catálogo.' : 'The catalogue could not be loaded.'}
             </p>
@@ -213,7 +215,7 @@ export default function SwagProductPage({ meta }: ProductPageProps) {
             </button>
           </div>
         ) : notFound || !product ? (
-          <div className="rounded-card border border-line-hairline bg-surface-slab p-10 text-center">
+          <div className="rounded-card border border-line-hairline bg-surface-slab px-5 py-8 text-center">
             <p className="font-mono text-xs uppercase tracking-widest text-content-faint">{skuParam}</p>
             <p className="mt-2 font-semibold text-content-primary">
               {es ? 'Este diseño no está a la venta.' : 'This design is not on sale.'}
@@ -231,10 +233,9 @@ export default function SwagProductPage({ meta }: ProductPageProps) {
             </Link>
           </div>
         ) : (
-          <SwagCard
+          <SwagProductView
             key={product.id}
             product={product}
-            expanded
             onchain={tokenId !== null ? onchain.tokens[tokenId] : undefined}
             paused={onchain.paused}
             trm={rate}
@@ -246,7 +247,7 @@ export default function SwagProductPage({ meta }: ProductPageProps) {
           />
         )}
 
-        <p className="mt-10 text-center font-mono text-[10px] uppercase tracking-wide text-content-faint">
+        <p className="mb-0 mt-8 text-center font-mono text-[10px] uppercase tracking-wide text-content-faint">
           {SWAG_CHAIN.name} · USDC · ETH Cali Swag 2026
         </p>
       </main>

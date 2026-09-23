@@ -5,12 +5,12 @@ import React from 'react';
 
 export const MintingStep: React.FC = () => {
   return (
-    <div className="bg-black/40 rounded-chip p-4 text-center">
-      <div className="flex items-center justify-center gap-3">
-        <div className="w-4 h-4 border-2 border-eth-blue border-t-transparent rounded-full animate-spin"></div>
-        <span className="text-[10px] text-eth-blue-text font-mono tracking-wider">MINTING...</span>
+    <div className="flex items-center gap-3 rounded-control bg-surface-inset px-4 py-3">
+      <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-eth-blue border-t-transparent" aria-hidden />
+      <div className="text-sm">
+        <p className="mb-0 font-medium text-content-primary">Minting your identity NFT…</p>
+        <p className="mb-0 text-content-muted">Confirm in your wallet if it asks.</p>
       </div>
-      <p className="text-[9px] text-content-faint font-mono mt-2">Confirm transaction</p>
     </div>
   );
 };

@@ -40,24 +40,24 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ user }) => {
   };
 
   return (
-    <section className="rounded-card border border-line-hairline bg-surface-slab p-4 sm:p-5" aria-labelledby="settings-security">
-      <h2 id="settings-security" className="font-mono text-[11px] uppercase tracking-[0.16em] text-content-faint">
+    <section className="rounded-card border border-line-hairline bg-surface-slab p-5" aria-labelledby="settings-security">
+      <h2 id="settings-security" className="text-lg font-bold text-content-primary">
         Security
       </h2>
-      <p className="mt-2 text-sm text-content-secondary">
+      <p className="mb-0 mt-1 text-sm text-content-muted">
         Your embedded wallet key is held by Privy&apos;s infrastructure, not by ETH Cali and not on this device, and
         you can export it from the Privy widget at any time.
       </p>
 
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <Button variant="outline" size="small" onClick={start} disabled={exporting || !embedded}>
+      <div className="mt-4 space-y-2">
+        <Button variant="outline" onClick={start} disabled={exporting || !embedded} fullWidth className="md:w-auto">
           {exporting ? 'Opening…' : 'Export wallet key'}
         </Button>
-        {!embedded && <span className="text-xs text-content-muted">No embedded wallet on this account.</span>}
+        {!embedded && <p className="mb-0 text-xs text-content-muted">No embedded wallet on this account.</p>}
       </div>
 
       {error && (
-        <p className="mt-3 text-sm text-signal-reverted" role="alert">
+        <p className="mb-0 mt-3 text-sm text-signal-reverted" role="alert">
           {error}
         </p>
       )}

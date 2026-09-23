@@ -7,6 +7,9 @@ import { getSwapTokens, parseTokenAmount, formatTokenAmount, type SwapToken } fr
 import { DEFAULT_CHAIN, explorerTx } from '../../config/chains';
 import SwitchChainButton from '../shared/SwitchChainButton';
 import { logger } from '../../utils/logger';
+import { formatUsd } from '../../utils/money';
+import { CloseIcon } from '../shared/icons';
+import { Sheet, SHEET_BODY } from '../shared/Sheet';
 
 interface SwapModalProps {
   onClose: () => void;
@@ -131,23 +134,21 @@ export default function SwapModal({ onClose, userAddress, onSuccess }: SwapModal
   const canSwap = quote && !isQuoteLoading && !isSwapping && fromAmountWei && fromAmountWei !== '0';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="w-full max-w-md rounded-card border border-line-hairline bg-surface-slab  overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-line-hairline">
-          <h2 className="text-lg font-semibold text-content-primary">Swap</h2>
+    <Sheet onClose={onClose} label="Swap" dismissable={!isSwapping}>
+        <div className="flex shrink-0 items-center justify-between border-b border-line-hairline px-5 pb-3 pt-1 md:pt-4">
+          <h2 className="text-lg font-bold text-content-primary">Swap</h2>
           <button
+            type="button"
             onClick={onClose}
             disabled={isSwapping}
-            className="text-content-muted hover:text-content-primary transition p-1"
+            className="-mr-2 flex h-11 w-11 items-center justify-center rounded-full text-content-faint transition-colors hover:text-content-primary disabled:opacity-40"
+            aria-label="Close"
           >
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <CloseIcon />
           </button>
         </div>
 
-        <div className="p-4 space-y-3">
+        <div className={`${SHEET_BODY} space-y-3 px-5 py-4`}>
           {/* From Token */}
           <div className="rounded-card bg-surface-inset p-4">
             <div className="flex items-center justify-between mb-2">
@@ -159,7 +160,7 @@ export default function SwapModal({ onClose, userAddress, onSuccess }: SwapModal
                 value={fromAmount}
                 onChange={(e) => setFromAmount(e.target.value)}
                 placeholder="0"
-                className="flex-1 bg-transparent text-2xl font-medium text-content-primary outline-none placeholder-content-faint"
+                className="min-w-0 flex-1 border-0 bg-transparent p-0 text-2xl font-medium text-content-primary outline-none placeholder-content-faint focus:shadow-none"
                 disabled={isSwapping}
               />
               <button
@@ -280,7 +281,7 @@ export default function SwapModal({ onClose, userAddress, onSuccess }: SwapModal
                 <div className="flex justify-between text-sm">
                   <span className="text-content-muted">Network fee</span>
                   <span className="text-content-primary">
-                    ~${parseFloat(quote.estimate.gasCosts[0].amountUSD || '0').toFixed(2)}
+                    ≈ {formatUsd(parseFloat(quote.estimate.gasCosts[0].amountUSD || '0'), { cents: true })}
                   </span>
                 </div>
               )}
@@ -344,7 +345,6 @@ export default function SwapModal({ onClose, userAddress, onSuccess }: SwapModal
             Powered by <a href="https://li.fi" target="_blank" rel="noopener noreferrer" className="text-eth-blue-text hover:text-eth-blue-text">LI.FI</a>
           </p>
         </div>
-      </div>
-    </div>
+    </Sheet>
   );
 }

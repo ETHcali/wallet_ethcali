@@ -226,5 +226,5 @@ export function describeBlockedReason(reason: string, locale: SwagLocale): strin
 /** "25.00 USDC" from base units, always with USDC's own decimals. */
 export function formatUsdc(amount: bigint): string {
   const units = Number(formatUnits(amount, SWAG.usdcDecimals));
-  return `${units.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC`;
+  return `${units.toLocaleString('en-US', { minimumFractionDigits: Number.isInteger(units) ? 0 : 2, maximumFractionDigits: 2 })} USDC`;
 }

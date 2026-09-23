@@ -1,18 +1,28 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
-
+import { DEFAULT_CHAIN, explorerAddress } from '../../config/chains';
 import { logger } from '../../utils/logger';
+import { CameraIcon, CheckIcon, CloseIcon, CopyIcon, ExternalIcon, ShareIcon } from '../shared/icons';
+import { Sheet, SHEET_BODY } from '../shared/Sheet';
+
 interface ReceiveModalProps {
   address: string;
   onClose: () => void;
   onScanQR?: () => void;
 }
 
+/** What this wallet shows a balance for, so nobody sends a token they will not see. */
+const ASSETS = [DEFAULT_CHAIN.nativeSymbol, ...DEFAULT_CHAIN.tokens.map((t) => t.symbol)].join(', ');
+
+const SECONDARY =
+  'flex min-h-tap flex-1 items-center justify-center gap-2 rounded-control border border-line-strong px-3 text-sm font-semibold text-content-primary transition-colors hover:border-line-brand hover:text-eth-blue-text';
+
+/** Your address as a QR code and as text, with copy and share. A bottom sheet on a phone. */
 const ReceiveModal: React.FC<ReceiveModalProps> = ({ address, onClose, onScanQR }) => {
   const [copied, setCopied] = useState(false);
 
-  // Generate QR code URL with black and white only
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${address}&bgcolor=ffffff&color=000000&margin=1`;
+  // Black on white: scanners read that reliably, whatever the theme.
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=440x440&data=${address}&bgcolor=ffffff&color=000000&margin=1`;
 
   const handleCopy = async () => {
     try {
@@ -25,275 +35,72 @@ const ReceiveModal: React.FC<ReceiveModalProps> = ({ address, onClose, onScanQR 
   };
 
   const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'My Wallet Address',
-          text: `Send crypto to my wallet:\n${address}`,
-        });
-      } catch (err) {
-        // User cancelled or error - fallback to copy
-        if ((err as Error).name !== 'AbortError') {
-          handleCopy();
-        }
-      }
-    } else {
-      // Fallback: copy to clipboard
-      handleCopy();
+    if (!navigator.share) {
+      void handleCopy();
+      return;
+    }
+    try {
+      await navigator.share({ title: 'My wallet address', text: address });
+    } catch (err) {
+      if ((err as Error).name !== 'AbortError') void handleCopy();
     }
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-container" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>RECEIVE</h3>
-          <button onClick={onClose} className="close-button">&times;</button>
-        </div>
-
-        <div className="modal-body">
-          {/* QR Code - Cypherpunk Style */}
-          <div className="qr-section">
-            <div className="qr-wrapper">
-              <Image 
-                src={qrCodeUrl} 
-                alt="Wallet QR Code" 
-                width={250}
-                height={250}
-                className="qr-image"
-                priority
-                unoptimized
-              />
-            </div>
-            <p className="qr-hint">SCAN TO SEND</p>
-          </div>
-
-          {/* Address */}
-          <div className="address-section">
-            <div className="address-box">
-              <span className="address-text">{address}</span>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="action-buttons">
-            <button
-              className={`action-btn copy-btn ${copied ? 'copied' : ''}`}
-              onClick={handleCopy}
-            >
-              {copied ? 'Copied' : 'Copy'}
-            </button>
-            <button
-              className="action-btn share-btn"
-              onClick={handleShare}
-            >
-              SHARE
-            </button>
-            {onScanQR && (
-              <button 
-                className="action-btn scan-btn"
-                onClick={onScanQR}
-              >
-                SCAN
-              </button>
-            )}
-          </div>
-        </div>
+    <Sheet onClose={onClose} label="Receive">
+      <div className="flex shrink-0 items-center justify-between px-5 pb-2 pt-2 md:pt-4">
+        <h3 className="text-lg font-bold text-content-primary">Receive</h3>
+        <button
+          type="button"
+          onClick={onClose}
+          className="-mr-2 flex h-11 w-11 items-center justify-center rounded-full text-content-faint transition-colors hover:text-content-primary"
+          aria-label="Close"
+        >
+          <CloseIcon />
+        </button>
       </div>
 
-      <style jsx>{`
-        .modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background-color: rgba(0, 0, 0, 0.85);
-          backdrop-filter: blur(4px);
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          z-index: 1000;
-        }
+      <div className={`${SHEET_BODY} space-y-4 px-5 pb-5`}>
+        <p className="mb-0 text-sm text-content-muted">
+          Send only {DEFAULT_CHAIN.name} assets to this address: {ASSETS}.
+        </p>
 
-        .modal-container {
-          background: var(--surface-slab);
-          border: 1px solid rgb(var(--eth-blue-rgb) / 0.3);
-          border-radius: 12px;
-          width: 90%;
-          max-width: 400px;
-          color: var(--text-secondary);
-        }
+        <div className="mx-auto w-fit rounded-card bg-surface-paper p-3">
+          <Image src={qrCodeUrl} alt="QR code of your wallet address" width={220} height={220} className="block h-[220px] w-[220px]" priority unoptimized />
+        </div>
 
-        .modal-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 1rem 1.5rem;
-          border-bottom: 1px solid rgb(var(--eth-blue-rgb) / 0.2);
-        }
+        <p className="mb-0 break-all rounded-control bg-surface-inset px-4 py-3 font-mono text-sm leading-relaxed text-content-primary">
+          {address}
+        </p>
 
-        .modal-header h3 {
-          margin: 0;
-          color: var(--eth-blue-text);
-          font-size: 1rem;
-          font-weight: 600;
-          font-family: monospace;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-        }
+        <div className="flex gap-2">
+          <button type="button" onClick={handleCopy} className={SECONDARY}>
+            {copied ? <CheckIcon className="h-4 w-4" /> : <CopyIcon className="h-4 w-4" />}
+            {copied ? 'Copied' : 'Copy'}
+          </button>
+          <button type="button" onClick={handleShare} className={SECONDARY}>
+            <ShareIcon className="h-4 w-4" />
+            Share
+          </button>
+          {onScanQR && (
+            <button type="button" onClick={onScanQR} className={SECONDARY} aria-label="Scan a code to send">
+              <CameraIcon className="h-4 w-4" />
+              Scan
+            </button>
+          )}
+        </div>
 
-        .close-button {
-          background: rgb(var(--eth-blue-rgb) / 0.1);
-          border: 1px solid rgb(var(--eth-blue-rgb) / 0.3);
-          border-radius: 4px;
-          font-size: 1.25rem;
-          cursor: pointer;
-          color: var(--eth-blue-text);
-          padding: 0.25rem 0.5rem;
-          width: auto;
-          height: auto;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.2s;
-        }
-
-        .close-button:hover {
-          background: rgb(var(--eth-blue-rgb) / 0.2);
-          border-color: rgb(var(--eth-blue-rgb) / 0.5);
-        }
-
-        .modal-body {
-          padding: 1.5rem;
-        }
-
-        .qr-section {
-          text-align: center;
-          margin-bottom: 1.5rem;
-        }
-
-        .qr-wrapper {
-          background: var(--surface-slab);
-          padding: 1rem;
-          border: 2px solid rgb(var(--eth-blue-rgb) / 0.4);
-          border-radius: 8px;
-          display: inline-block;
-        }
-
-        .qr-image {
-          display: block;
-          width: 250px;
-          height: 250px;
-        }
-
-        .qr-hint {
-          margin-top: 1rem;
-          font-size: 0.75rem;
-          color: var(--text-faint);
-          font-family: monospace;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-        }
-
-        .address-section {
-          margin-bottom: 1.5rem;
-        }
-
-        .address-box {
-          background: rgba(0, 0, 0, 0.5);
-          border: 1px solid rgb(var(--eth-blue-rgb) / 0.2);
-          border-radius: 8px;
-          padding: 1rem;
-          word-break: break-all;
-        }
-
-        .address-text {
-          font-family: monospace;
-          font-size: 0.75rem;
-          color: var(--eth-blue-text);
-          line-height: 1.6;
-          letter-spacing: 0.05em;
-        }
-
-        .action-buttons {
-          display: flex;
-          gap: 0.75rem;
-        }
-
-        .action-btn {
-          flex: 1;
-          padding: 0.75rem 1rem;
-          border: 1px solid rgb(var(--eth-blue-rgb) / 0.3);
-          border-radius: 6px;
-          font-size: 0.75rem;
-          font-weight: 600;
-          font-family: monospace;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .copy-btn {
-          background: rgb(var(--eth-blue-rgb) / 0.1);
-          color: var(--eth-blue-text);
-        }
-
-        .copy-btn:hover {
-          background: rgb(var(--eth-blue-rgb) / 0.2);
-          border-color: rgb(var(--eth-blue-rgb) / 0.5);
-        }
-
-        .copy-btn.copied {
-          background: rgb(var(--signal-confirmed-rgb) / 0.2);
-          border-color: rgb(var(--signal-confirmed-rgb) / 0.4);
-          color: var(--signal-confirmed);
-        }
-
-        .share-btn {
-          background: rgb(var(--eth-blue-rgb) / 0.1);
-          color: var(--eth-blue-text);
-          border-color: rgb(var(--eth-blue-rgb) / 0.3);
-        }
-
-        .share-btn:hover {
-          background: rgb(var(--eth-blue-rgb) / 0.2);
-          border-color: rgb(var(--eth-blue-rgb) / 0.5);
-        }
-
-        .scan-btn {
-          background: var(--line-hairline);
-          color: var(--text-muted);
-          border-color: var(--line-hairline);
-        }
-
-        .scan-btn:hover {
-          background: var(--line-hairline);
-          border-color: var(--surface-ridge);
-        }
-
-        @media (max-width: 480px) {
-          .modal-container {
-            width: 95%;
-            max-width: none;
-          }
-
-          .qr-image {
-            width: 200px;
-            height: 200px;
-          }
-
-          .modal-body {
-            padding: 1rem;
-          }
-
-          .action-buttons {
-            flex-direction: column;
-          }
-        }
-      `}</style>
-    </div>
+        <a
+          href={explorerAddress(DEFAULT_CHAIN.id, address)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex min-h-tap items-center justify-center gap-1.5 text-sm text-eth-blue-text hover:underline"
+        >
+          View on {DEFAULT_CHAIN.explorerName}
+          <ExternalIcon className="h-4 w-4" />
+        </a>
+      </div>
+    </Sheet>
   );
 };
 

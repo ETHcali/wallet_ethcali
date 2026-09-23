@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { formatEther } from 'viem';
 import { useVaultDeposit, useVaultWithdraw } from '../../hooks/faucet';
 import { Vault } from '../../types/faucet';
+import { Sheet, SHEET_BODY } from '../shared/Sheet';
+import { CloseIcon } from '../shared/icons';
 
 interface VaultDepositWithdrawProps {
   chainId: number;
@@ -66,9 +68,9 @@ export function VaultDepositWithdraw({ chainId, vault, onClose, onSuccess }: Vau
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-card border border-line-hairline bg-surface-slab p-6 ">
-        <div className="flex items-start justify-between mb-6">
+    <Sheet onClose={onClose} label={vault.name} dismissable={!isSubmitting}>
+      <div className={`${SHEET_BODY} px-5 pb-5 pt-1 md:p-6`}>
+        <div className="mb-6 flex items-start justify-between gap-3">
           <div>
             <h2 className="text-xl font-semibold text-content-primary">{vault.name}</h2>
             <p className="text-sm text-content-faint">
@@ -76,12 +78,13 @@ export function VaultDepositWithdraw({ chainId, vault, onClose, onSuccess }: Vau
             </p>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="text-content-muted hover:text-content-primary transition"
+            disabled={isSubmitting}
+            className="-mr-2 -mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-content-faint transition-colors hover:text-content-primary disabled:opacity-40"
+            aria-label="Close"
           >
-            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <CloseIcon />
           </button>
         </div>
 
@@ -202,6 +205,6 @@ export function VaultDepositWithdraw({ chainId, vault, onClose, onSuccess }: Vau
           </div>
         </form>
       </div>
-    </div>
+    </Sheet>
   );
 }

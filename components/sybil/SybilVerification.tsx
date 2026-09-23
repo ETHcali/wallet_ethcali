@@ -139,17 +139,13 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({
   };
 
   return (
-    <div className="space-y-4">
-      <div className="bg-black/60 border border-eth-blue/30 rounded-control p-4 space-y-4">
-        {/* Minimal Header */}
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 bg-eth-blue rounded-full"></div>
-          <h2 className="text-xs font-bold text-eth-blue-text font-mono tracking-wider">Verify identity</h2>
-        </div>
-
-        {renderStep()}
-      </div>
-    </div>
+    <section className="rounded-card border border-line-hairline bg-surface-slab p-5" aria-labelledby="verify-title">
+      <h2 id="verify-title" className="text-lg font-bold text-content-primary">Verify with your passport</h2>
+      <p className="mb-4 mt-1 text-sm text-content-muted">
+        Prove you are a unique person without sharing who you are. No KYC, nothing leaves your phone.
+      </p>
+      {renderStep()}
+    </section>
   );
 };
 

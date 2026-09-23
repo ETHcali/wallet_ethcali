@@ -10,23 +10,21 @@ interface MintedStepProps {
 }
 
 export const MintedStep: React.FC<MintedStepProps> = ({ mintTxHash, chainId }) => {
+  const link = explorerTx(chainId, mintTxHash);
+  const short = `${mintTxHash.slice(0, 6)}…${mintTxHash.slice(-4)}`;
   return (
-    <div className="bg-black/40 rounded-chip p-3 border border-eth-blue/20">
-      <div className="text-[10px] text-content-faint font-mono mb-2 tracking-wider">TRANSACTION</div>
-      {explorerTx(chainId, mintTxHash) ? (
-        <a
-          href={explorerTx(chainId, mintTxHash)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-[9px] text-eth-blue-text hover:text-eth-blue-text font-mono block"
-        >
-          tx: {mintTxHash.slice(0, 10)}…{mintTxHash.slice(-6)} →
-        </a>
-      ) : (
-        <span className="text-[9px] text-content-faint font-mono block">
-          tx: {mintTxHash.slice(0, 10)}…{mintTxHash.slice(-6)}
-        </span>
-      )}
+    <div className="rounded-control border border-signal-confirmed/30 bg-signal-confirmed/10 px-4 py-3 text-sm">
+      <p className="mb-0 font-medium text-content-primary">Minted. Your identity is on chain.</p>
+      <p className="mb-0 mt-1 text-content-muted">
+        Transaction{' '}
+        {link ? (
+          <a href={link} target="_blank" rel="noopener noreferrer" className="font-mono text-eth-blue-text hover:underline">
+            {short} ↗
+          </a>
+        ) : (
+          <span className="font-mono">{short}</span>
+        )}
+      </p>
     </div>
   );
 };

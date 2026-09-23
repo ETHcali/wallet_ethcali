@@ -38,17 +38,3 @@ export function useTrm() {
     isError: query.isError,
   };
 }
-
-export function formatUsd(value: number): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
-}
-
-/** Pesos are not quoted in cents. */
-export function formatCop(value: number): string {
-  return new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
-}

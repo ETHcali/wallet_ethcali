@@ -18,7 +18,7 @@ const CurrencyToggle: React.FC = () => {
 
   return (
     <div
-      className="inline-flex items-center gap-1 rounded-control border border-line-hairline bg-surface-inset/60 p-1"
+      className="inline-flex shrink-0 items-center gap-1 rounded-control bg-surface-inset p-1"
       role="group"
       aria-label="Display currency"
     >
@@ -31,7 +31,7 @@ const CurrencyToggle: React.FC = () => {
             onClick={() => setCurrency(option.value)}
             title={option.title}
             aria-pressed={active}
-            className={`min-h-[36px] rounded-chip px-3 text-xs font-semibold transition-colors sm:min-h-0 sm:py-1 ${
+            className={`h-9 rounded-chip px-3 text-xs font-semibold transition-colors ${
               active
                 ? 'bg-eth-blue text-on-brand'
                 : 'text-content-muted hover:bg-surface-ridge hover:text-content-primary'

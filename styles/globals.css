@@ -151,3 +151,44 @@ input:focus {
   border-color: var(--primary-color);
   box-shadow: 0 0 0 3px var(--input-focus-shadow);
 } 
+/* The phone tab bar (components/Navigation.tsx, `data-tabbar`) is fixed to the
+   bottom edge. Every page that renders it gets its height back as padding, so
+   the last row of content never sits under the bar. Sticky action bars on a
+   page sit on top of it with `bottom: var(--tabbar-h)`. */
+:root {
+  --tabbar-h: calc(3.5rem + env(safe-area-inset-bottom));
+}
+
+@media (max-width: 767.98px) {
+  body:has([data-tabbar]) {
+    padding-bottom: var(--tabbar-h);
+  }
+}
+
+/* Horizontal chip rows scroll without a visible scrollbar. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* iOS Safari zooms the whole page when a focused field is under 16px, and the
+   page never zooms back. Below md, every text field sized smaller than that by
+   a utility is lifted to 16px; desktop keeps the compact size. Selector
+   specificity (element + class) beats the lone utility class. */
+@media (max-width: 767.98px) {
+  input.text-xs, input.text-sm, input.text-\[10px\], input.text-\[11px\],
+  textarea.text-xs, textarea.text-sm, textarea.text-\[10px\], textarea.text-\[11px\],
+  select.text-xs, select.text-sm, select.text-\[10px\], select.text-\[11px\] {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+}
+
+/* Safety net only: nothing should be wider than the viewport, and each cause
+   is fixed where it lives. `clip` rather than `hidden` so sticky headers keep
+   working. */
+html, body {
+  overflow-x: clip;
+}

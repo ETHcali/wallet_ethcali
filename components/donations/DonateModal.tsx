@@ -5,6 +5,7 @@ import { usePrivy } from '@privy-io/react-auth';
 import { useActiveWallet } from '../../hooks/useActiveWallet';
 import { useRequireChain } from '../../hooks/useRequireChain';
 import SwitchChainButton from '../shared/SwitchChainButton';
+import { Sheet, SHEET_BODY } from '../shared/Sheet';
 import {
   useDonate,
   useDonationAllowance,
@@ -27,22 +28,6 @@ const QUICK_AMOUNTS: Record<string, string[]> = {
   USDC: ['10', '25', '100'],
   ETH: ['0.01', '0.05', '0.1'],
 };
-
-/**
- * Bottom sheet on phones, centered modal from `sm` up.
- *
- * `dvh` rather than `vh`: on iOS Safari `vh` counts the space behind the
- * address bar, so a 90vh sheet is taller than what you can actually see and
- * the donate button ends up under the browser chrome. `vh` stays as the
- * fallback for browsers without `dvh`.
- */
-const OVERLAY =
-  'fixed inset-0 z-50 flex items-end justify-center bg-black/80 backdrop-blur-sm sm:items-center sm:p-4';
-const SHEET =
-  'flex w-full max-h-[92vh] flex-col rounded-t-card border-t border-line-hairline bg-surface-slab ' +
-  'supports-[height:1dvh]:max-h-[92dvh] sm:max-h-[90vh] sm:w-auto sm:max-w-md sm:rounded-card sm:border';
-/** Clears the iPhone home indicator without adding padding on a desktop. */
-const SAFE_BOTTOM = 'pb-[max(1rem,env(safe-area-inset-bottom))]';
 
 const DonateModal: React.FC<DonateModalProps> = ({ campaign, chainId, onClose }) => {
   const { authenticated, login } = usePrivy();
@@ -122,9 +107,8 @@ const DonateModal: React.FC<DonateModalProps> = ({ campaign, chainId, onClose })
   // ── Success state ────────────────────────────────────────────────────────
   if (txHash) {
     return (
-      <div className={OVERLAY}>
-        <div className={SHEET}>
-          <div className={`overflow-y-auto px-5 pt-6 text-center sm:px-6 ${SAFE_BOTTOM}`}>
+      <Sheet onClose={() => { reset(); onClose(); }} label="Donation sent">
+          <div className={`${SHEET_BODY} px-5 pb-5 pt-4 text-center md:px-6`}>
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-signal-confirmed/15 text-signal-confirmed">
               <CheckIcon className="h-7 w-7" strokeWidth={2} />
             </div>
@@ -163,8 +147,7 @@ const DonateModal: React.FC<DonateModalProps> = ({ campaign, chainId, onClose })
               Done
             </button>
           </div>
-        </div>
-      </div>
+      </Sheet>
     );
   }
 
@@ -177,22 +160,19 @@ const DonateModal: React.FC<DonateModalProps> = ({ campaign, chainId, onClose })
         : null);
 
   return (
-    <div className={OVERLAY}>
-      <div className={SHEET}>
+    <Sheet onClose={onClose} label="Donate" dismissable={!isApproving && !isDonating}>
         {/* ── Header: fixed, never scrolls away ───────────────────────────── */}
-        <div className="shrink-0 px-5 pt-3 sm:px-6 sm:pt-5">
-          {/* Grab handle reads as "draggable sheet" on a phone; noise on desktop. */}
-          <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-surface-ridge sm:hidden" />
+        <div className="shrink-0 px-5 pt-1 md:px-6 md:pt-5">
           <div className="mb-4 flex items-start justify-between gap-3">
             <div className="min-w-0">
               <h2 className="text-lg font-bold text-content-primary">Donate</h2>
               <p className="truncate text-xs text-content-muted">{campaign.name}</p>
             </div>
-            {/* -m-2 p-2 keeps the glyph small but the tap target ~44px. */}
             <button
               type="button"
               onClick={onClose}
-              className="-m-2 shrink-0 p-2 text-content-faint transition-colors hover:text-content-primary"
+              disabled={isApproving || isDonating}
+              className="-mr-2 -mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-content-faint transition-colors hover:text-content-primary disabled:opacity-40"
               aria-label="Close"
             >
               <CloseIcon />
@@ -201,7 +181,7 @@ const DonateModal: React.FC<DonateModalProps> = ({ campaign, chainId, onClose })
         </div>
 
         {/* ── Scrollable form ─────────────────────────────────────────────── */}
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 sm:px-6">
+        <div className={`${SHEET_BODY} px-5 md:px-6`}>
           {/* Currency */}
           <label className="mb-2 block text-xs font-semibold text-content-muted">Currency</label>
           <div className="mb-4 flex flex-wrap gap-2">
@@ -215,7 +195,7 @@ const DonateModal: React.FC<DonateModalProps> = ({ campaign, chainId, onClose })
                 }}
                 className={`min-h-tap rounded-control border px-4 text-sm font-semibold transition-colors ${
                   t.address === token.address
-                    ? 'border-eth-blue bg-eth-blue/15 text-eth-blue-text'
+                    ? 'border-line-brand bg-eth-blue-wash text-eth-blue-text'
                     : 'border-line-hairline bg-surface-inset text-content-secondary hover:border-line-strong'
                 }`}
               >
@@ -280,13 +260,13 @@ const DonateModal: React.FC<DonateModalProps> = ({ campaign, chainId, onClose })
             value={message}
             onChange={(e) => setMessage(e.target.value.slice(0, 120))}
             placeholder="Fuerza Cali"
-            className="mb-4 w-full rounded-control border border-line-hairline bg-surface-inset px-4 py-2.5 text-base text-content-primary outline-none focus:border-eth-blue sm:text-sm"
+            className="mb-4 w-full rounded-control border border-line-hairline bg-surface-inset px-4 py-2.5 text-base text-content-primary outline-none focus:border-eth-blue md:text-sm"
           />
         </div>
 
         {/* ── Action: pinned, so the primary button is never scrolled off ─── */}
         <div
-          className={`shrink-0 border-t border-line-hairline bg-surface-slab px-5 pt-4 sm:px-6 ${SAFE_BOTTOM}`}
+          className="shrink-0 border-t border-line-hairline bg-surface-slab px-5 py-4 md:px-6"
         >
           {/* Inline, persistent error next to the action */}
           {actionError && (
@@ -344,8 +324,7 @@ const DonateModal: React.FC<DonateModalProps> = ({ campaign, chainId, onClose })
             </p>
           )}
         </div>
-      </div>
-    </div>
+    </Sheet>
   );
 };
 

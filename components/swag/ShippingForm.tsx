@@ -21,7 +21,7 @@ const EMPTY: SwagShipping = {
 };
 
 const FIELD =
-  'w-full rounded-control border border-line-strong bg-surface-inset px-3 py-3 text-sm text-content-primary placeholder:text-content-faint focus:border-line-brand focus:outline-none';
+  'w-full rounded-control border border-line-strong bg-surface-inset px-3 py-3 text-base text-content-primary placeholder:text-content-faint focus:border-line-brand focus:outline-none md:text-sm';
 
 const LABEL = 'mb-1 block text-xs font-semibold text-content-secondary';
 

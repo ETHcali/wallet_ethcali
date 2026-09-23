@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { CloseIcon } from '../shared/icons';
+import React from 'react';
 import Link from 'next/link';
 import Navigation from '../Navigation';
 import { useActiveWallet } from '../../hooks/useActiveWallet';
@@ -48,15 +47,14 @@ function truncate(address?: string): string {
 }
 
 /**
- * Shared chrome for every admin area: a left sidebar on desktop, a slide-over
- * sheet on a phone.
+ * Shared chrome for every admin area: a left sidebar on desktop, a row of
+ * scrolling section chips under the title below lg (no drawer, no hamburger).
  *
  * Visibility here is presentation only. A section appears because the contract
  * says this address holds the role; the contract re-checks on every write —
  * hiding a link has never been, and must never become, the access control.
  */
 const AdminShell: React.FC<AdminShellProps> = ({ active, title, subtitle, children }) => {
-  const [navOpen, setNavOpen] = useState(false);
   const { address } = useActiveWallet();
 
   const {
@@ -94,7 +92,6 @@ const AdminShell: React.FC<AdminShellProps> = ({ active, title, subtitle, childr
           <Link
             key={section.id}
             href={section.href}
-            onClick={() => setNavOpen(false)}
             aria-current={current ? 'page' : undefined}
             className={`flex min-h-tap items-center gap-2 rounded-control px-3 text-sm font-semibold transition-colors ${
               current
@@ -135,7 +132,7 @@ const AdminShell: React.FC<AdminShellProps> = ({ active, title, subtitle, childr
     <div className="min-h-screen bg-surface-void">
       <Navigation />
 
-      <div className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-6 lg:py-8">
+      <div className="mx-auto w-full max-w-7xl px-4 pb-8 pt-5 lg:px-6 lg:py-8">
         <div className="lg:grid lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-8">
           {/* Desktop sidebar */}
           <aside className="hidden lg:block">
@@ -151,62 +148,40 @@ const AdminShell: React.FC<AdminShellProps> = ({ active, title, subtitle, childr
           {/* min-w-0 so a wide table or long address inside the content column
               cannot stretch the grid and force the whole page to scroll sideways. */}
           <div className="min-w-0">
-            <header className="mb-6 flex items-start gap-3">
-              <button
-                type="button"
-                onClick={() => setNavOpen(true)}
-                className="-ml-1 flex min-h-tap min-w-tap items-center justify-center rounded-control border border-line-hairline text-content-secondary transition-colors hover:border-line-strong hover:text-content-primary lg:hidden"
-                aria-label="Open admin sections"
-                aria-expanded={navOpen}
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5"
-                  />
-                </svg>
-              </button>
-              <div className="min-w-0">
-                <h1 className="text-xl font-bold text-content-primary sm:text-2xl">{title}</h1>
-                {subtitle && <p className="mt-1 text-sm text-content-muted">{subtitle}</p>}
-              </div>
+            <header className="mb-5 lg:mb-6">
+              <h1 className="text-2xl font-bold text-content-primary">{title}</h1>
+              {subtitle && <p className="mb-0 mt-1 text-sm text-content-muted">{subtitle}</p>}
             </header>
+
+            {/* Below lg: the sections as chips, scrolling sideways inside the gutter. */}
+            <nav
+              className="no-scrollbar -mx-4 mb-5 flex gap-2 overflow-x-auto px-4 lg:hidden"
+              aria-label="Admin sections"
+            >
+              {sections.map((section) => {
+                const current = section.id === active;
+                return (
+                  <Link
+                    key={section.id}
+                    href={section.href}
+                    aria-current={current ? 'page' : undefined}
+                    className={`inline-flex min-h-[40px] shrink-0 items-center rounded-full border px-4 text-sm font-medium transition-colors ${
+                      current
+                        ? 'border-line-brand bg-eth-blue-wash text-eth-blue-text'
+                        : 'border-line-strong text-content-secondary hover:text-content-primary'
+                    }`}
+                  >
+                    {section.label}
+                  </Link>
+                );
+              })}
+            </nav>
 
             {children}
           </div>
         </div>
       </div>
 
-      {/* Mobile slide-over */}
-      {navOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <button
-            type="button"
-            className="absolute inset-0 h-full w-full bg-black/70 backdrop-blur-sm"
-            onClick={() => setNavOpen(false)}
-            aria-label="Close admin sections"
-          />
-          <div className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col overflow-y-auto border-r border-line-hairline bg-surface-slab p-4">
-            <div className="mb-4 flex items-center justify-between">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-content-faint">
-                Admin
-              </p>
-              <button
-                type="button"
-                onClick={() => setNavOpen(false)}
-                className="-m-2 p-2 text-content-faint hover:text-content-primary"
-                aria-label="Close"
-              >
-                <CloseIcon />
-              </button>
-            </div>
-            {nav}
-            {sidebarFooter}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -176,12 +176,9 @@ export default function SwagClaimPage() {
     <div className="min-h-screen bg-surface-void">
       <Navigation />
       <Layout>
-        <div className="mb-8">
-          <p className="mb-1 font-mono text-xs font-semibold uppercase tracking-widest text-eth-blue-text">
-            Swag
-          </p>
-          <h1 className="text-3xl font-bold text-content-primary sm:text-4xl">Claim your swag NFT</h1>
-          <p className="mt-2 text-sm text-content-muted">
+        <div className="mb-5 md:mb-8">
+          <h1 className="text-2xl font-bold text-content-primary md:text-3xl">Claim your swag NFT</h1>
+          <p className="mb-0 mt-1 text-sm text-content-muted">
             Orders paid by card on the ETH Cali store, matched to the email you signed in with.
             Each one mints once, to your wallet, gas covered.
           </p>
@@ -190,13 +187,13 @@ export default function SwagClaimPage() {
         {ordersQuery.isLoading && <Loading text="Looking up your orders…" />}
 
         {ordersQuery.isError && (
-          <div className="rounded-card border border-line-hairline bg-surface-slab p-6 text-sm text-signal-reverted">
+          <div className="rounded-card border border-line-hairline bg-surface-slab p-5 text-sm text-signal-reverted">
             Could not load your orders. {(ordersQuery.error as Error).message}
           </div>
         )}
 
         {ordersQuery.isSuccess && claimable.length === 0 && claimed.length === 0 && (
-          <div className="rounded-card border border-line-hairline bg-surface-slab p-10 text-center">
+          <div className="rounded-card border border-line-hairline bg-surface-slab px-5 py-8 text-center">
             <p className="text-lg font-medium text-content-secondary">Nothing to claim yet</p>
             <p className="mt-2 text-sm text-content-muted">
               Card orders appear here once Shopify marks them paid. If you paid with a different
@@ -215,10 +212,10 @@ export default function SwagClaimPage() {
                 return (
                   <li
                     key={order.id}
-                    className="flex flex-col gap-4 rounded-card border border-line-hairline bg-surface-slab p-4 sm:flex-row sm:items-center"
+                    className="flex flex-wrap items-center gap-4 rounded-card border border-line-hairline bg-surface-slab p-4 sm:flex-nowrap"
                   >
                     <OrderArt order={order} />
-                    <div className="min-w-0 flex-1">
+                    <div className="min-w-0 flex-1 basis-40">
                       <p className="truncate font-semibold text-content-primary">{order.product.nameEn}</p>
                       <p className="mt-0.5 font-mono text-xs text-content-muted">
                         {order.product.sku}
@@ -230,7 +227,7 @@ export default function SwagClaimPage() {
                       </p>
                       {error && <p className="mt-2 text-sm text-signal-reverted">{error}</p>}
                     </div>
-                    <Button onClick={() => claim(order)} disabled={Boolean(step)} className="sm:w-48">
+                    <Button onClick={() => claim(order)} disabled={Boolean(step)} className="w-full sm:w-48">
                       {step ? STEP_LABEL[step] : 'Claim'}
                       {!step && <ArrowRightIcon className="h-4 w-4" />}
                     </Button>
@@ -250,7 +247,7 @@ export default function SwagClaimPage() {
                 return (
                   <li
                     key={order.id}
-                    className="flex items-center gap-4 rounded-card border border-line-hairline bg-surface-slab p-4"
+                    className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-card border border-line-hairline bg-surface-slab p-4"
                   >
                     <OrderArt order={order} small />
                     <div className="min-w-0 flex-1">
@@ -286,7 +283,7 @@ export default function SwagClaimPage() {
 }
 
 function OrderArt({ order, small = false }: { order: SwagOrderView; small?: boolean }) {
-  const size = small ? 'h-12 w-12' : 'h-20 w-20';
+  const size = small ? 'h-12 w-12' : 'h-16 w-16';
   if (!order.product.imagePath) {
     return <div className={`${size} shrink-0 rounded-chip bg-surface-inset`} aria-hidden />;
   }

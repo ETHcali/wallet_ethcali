@@ -17,6 +17,10 @@ import { explorerTx, getChain } from '../../config/chains';
 import { useActiveWallet } from '../../hooks/useActiveWallet';
 import { useRequireChain } from '../../hooks/useRequireChain';
 import SwitchChainButton from '../shared/SwitchChainButton';
+import { RefreshIcon } from '../shared/icons';
+import { useTokenPrices } from '../../hooks/useTokenPrices';
+import { formatUsd } from '../../utils/money';
+import { formatTokenBalance } from '../../utils/tokenUtils';
 import { VaultType } from '../../types/faucet';
 
 interface FaucetClaimProps {
@@ -30,6 +34,7 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
   const { sendTransaction } = useSendTransaction();
   // The wallet is moved right before signing, never before reading.
   const chain = useRequireChain(chainId);
+  const { getPriceForToken } = useTokenPrices();
 
   const [isLoading, setIsLoading] = useState(true);
   const [isClaiming, setIsClaiming] = useState(false);
@@ -139,247 +144,179 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
     }
   };
 
-  const getVaultEligibilityStatus = (vault: ActiveVault) => {
-    if (isPaused) return { canClaim: false, code: 'PAUSED', message: 'Faucet is paused' };
-    if (!hasNFT) return { canClaim: false, code: 'NO_NFT', message: 'ZKPassport required' };
+  const getVaultEligibilityStatus = (vault: ActiveVault): { canClaim: boolean; message: string } => {
+    if (isPaused) return { canClaim: false, message: 'The faucet is paused right now.' };
+    if (!hasNFT) return { canClaim: false, message: 'Verify your identity first — this faucet is for verified people.' };
 
     const eligibility = vaultEligibility[vault.id];
-    if (eligibility) {
-      if (!eligibility.canClaim) {
-        const reason = eligibility.reason || 'Not eligible';
-        return { canClaim: false, code: reason.toUpperCase().replace(/\s+/g, '_'), message: reason };
-      }
+    if (eligibility && !eligibility.canClaim) {
+      return { canClaim: false, message: eligibility.reason || 'This wallet cannot claim from this vault.' };
     }
 
     const claimInfo = vaultClaimInfo[vault.id];
     if (claimInfo?.hasClaimed) {
-      return { canClaim: false, code: 'CLAIMED', message: 'Already claimed from this vault' };
+      return { canClaim: false, message: 'You already claimed from this vault.' };
     }
 
-    const vaultBalance = parseFloat(formatEther(vault.balance));
-    const claimAmount = parseFloat(formatEther(vault.claimAmount));
-    if (vaultBalance < claimAmount) {
-      return { canClaim: false, code: 'EMPTY', message: 'Vault balance insufficient' };
+    if (vault.balance < vault.claimAmount) {
+      return { canClaim: false, message: 'This vault is empty for now.' };
     }
 
-    return { canClaim: true, code: 'ELIGIBLE', message: 'Ready to claim' };
+    return { canClaim: true, message: 'You can claim.' };
+  };
+
+  /** ETH with its dollar value beside it. */
+  const ethLabel = (wei: bigint) => {
+    const eth = Number(formatEther(wei));
+    const price = getPriceForToken('ETH').price;
+    return { eth: formatTokenBalance(formatEther(wei), 4), usd: price > 0 ? formatUsd(eth * price, { cents: true }) : null };
   };
 
   if (isLoading) {
     return (
-      <div className="bg-black/60 border border-line-hairline rounded-control p-4">
-        <div className="flex items-center justify-center gap-3">
-          <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-content-primary font-mono text-[10px] tracking-wider">Loading…</span>
-        </div>
+      <div className="flex min-h-[96px] items-center justify-center gap-3 rounded-card border border-line-hairline bg-surface-slab text-sm text-content-muted">
+        <span className="h-4 w-4 animate-spin rounded-full border-2 border-eth-blue border-t-transparent" aria-hidden />
+        Loading the faucet…
       </div>
     );
   }
 
-  // No vaults created
   if (activeVaults.length === 0) {
     return (
-      <div className="bg-black/60 border border-line-hairline rounded-control p-4">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-3 h-3 bg-surface-ridge rounded-full"></div>
-          <h2 className="text-sm font-bold text-content-muted font-mono tracking-wide">NO_FAUCET</h2>
-        </div>
-        <div className="text-center py-6">
-          <div className="text-content-faint text-[10px] font-mono mb-2">
-            THERE IS NO FAUCET CREATED
-          </div>
-          <div className="text-content-faint text-[9px] font-mono">
-            • WAITING_FOR_ADMIN • NO_VAULTS_AVAILABLE
-          </div>
-        </div>
+      <div className="rounded-card border border-line-hairline bg-surface-slab px-5 py-8 text-center">
+        <p className="mb-0 text-[15px] font-semibold text-content-primary">No faucet open right now</p>
+        <p className="mx-auto mb-0 mt-1 max-w-sm text-sm text-content-muted">
+          When ETH Cali opens a vault for an event or a hackathon, you can claim a little ETH for gas here.
+        </p>
+        <Link
+          href="/wallet"
+          className="mt-5 inline-flex min-h-tap items-center justify-center rounded-control border border-line-strong px-5 text-sm font-semibold text-content-primary transition-colors hover:border-line-brand hover:text-eth-blue-text"
+        >
+          Back to wallet
+        </Link>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      {/* Status Bar */}
-      <div className="bg-black/60 border border-line-hairline rounded-control p-4">
-        <div className="flex items-center gap-2 mb-3">
-          <div className={`w-1.5 h-1.5 rounded-full ${isPaused ? 'bg-signal-reverted' : 'bg-signal-confirmed'}`}></div>
-          <span className="text-[10px] font-mono text-content-faint tracking-wider">
-            {isPaused ? 'PAUSED' : 'ACTIVE'}
-          </span>
-        </div>
+      {/* Requirements */}
+      <section className="rounded-card border border-line-hairline bg-surface-slab px-5 py-4" aria-label="Requirements">
+        <ul className="space-y-2 text-sm">
+          <li className="flex items-center gap-2">
+            <span className={`h-2 w-2 rounded-full ${hasNFT ? 'bg-signal-confirmed' : 'bg-surface-ridge'}`} aria-hidden />
+            <span className={hasNFT ? 'text-content-primary' : 'text-content-muted'}>
+              {hasNFT ? 'Identity verified' : 'Identity not verified yet'}
+            </span>
+            {!hasNFT && (
+              <Link href="/sybil" className="ml-auto inline-flex min-h-[44px] items-center font-semibold text-eth-blue-text hover:underline">
+                Verify
+              </Link>
+            )}
+          </li>
+          <li className="flex items-center gap-2">
+            <span className={`h-2 w-2 rounded-full ${!isPaused ? 'bg-signal-confirmed' : 'bg-signal-reverted'}`} aria-hidden />
+            <span className={!isPaused ? 'text-content-primary' : 'text-content-muted'}>
+              {isPaused ? 'Faucet paused' : 'Faucet open'}
+            </span>
+          </li>
+        </ul>
+      </section>
 
-        {/* Eligibility Checks - Minimal */}
-        <div className="space-y-1.5 text-[10px] font-mono">
-          <div className="flex items-center gap-2">
-            <div className={`w-1.5 h-1.5 rounded-full ${hasNFT ? 'bg-signal-confirmed' : 'bg-surface-ridge'}`}></div>
-            <span className={hasNFT ? 'text-signal-confirmed' : 'text-content-faint'}>ZKPassport</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className={`w-1.5 h-1.5 rounded-full ${!isPaused ? 'bg-signal-confirmed' : 'bg-surface-ridge'}`}></div>
-            <span className={!isPaused ? 'text-signal-confirmed' : 'text-content-faint'}>Faucet active</span>
-          </div>
-        </div>
-
-        {/* Get NFT Link */}
-        {!hasNFT && (
-          <Link
-            href={{ pathname: '/sybil', query: { chain: String(chainId) } }}
-            className="block mt-3 text-center text-[10px] text-eth-blue-text/70 hover:text-eth-blue-text font-mono transition-colors"
-          >
-            GET_ZKPassport →
-          </Link>
-        )}
-      </div>
-
-      {/* Vaults List */}
       {activeVaults.map((vault) => {
         const eligibility = getVaultEligibilityStatus(vault);
         const claimInfo = vaultClaimInfo[vault.id];
-        const claimAmount = formatEther(vault.claimAmount);
-        const vaultBalance = formatEther(vault.balance);
+        const claim = ethLabel(vault.claimAmount);
+        const left = ethLabel(vault.balance);
         const isReturnable = vault.vaultType === VaultType.Returnable;
         const explorerLink = txHash ? explorerTx(chainId, txHash) : undefined;
+        const claimingThis = isClaiming && claimingVaultId === vault.id;
 
         return (
-          <div key={vault.id} className="bg-black/60 border border-line-hairline rounded-control p-4 space-y-3">
-            {/* Vault Header */}
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="text-sm font-bold text-content-primary font-mono tracking-wide mb-1">
-                  {vault.name}
-                </h3>
-                {vault.description && (
-                  <p className="text-[9px] text-content-faint font-mono mb-2">{vault.description}</p>
+          <section key={vault.id} className="space-y-4 rounded-card border border-line-hairline bg-surface-slab p-5" aria-label={vault.name}>
+            <div>
+              <h2 className="text-lg font-bold leading-tight text-content-primary">{vault.name}</h2>
+              {vault.description && <p className="mb-0 mt-1 text-sm text-content-muted">{vault.description}</p>}
+              <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                <span className="rounded-chip bg-surface-inset px-2 py-0.5 text-content-secondary">
+                  {isReturnable ? 'Return it later' : 'Yours to keep'}
+                </span>
+                {vault.whitelistEnabled && (
+                  <span className="rounded-chip bg-surface-inset px-2 py-0.5 text-content-secondary">Invite list</span>
                 )}
-                <div className="flex gap-2 text-[9px] font-mono">
-                  <span className="px-2 py-0.5 rounded-chip bg-eth-blue/10 text-eth-blue-text border border-eth-blue/30">
-                    {isReturnable ? 'RETURNABLE' : 'NON-RETURNABLE'}
-                  </span>
-                  {vault.whitelistEnabled && (
-                    <span className="px-2 py-0.5 rounded-chip bg-signal-pending/10 text-signal-pending border border-signal-pending/30">
-                      WHITELIST
-                    </span>
-                  )}
-                </div>
               </div>
             </div>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 gap-2">
-              <div className="bg-black/40 rounded-chip p-3">
-                <p className="text-[9px] text-content-faint font-mono tracking-wider mb-1">CLAIM</p>
-                <p className="text-lg font-bold text-eth-blue-text font-mono">{parseFloat(claimAmount).toFixed(4)}</p>
-                <p className="text-[9px] text-content-faint font-mono">ETH</p>
+            <dl className="grid grid-cols-2 gap-2">
+              <div className="min-w-0 rounded-control bg-surface-inset px-3 py-2.5">
+                <dt className="text-xs text-content-muted">You get</dt>
+                <dd className="truncate font-mono text-lg tabular-nums text-content-primary">{claim.eth} ETH</dd>
+                <dd className="font-mono text-xs text-content-faint">{claim.usd ?? '—'}</dd>
               </div>
-              <div className="bg-black/40 rounded-chip p-3">
-                <p className="text-[9px] text-content-faint font-mono tracking-wider mb-1">VAULT</p>
-                <p className="text-lg font-bold text-eth-blue-text font-mono">{parseFloat(vaultBalance).toFixed(4)}</p>
-                <p className="text-[9px] text-content-faint font-mono">ETH</p>
+              <div className="min-w-0 rounded-control bg-surface-inset px-3 py-2.5">
+                <dt className="text-xs text-content-muted">Left in vault</dt>
+                <dd className="truncate font-mono text-lg tabular-nums text-content-primary">{left.eth} ETH</dd>
+                <dd className="font-mono text-xs text-content-faint">{left.usd ?? '—'}</dd>
               </div>
-            </div>
+            </dl>
 
-            {/* Claim Status */}
-            {claimInfo?.hasClaimed && (
-              <div className="p-2 bg-surface-slab/50 border border-line-hairline rounded-chip">
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="w-2 h-2 bg-surface-ridge rounded-full"></div>
-                  <span className="text-[10px] text-content-muted font-mono tracking-wider">CLAIMED</span>
-                </div>
-                <div className="text-[9px] font-mono text-content-faint">
-                  Amount: {claimInfo.claimedAmount} ETH
-                </div>
+            {claimInfo?.hasClaimed ? (
+              <p className="mb-0 rounded-control bg-surface-inset px-4 py-3 text-sm text-content-secondary">
+                Claimed <span className="font-mono">{claimInfo.claimedAmount} ETH</span>
                 {isReturnable && claimInfo.hasReturned && (
-                  <div className="text-[9px] font-mono text-content-faint mt-1">
-                    Returned: {claimInfo.returnedAmount} ETH
-                  </div>
+                  <>
+                    {' '}· returned <span className="font-mono">{claimInfo.returnedAmount} ETH</span>
+                  </>
                 )}
-              </div>
-            )}
-
-            {/* Status Message */}
-            {!claimInfo?.hasClaimed && (
-              <div className={`p-2 rounded-chip border ${
-                eligibility.canClaim
-                  ? 'bg-signal-confirmed/10 border-signal-confirmed/30'
-                  : 'bg-surface-slab/50 border-line-hairline'
-              }`}>
-                <p className={`font-mono text-[10px] tracking-wider ${
-                  eligibility.canClaim ? 'text-signal-confirmed' : 'text-content-faint'
-                }`}>
-                  STATUS: {eligibility.code}
-                </p>
-                {eligibility.message && (
-                  <p className="font-mono text-[9px] text-content-faint mt-1">{eligibility.message}</p>
-                )}
-              </div>
+              </p>
+            ) : (
+              !eligibility.canClaim && <p className="mb-0 text-sm text-content-muted">{eligibility.message}</p>
             )}
 
             {/* One primary action: switch first, then claim */}
-            {!claimInfo?.hasClaimed && eligibility.canClaim && !chain.ready && (
-              <SwitchChainButton chain={chain} />
-            )}
+            {!claimInfo?.hasClaimed && eligibility.canClaim && !chain.ready && <SwitchChainButton chain={chain} />}
 
             {!claimInfo?.hasClaimed && (eligibility.canClaim ? chain.ready : true) && (
               <button
+                type="button"
                 onClick={() => handleClaim(vault.id)}
                 disabled={!eligibility.canClaim || isClaiming}
-                className={`w-full min-h-tap rounded-chip font-mono font-bold text-sm transition-all ${
-                  eligibility.canClaim && !isClaiming
-                    ? 'bg-eth-blue hover:bg-eth-blue-lift text-on-brand'
-                    : 'bg-surface-slab/50 border border-line-hairline text-content-faint cursor-not-allowed'
-                }`}
+                className="flex min-h-tap w-full items-center justify-center gap-2 rounded-control bg-eth-blue px-5 text-[15px] font-semibold text-on-brand transition-colors hover:bg-eth-blue-lift disabled:cursor-not-allowed disabled:bg-surface-ridge disabled:text-content-faint"
               >
-                {isClaiming && claimingVaultId === vault.id ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <div className="w-3 h-3 border-2 border-signal-confirmed border-t-transparent rounded-full animate-spin"></div>
-                    CLAIMING...
-                  </span>
-                ) : (
-                  `CLAIM ${parseFloat(claimAmount).toFixed(4)} ETH →`
-                )}
+                {claimingThis && <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden />}
+                {claimingThis ? 'Claiming…' : `Claim ${claim.eth} ETH`}
               </button>
             )}
 
-            {/* Success for this vault */}
             {txHash && claimingVaultId === vault.id && (
-              <div className="p-2 bg-signal-confirmed/10 border border-signal-confirmed/30 rounded-chip">
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="w-2 h-2 bg-signal-confirmed rounded-full"></div>
-                  <span className="text-[10px] text-signal-confirmed font-mono tracking-wider">SUCCESS</span>
-                </div>
+              <p className="mb-0 rounded-control border border-signal-confirmed/30 bg-signal-confirmed/10 px-4 py-3 text-sm text-content-primary">
+                Claimed. The ETH is on its way.{' '}
                 {explorerLink ? (
-                  <a
-                    href={explorerLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[9px] text-content-faint hover:text-eth-blue-text font-mono"
-                  >
-                    tx: {txHash.slice(0, 10)}…{txHash.slice(-6)} →
+                  <a href={explorerLink} target="_blank" rel="noopener noreferrer" className="font-mono text-eth-blue-text hover:underline">
+                    {txHash.slice(0, 6)}…{txHash.slice(-4)} ↗
                   </a>
                 ) : (
-                  <span className="text-[9px] text-content-faint font-mono">tx: {txHash.slice(0, 10)}…{txHash.slice(-6)}</span>
+                  <span className="font-mono">{txHash.slice(0, 6)}…{txHash.slice(-4)}</span>
                 )}
-              </div>
+              </p>
             )}
-          </div>
+          </section>
         );
       })}
 
-      {/* Error */}
       {error && (
-        <div className="p-2 bg-signal-reverted/10 border border-signal-reverted/30 rounded-chip">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-signal-reverted rounded-full"></div>
-            <span className="text-[10px] text-signal-reverted font-mono tracking-wider">{error}</span>
-          </div>
-        </div>
+        <p role="alert" className="mb-0 rounded-control border border-signal-reverted/30 bg-signal-reverted/10 px-4 py-3 text-sm text-signal-reverted">
+          {error}
+        </p>
       )}
 
-      {/* Refresh */}
       <button
+        type="button"
         onClick={loadFaucetData}
-        className="w-full py-2 text-[10px] text-content-faint hover:text-content-muted font-mono bg-black/60 border border-line-hairline rounded-control"
+        className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-control text-sm font-medium text-content-muted transition-colors hover:text-content-primary"
       >
-        REFRESH
+        <RefreshIcon className="h-4 w-4" />
+        Refresh
       </button>
     </div>
   );

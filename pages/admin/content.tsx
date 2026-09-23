@@ -217,9 +217,46 @@ export default function ContentAdmin() {
         ) : rows.length === 0 ? (
           <p className="text-sm text-content-faint">Nothing here yet.</p>
         ) : (
-          // Wide tables scroll inside their own container; the page itself never
-          // scrolls sideways.
-          <div className="overflow-x-auto rounded-card border border-line-hairline">
+          <>
+          {/* Phone: one stacked row per record — the first column is the title. */}
+          <ul className="divide-y divide-line-hairline rounded-card border border-line-hairline bg-surface-slab md:hidden">
+            {rows.map((row) => {
+              const [head, ...rest] = columns;
+              return (
+                <li key={row.id} className="space-y-2 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="mb-0 min-w-0 truncate text-[15px] font-medium text-content-primary">{head ? cell(row, head) : row.id}</p>
+                    <button
+                      type="button"
+                      onClick={() => setEditing(row)}
+                      className="-mr-2 -mt-2 inline-flex min-h-[44px] shrink-0 items-center px-2 text-sm font-semibold text-eth-blue-text"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                  <dl className="space-y-1 text-sm">
+                    {rest.map((c) => (
+                      <div key={c.key} className="flex gap-3">
+                        <dt className="w-24 shrink-0 text-content-faint">{c.label}</dt>
+                        <dd className="min-w-0 truncate text-content-secondary" title={cell(row, c)}>
+                          {cell(row, c)}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <PublishToggle
+                    row={row}
+                    onToggle={(next) =>
+                      update.mutateAsync({ id: row.id, is_published: next } as Partial<Row> & { id: number })
+                    }
+                  />
+                </li>
+              );
+            })}
+          </ul>
+
+          {/* md and up: the table. */}
+          <div className="hidden overflow-x-auto rounded-card border border-line-hairline md:block">
             <table className="w-full min-w-[640px] text-left text-sm">
               <thead className="bg-surface-inset/60 text-[10px] uppercase tracking-wide text-content-faint">
                 <tr>
@@ -262,6 +299,7 @@ export default function ContentAdmin() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </AdminShell>
     </>
