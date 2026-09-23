@@ -271,17 +271,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const secret = process.env.SHOPIFY_WEBHOOK_SECRET;
+  // Two ways a subscription can exist, two signing keys. One created in the
+  // store admin (Settings → Notifications) is signed with the store's webhook
+  // signing secret; one created by the app (scripts/shopify-webhooks.mjs) is
+  // signed with the app's client secret. Accept whichever is configured, so a
+  // subscription made either way verifies — and nothing else does.
+  const secrets = [process.env.SHOPIFY_WEBHOOK_SECRET, process.env.SHOPIFY_CLIENT_SECRET].filter(
+    (s): s is string => Boolean(s)
+  );
   const storeDomain = process.env.SHOPIFY_STORE_DOMAIN?.toLowerCase();
-  if (!secret || !storeDomain) {
-    logger.error('[shopify/webhook] SHOPIFY_WEBHOOK_SECRET or SHOPIFY_STORE_DOMAIN is not set');
+  if (secrets.length === 0 || !storeDomain) {
+    logger.error('[shopify/webhook] no Shopify signing secret or SHOPIFY_STORE_DOMAIN is not set');
     return res.status(401).json({ error: 'Webhook not configured' });
   }
 
   const raw = await readRawBody(req);
 
   const provided = header(req, 'x-shopify-hmac-sha256');
-  if (!provided || !hmacMatches(raw, provided, secret)) {
+  if (!provided || !secrets.some((secret) => hmacMatches(raw, provided, secret))) {
     return res.status(401).json({ error: 'Invalid signature' });
   }
   if (header(req, 'x-shopify-shop-domain').toLowerCase() !== storeDomain) {
