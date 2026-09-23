@@ -55,7 +55,8 @@ export const SWAG_COLLECTION_BASE = {
 } as const;
 
 /** The Shopify store behind "Pay with card". COP, Stripe connected. */
-export const SWAG_SHOPIFY_STORE = 'qpsxyq-9g.myshopify.com';
+/** Customer-facing store host (Shopify primary domain). The Admin API still uses SHOPIFY_STORE_DOMAIN (the .myshopify.com host). */
+export const SWAG_SHOPIFY_STORE = 'store.ethcali.org';
 
 // =============================================================================
 // ENS CONFIGURATION

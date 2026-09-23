@@ -36,7 +36,8 @@ the caller is read from a request body.
 
 ## Flow 2 — card purchase (Shopify)
 
-1. Buyer pays on `qpsxyq-9g.myshopify.com`; Shopify sends `orders/paid` to
+1. Buyer pays on `store.ethcali.org` (Shopify's primary domain; the API host stays
+   `qpsxyq-9g.myshopify.com`); Shopify sends `orders/paid` to
    `POST /api/shopify/webhook`.
 2. Raw-body HMAC (`X-Shopify-Hmac-Sha256` against `SHOPIFY_WEBHOOK_SECRET` or
    `SHOPIFY_CLIENT_SECRET`, whichever is set, `timingSafeEqual`) and
