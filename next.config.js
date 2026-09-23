@@ -12,6 +12,12 @@ const nextConfig = {
         hostname: 'ethcali.org',
       },
       {
+        // The site's canonical host; ethcali.org 307s here, so product photos
+        // point at it directly and save one round trip each.
+        protocol: 'https',
+        hostname: 'www.ethcali.org',
+      },
+      {
         protocol: 'https',
         hostname: 'api.qrserver.com',
       },
