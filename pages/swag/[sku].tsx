@@ -267,13 +267,21 @@ export default function SwagProductPage({ meta }: ProductPageProps) {
 // Read with the anon key like the grid; unknown or inactive SKUs render the
 // page's own not-found state (a 200 with a way back, refreshed every minute).
 
+// Every active design is prerendered at build under its lowercase SKU — the
+// canonical URL the site and the grid link to. fallback: false on purpose: an
+// on-demand render of a page that imports Privy answered 500 on Vercel's
+// runtime (Privy loaded as an external ES module tripped over
+// styled-components' CommonJS exports), and a prerendered page never touches
+// that path. Uppercase or mixed-case requests are lowercased by proxy.ts at
+// the edge. Adding a design therefore needs a redeploy, which the catalogue
+// sync already implies.
 export const getStaticPaths: GetStaticPaths = async () => {
-  if (!supabase) return { paths: [], fallback: 'blocking' };
+  if (!supabase) return { paths: [], fallback: false };
   const { data } = await supabase.from('swag_products').select('sku').eq('active', true);
   const paths = ((data ?? []) as Array<{ sku: string }>).map((row) => ({
     params: { sku: row.sku.toLowerCase() },
   }));
-  return { paths, fallback: 'blocking' };
+  return { paths, fallback: false };
 };
 
 export const getStaticProps: GetStaticProps<ProductPageProps> = async ({ params }) => {
