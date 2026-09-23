@@ -115,7 +115,7 @@ export default function SwagStorePage() {
         )}
 
         <p className="mt-10 text-center font-mono text-[10px] uppercase tracking-wide text-content-faint">
-          Base · USDC · ETHCALI-SWAG-2026
+          Base · USDC · ETH Cali Swag 2026
         </p>
       </main>
 
