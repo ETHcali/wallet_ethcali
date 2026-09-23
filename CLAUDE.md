@@ -140,6 +140,18 @@ Each domain (faucet, swag) has:
   `CRON_SECRET`), which shares `fetchTrm`/`copPrice`/`repriceDesign` in `lib/shopify.mjs` with
   `scripts/shopify-sync.mjs --prices-only`. Operations runbook: `docs/SWAG_ORDERS.md § Operations`.
 
+## Rendering gotcha: no on-demand server render of a page that imports Privy
+
+On Vercel's runtime Privy is loaded as an external ES module and its
+`import { styled } from 'styled-components'` (CommonJS) is rejected by Node, so any
+page that imports Privy and is rendered at request time — `getStaticPaths` with
+`fallback: 'blocking'`, `getServerSideProps` — answers 500, while the same page
+prerendered at build works. `transpilePackages: ['@privy-io/react-auth']` breaks the
+build under Turbopack. Rule: pages that import Privy are prerendered (`fallback: false`
+with every path listed); URL normalisation (lowercasing `/swag/<sku>`) happens in
+`proxy.ts` at the edge, which imports nothing from the app. Product URLs are lowercase
+everywhere; the SKU value stays uppercase on chain and in Supabase.
+
 ## Branding
 
 The visual system is `@ethcali/design-tokens` (github.com/ETHcali/design-tokens, pinned to
