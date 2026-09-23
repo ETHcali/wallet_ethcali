@@ -88,6 +88,68 @@ annotate (`partial_refund=<n>`).
 `swag_orders_guard_status` refuses everything else, including `paid → delivered`
 and any move out of `cancelled`.
 
+## Operations (`/swag/admin`)
+
+The order desk is `app.ethcali.org/swag/admin`. The menu shows it to a wallet
+that `isAdmin()` on the collection says yes for; every call behind it is checked
+again — `pages/api/swag/admin/*` by `lib/swag/requireSwagAdmin.ts` (Privy token
+→ linked wallets → `isAdmin()` on the collection on Base), and every onchain
+button by the contract itself. Nothing on the page grants anything.
+
+| Route | What it does |
+|---|---|
+| `GET /api/swag/admin/orders?status=&channel=&q=&cursor=` | every order, newest first, 50 per page, address and email included; `q` matches SKU, email or wallet |
+| `PATCH /api/swag/admin/orders/[id]` `{ status?, tracking?, notes? }` | status through the transition trigger (refusal → 409 with its sentence); `tracking` stored in `shipping.tracking`; `notes` replaced |
+| `GET /api/swag/admin/summary` | counts by status and channel, `getVariant` + USDC price per live token, `paused`, `treasury`, and the voucher-cancel queue with `orderClaimed(orderRef)` per row |
+
+**Ship a parcel.** Orders → the row → *Shipping address* to see where it goes →
+**Mark shipped**, paste the carrier reference if there is one, **Confirm shipped**.
+When it arrives, **Mark delivered**. The trigger refuses `paid → delivered`, so a
+row cannot skip the shipped step.
+
+**Cancel an order.** **Cancel order** on a `paid` or `shipped` row closes the
+fulfilment record. It does not move money: a card refund is issued in Shopify
+(and the `refunds/create` webhook would have cancelled the row itself); a USDC
+refund is a transfer from the treasury Safe.
+
+**Cancel a voucher on chain.** A row tagged *Voucher needs cancel* is a refunded
+card order whose voucher was issued and never redeemed — the buyer could still
+mint. **Cancel voucher on chain** sends `cancelOrder(orderRef)` from your wallet
+(ADMIN_ROLE, Base, sponsored); after the receipt the page writes
+`voucher_cancelled_tx=<hash>` to notes and the row leaves the queue. The summary
+tile counts the queue by the chain's answer (`orderClaimed`), not by the note, so
+a voucher cancelled from a Safe or a script still drops off. `VoucherAlreadyClaimed`
+means it was already claimed or already cancelled; check `claim_tx_hash`.
+
+**Change stock or price.** Stock → the token → edit *On-chain cap*, *Voucher cap*,
+*On sale* → **Save caps** (`setVariant`). The button explains a refusal before you
+sign: a cap cannot go below what is already minted, and both caps cannot be zero.
+**Set price** calls `setPaymentOption(tokenId, USDC, parseUnits(price, 6))`; the
+catalogue's `price_usd` is shown beside it when the two disagree. The USDC price
+is what `buy()` charges; the catalogue price is what the daily job turns into
+pesos for the card channel — keep them equal.
+
+**Pause.** Collection → **Pause store** / **Unpause store** (ADMIN_ROLE). Paused,
+`buy()` and `claim()` revert `EnforcedPause`.
+
+**Roles.** Collection shows which of ADMIN_ROLE, DEFAULT_ADMIN_ROLE and
+SIGNER_ROLE the connected wallet holds. Add/remove admin and add/remove signer
+are DEFAULT_ADMIN calls: the buttons say so and stay disabled unless the Safe is
+the connected wallet. Rotating the voucher signer: grant the new address
+SIGNER_ROLE, swap `SWAG_VOUCHER_SIGNER_KEY` on Vercel, then revoke the old one.
+`setTreasury` is deliberately not in the UI.
+
+**Re-price the card channel.** `pages/api/cron/swag-prices.ts` runs daily at
+12:00 UTC (`vercel.json`), gated by `Authorization: Bearer $CRON_SECRET`. For
+every active design with a Shopify product it computes
+`round(price_usd × TRM / 1000) × 1000` and pushes it with one
+`productVariantsBulkUpdate` per design, then writes `price_cop` and
+`price_synced_at` on `swag_shopify_variants`. By hand:
+`node --env-file=.env scripts/shopify-sync.mjs --prices-only` does the same from
+the catalogue file; both call `repriceDesign()` in `lib/shopify.mjs`. A variant
+whose `price_synced_at` is older than a day was skipped or failed — the cron's
+JSON response lists the reason per design in the Vercel function log.
+
 ## Register the webhook in Shopify
 
 Shopify admin → **Settings → Notifications → Webhooks** (or the app's
@@ -117,3 +179,5 @@ in the Vercel function log.
 | `SWAG_VOUCHER_SIGNER_KEY` | **new** — the signer's private key; address must hold `SIGNER_ROLE` |
 | `SWAG_COLLECTION_ADDRESS` | optional; defaults to `0xA5C02Ee3029Ce7f0FdD147734D11905E3cA99479` |
 | `NEXT_PUBLIC_BASE_RPC_URL` | optional; the server reads receipts through it |
+| `CRON_SECRET` | **new** — bearer token Vercel sends to `/api/cron/swag-prices`; the route refuses everything when unset |
+| `SHOPIFY_CLIENT_ID`, `SHOPIFY_CLIENT_SECRET`, `SHOPIFY_API_VERSION` | the cron exchanges them for an Admin API token to push prices |

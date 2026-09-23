@@ -133,3 +133,103 @@ export interface ClaimConfirmResponse {
   orderId: number;
   claimTxHash: string;
 }
+
+// ── Admin (pages/api/swag/admin/*, behind requireSwagAdmin) ─────────────────
+
+/**
+ * Notes are a small key=value log the webhook and the admin UI both append
+ * to. These two keys drive the voucher-cancel queue: the refund webhook writes
+ * the first, the admin page writes the second after cancelOrder() confirms.
+ */
+export const NOTE_VOUCHER_NEEDS_CANCEL = 'voucher_needs_cancel=true';
+export const NOTE_VOUCHER_CANCELLED_TX = 'voucher_cancelled_tx=';
+
+/**
+ * shipping as stored: what the buyer or Shopify gave us, plus the tracking
+ * reference an operator adds when the parcel leaves. Partial because a Shopify
+ * address can arrive with fields missing and the row is still worth shipping.
+ */
+export type SwagAdminShipping = Partial<SwagShipping> & { tracking?: string };
+
+/** A row as an operator sees it. The address and email are here on purpose. */
+export interface SwagAdminOrderView {
+  id: number;
+  channel: SwagOrderChannel;
+  status: SwagOrderStatus;
+  quantity: number;
+  size: SwagSize | null;
+  tokenId: number;
+  product: { sku: string; nameEs: string; nameEn: string };
+  buyer: { wallet: string | null; email: string | null };
+  shipping: SwagAdminShipping;
+  txHash: string | null;
+  claimTxHash: string | null;
+  orderRef: `0x${string}`;
+  shopifyOrderId: string | null;
+  voucherIssued: boolean;
+  /** Refunded with a live voucher and no cancelOrder() recorded yet. */
+  voucherNeedsCancel: boolean;
+  /** The cancelOrder() transaction, once the admin page has recorded it. */
+  voucherCancelledTx: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** GET /api/swag/admin/orders?status=&channel=&q=&cursor= — pages of 50, newest first. */
+export interface SwagAdminOrdersResponse {
+  orders: SwagAdminOrderView[];
+  /** Pass back as ?cursor= for the next page; null on the last one. */
+  nextCursor: number | null;
+}
+
+/** PATCH /api/swag/admin/orders/[id] */
+export interface SwagAdminOrderPatchBody {
+  /** Goes through the swag_orders_guard_status trigger; a refused move is a 409. */
+  status?: Extract<SwagOrderStatus, 'shipped' | 'delivered' | 'cancelled'>;
+  /** Stored as shipping.tracking. Empty string removes it. */
+  tracking?: string;
+  /** Replaces notes. Send the existing text plus the new line to append. */
+  notes?: string;
+}
+
+export interface SwagAdminOrderPatchResponse {
+  order: SwagAdminOrderView;
+}
+
+/** getVariant(id) plus the USDC price, bigints as decimal strings. */
+export interface SwagAdminTokenStock {
+  tokenId: number;
+  onchainCap: string;
+  onchainMinted: string;
+  voucherCap: string;
+  voucherMinted: string;
+  active: boolean;
+  /** USDC base units (6 decimals); "0" when no USDC price is set. */
+  priceUsdc: string;
+}
+
+/** GET /api/swag/admin/summary */
+export interface SwagAdminSummary {
+  counts: {
+    byStatus: Record<SwagOrderStatus, number>;
+    byChannel: Record<SwagOrderChannel, number>;
+    total: number;
+  };
+  collection: {
+    address: `0x${string}`;
+    chainId: number;
+    paused: boolean;
+    treasury: `0x${string}`;
+    stock: SwagAdminTokenStock[];
+  };
+  /** Orders still flagged voucher_needs_cancel=true, with the chain's own answer. */
+  voucherCancelQueue: Array<{
+    id: number;
+    orderRef: `0x${string}`;
+    buyerEmail: string | null;
+    tokenId: number;
+    /** orderClaimed(orderRef) on the collection — true once claim() or cancelOrder() ran. */
+    closedOnChain: boolean;
+  }>;
+}

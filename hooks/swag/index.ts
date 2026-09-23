@@ -21,6 +21,24 @@ export type { SwagLocale } from './useSwagLocale';
 export { translateSwagError, describeBlockedReason, formatUsdc } from './swagErrors';
 export { SWAG, swagClient, swagKeys } from './client';
 
+// Admin surface (/swag/admin)
+export {
+  useSwagAdminOrders,
+  usePatchSwagOrder,
+  useSwagAdminSummary,
+  useSwagStock,
+  useSwagCollectionState,
+  useSwagAdminTx,
+  looksLikeAddressInput,
+  resolveAddressInput,
+} from './useSwagAdmin';
+export type {
+  AdminOrderFilters,
+  SwagTokenStock,
+  SwagCollectionState,
+  SwagAdminTxResult,
+} from './useSwagAdmin';
+
 // Artwork pipeline (admin)
 export {
   useSwagArtwork,

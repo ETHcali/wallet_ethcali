@@ -59,4 +59,9 @@ export const swagKeys = {
   usdcBalance: (owner?: string) => ['swag-usdc-balance', owner?.toLowerCase()] as const,
   myBalances: (owner?: string) => ['swag-my-balances', owner?.toLowerCase()] as const,
   orders: (owner?: string) => ['swag-orders', owner?.toLowerCase()] as const,
+  // Admin surface (/swag/admin)
+  adminOrders: (filters: string) => ['swag-admin-orders', filters] as const,
+  adminSummary: ['swag-admin-summary'] as const,
+  adminStock: (tokenIds: readonly number[]) => ['swag-admin-stock', tokenIds.join(',')] as const,
+  adminRoles: (account?: string) => ['swag-admin-roles', account?.toLowerCase()] as const,
 };

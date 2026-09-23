@@ -12,8 +12,16 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getSwagCollection, SWAG_CHAIN_ID } from './onchain';
 import {
+  NOTE_VOUCHER_CANCELLED_TX,
+  NOTE_VOUCHER_NEEDS_CANCEL,
   SWAG_SIZES,
+  type SwagAdminOrderPatchBody,
+  type SwagAdminOrderView,
+  type SwagAdminOrdersResponse,
+  type SwagAdminShipping,
+  type SwagOrderChannel,
   type SwagOrderRow,
+  type SwagOrderStatus,
   type SwagOrderView,
   type SwagShipping,
   type SwagSize,
@@ -321,4 +329,228 @@ export async function insertOrder(db: SupabaseClient, row: NewSwagOrder): Promis
 export function appendNote(existing: string | null, line: string): string {
   if (!existing) return line;
   return existing.includes(line) ? existing : `${existing}\n${line}`;
+}
+
+// ── Admin ───────────────────────────────────────────────────────────────────
+//
+// Everything below is reached only through requireSwagAdmin. It returns the
+// full row — address, email, notes — because the person calling it is the one
+// packing the parcel.
+
+/** The cancelOrder() hash the admin page recorded, if any. */
+export function voucherCancelledTx(notes: string | null): string | null {
+  if (!notes) return null;
+  const match = notes.match(new RegExp(`${NOTE_VOUCHER_CANCELLED_TX}(0x[0-9a-fA-F]{64})`));
+  return match ? match[1].toLowerCase() : null;
+}
+
+/** Flagged by the refund webhook and not yet closed on chain from this UI. */
+export function needsVoucherCancel(row: Pick<SwagOrderRow, 'notes' | 'claim_tx_hash'>): boolean {
+  return (
+    row.claim_tx_hash === null &&
+    Boolean(row.notes?.includes(NOTE_VOUCHER_NEEDS_CANCEL)) &&
+    voucherCancelledTx(row.notes) === null
+  );
+}
+
+export function toAdminOrderView(row: OrderJoined): SwagAdminOrderView {
+  return {
+    id: row.id,
+    channel: row.channel,
+    status: row.status,
+    quantity: row.quantity,
+    size: row.size,
+    tokenId: row.variant.token_id,
+    product: { sku: row.product.sku, nameEs: row.product.name_es, nameEn: row.product.name_en },
+    buyer: { wallet: row.buyer_wallet, email: row.buyer_email },
+    shipping: (row.shipping ?? {}) as SwagAdminShipping,
+    txHash: row.tx_hash,
+    claimTxHash: row.claim_tx_hash,
+    orderRef: row.order_ref,
+    shopifyOrderId: row.shopify_order_id,
+    voucherIssued: row.voucher !== null,
+    voucherNeedsCancel: needsVoucherCancel(row),
+    voucherCancelledTx: voucherCancelledTx(row.notes),
+    notes: row.notes,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export const ADMIN_PAGE_SIZE = 50;
+
+const ORDER_STATUSES: readonly SwagOrderStatus[] = ['paid', 'shipped', 'delivered', 'cancelled'];
+const ORDER_CHANNELS: readonly SwagOrderChannel[] = ['onchain', 'shopify', 'event'];
+
+/**
+ * A search term that is safe to put inside a PostgREST `or=()` filter. No
+ * commas, parentheses or quotes — those are the filter grammar — and no
+ * whitespace. `_` stays a single-character wildcard, which is harmless here.
+ */
+const SEARCH_TERM = /^[A-Za-z0-9@.+_-]{1,80}$/;
+
+export interface AdminOrderFilters {
+  status?: SwagOrderStatus;
+  channel?: SwagOrderChannel;
+  /** Matched against the design SKU, the buyer email and the buyer wallet. */
+  q?: string;
+  /** The smallest id already shown; the next page is everything older. */
+  cursor?: number;
+}
+
+/** Query-string values → typed filters, or a 400 for anything off the menu. */
+export function parseAdminOrderFilters(query: Record<string, string | string[] | undefined>): AdminOrderFilters {
+  const one = (key: string) => {
+    const v = query[key];
+    const s = Array.isArray(v) ? v[0] : v;
+    return s === undefined || s === '' ? undefined : s;
+  };
+  const filters: AdminOrderFilters = {};
+
+  const status = one('status');
+  if (status !== undefined) {
+    if (!(ORDER_STATUSES as readonly string[]).includes(status)) {
+      throw new OrderError(`status must be one of ${ORDER_STATUSES.join(', ')}`, 400);
+    }
+    filters.status = status as SwagOrderStatus;
+  }
+
+  const channel = one('channel');
+  if (channel !== undefined) {
+    if (!(ORDER_CHANNELS as readonly string[]).includes(channel)) {
+      throw new OrderError(`channel must be one of ${ORDER_CHANNELS.join(', ')}`, 400);
+    }
+    filters.channel = channel as SwagOrderChannel;
+  }
+
+  const q = one('q')?.trim();
+  if (q) {
+    if (!SEARCH_TERM.test(q)) throw new OrderError('q may only contain letters, digits, @ . + _ -', 400);
+    filters.q = q;
+  }
+
+  const cursor = one('cursor');
+  if (cursor !== undefined) {
+    const n = Number(cursor);
+    if (!Number.isInteger(n) || n <= 0) throw new OrderError('cursor must be a positive integer', 400);
+    filters.cursor = n;
+  }
+
+  return filters;
+}
+
+/** Every order, newest first, ADMIN_PAGE_SIZE at a time, with an id cursor. */
+export async function listAdminOrders(
+  db: SupabaseClient,
+  filters: AdminOrderFilters
+): Promise<SwagAdminOrdersResponse> {
+  let query = db.from('swag_orders').select(ORDER_SELECT).order('id', { ascending: false }).limit(ADMIN_PAGE_SIZE + 1);
+
+  if (filters.status) query = query.eq('status', filters.status);
+  if (filters.channel) query = query.eq('channel', filters.channel);
+  if (filters.cursor) query = query.lt('id', filters.cursor);
+
+  if (filters.q) {
+    // The SKU lives on the design, and PostgREST cannot OR a parent column
+    // with an embedded one, so resolve matching designs to ids first.
+    const { data: products, error: productError } = await db
+      .from('swag_products')
+      .select('id')
+      .ilike('sku', `%${filters.q}%`);
+    if (productError) throw new OrderError(productError.message, 500);
+    const ids = (products ?? []).map((p) => p.id as number);
+
+    const clauses = [`buyer_email.ilike.*${filters.q}*`, `buyer_wallet.ilike.*${filters.q}*`];
+    if (ids.length > 0) clauses.push(`product_id.in.(${ids.join(',')})`);
+    query = query.or(clauses.join(','));
+  }
+
+  const { data, error } = await query;
+  if (error) throw new OrderError(error.message, 500);
+
+  const rows = (data ?? []) as unknown as OrderJoined[];
+  const page = rows.slice(0, ADMIN_PAGE_SIZE);
+  const nextCursor = rows.length > ADMIN_PAGE_SIZE ? page[page.length - 1].id : null;
+  return { orders: page.map(toAdminOrderView), nextCursor };
+}
+
+const PATCHABLE_STATUSES = ['shipped', 'delivered', 'cancelled'] as const;
+
+/** Body → validated patch. Nothing else in the body is read. */
+export function parseAdminOrderPatch(raw: unknown): SwagAdminOrderPatchBody {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new OrderError('A JSON body is required', 400);
+  const r = raw as Record<string, unknown>;
+  const patch: SwagAdminOrderPatchBody = {};
+
+  if (r.status !== undefined) {
+    if (typeof r.status !== 'string' || !(PATCHABLE_STATUSES as readonly string[]).includes(r.status)) {
+      throw new OrderError(`status must be one of ${PATCHABLE_STATUSES.join(', ')}`, 400);
+    }
+    patch.status = r.status as SwagAdminOrderPatchBody['status'];
+  }
+  if (r.tracking !== undefined) {
+    if (typeof r.tracking !== 'string') throw new OrderError('tracking must be a string', 400);
+    const tracking = clean(r.tracking);
+    if (tracking.length > 120) throw new OrderError('tracking is too long', 400);
+    patch.tracking = tracking;
+  }
+  if (r.notes !== undefined) {
+    if (typeof r.notes !== 'string') throw new OrderError('notes must be a string', 400);
+    if (r.notes.length > 4000) throw new OrderError('notes is too long', 400);
+    // Newlines stay: notes is a line-per-entry log.
+    // eslint-disable-next-line no-control-regex
+    patch.notes = r.notes.replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, '').trim();
+  }
+  if (Object.keys(patch).length === 0) throw new OrderError('Nothing to update', 400);
+  return patch;
+}
+
+/**
+ * Apply an operator's change. Status goes through the database trigger and
+ * its refusal comes back as a 409 with the trigger's own sentence; tracking is
+ * merged into the shipping block rather than replacing it.
+ */
+export async function patchAdminOrder(
+  db: SupabaseClient,
+  id: number,
+  patch: SwagAdminOrderPatchBody
+): Promise<OrderJoined> {
+  const existing = await getOrderById(db, id);
+  if (!existing) throw new OrderError('No such order', 404);
+
+  const update: Partial<Pick<SwagOrderRow, 'status' | 'shipping' | 'notes'>> = {};
+  if (patch.status !== undefined) update.status = patch.status;
+  if (patch.notes !== undefined) update.notes = patch.notes || null;
+  if (patch.status === 'cancelled' && existing.voucher && !existing.claim_tx_hash) {
+    // Same rule as the refund webhook: a cancelled order with a live voucher
+    // joins the on-chain cancel queue, whoever cancelled it.
+    update.notes = appendNote(update.notes ?? existing.notes, NOTE_VOUCHER_NEEDS_CANCEL);
+  }
+  if (patch.tracking !== undefined) {
+    const shipping: SwagAdminShipping = { ...(existing.shipping as SwagAdminShipping) };
+    if (patch.tracking) shipping.tracking = patch.tracking;
+    else delete shipping.tracking;
+    update.shipping = shipping as SwagShipping;
+  }
+
+  const { data, error } = await db.from('swag_orders').update(update).eq('id', id).select(ORDER_SELECT).single();
+  if (error) {
+    // 23514 is check_violation — the errcode swag_orders_guard_status raises
+    // with. Its message names the refused move; that is the sentence to show.
+    throw new OrderError(error.message, error.code === '23514' ? 409 : 500);
+  }
+  return data as unknown as OrderJoined;
+}
+
+/** The voucher-cancel queue: cancelled rows the webhook flagged and nobody has closed. */
+export async function listVoucherCancelQueue(db: SupabaseClient): Promise<OrderJoined[]> {
+  const { data, error } = await db
+    .from('swag_orders')
+    .select(ORDER_SELECT)
+    .eq('status', 'cancelled')
+    .is('claim_tx_hash', null)
+    .ilike('notes', `%${NOTE_VOUCHER_NEEDS_CANCEL}%`)
+    .order('id', { ascending: false });
+  if (error) throw new OrderError(error.message, 500);
+  return ((data ?? []) as unknown as OrderJoined[]).filter(needsVoucherCancel);
 }

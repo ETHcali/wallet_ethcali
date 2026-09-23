@@ -17,7 +17,10 @@
  * Price rule: COP = round(USD × TRM, nearest 1,000). The TRM is the
  * Superintendencia Financiera rate from datos.gov.co, the same dataset and the
  * same query the app serves at /api/fx/trm. Not an exchange mid-price: the TRM
- * is the rate a Colombian tax document has to use.
+ * is the rate a Colombian tax document has to use. The rule and the Shopify
+ * price mutation live in lib/shopify.mjs (fetchTrm, copPrice, repriceDesign),
+ * shared with pages/api/cron/swag-prices.ts, which does --prices-only daily
+ * from Supabase instead of from this file.
  *
  * Inventory is set ABSOLUTELY (on_hand = voucherCap) at the store's primary
  * location via inventorySetQuantities, never by delta, so a re-run converges
@@ -31,7 +34,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { gql } from '../lib/shopify.mjs';
+import { copPrice, fetchTrm, fmtCop, gql, repriceDesign } from '../lib/shopify.mjs';
 
 // ---------------------------------------------------------------- arguments
 
@@ -48,7 +51,6 @@ const IMAGE_BASE = 'https://ethcali.org/swags/';
 const VENDOR = 'ETH Cali';
 const COLLECTION_TAG = 'swag-2026';
 const OPTION_NAME = 'Talla';
-const TRM_DATASET = 'https://www.datos.gov.co/resource/32sa-8pi3.json';
 
 // ---------------------------------------------------------------- catalogue
 
@@ -63,36 +65,6 @@ const designs = catalogue.products.flatMap((p) => p.variants);
 function save() {
   fs.writeFileSync(CATALOGUE, JSON.stringify(catalogue, null, 2) + '\n');
 }
-
-// ---------------------------------------------------------------- TRM
-
-/**
- * Latest published TRM. Mirrors fetchTrm() in pages/api/fx/trm.ts (no date):
- * newest row by vigenciadesde. The rate carries a validity range; we print it
- * so the number on a price can be traced to the window it came from.
- */
-async function fetchTrm() {
-  const res = await fetch(`${TRM_DATASET}?$limit=1&$order=vigenciadesde%20DESC`, {
-    headers: { Accept: 'application/json' },
-  });
-  if (!res.ok) throw new Error(`datos.gov.co responded ${res.status}`);
-  const [row] = await res.json();
-  if (!row) throw new Error('no TRM rows returned');
-  const rate = Number(row.valor);
-  if (!Number.isFinite(rate) || rate <= 0) throw new Error(`unusable TRM value "${row.valor}"`);
-  return { rate, validFrom: row.vigenciadesde.slice(0, 10), validTo: row.vigenciahasta.slice(0, 10) };
-}
-
-/** COP price = USD × TRM rounded to the nearest 1,000 COP. */
-function copPrice(usd, trm) {
-  const n = Number(usd);
-  if (!Number.isFinite(n) || n <= 0) throw new Error(`bad USD price "${usd}"`);
-  const cop = Math.round((n * trm) / 1000) * 1000;
-  if (!Number.isFinite(cop) || cop <= 0) throw new Error(`bad COP price from USD ${usd} × TRM ${trm}`);
-  return cop;
-}
-
-const fmtCop = (n) => `COP ${n.toLocaleString('en-US')}`;
 
 // ---------------------------------------------------------------- plan
 
@@ -263,23 +235,6 @@ const SET_ON_HAND = /* GraphQL */ `
   }
 `;
 
-const UPDATE_PRICES = /* GraphQL */ `
-  mutation SwagUpdatePrices($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
-    productVariantsBulkUpdate(productId: $productId, variants: $variants) {
-      productVariants {
-        id
-        sku
-        price
-      }
-      userErrors {
-        field
-        message
-        code
-      }
-    }
-  }
-`;
-
 // ---------------------------------------------------------------- sync
 
 /** Current on_hand per inventory item at one location; 0 when not stocked there yet. */
@@ -392,7 +347,7 @@ async function fullSync(design, plan, locationId) {
   );
 }
 
-async function pricesOnly(design, plan) {
+async function pricesOnly(design, plan, trmRate) {
   const s = design.shopify;
   if (!s?.productId || !s.variants?.length) {
     console.warn(`SKIP ${plan.designSku}: no shopify block in catalogue — run a full sync first`);
@@ -404,19 +359,27 @@ async function pricesOnly(design, plan) {
     console.warn(`SKIP ${plan.designSku}: SKUs not in catalogue shopify block: ${missing.join(', ')}`);
     return false;
   }
-  const unchanged = plan.variants.every((v) => bySku.get(v.sku).priceCop === v.priceCop);
-  if (unchanged) {
-    console.log(`unchanged ${s.handle} @ ${fmtCop(plan.priceCop)}`);
+  const result = await repriceDesign(
+    {
+      designSku: plan.designSku,
+      productId: s.productId,
+      priceUsd: design.prices.USDC,
+      variants: plan.variants.map((v) => ({
+        sku: v.sku,
+        variantId: bySku.get(v.sku).variantId,
+        priceCop: bySku.get(v.sku).priceCop ?? null,
+      })),
+    },
+    trmRate
+  );
+  if (!result.changed) {
+    console.log(`unchanged ${s.handle} @ ${fmtCop(result.priceCop)}`);
     return true;
   }
-  await gql(UPDATE_PRICES, {
-    productId: s.productId,
-    variants: plan.variants.map((v) => ({ id: bySku.get(v.sku).variantId, price: String(v.priceCop) })),
-  });
-  for (const v of plan.variants) bySku.get(v.sku).priceCop = v.priceCop;
+  for (const v of plan.variants) bySku.get(v.sku).priceCop = result.priceCop;
   s.syncedAt = new Date().toISOString();
   save();
-  console.log(`repriced ${s.handle}: ${fmtCop(bySku.get(plan.variants[0].sku).priceCop)} → ${fmtCop(plan.priceCop)}`);
+  console.log(`repriced ${s.handle}: ${result.from === null ? 'unset' : fmtCop(result.from)} → ${fmtCop(result.priceCop)}`);
   return true;
 }
 
@@ -476,7 +439,7 @@ if (PRICES_ONLY) {
   for (const p of plans) {
     const design = designs.find((d) => d.designSku === p.designSku);
     try {
-      if (!(await pricesOnly(design, p))) failures++;
+      if (!(await pricesOnly(design, p, trm.rate))) failures++;
     } catch (e) {
       failures++;
       console.error(`FAIL ${p.designSku}: ${e.message}`);

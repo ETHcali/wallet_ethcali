@@ -102,6 +102,14 @@ Each domain (faucet, swag) has:
   Do not reintroduce hooks for them.
 - Swag UI never reads a global chain selector. `hooks/useRequireChain.ts` gives `{ ready, switching, switchTo }`
   and the only chain UI is the "Switch to Base" primary button shown right before signing.
+- **Admin surface is `/swag/admin`** (Orders · Stock · Collection; `components/swag/Admin*.tsx`,
+  `hooks/swag/useSwagAdmin.ts`). Its API lives under `pages/api/swag/admin/*` behind
+  `lib/swag/requireSwagAdmin.ts` — same three steps as `lib/adminAuth.ts` but the authority is
+  `isAdmin()` on the **swag collection on Base**, not the Celo vault. Onchain writes go through
+  `useSwagAdminTx` (one instance per button: `submitting` + `cooldown`, cleared in `finally`).
+  Card prices are re-pushed daily by `pages/api/cron/swag-prices.ts` (Vercel cron 12:00 UTC,
+  `CRON_SECRET`), which shares `fetchTrm`/`copPrice`/`repriceDesign` in `lib/shopify.mjs` with
+  `scripts/shopify-sync.mjs --prices-only`. Operations runbook: `docs/SWAG_ORDERS.md § Operations`.
 
 ## Branding
 

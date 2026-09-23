@@ -83,6 +83,27 @@ const CONTRACT_ERRORS: Partial<Record<SwagErrorName, (args: readonly unknown[]) 
     es: 'Esta billetera no tiene permiso para hacer eso.',
     en: 'This wallet is not authorised to do that.',
   }),
+  // Admin-only reverts, surfaced on /swag/admin.
+  CapBelowMinted: () => ({
+    es: 'El tope no puede quedar por debajo de lo ya acuñado.',
+    en: 'A cap cannot go below what has already been minted.',
+  }),
+  EmptyVariant: () => ({
+    es: 'Un diseño necesita al menos un tope mayor que cero.',
+    en: 'A design needs at least one cap above zero.',
+  }),
+  ZeroPrice: () => ({
+    es: 'El precio tiene que ser mayor que cero.',
+    en: 'The price has to be above zero.',
+  }),
+  ExpectedPause: () => ({
+    es: 'La tienda no está en pausa.',
+    en: 'The store is not paused.',
+  }),
+  InvalidTreasury: () => ({
+    es: 'La tesorería no puede ser la dirección cero.',
+    en: 'The treasury cannot be the zero address.',
+  }),
   ReentrancyGuardReentrantCall: () => ({
     es: 'La transacción se rechazó. Intenta de nuevo.',
     en: 'The transaction was rejected. Please try again.',

@@ -75,7 +75,10 @@ wallet_ethcali/
 │   │   ├── SwagCheckoutModal.tsx # Connect → Switch to Base → Approve → Buy, then shipping
 │   │   ├── ShippingForm.tsx      # POST /api/swag/orders after a confirmed buy
 │   │   ├── HashChip.tsx          # 0x55C9…711d with copy + Basescan link
-│   │   └── AdminManagement.tsx
+│   │   ├── AdminPrimitives.tsx   # TxButton (two flags), ChainGate, AddressForm
+│   │   ├── AdminOrders.tsx       # /swag/admin › Orders: ship, deliver, cancel, cancel voucher on chain
+│   │   ├── AdminStock.tsx        # /swag/admin › Stock: setVariant caps, setPaymentOption
+│   │   └── AdminCollection.tsx   # /swag/admin › Collection: pause, treasury, roles
 │   ├── ens/             # ENS integration
 │   │   └── ENSSection.tsx
 │   └── Navigation.tsx   # Main navigation
@@ -102,7 +105,6 @@ wallet_ethcali/
 │   ├── ens/            # ENS hooks
 │   ├── useActiveWallet.ts
 │   ├── useRequireChain.ts        # { ready, switching, switchTo } for a chain-pinned feature
-│   ├── useContractAdmin.ts
 │   ├── useFaucetAdmin.ts
 │   ├── useTokenBalances.ts
 │   ├── useTokenPrices.ts

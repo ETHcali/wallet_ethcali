@@ -5,10 +5,17 @@
     {
       "path": "/api/indexer/sync",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/swag-prices",
+      "schedule": "0 12 * * *"
     }
   ],
   "functions": {
     "pages/api/indexer/sync.ts": {
+      "maxDuration": 60
+    },
+    "pages/api/cron/swag-prices.ts": {
       "maxDuration": 60
     }
   }
