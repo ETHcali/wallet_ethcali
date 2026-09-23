@@ -2,16 +2,17 @@ import { useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import AdminShell from '../../components/admin/AdminShell';
+import ChainPicker from '../../components/shared/ChainPicker';
 import {
   useActiveCampaigns,
   useCampaignTotals,
   useDonationAddresses,
   useDonationAdmin,
-  useDeployedDonationChains,
+  DONATION_CHAINS,
   useDisplayCurrency,
 } from '../../hooks/donations';
-import { useAdminStatus } from '../../hooks/useAdminStatus';
-import { CHAIN_IDS, EXPLORER_URLS, NETWORK_NAMES, type ChainId } from '../../config/constants';
+import { useAdminRoles } from '../../hooks/useAdminStatus';
+import { CHAIN_IDS, explorerAddress, getChain } from '../../config/chains';
 import type { Campaign } from '../../types/donations';
 
 /** One headline number. Never renders a raw base unit — callers format first. */
@@ -98,18 +99,14 @@ function CampaignSummary({ campaign, chainId }: { campaign: Campaign; chainId: n
 }
 
 export default function AdminOverviewPage() {
-  const deployedChains = useDeployedDonationChains();
-  const [chainId, setChainId] = useState<number>(
-    deployedChains[0]?.chainId ?? CHAIN_IDS.CELO
-  );
+  const [chainId, setChainId] = useState<number>(DONATION_CHAINS[0]?.id ?? CHAIN_IDS.CELO);
 
   const { vault, receiptCollection, isDeployed, tokens } = useDonationAddresses(chainId);
   const { data: campaigns = [], isLoading } = useActiveCampaigns(chainId);
   const { isPaused, isSuperAdmin } = useDonationAdmin(chainId);
-  const { isSwagAdmin, isFaucetAdmin, isFaucetSuperAdmin, isZKPassportOwner } =
-    useAdminStatus(chainId);
-
-  const explorer = EXPLORER_URLS[chainId as ChainId];
+  // Other areas are linked when the wallet holds the role on ANY chain that
+  // contract is deployed on; each area picks its own chain once inside.
+  const { isSwagAdmin, isFaucetAdmin, isFaucetSuperAdmin, isZKPassportOwner } = useAdminRoles();
 
   const otherAreas = [
     { href: '/faucet/admin', label: 'Faucet', shown: isFaucetAdmin || isFaucetSuperAdmin },
@@ -122,36 +119,18 @@ export default function AdminOverviewPage() {
       active="overview"
       title="Overview"
       subtitle="Live contract state. Every number here is read from the chain, not from the index."
-      chainId={chainId}
     >
       <Head>
         <title>Admin · ETH Cali</title>
       </Head>
 
-      {deployedChains.length > 1 && (
-        <div className="mb-6 flex flex-wrap gap-2">
-          {deployedChains.map((chain) => (
-            <button
-              key={chain.chainId}
-              type="button"
-              onClick={() => setChainId(chain.chainId)}
-              className={`min-h-tap rounded-control border px-4 text-sm font-semibold transition-colors ${
-                chain.chainId === chainId
-                  ? 'border-eth-blue bg-eth-blue/15 text-eth-blue-text'
-                  : 'border-line-hairline bg-surface-inset text-content-secondary hover:border-line-strong'
-              }`}
-            >
-              {chain.name}
-            </button>
-          ))}
-        </div>
-      )}
+      <ChainPicker chains={DONATION_CHAINS} value={chainId} onChange={setChainId} className="mb-6" />
 
       {!isDeployed ? (
         <div className="rounded-card border border-line-hairline bg-surface-inset/50 p-6 text-center sm:p-8">
           <h2 className="mb-2 text-lg font-bold text-content-primary">Nothing deployed here</h2>
           <p className="text-sm text-content-muted">
-            No DonationVault on {NETWORK_NAMES[chainId as ChainId] ?? 'this network'}.
+            No DonationVault on {getChain(chainId)?.name ?? 'this network'}.
           </p>
         </div>
       ) : (
@@ -230,7 +209,7 @@ export default function AdminOverviewPage() {
                   >
                     <span className="text-content-muted">{label}</span>
                     <a
-                      href={`${explorer}/address/${address}`}
+                      href={explorerAddress(chainId, address)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="truncate font-mono text-eth-blue-text hover:underline"

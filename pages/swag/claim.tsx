@@ -173,7 +173,7 @@ export default function SwagClaimPage() {
 
   return (
     <div className="min-h-screen bg-surface-void">
-      <Navigation currentChainId={BASE} />
+      <Navigation />
       <Layout>
         <div className="mb-8">
           <p className="mb-1 font-mono text-xs font-semibold uppercase tracking-widest text-eth-blue-text">

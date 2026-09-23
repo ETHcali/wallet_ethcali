@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { usePrivy, useWallets } from '@privy-io/react-auth';
+import { usePrivy } from '@privy-io/react-auth';
 import Layout from '../components/shared/Layout';
 import Navigation from '../components/Navigation';
 import ENSSection from '../components/ens/ENSSection';
-import { CHAIN_IDS, EXPLORER_URLS } from '../config/constants';
+import { CHAINS, explorerAddress } from '../config/chains';
+import { useActiveWallet } from '../hooks/useActiveWallet';
 
 /**
  * Every state renders inside the same dark shell. The previous version bailed
@@ -56,14 +57,25 @@ function AddressRow({ address }: { address: string }) {
         >
           {copied ? 'Copied' : 'Copy address'}
         </button>
-        <a
-          href={`${EXPLORER_URLS[CHAIN_IDS.BASE]}/address/${address}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex min-h-[40px] items-center rounded-control border border-line-hairline bg-surface-inset px-3 text-xs font-semibold text-content-secondary transition-colors hover:border-eth-blue hover:text-eth-blue-text"
-        >
-          View on explorer ↗
-        </a>
+      </div>
+
+      {/* Same address on every chain, so one link per explorer rather than
+          always Basescan. */}
+      <div className="mt-3">
+        <span className="text-xs text-content-muted">View on explorer</span>
+        <div className="mt-1 flex flex-wrap gap-2">
+          {CHAINS.map((chain) => (
+            <a
+              key={chain.id}
+              href={explorerAddress(chain.id, address)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-[36px] items-center rounded-chip border border-line-hairline bg-surface-inset px-3 font-mono text-xs text-content-secondary transition-colors hover:border-eth-blue hover:text-eth-blue-text"
+            >
+              {chain.name} ↗
+            </a>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -71,8 +83,7 @@ function AddressRow({ address }: { address: string }) {
 
 export default function ProfilePage() {
   const { user, ready, authenticated, login } = usePrivy();
-  const { wallets } = useWallets();
-  const wallet = wallets?.[0];
+  const { wallet } = useActiveWallet();
 
   // Get user's login method info
   const getUserLoginInfo = () => {

@@ -10,10 +10,10 @@
 import { useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSendTransaction } from '@privy-io/react-auth';
-import { createPublicClient, encodeFunctionData, http } from 'viem';
-import { base } from 'viem/chains';
+import { encodeFunctionData } from 'viem';
 import L2RegistrarABI from '../../frontend/abis/l2registar.json';
-import { ENS_CONFIG, CHAIN_IDS, getRpcUrl } from '../../config/constants';
+import { ENS_CONFIG } from '../../config/constants';
+import { CHAIN_IDS, publicClientFor } from '../../config/chains';
 import { logger } from '../../utils/logger';
 
 export type MintPhase = 'idle' | 'submitting' | 'confirming' | 'confirmed' | 'failed';
@@ -60,10 +60,7 @@ export function useENSMint() {
         setHash(txHash);
         setPhase('confirming');
 
-        const client = createPublicClient({
-          chain: base,
-          transport: http(getRpcUrl(CHAIN_IDS.BASE)),
-        });
+        const client = publicClientFor(CHAIN_IDS.BASE);
         const receipt = await client.waitForTransactionReceipt({ hash: txHash });
         if (receipt.status !== 'success') {
           throw new Error('reverted');

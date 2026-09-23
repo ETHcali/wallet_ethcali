@@ -14,11 +14,10 @@
  */
 import { useCallback, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { createPublicClient, http, encodeFunctionData } from 'viem';
+import { encodeFunctionData } from 'viem';
 import { useSendTransaction } from '@privy-io/react-auth';
 import DonationVaultABI from '../../frontend/abis/DonationVault.json';
-import { getRpcUrl, type ChainId } from '../../config/constants';
-import { useDonationAddresses } from './useDonationAddresses';
+import { donationClient, useDonationAddresses } from './useDonationAddresses';
 import { parseDonationError } from '../../utils/donationErrors';
 import type { DonationToken } from '../../types/donations';
 import { logger } from '../../utils/logger';
@@ -60,10 +59,6 @@ const ERC20_ABI = [
   },
 ] as const;
 
-function client(chainId: number) {
-  return createPublicClient({ transport: http(getRpcUrl(chainId as ChainId)) });
-}
-
 /** Current ERC-20 allowance from the donor to the vault. Native tokens skip this. */
 export function useDonationAllowance(
   token: DonationToken | null,
@@ -77,7 +72,7 @@ export function useDonationAllowance(
     queryFn: async (): Promise<bigint> => {
       if (!vault || !token || token.isNative || !owner) return 0n;
 
-      return (await client(resolvedChainId).readContract({
+      return (await donationClient(resolvedChainId).readContract({
         address: token.address as `0x${string}`,
         abi: ERC20_ABI,
         functionName: 'allowance',
@@ -101,7 +96,7 @@ export function useDonorBalance(
     queryKey: ['donation-balance', resolvedChainId, token?.address, owner],
     queryFn: async (): Promise<bigint> => {
       if (!token || !owner) return 0n;
-      const publicClient = client(resolvedChainId);
+      const publicClient = donationClient(resolvedChainId);
 
       if (token.isNative) {
         return publicClient.getBalance({ address: owner as `0x${string}` });

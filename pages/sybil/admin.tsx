@@ -1,24 +1,51 @@
 import { useState } from 'react';
 import { useWallets } from '@privy-io/react-auth';
 import AdminShell from '../../components/admin/AdminShell';
+import ChainPicker from '../../components/shared/ChainPicker';
+import SwitchChainButton from '../../components/shared/SwitchChainButton';
 import { ZKPassportMetadataAdmin } from '../../components/zkpassport/ZKPassportMetadataAdmin';
-import { useSwagAddresses } from '../../utils/network';
+import { explorerAddress } from '../../config/chains';
+import { useChainQuery } from '../../hooks/useChainQuery';
+import { useRequireChain } from '../../hooks/useRequireChain';
 import { useZKPassportAdmin, useZKPassportContractSettings } from '../../hooks/useZKPassportAdmin';
 
 type AdminTab = 'metadata' | 'ownership' | 'settings' | 'holders';
 
 export default function IdentityAdminPage() {
-  const { chainId, zkpassport, explorerUrl } = useSwagAddresses();
+  // This page picks its chain from the chains ZKPassportNFT is deployed on,
+  // remembered in `?chain=`. Every read and write below is on that chain.
+  const { chainId, chain: chainInfo, chains, setChainId } = useChainQuery('identity');
+  const zkpassport = chainInfo.contracts.ZKPassportNFT;
+  const chain = useRequireChain(chainId);
+
   const { ready } = useWallets();
-  const { isOwner, owner, isLoading: isCheckingOwner, walletAddress } = useZKPassportAdmin();
-  const { setVerifier, setDomain, setScope } = useZKPassportContractSettings();
+  const { isOwner, owner, isLoading: isCheckingOwner, walletAddress } = useZKPassportAdmin(chainId);
+  const { setVerifier, setDomain, setScope } = useZKPassportContractSettings(chainId);
   const [activeTab, setActiveTab] = useState<AdminTab>('metadata');
   const [settingsInput, setSettingsInput] = useState({ verifier: '', domain: '', scope: '' });
   const [settingsTxStatus, setSettingsTxStatus] = useState<string | null>(null);
+  /** Which settings write is in flight, so each SET button owns its own pending state. */
+  const [pendingSetting, setPendingSetting] = useState<'verifier' | 'domain' | 'scope' | null>(null);
+
+  const picker = <ChainPicker chains={chains} value={chainId} onChange={setChainId} className="mb-6" />;
+
+  const runSetting = async (key: 'verifier' | 'domain' | 'scope', fn: () => Promise<unknown>) => {
+    setPendingSetting(key);
+    setSettingsTxStatus('pending...');
+    try {
+      await fn();
+      setSettingsTxStatus('✓ done');
+    } catch (e) {
+      setSettingsTxStatus(`error: ${e instanceof Error ? e.message : 'unknown'}`);
+    } finally {
+      setPendingSetting(null);
+    }
+  };
 
   if (!ready || isCheckingOwner) {
     return (
-      <AdminShell active="identity" title="Identity" chainId={chainId}>
+      <AdminShell active="identity" title="Identity">
+          {picker}
           <div className="flex items-center justify-center py-20">
             <div className="w-3 h-3 border-2 border-eth-blue border-t-transparent rounded-full animate-spin" />
             <span className="ml-3 text-eth-blue-text font-mono text-[10px] tracking-wider">VERIFYING...</span>
@@ -29,17 +56,18 @@ export default function IdentityAdminPage() {
 
   if (!isOwner) {
     return (
-      <AdminShell active="identity" title="Identity" chainId={chainId}>
+      <AdminShell active="identity" title="Identity">
+          {picker}
           <div className="flex flex-col items-center justify-center py-20">
             <div className="bg-black/60 border border-signal-reverted/30 rounded-control p-4 max-w-sm">
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-2 h-2 bg-signal-reverted rounded-full"></div>
-                <span className="text-[10px] text-signal-reverted font-mono tracking-wider">Access denied</span>
+                <span className="text-[10px] text-signal-reverted font-mono tracking-wider">Access denied on {chainInfo.name}</span>
               </div>
               <div className="space-y-2 text-[10px] font-mono">
-                <p className="text-content-faint">contract: <span className="text-content-faint">{zkpassport?.slice(0, 10)}...</span></p>
-                <p className="text-content-faint">owner: <span className="text-eth-blue-text">{owner?.slice(0, 10)}...</span></p>
-                <p className="text-content-faint">wallet: <span className="text-content-faint">{walletAddress?.slice(0, 10)}...</span></p>
+                <p className="text-content-faint">contract: <span className="text-content-faint">{zkpassport?.slice(0, 10)}…</span></p>
+                <p className="text-content-faint">owner: <span className="text-eth-blue-text">{owner?.slice(0, 10)}…</span></p>
+                <p className="text-content-faint">wallet: <span className="text-content-faint">{walletAddress?.slice(0, 10)}…</span></p>
               </div>
             </div>
           </div>
@@ -48,14 +76,26 @@ export default function IdentityAdminPage() {
   }
 
   return (
-    <AdminShell active="identity" title="Identity" chainId={chainId}>
+    <AdminShell active="identity" title="Identity">
+        {picker}
+
+        {/* Reads work from anywhere; the wallet only has to be here to sign. */}
+        {!chain.ready && (
+          <div className="mb-6 max-w-sm">
+            <p className="mb-2 text-xs text-content-muted">
+              Reads come from {chain.chainName}; to sign anything below your wallet has to be there too.
+            </p>
+            <SwitchChainButton chain={chain} />
+          </div>
+        )}
+
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-[9px] text-eth-blue-text font-mono bg-eth-blue/10 px-2 py-0.5 rounded-chip">OWNER</span>
           </div>
           <p className="text-content-faint font-mono text-[10px] tracking-widest uppercase">
-            ZKPassport_NFT • METADATA_CONTROL
+            ZKPassport_NFT • {chainInfo.name} • METADATA_CONTROL
           </p>
         </div>
 
@@ -63,25 +103,29 @@ export default function IdentityAdminPage() {
         <div className="grid grid-cols-2 gap-2 mb-6">
           <div className="bg-black/60 border border-line-hairline rounded-chip p-3">
             <p className="text-[9px] text-content-faint font-mono tracking-wider mb-1">CONTRACT</p>
-            <a
-              href={`${explorerUrl}/address/${zkpassport}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs font-mono text-eth-blue-text hover:text-eth-blue-text"
-            >
-              {zkpassport?.slice(0, 8)}...{zkpassport?.slice(-6)}
-            </a>
+            {zkpassport && (
+              <a
+                href={explorerAddress(chainId, zkpassport)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-mono text-eth-blue-text hover:text-eth-blue-text"
+              >
+                {zkpassport.slice(0, 8)}…{zkpassport.slice(-6)}
+              </a>
+            )}
           </div>
           <div className="bg-black/60 border border-line-hairline rounded-chip p-3">
             <p className="text-[9px] text-content-faint font-mono tracking-wider mb-1">OWNER</p>
-            <a
-              href={`${explorerUrl}/address/${owner}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs font-mono text-eth-blue-text hover:text-eth-blue-text"
-            >
-              {owner?.slice(0, 8)}...{owner?.slice(-6)}
-            </a>
+            {owner && (
+              <a
+                href={explorerAddress(chainId, owner)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-mono text-eth-blue-text hover:text-eth-blue-text"
+              >
+                {owner.slice(0, 8)}…{owner.slice(-6)}
+              </a>
+            )}
           </div>
         </div>
 
@@ -118,7 +162,7 @@ export default function IdentityAdminPage() {
         {/* Tab Content */}
         <div className="space-y-4">
           {activeTab === 'metadata' && (
-            <ZKPassportMetadataAdmin />
+            <ZKPassportMetadataAdmin chainId={chainId} />
           )}
 
           {activeTab === 'ownership' && (
@@ -181,14 +225,11 @@ export default function IdentityAdminPage() {
                         className="flex-1 bg-black/40 border border-line-hairline rounded-chip px-3 py-2 text-[10px] font-mono text-content-secondary placeholder-content-faint focus:border-eth-blue/50 focus:outline-none"
                       />
                       <button
-                        onClick={async () => {
-                          setSettingsTxStatus('pending...');
-                          try { await setVerifier(settingsInput.verifier); setSettingsTxStatus('✓ done'); }
-                          catch (e) { setSettingsTxStatus(`error: ${e instanceof Error ? e.message : 'unknown'}`); }
-                        }}
-                        className="px-3 py-2 bg-eth-blue/20 text-eth-blue-text border border-eth-blue/40 rounded-chip text-[10px] font-mono hover:bg-eth-blue/30"
+                        onClick={() => runSetting('verifier', () => setVerifier(settingsInput.verifier))}
+                        disabled={pendingSetting !== null || !chain.ready}
+                        className="px-3 py-2 bg-eth-blue/20 text-eth-blue-text border border-eth-blue/40 rounded-chip text-[10px] font-mono hover:bg-eth-blue/30 disabled:opacity-50"
                       >
-                        SET
+                        {pendingSetting === 'verifier' ? 'SETTING…' : 'SET'}
                       </button>
                     </div>
                   </div>
@@ -205,14 +246,11 @@ export default function IdentityAdminPage() {
                         className="flex-1 bg-black/40 border border-line-hairline rounded-chip px-3 py-2 text-[10px] font-mono text-content-secondary placeholder-content-faint focus:border-eth-blue/50 focus:outline-none"
                       />
                       <button
-                        onClick={async () => {
-                          setSettingsTxStatus('pending...');
-                          try { await setDomain(settingsInput.domain); setSettingsTxStatus('✓ done'); }
-                          catch (e) { setSettingsTxStatus(`error: ${e instanceof Error ? e.message : 'unknown'}`); }
-                        }}
-                        className="px-3 py-2 bg-eth-blue/20 text-eth-blue-text border border-eth-blue/40 rounded-chip text-[10px] font-mono hover:bg-eth-blue/30"
+                        onClick={() => runSetting('domain', () => setDomain(settingsInput.domain))}
+                        disabled={pendingSetting !== null || !chain.ready}
+                        className="px-3 py-2 bg-eth-blue/20 text-eth-blue-text border border-eth-blue/40 rounded-chip text-[10px] font-mono hover:bg-eth-blue/30 disabled:opacity-50"
                       >
-                        SET
+                        {pendingSetting === 'domain' ? 'SETTING…' : 'SET'}
                       </button>
                     </div>
                   </div>
@@ -229,14 +267,11 @@ export default function IdentityAdminPage() {
                         className="flex-1 bg-black/40 border border-line-hairline rounded-chip px-3 py-2 text-[10px] font-mono text-content-secondary placeholder-content-faint focus:border-eth-blue/50 focus:outline-none"
                       />
                       <button
-                        onClick={async () => {
-                          setSettingsTxStatus('pending...');
-                          try { await setScope(settingsInput.scope); setSettingsTxStatus('✓ done'); }
-                          catch (e) { setSettingsTxStatus(`error: ${e instanceof Error ? e.message : 'unknown'}`); }
-                        }}
-                        className="px-3 py-2 bg-eth-blue/20 text-eth-blue-text border border-eth-blue/40 rounded-chip text-[10px] font-mono hover:bg-eth-blue/30"
+                        onClick={() => runSetting('scope', () => setScope(settingsInput.scope))}
+                        disabled={pendingSetting !== null || !chain.ready}
+                        className="px-3 py-2 bg-eth-blue/20 text-eth-blue-text border border-eth-blue/40 rounded-chip text-[10px] font-mono hover:bg-eth-blue/30 disabled:opacity-50"
                       >
-                        SET
+                        {pendingSetting === 'scope' ? 'SETTING…' : 'SET'}
                       </button>
                     </div>
                   </div>
@@ -258,27 +293,31 @@ export default function IdentityAdminPage() {
                 <p className="text-[10px] text-content-faint font-mono mb-3">
                   View all NFTMinted events on the block explorer for this contract.
                 </p>
-                <a
-                  href={`${explorerUrl}/address/${zkpassport}#events`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block px-3 py-2 bg-eth-blue/20 text-eth-blue-text border border-eth-blue/40 rounded-chip text-[10px] font-mono hover:bg-eth-blue/30"
-                >
-                  VIEW NFTMINTED EVENTS →
-                </a>
+                {zkpassport && (
+                  <a
+                    href={`${explorerAddress(chainId, zkpassport)}#events`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block px-3 py-2 bg-eth-blue/20 text-eth-blue-text border border-eth-blue/40 rounded-chip text-[10px] font-mono hover:bg-eth-blue/30"
+                  >
+                    VIEW NFTMINTED EVENTS →
+                  </a>
+                )}
               </div>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="mt-6 pt-4 border-t border-line-hairline">
-          <div className="flex gap-2 text-[9px] font-mono text-content-faint">
-            <a href={`${explorerUrl}/address/${zkpassport}`} target="_blank" rel="noopener noreferrer" className="hover:text-eth-blue-text">
-              VIEW_CONTRACT →
-            </a>
+        {zkpassport && (
+          <div className="mt-6 pt-4 border-t border-line-hairline">
+            <div className="flex gap-2 text-[9px] font-mono text-content-faint">
+              <a href={explorerAddress(chainId, zkpassport)} target="_blank" rel="noopener noreferrer" className="hover:text-eth-blue-text">
+                VIEW_CONTRACT →
+              </a>
+            </div>
           </div>
-        </div>
+        )}
       </AdminShell>
   );
 }

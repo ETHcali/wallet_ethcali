@@ -1,26 +1,24 @@
-import { useState, useEffect } from 'react';
-import { usePrivy, useWallets } from '@privy-io/react-auth';
+import { useEffect } from 'react';
+import { usePrivy } from '@privy-io/react-auth';
 import { useRouter } from 'next/router';
 import Layout from '../../components/shared/Layout';
 import Loading from '../../components/shared/Loading';
 import Navigation from '../../components/Navigation';
+import ChainPicker from '../../components/shared/ChainPicker';
 import SybilVerification from '../../components/sybil/SybilVerification';
 import NFTCard from '../../components/sybil/NFTCard';
-import { getNetworkName, getAddressExplorerUrl, getContractAddresses } from '../../utils/contracts';
+import { explorerAddress } from '../../config/chains';
+import { useChainQuery } from '../../hooks/useChainQuery';
 import { useZKPassportNFT } from '../../hooks/useZKPassportNFT';
 
 export default function SybilPage() {
   const router = useRouter();
   const { ready, authenticated } = usePrivy();
-  const { wallets: _wallets } = useWallets();
-  const [currentChainId, setCurrentChainId] = useState(8453);
-  const [_verificationStatus, setVerificationStatus] = useState<'idle' | 'verified' | 'minting' | 'minted' | 'failed' | 'rejected' | 'duplicate'>('idle');
-  const [_uniqueIdentifier, setUniqueIdentifier] = useState<string | null>(null);
-  const [_isOver18, setIsOver18] = useState(false);
-  const [_nationality, setNationality] = useState<string | null>(null);
+  // Identity owns its chain: picked from the chains ZKPassportNFT is deployed
+  // on, remembered in `?chain=`; the wallet moves only when the mint is signed.
+  const { chainId, chain, chains, setChainId } = useChainQuery('identity');
+  const zkpassport = chain.contracts.ZKPassportNFT;
 
-    const addresses = getContractAddresses(currentChainId);
-  
   // Get NFT data - simple hook like swag page
   const {
     alreadyHasNFT,
@@ -29,7 +27,7 @@ export default function SybilPage() {
     tokenData,
     nftMetadata,
     refreshNFTData,
-  } = useZKPassportNFT(currentChainId);
+  } = useZKPassportNFT(chainId);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -54,10 +52,7 @@ export default function SybilPage() {
 
   return (
     <div className="min-h-screen bg-surface-void">
-      <Navigation 
-        currentChainId={currentChainId}
-        onChainChange={setCurrentChainId}
-      />
+      <Navigation />
       <Layout>
         <div className="space-y-4">
           {/* Header */}
@@ -69,14 +64,16 @@ export default function SybilPage() {
               </h1>
             </div>
             <p className="text-content-faint font-mono text-[10px] tracking-widest uppercase">
-              ZK • {getNetworkName(currentChainId)} • SOULBOUND
+              ZK • {chain.name} • SOULBOUND
             </p>
           </div>
+
+          <ChainPicker chains={chains} value={chainId} onChange={setChainId} />
 
           {/* NFT Card Section */}
           <section className="mb-6">
             <NFTCard
-              chainId={currentChainId}
+              chainId={chainId}
               alreadyHasNFT={alreadyHasNFT}
               isLoading={isNFTLoading}
               tokenId={tokenId}
@@ -86,18 +83,10 @@ export default function SybilPage() {
             />
           </section>
 
-          {/* Verification Component */}
+          {/* Verification Component — remounts per chain so a proof never crosses chains */}
           <SybilVerification
-            key={currentChainId}
-            chainId={currentChainId}
-            onVerificationStatusChange={(status, data) => {
-              setVerificationStatus(status);
-              if (data) {
-                setUniqueIdentifier(data.uniqueIdentifier || null);
-                setIsOver18(data.isOver18 || false);
-                setNationality(data.nationality || null);
-              }
-            }}
+            key={chainId}
+            chainId={chainId}
             onMintSuccess={() => {
               setTimeout(() => refreshNFTData(), 2000);
             }}
@@ -119,16 +108,18 @@ export default function SybilPage() {
           </div>
 
           {/* Contract Link */}
-          <div className="text-[10px] font-mono text-content-faint pt-1 border-t border-line-hairline">
-            <a
-              href={getAddressExplorerUrl(currentChainId, addresses.ZKPassportNFT)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-content-faint hover:text-eth-blue-text transition-colors"
-            >
-              contract: {addresses.ZKPassportNFT.slice(0, 8)}...{addresses.ZKPassportNFT.slice(-6)}
-            </a>
-          </div>
+          {zkpassport && (
+            <div className="text-[10px] font-mono text-content-faint pt-1 border-t border-line-hairline">
+              <a
+                href={explorerAddress(chainId, zkpassport)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-content-faint hover:text-eth-blue-text transition-colors"
+              >
+                contract: {zkpassport.slice(0, 8)}…{zkpassport.slice(-6)}
+              </a>
+            </div>
+          )}
         </div>
       </Layout>
     </div>

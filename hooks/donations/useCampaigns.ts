@@ -6,20 +6,14 @@
  * balance.
  */
 import { useQuery } from '@tanstack/react-query';
-import { createPublicClient, http } from 'viem';
 import DonationVaultABI from '../../frontend/abis/DonationVault.json';
-import { getRpcUrl, type ChainId } from '../../config/constants';
-import { useDonationAddresses } from './useDonationAddresses';
+import { donationClient, useDonationAddresses } from './useDonationAddresses';
 import type {
   Campaign,
   CampaignTokenTotal,
   DonationTier,
   DonationToken,
 } from '../../types/donations';
-
-function client(chainId: number) {
-  return createPublicClient({ transport: http(getRpcUrl(chainId as ChainId)) });
-}
 
 interface RawCampaign {
   name: string;
@@ -57,7 +51,7 @@ export function useActiveCampaigns(chainId?: number) {
     queryFn: async (): Promise<Campaign[]> => {
       if (!vault) return [];
 
-      const [ids, campaigns] = (await client(resolvedChainId).readContract({
+      const [ids, campaigns] = (await donationClient(resolvedChainId).readContract({
         address: vault as `0x${string}`,
         abi: DonationVaultABI,
         functionName: 'getActiveCampaigns',
@@ -78,7 +72,7 @@ export function useCampaign(campaignId: number | null, chainId?: number) {
     queryFn: async (): Promise<Campaign | null> => {
       if (!vault || campaignId === null) return null;
 
-      const raw = (await client(resolvedChainId).readContract({
+      const raw = (await donationClient(resolvedChainId).readContract({
         address: vault as `0x${string}`,
         abi: DonationVaultABI,
         functionName: 'getCampaign',
@@ -108,7 +102,7 @@ export function useCampaignTotals(campaignId: number | null, chainId?: number) {
     queryFn: async (): Promise<CampaignTokenTotal[]> => {
       if (!vault || campaignId === null) return [];
 
-      const [addresses, raised, available] = (await client(resolvedChainId).readContract({
+      const [addresses, raised, available] = (await donationClient(resolvedChainId).readContract({
         address: vault as `0x${string}`,
         abi: DonationVaultABI,
         functionName: 'getCampaignTotals',
@@ -157,7 +151,7 @@ export function useCampaignTiers(
     queryFn: async (): Promise<DonationTier[]> => {
       if (!vault || campaignId === null || !tokenAddress) return [];
 
-      const tiers = (await client(resolvedChainId).readContract({
+      const tiers = (await donationClient(resolvedChainId).readContract({
         address: vault as `0x${string}`,
         abi: DonationVaultABI,
         functionName: 'getTiers',
@@ -199,7 +193,7 @@ export function useResolveTier(
     queryFn: async (): Promise<number | null> => {
       if (!vault || campaignId === null || !tokenAddress || amount <= 0n) return null;
 
-      const [found, receiptTokenId] = (await client(resolvedChainId).readContract({
+      const [found, receiptTokenId] = (await donationClient(resolvedChainId).readContract({
         address: vault as `0x${string}`,
         abi: DonationVaultABI,
         functionName: 'resolveTier',
@@ -240,7 +234,7 @@ export function useCanDonate(
         return { allowed: false, reason: 'Donations are not available yet' };
       }
 
-      const [allowed, reason] = (await client(resolvedChainId).readContract({
+      const [allowed, reason] = (await donationClient(resolvedChainId).readContract({
         address: vault as `0x${string}`,
         abi: DonationVaultABI,
         functionName: 'canDonate',

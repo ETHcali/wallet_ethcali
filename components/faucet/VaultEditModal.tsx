@@ -4,6 +4,7 @@ import { useUpdateVault, useUpdateVaultGating } from '../../hooks/faucet';
 import { Vault, VaultType } from '../../types/faucet';
 
 interface VaultEditModalProps {
+  chainId: number;
   vault: Vault;
   onClose: () => void;
   onSuccess: () => void;
@@ -14,9 +15,9 @@ const vaultTypeLabels: Record<VaultType, string> = {
   [VaultType.Returnable]: 'Returnable',
 };
 
-export function VaultEditModal({ vault, onClose, onSuccess }: VaultEditModalProps) {
-  const { updateVault, canUpdate } = useUpdateVault();
-  const { updateVaultGating, canUpdateGating } = useUpdateVaultGating();
+export function VaultEditModal({ chainId, vault, onClose, onSuccess }: VaultEditModalProps) {
+  const { updateVault, canUpdate } = useUpdateVault(chainId);
+  const { updateVaultGating, canUpdateGating } = useUpdateVaultGating(chainId);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isGatingSubmitting, setIsGatingSubmitting] = useState(false);

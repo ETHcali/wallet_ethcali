@@ -11,19 +11,15 @@
  */
 import { useCallback, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { createPublicClient, http, encodeFunctionData, type Abi } from 'viem';
-import { useWallets, useSendTransaction } from '@privy-io/react-auth';
+import { encodeFunctionData, type Abi } from 'viem';
+import { useSendTransaction } from '@privy-io/react-auth';
 import DonationVaultABI from '../../frontend/abis/DonationVault.json';
 import DonationReceiptABI from '../../frontend/abis/DonationReceipt1155.json';
-import { getRpcUrl, type ChainId } from '../../config/constants';
-import { useDonationAddresses } from './useDonationAddresses';
+import { donationClient, useDonationAddresses } from './useDonationAddresses';
+import { useActiveWallet } from '../useActiveWallet';
 import { parseDonationError } from '../../utils/donationErrors';
 import type { DonationTier } from '../../types/donations';
 import { logger } from '../../utils/logger';
-
-function client(chainId: number) {
-  return createPublicClient({ transport: http(getRpcUrl(chainId as ChainId)) });
-}
 
 export interface DonationAdminStatus {
   isAdmin: boolean;
@@ -34,8 +30,7 @@ export interface DonationAdminStatus {
 
 /** Reads the caller's roles from the vault. */
 export function useDonationAdmin(chainId?: number) {
-  const { wallets } = useWallets();
-  const walletAddress = wallets?.[0]?.address;
+  const { address: walletAddress } = useActiveWallet();
   const { vault, chainId: resolvedChainId } = useDonationAddresses(chainId);
 
   const query = useQuery({
@@ -45,7 +40,7 @@ export function useDonationAdmin(chainId?: number) {
         return { isAdmin: false, isSuperAdmin: false, isPaused: false };
       }
 
-      const publicClient = client(resolvedChainId);
+      const publicClient = donationClient(resolvedChainId);
       const [isAdmin, isSuperAdmin, isPaused] = await Promise.all([
         publicClient.readContract({
           address: vault as `0x${string}`,
@@ -261,7 +256,7 @@ export function useReceiptMinterStatus(chainId?: number) {
     queryFn: async (): Promise<boolean> => {
       if (!vault || !receiptCollection) return false;
 
-      const publicClient = client(resolvedChainId);
+      const publicClient = donationClient(resolvedChainId);
       const minterRole = (await publicClient.readContract({
         address: receiptCollection as `0x${string}`,
         abi: DonationReceiptABI,

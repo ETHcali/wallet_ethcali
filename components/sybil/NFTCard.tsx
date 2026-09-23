@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { getNetworkName } from '../../utils/contracts';
+import { getChain } from '../../config/chains';
 
 interface NFTCardProps {
   chainId: number;
@@ -73,7 +73,7 @@ const NFTCard: React.FC<NFTCardProps> = ({
             <h2 className={`text-sm font-bold font-mono tracking-wide ${alreadyHasNFT ? 'text-signal-confirmed' : isLoading ? 'text-signal-pending' : 'text-content-muted'}`}>
               {alreadyHasNFT ? 'VERIFIED' : isLoading ? 'CHECKING...' : 'NO_VERIFICATION'}
             </h2>
-            <p className="text-content-faint text-[10px] font-mono">{getNetworkName(chainId).toUpperCase()}</p>
+            <p className="text-content-faint text-[10px] font-mono">{(getChain(chainId)?.name ?? 'Unsupported network').toUpperCase()}</p>
           </div>
         </div>
         {onRefresh && (
@@ -198,7 +198,7 @@ const NFTCard: React.FC<NFTCardProps> = ({
           )}
 
           <Link
-            href="/faucet"
+            href={{ pathname: '/faucet', query: { chain: String(chainId) } }}
             className="block w-full py-2.5 bg-eth-blue hover:bg-eth-blue-lift rounded-chip text-on-brand font-mono text-xs font-bold text-center transition-all"
           >
             CLAIM_FAUCET →

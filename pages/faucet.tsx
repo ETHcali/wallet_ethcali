@@ -1,20 +1,22 @@
-import { useState, useEffect } from 'react';
-import { usePrivy, useWallets } from '@privy-io/react-auth';
+import { useEffect } from 'react';
+import { usePrivy } from '@privy-io/react-auth';
 import { useRouter } from 'next/router';
 import Layout from '../components/shared/Layout';
 import Loading from '../components/shared/Loading';
 import Navigation from '../components/Navigation';
+import ChainPicker from '../components/shared/ChainPicker';
 import FaucetClaim from '../components/faucet/FaucetClaim';
-import { getNetworkName, getContractAddresses, getAddressExplorerUrl } from '../utils/contracts';
+import { explorerAddress } from '../config/chains';
+import { useChainQuery } from '../hooks/useChainQuery';
 import { logger } from '../utils/logger';
 
 export default function FaucetPage() {
   const router = useRouter();
   const { ready, authenticated } = usePrivy();
-  const { wallets: _wallets } = useWallets();
-  const [currentChainId, setCurrentChainId] = useState(8453);
-
-  const addresses = getContractAddresses(currentChainId);
+  // The faucet owns its chain: picked here from the chains it is deployed on,
+  // remembered in `?chain=`, and the wallet is only moved when a claim is signed.
+  const { chainId, chain, chains, setChainId } = useChainQuery('faucet');
+  const faucetManager = chain.contracts.FaucetManager;
 
   useEffect(() => {
     if (ready && !authenticated) {
@@ -38,10 +40,7 @@ export default function FaucetPage() {
 
   return (
     <div className="min-h-screen bg-surface-void">
-      <Navigation
-        currentChainId={currentChainId}
-        onChainChange={setCurrentChainId}
-      />
+      <Navigation />
       <Layout>
         <div className="space-y-4">
           {/* Minimal Cypherpunk Header */}
@@ -50,14 +49,16 @@ export default function FaucetPage() {
               <h1 className="text-xl font-bold text-content-primary">Faucet</h1>
             </div>
             <p className="text-content-faint font-mono text-[10px] tracking-widest uppercase">
-              ETH • {getNetworkName(currentChainId)} • Sybil gated
+              ETH • {chain.name} • Sybil gated
             </p>
           </div>
 
-          {/* Faucet Claim Component */}
+          <ChainPicker chains={chains} value={chainId} onChange={setChainId} />
+
+          {/* Faucet Claim Component — remounts per chain so no state leaks across */}
           <FaucetClaim
-            key={`claim-${currentChainId}`}
-            chainId={currentChainId}
+            key={`claim-${chainId}`}
+            chainId={chainId}
             onClaimSuccess={() => {
               logger.info('Faucet claim successful');
             }}
@@ -79,16 +80,18 @@ export default function FaucetPage() {
           </div>
 
           {/* Contract Link - Minimal */}
-          <div className="text-[10px] font-mono text-content-faint pt-1 border-t border-line-hairline">
-            <a
-              href={getAddressExplorerUrl(currentChainId, addresses.FaucetManager)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-content-faint hover:text-eth-blue-text transition-colors"
-            >
-              contract: {addresses.FaucetManager.slice(0, 8)}...{addresses.FaucetManager.slice(-6)}
-            </a>
-          </div>
+          {faucetManager && (
+            <div className="text-[10px] font-mono text-content-faint pt-1 border-t border-line-hairline">
+              <a
+                href={explorerAddress(chainId, faucetManager)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-content-faint hover:text-eth-blue-text transition-colors"
+              >
+                contract: {faucetManager.slice(0, 8)}…{faucetManager.slice(-6)}
+              </a>
+            </div>
+          )}
         </div>
       </Layout>
     </div>

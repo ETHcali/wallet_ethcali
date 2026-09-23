@@ -1,9 +1,16 @@
+/**
+ * Owner-only operations on ZKPassportNFT, on one explicit chain.
+ *
+ * The identity admin page picks its chain from `chainsFor('identity')` and
+ * passes it down; nothing here reads the wallet's chain. Writes pin `chainId`
+ * and the page shows "Switch to <chain>" before any of them is reachable.
+ */
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useSendTransaction, useWallets } from '@privy-io/react-auth';
-import { createPublicClient, http, encodeFunctionData } from 'viem';
+import { useSendTransaction } from '@privy-io/react-auth';
+import { encodeFunctionData } from 'viem';
 import ZKPassportNFTABI from '../frontend/abis/ZKPassportNFT.json';
-import { useSwagAddresses, getChainConfig } from '../utils/network';
-import { getChainRpc } from '../config/networks';
+import { getChain, publicClientFor } from '../config/chains';
+import { useActiveWallet } from './useActiveWallet';
 
 export interface ZKPassportMetadata {
   imageURI: string;
@@ -12,51 +19,34 @@ export interface ZKPassportMetadata {
   useIPFS: boolean;
 }
 
-/**
- * Hook to check if the connected wallet is the owner of ZKPassportNFT contract
- * @param overrideChainId - Optional chain ID to override the wallet's detected chain
- */
-export function useZKPassportAdmin(overrideChainId?: number) {
-  const { wallets } = useWallets();
-  const swagAddresses = useSwagAddresses();
-  const activeWallet = wallets?.[0];
-  const walletAddress = activeWallet?.address;
+function zkpassportAddress(chainId: number) {
+  return getChain(chainId)?.contracts.ZKPassportNFT;
+}
 
-  // Use override chainId if provided, otherwise use detected chain
-  const chainId = overrideChainId || swagAddresses.chainId;
-
-  // Get contract address for the specific chain
-  const config = getChainConfig(chainId);
-  const zkpassport = config.zkpassport;
+/** Whether the active wallet owns the ZKPassportNFT contract on `chainId`. */
+export function useZKPassportAdmin(chainId: number) {
+  const { address: walletAddress } = useActiveWallet();
+  const zkpassport = zkpassportAddress(chainId);
 
   const query = useQuery({
-    queryKey: ['zkpassport-admin', zkpassport, chainId, walletAddress],
+    queryKey: ['zkpassport-admin', chainId, walletAddress?.toLowerCase()],
     queryFn: async () => {
-      if (!zkpassport || !chainId || !walletAddress) {
-        return { isOwner: false, owner: null };
-      }
-
-      const rpcUrl = getChainRpc(chainId);
-      const client = createPublicClient({
-        transport: http(rpcUrl),
-      });
+      const client = publicClientFor(chainId);
+      if (!zkpassport || !client || !walletAddress) return { isOwner: false, owner: null };
 
       try {
-        const owner = await (client.readContract as any)({
-          address: zkpassport as `0x${string}`,
+        const owner = (await client.readContract({
+          address: zkpassport,
           abi: ZKPassportNFTABI,
           functionName: 'owner',
-        });
+        } as any)) as string;
 
-        return {
-          isOwner: (owner as string).toLowerCase() === walletAddress.toLowerCase(),
-          owner: owner as string,
-        };
+        return { isOwner: owner.toLowerCase() === walletAddress.toLowerCase(), owner };
       } catch {
         return { isOwner: false, owner: null };
       }
     },
-    enabled: Boolean(zkpassport && chainId && walletAddress),
+    enabled: Boolean(zkpassport && walletAddress),
     staleTime: 1000 * 60,
   });
 
@@ -66,47 +56,29 @@ export function useZKPassportAdmin(overrideChainId?: number) {
     isLoading: query.isLoading,
     error: query.error instanceof Error ? query.error.message : null,
     walletAddress,
+    contractAddress: zkpassport,
     refetch: query.refetch,
   };
 }
 
-/**
- * Hook to fetch current ZKPassport NFT metadata settings
- */
-export function useZKPassportMetadata() {
-  const { zkpassport, chainId } = useSwagAddresses();
+/** Current NFT metadata settings on `chainId`. */
+export function useZKPassportMetadata(chainId: number) {
+  const zkpassport = zkpassportAddress(chainId);
 
   const query = useQuery({
-    queryKey: ['zkpassport-metadata', zkpassport, chainId],
+    queryKey: ['zkpassport-metadata', chainId],
     queryFn: async () => {
-      if (!zkpassport || !chainId) throw new Error('Missing contract address or chain ID');
+      const client = publicClientFor(chainId);
+      if (!zkpassport || !client) throw new Error('ZKPassportNFT is not deployed on this network');
 
-      const rpcUrl = getChainRpc(chainId);
-      const client = createPublicClient({
-        transport: http(rpcUrl),
-      });
+      const readString = (functionName: string) =>
+        client.readContract({ address: zkpassport, abi: ZKPassportNFTABI, functionName } as any) as Promise<unknown>;
 
       const [imageURI, description, externalURL, useIPFS] = await Promise.all([
-        (client.readContract as any)({
-          address: zkpassport as `0x${string}`,
-          abi: ZKPassportNFTABI,
-          functionName: 'nftImageURI',
-        }),
-        (client.readContract as any)({
-          address: zkpassport as `0x${string}`,
-          abi: ZKPassportNFTABI,
-          functionName: 'nftDescription',
-        }),
-        (client.readContract as any)({
-          address: zkpassport as `0x${string}`,
-          abi: ZKPassportNFTABI,
-          functionName: 'nftExternalURL',
-        }),
-        (client.readContract as any)({
-          address: zkpassport as `0x${string}`,
-          abi: ZKPassportNFTABI,
-          functionName: 'useIPFSImage',
-        }),
+        readString('nftImageURI'),
+        readString('nftDescription'),
+        readString('nftExternalURL'),
+        readString('useIPFSImage'),
       ]);
 
       return {
@@ -116,7 +88,7 @@ export function useZKPassportMetadata() {
         useIPFS: Boolean(useIPFS),
       } as ZKPassportMetadata;
     },
-    enabled: Boolean(zkpassport && chainId),
+    enabled: Boolean(zkpassport),
     staleTime: 1000 * 30,
   });
 
@@ -128,166 +100,49 @@ export function useZKPassportMetadata() {
   };
 }
 
-/**
- * Hook to update ZKPassport NFT metadata (owner only)
- */
-export function useUpdateZKPassportMetadata() {
-  const { zkpassport, chainId } = useSwagAddresses();
-  const { wallets } = useWallets();
+/** Shared write path for every owner call: encode, send pinned to the chain, invalidate. */
+function useZKPassportWrite(chainId: number, invalidate: string[]) {
+  const zkpassport = zkpassportAddress(chainId);
+  const { wallet } = useActiveWallet();
   const { sendTransaction } = useSendTransaction();
   const queryClient = useQueryClient();
 
-  const activeWallet = wallets?.[0];
+  const write = async (functionName: string, args: unknown[]) => {
+    if (!zkpassport) throw new Error('ZKPassportNFT is not deployed on this network');
+    if (!wallet) throw new Error('Wallet not connected');
 
-  const updateMetadata = async (metadata: ZKPassportMetadata) => {
-    if (!zkpassport || !chainId) {
-      throw new Error('Missing contract address');
-    }
+    const data = encodeFunctionData({ abi: ZKPassportNFTABI as any, functionName, args });
+    const result = await sendTransaction({ to: zkpassport, data, chainId }, { sponsor: true });
 
-    if (!activeWallet) {
-      throw new Error('Wallet not connected');
-    }
-
-    const txData = encodeFunctionData({
-      abi: ZKPassportNFTABI as any,
-      functionName: 'setMetadata',
-      args: [metadata.imageURI, metadata.description, metadata.externalURL, metadata.useIPFS],
-    });
-
-    const result = await sendTransaction(
-      {
-        to: zkpassport as `0x${string}`,
-        data: txData,
-        chainId,
-      },
-      { sponsor: true }
-    );
-
-    queryClient.invalidateQueries({ queryKey: ['zkpassport-metadata'] });
-
+    for (const key of invalidate) queryClient.invalidateQueries({ queryKey: [key] });
     return result;
   };
 
-  const setImageURI = async (imageURI: string) => {
-    if (!zkpassport || !chainId || !activeWallet) {
-      throw new Error('Missing requirements');
-    }
+  return { write, canWrite: Boolean(zkpassport && wallet) };
+}
 
-    const txData = encodeFunctionData({
-      abi: ZKPassportNFTABI as any,
-      functionName: 'setImageURI',
-      args: [imageURI],
-    });
-
-    const result = await sendTransaction(
-      {
-        to: zkpassport as `0x${string}`,
-        data: txData,
-        chainId,
-      },
-      { sponsor: true }
-    );
-
-    queryClient.invalidateQueries({ queryKey: ['zkpassport-metadata'] });
-    return result;
-  };
-
-  const setDescription = async (description: string) => {
-    if (!zkpassport || !chainId || !activeWallet) {
-      throw new Error('Missing requirements');
-    }
-
-    const txData = encodeFunctionData({
-      abi: ZKPassportNFTABI as any,
-      functionName: 'setDescription',
-      args: [description],
-    });
-
-    const result = await sendTransaction(
-      {
-        to: zkpassport as `0x${string}`,
-        data: txData,
-        chainId,
-      },
-      { sponsor: true }
-    );
-
-    queryClient.invalidateQueries({ queryKey: ['zkpassport-metadata'] });
-    return result;
-  };
-
-  const setExternalURL = async (externalURL: string) => {
-    if (!zkpassport || !chainId || !activeWallet) {
-      throw new Error('Missing requirements');
-    }
-
-    const txData = encodeFunctionData({
-      abi: ZKPassportNFTABI as any,
-      functionName: 'setExternalURL',
-      args: [externalURL],
-    });
-
-    const result = await sendTransaction(
-      {
-        to: zkpassport as `0x${string}`,
-        data: txData,
-        chainId,
-      },
-      { sponsor: true }
-    );
-
-    queryClient.invalidateQueries({ queryKey: ['zkpassport-metadata'] });
-    return result;
-  };
+/** Update NFT metadata (owner only). */
+export function useUpdateZKPassportMetadata(chainId: number) {
+  const { write, canWrite } = useZKPassportWrite(chainId, ['zkpassport-metadata']);
 
   return {
-    updateMetadata,
-    setImageURI,
-    setDescription,
-    setExternalURL,
-    canUpdate: Boolean(zkpassport && activeWallet),
+    updateMetadata: (m: ZKPassportMetadata) =>
+      write('setMetadata', [m.imageURI, m.description, m.externalURL, m.useIPFS]),
+    setImageURI: (imageURI: string) => write('setImageURI', [imageURI]),
+    setDescription: (description: string) => write('setDescription', [description]),
+    setExternalURL: (externalURL: string) => write('setExternalURL', [externalURL]),
+    canUpdate: canWrite,
   };
 }
 
-export function useZKPassportContractSettings() {
-  const { zkpassport, chainId } = useSwagAddresses();
-  const { wallets } = useWallets();
-  const { sendTransaction } = useSendTransaction();
-  const queryClient = useQueryClient();
-  const activeWallet = wallets?.[0];
+/** Verifier / domain / scope (owner only). */
+export function useZKPassportContractSettings(chainId: number) {
+  const { write, canWrite } = useZKPassportWrite(chainId, ['zkpassport-admin']);
 
-  const setVerifier = async (verifierAddress: string) => {
-    if (!zkpassport || !activeWallet) throw new Error('Missing contract or wallet');
-    const txData = encodeFunctionData({
-      abi: ZKPassportNFTABI as any,
-      functionName: 'setVerifier',
-      args: [verifierAddress],
-    });
-    const result = await sendTransaction({ to: zkpassport as `0x${string}`, data: txData, chainId }, { sponsor: true });
-    queryClient.invalidateQueries({ queryKey: ['zkpassport-admin'] });
-    return result;
+  return {
+    setVerifier: (verifierAddress: string) => write('setVerifier', [verifierAddress]),
+    setDomain: (domain: string) => write('setDomain', [domain]),
+    setScope: (scope: string) => write('setScope', [scope]),
+    canUpdate: canWrite,
   };
-
-  const setDomain = async (domain: string) => {
-    if (!zkpassport || !activeWallet) throw new Error('Missing contract or wallet');
-    const txData = encodeFunctionData({
-      abi: ZKPassportNFTABI as any,
-      functionName: 'setDomain',
-      args: [domain],
-    });
-    return sendTransaction({ to: zkpassport as `0x${string}`, data: txData, chainId }, { sponsor: true });
-  };
-
-  const setScope = async (scope: string) => {
-    if (!zkpassport || !activeWallet) throw new Error('Missing contract or wallet');
-    const txData = encodeFunctionData({
-      abi: ZKPassportNFTABI as any,
-      functionName: 'setScope',
-      args: [scope],
-    });
-    return sendTransaction({ to: zkpassport as `0x${string}`, data: txData, chainId }, { sponsor: true });
-  };
-
-  return { setVerifier, setDomain, setScope, canUpdate: Boolean(zkpassport && activeWallet) };
 }
-

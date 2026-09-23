@@ -14,9 +14,10 @@
  */
 import { useQuery } from '@tanstack/react-query';
 import { createPublicClient, http, isAddressEqual } from 'viem';
-import { base, mainnet } from 'viem/chains';
+import { mainnet } from 'viem/chains';
 import L2RegistryABI from '../../frontend/abis/l2registry.json';
-import { ENS_CONFIG, CHAIN_IDS, getRpcUrl } from '../../config/constants';
+import { ENS_CONFIG } from '../../config/constants';
+import { CHAIN_IDS, getChain, publicClientFor } from '../../config/chains';
 import { decodeDnsName, fullName, labelOf, subnameNode } from '../../utils/ens';
 import { logger } from '../../utils/logger';
 
@@ -34,7 +35,7 @@ interface UserENSResult {
 }
 
 function baseClient() {
-  return createPublicClient({ chain: base, transport: http(getRpcUrl(CHAIN_IDS.BASE)) });
+  return publicClientFor(CHAIN_IDS.BASE);
 }
 
 /** True when the registry says this node's address record is `address`. */
@@ -59,7 +60,7 @@ async function lookup(address: `0x${string}`, knownLabel: string | null): Promis
   try {
     const name = await createPublicClient({
       chain: mainnet,
-      transport: http(getRpcUrl(CHAIN_IDS.ETHEREUM)),
+      transport: http(getChain(CHAIN_IDS.ETHEREUM).rpcUrl),
     }).getEnsName({ address });
     const label = labelOf(name);
     if (label) return { label, node: subnameNode(label) };

@@ -1,84 +1,54 @@
 import { useQuery } from '@tanstack/react-query';
-import { useWallets } from '@privy-io/react-auth';
-import { createPublicClient, http, parseAbiItem } from 'viem';
+import { parseAbiItem } from 'viem';
 import ZKPassportNFTABI from '../frontend/abis/ZKPassportNFT.json';
-import { getChainRpc } from '../config/networks';
+import { getChain, publicClientFor } from '../config/chains';
 import { logger } from '../utils/logger';
-import { getContractAddresses } from '../utils/network';
 import type { TokenData } from '../types/zkpassport';
+import { useActiveWallet } from './useActiveWallet';
 
 /**
- * Hook to fetch ZKPassport NFT data
- * - Checks if user has NFT via hasNFTByAddress()
+ * The active wallet's ZKPassport NFT on one explicit chain.
+ * - Checks ownership via hasNFTByAddress()
  * - Reads global metadata via nftImageURI(), nftDescription(), nftExternalURL()
- * - Queries NFTMinted event to get tokenId and verification data
+ * - Queries the NFTMinted event for tokenId and verification data
  */
 export function useZKPassportNFT(chainId: number) {
-  const { wallets } = useWallets();
-  const userWallet = wallets?.[0];
-  const addresses = getContractAddresses(chainId);
+  const { address } = useActiveWallet();
+  const contractAddress = getChain(chainId)?.contracts.ZKPassportNFT;
 
   const query = useQuery({
-    queryKey: ['zkpassport-nft', chainId, userWallet?.address],
+    queryKey: ['zkpassport-nft', chainId, address?.toLowerCase()],
     queryFn: async () => {
-      if (!userWallet?.address || !addresses.zkpassport) {
-        return null;
-      }
-
-      const rpcUrl = getChainRpc(chainId);
-      const client = createPublicClient({
-        transport: http(rpcUrl),
-      });
-
-      const contractAddress = addresses.zkpassport as `0x${string}`;
+      const client = publicClientFor(chainId);
+      if (!address || !contractAddress || !client) return null;
+      const owner = address as `0x${string}`;
 
       try {
-        // 1. Check if user has NFT
         const raw = await client.readContract({
           address: contractAddress,
           abi: ZKPassportNFTABI,
           functionName: 'hasNFTByAddress',
-          args: [userWallet.address as `0x${string}`],
+          args: [owner],
         });
         const hasNFT = Array.isArray(raw) ? Boolean(raw[0]) : Boolean(raw);
+        if (!hasNFT) return null;
 
-        if (!hasNFT) {
-          return null;
-        }
-
-        // 2. Read global metadata from contract
         const [imageURI, description, externalURL] = await Promise.all([
-          client.readContract({
-            address: contractAddress,
-            abi: ZKPassportNFTABI,
-            functionName: 'nftImageURI',
-            args: [],
-          }),
-          client.readContract({
-            address: contractAddress,
-            abi: ZKPassportNFTABI,
-            functionName: 'nftDescription',
-            args: [],
-          }),
-          client.readContract({
-            address: contractAddress,
-            abi: ZKPassportNFTABI,
-            functionName: 'nftExternalURL',
-            args: [],
-          }),
+          client.readContract({ address: contractAddress, abi: ZKPassportNFTABI, functionName: 'nftImageURI', args: [] }),
+          client.readContract({ address: contractAddress, abi: ZKPassportNFTABI, functionName: 'nftDescription', args: [] }),
+          client.readContract({ address: contractAddress, abi: ZKPassportNFTABI, functionName: 'nftExternalURL', args: [] }),
         ]);
 
-        // 3. Try to get tokenId and verification data from NFTMinted event
         let tokenId: bigint | null = null;
         let tokenData: TokenData | null = null;
 
         try {
           const logs = await client.getLogs({
             address: contractAddress,
-            event: parseAbiItem('event NFTMinted(address indexed to, uint256 indexed tokenId, bytes32 uniqueIdentifier, bool isOver18, string nationality)'),
-            args: {
-              to: userWallet.address as `0x${string}`,
-            },
+            event: parseAbiItem(
+              'event NFTMinted(address indexed to, uint256 indexed tokenId, bytes32 uniqueIdentifier, bool isOver18, string nationality)'
+            ),
+            args: { to: owner },
             fromBlock: 'earliest',
             toBlock: 'latest',
           });
@@ -88,46 +58,40 @@ export function useZKPassportNFT(chainId: number) {
             tokenId = latestLog.args.tokenId ?? null;
             tokenData = {
               uniqueIdentifier: (latestLog.args.uniqueIdentifier ?? '0x') as `0x${string}`,
-              personhoodVerified: true, // always true — contract only mints with valid ZK proof
+              personhoodVerified: true, // the contract only mints with a valid ZK proof
               isOver18: latestLog.args.isOver18 ?? false,
               nationality: latestLog.args.nationality ?? '',
             };
           }
         } catch (eventErr) {
-          // Events might fail on some RPCs, continue without tokenId/tokenData
+          // Some RPCs reject wide log ranges; the card still renders without the event data.
           logger.warn('Could not fetch NFTMinted event:', eventErr);
         }
-
-        // Build metadata object
-        const nftMetadata = {
-          name: 'ZKPassport NFT',
-          description: String(description || ''),
-          image: String(imageURI || ''),
-          external_url: String(externalURL || ''),
-        };
 
         return {
           tokenId,
           tokenData,
           tokenURI: null,
-          nftMetadata,
+          nftMetadata: {
+            name: 'ZKPassport NFT',
+            description: String(description || ''),
+            image: String(imageURI || ''),
+            external_url: String(externalURL || ''),
+          },
         };
       } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        logger.error('Error fetching ZKPassport NFT:', errorMessage);
+        logger.error('Error fetching ZKPassport NFT:', error instanceof Error ? error.message : String(error));
         return null;
       }
     },
-    enabled: Boolean(userWallet?.address && addresses.zkpassport),
-    staleTime: 1000 * 60, // 1 minute
-    gcTime: 1000 * 60 * 5, // 5 minutes
+    enabled: Boolean(address && contractAddress),
+    staleTime: 1000 * 60,
+    gcTime: 1000 * 60 * 5,
     retry: 2,
   });
 
-  const hasNFT = Boolean(query.data);
-
   return {
-    alreadyHasNFT: hasNFT,
+    alreadyHasNFT: Boolean(query.data),
     isLoading: query.isLoading,
     isFetched: query.isFetched,
     tokenId: query.data?.tokenId ?? null,

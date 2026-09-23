@@ -127,7 +127,6 @@ export default function SwagAdminPage() {
         active="swag"
         title="Swag"
         subtitle="Orders, caps and treasury for the Base collection. Stock and money are read from the chain; the order desk is the fulfilment record."
-        chainId={CHAIN_IDS.BASE}
       >
         {body}
       </AdminShell>

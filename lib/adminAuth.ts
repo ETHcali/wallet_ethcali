@@ -19,10 +19,8 @@
  */
 import type { NextApiRequest } from 'next';
 import * as jose from 'jose';
-import { createPublicClient, http } from 'viem';
 import DonationVaultABI from '../frontend/abis/DonationVault.json';
-import addresses from '../frontend/addresses.json';
-import { CHAIN_IDS, getRpcUrl } from '../config/constants';
+import { CHAIN_IDS, getChain, publicClientFor } from '../config/chains';
 
 export class AdminAuthError extends Error {
   constructor(
@@ -36,8 +34,7 @@ export class AdminAuthError extends Error {
 /** The contract whose ADMIN_ROLE defines "an ETH Cali operator". */
 const AUTHORITY = {
   chainId: CHAIN_IDS.CELO,
-  address: (addresses as Record<string, { addresses?: Record<string, string> }>).celo
-    ?.addresses?.DonationVault,
+  address: getChain(CHAIN_IDS.CELO).contracts.DonationVault,
 };
 
 let jwks: ReturnType<typeof jose.createRemoteJWKSet> | null = null;
@@ -91,12 +88,12 @@ async function walletsForDid(did: string, appId: string, appSecret: string): Pro
 async function holdsAdminRole(wallets: string[]): Promise<string | null> {
   if (!AUTHORITY.address || wallets.length === 0) return null;
 
-  const client = createPublicClient({ transport: http(getRpcUrl(AUTHORITY.chainId)) });
+  const client = publicClientFor(AUTHORITY.chainId);
 
   for (const wallet of wallets) {
     try {
       const isAdmin = (await client.readContract({
-        address: AUTHORITY.address as `0x${string}`,
+        address: AUTHORITY.address,
         abi: DonationVaultABI,
         functionName: 'isAdmin',
         args: [wallet as `0x${string}`],

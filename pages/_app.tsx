@@ -4,6 +4,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import Head from 'next/head';
 import type { AppProps } from 'next/app';
 import { useState } from 'react';
+import { PRIVY_DEFAULT_CHAIN, PRIVY_SUPPORTED_CHAINS } from '../config/chains';
 // Must come before globals.css: it defines the custom properties that both the
 // Tailwind preset and globals.css read.
 import '@ethcali/design-tokens/tokens.css';
@@ -62,6 +63,11 @@ function MyApp({ Component, pageProps }: AppProps) {
         config={{
           // 'wallet' enables Sign-In With Ethereum (SIWE) for external wallets
           loginMethods: ['email', 'passkey', 'wallet', 'google'],
+          // The registry's chains, and nothing else: `wallet.switchChain` and
+          // `sendTransaction({ chainId })` throw for a chain outside this list,
+          // and embedded wallets start on Base.
+          defaultChain: PRIVY_DEFAULT_CHAIN,
+          supportedChains: PRIVY_SUPPORTED_CHAINS,
           appearance: {
             theme: 'dark',
             // Privy's modal renders outside our stylesheet, so it cannot read a

@@ -1,204 +1,68 @@
 /**
- * useVaultWhitelist - Hooks for whitelist management
+ * useVaultWhitelist - Whitelist management on the FaucetManager of one explicit chain.
  */
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useSendTransaction, useWallets } from '@privy-io/react-auth';
-import { createPublicClient, http, encodeFunctionData } from 'viem';
+import { useSendTransaction } from '@privy-io/react-auth';
+import { encodeFunctionData } from 'viem';
 import FaucetManagerABI from '../../frontend/abis/FaucetManager.json';
-import { useSwagAddresses } from '../../utils/network';
-import { getChainRpc } from '../../config/networks';
+import { getChain, publicClientFor } from '../../config/chains';
+import { useActiveWallet } from '../useActiveWallet';
 
-/**
- * Hook to manage whitelist for a vault
- */
-export function useVaultWhitelist() {
-  const { faucetManager, chainId } = useSwagAddresses();
-  const { wallets } = useWallets();
+export function useVaultWhitelist(chainId: number) {
+  const faucetManager = getChain(chainId)?.contracts.FaucetManager;
+  const { wallet } = useActiveWallet();
   const { sendTransaction } = useSendTransaction();
   const queryClient = useQueryClient();
 
-  const activeWallet = wallets?.[0];
+  const write = async (functionName: string, args: unknown[]) => {
+    if (!faucetManager) throw new Error('Faucet is not deployed on this network');
+    if (!wallet) throw new Error('Wallet not connected');
 
-  const addToWhitelist = async (vaultId: number, userAddress: string) => {
-    if (!faucetManager || !chainId) {
-      throw new Error('Missing contract address');
-    }
-
-    if (!activeWallet) {
-      throw new Error('Wallet not connected');
-    }
-
-    const txData = encodeFunctionData({
-      abi: FaucetManagerABI as any,
-      functionName: 'addToWhitelist',
-      args: [vaultId, userAddress as `0x${string}`],
-    });
-
-    const result = await sendTransaction(
-      {
-        to: faucetManager as `0x${string}`,
-        data: txData,
-        chainId,
-      },
-      { sponsor: true }
-    );
+    const data = encodeFunctionData({ abi: FaucetManagerABI as any, functionName, args });
+    const result = await sendTransaction({ to: faucetManager, data, chainId }, { sponsor: true });
 
     queryClient.invalidateQueries({ queryKey: ['faucet-all-vaults'] });
+    queryClient.invalidateQueries({ queryKey: ['faucet-whitelist-check'] });
     return result;
   };
 
-  const addBatchToWhitelist = async (vaultId: number, userAddresses: string[]) => {
-    if (!faucetManager || !chainId) {
-      throw new Error('Missing contract address');
-    }
-
-    if (!activeWallet) {
-      throw new Error('Wallet not connected');
-    }
-
-    const addresses = userAddresses.map(addr => addr as `0x${string}`);
-    const txData = encodeFunctionData({
-      abi: FaucetManagerABI as any,
-      functionName: 'addBatchToWhitelist',
-      args: [vaultId, addresses],
-    });
-
-    const result = await sendTransaction(
-      {
-        to: faucetManager as `0x${string}`,
-        data: txData,
-        chainId,
-      },
-      { sponsor: true }
-    );
-
-    queryClient.invalidateQueries({ queryKey: ['faucet-all-vaults'] });
-    return result;
-  };
-
-  const removeFromWhitelist = async (vaultId: number, userAddress: string) => {
-    if (!faucetManager || !chainId) {
-      throw new Error('Missing contract address');
-    }
-
-    if (!activeWallet) {
-      throw new Error('Wallet not connected');
-    }
-
-    const txData = encodeFunctionData({
-      abi: FaucetManagerABI as any,
-      functionName: 'removeFromWhitelist',
-      args: [vaultId, userAddress as `0x${string}`],
-    });
-
-    const result = await sendTransaction(
-      {
-        to: faucetManager as `0x${string}`,
-        data: txData,
-        chainId,
-      },
-      { sponsor: true }
-    );
-
-    queryClient.invalidateQueries({ queryKey: ['faucet-all-vaults'] });
-    return result;
-  };
-
-  const removeBatchFromWhitelist = async (vaultId: number, userAddresses: string[]) => {
-    if (!faucetManager || !chainId) {
-      throw new Error('Missing contract address');
-    }
-
-    if (!activeWallet) {
-      throw new Error('Wallet not connected');
-    }
-
-    const addresses = userAddresses.map(addr => addr as `0x${string}`);
-    const txData = encodeFunctionData({
-      abi: FaucetManagerABI as any,
-      functionName: 'removeBatchFromWhitelist',
-      args: [vaultId, addresses],
-    });
-
-    const result = await sendTransaction(
-      {
-        to: faucetManager as `0x${string}`,
-        data: txData,
-        chainId,
-      },
-      { sponsor: true }
-    );
-
-    queryClient.invalidateQueries({ queryKey: ['faucet-all-vaults'] });
-    return result;
-  };
-
-  const setWhitelistEnabled = async (vaultId: number, enabled: boolean) => {
-    if (!faucetManager || !chainId) {
-      throw new Error('Missing contract address');
-    }
-
-    if (!activeWallet) {
-      throw new Error('Wallet not connected');
-    }
-
-    const txData = encodeFunctionData({
-      abi: FaucetManagerABI as any,
-      functionName: 'setWhitelistEnabled',
-      args: [vaultId, enabled],
-    });
-
-    const result = await sendTransaction(
-      {
-        to: faucetManager as `0x${string}`,
-        data: txData,
-        chainId,
-      },
-      { sponsor: true }
-    );
-
-    queryClient.invalidateQueries({ queryKey: ['faucet-all-vaults'] });
-    return result;
-  };
+  const asAddresses = (list: string[]) => list.map((addr) => addr as `0x${string}`);
 
   return {
-    addToWhitelist,
-    addBatchToWhitelist,
-    removeFromWhitelist,
-    removeBatchFromWhitelist,
-    setWhitelistEnabled,
-    canManage: Boolean(faucetManager && activeWallet),
+    addToWhitelist: (vaultId: number, userAddress: string) =>
+      write('addToWhitelist', [vaultId, userAddress as `0x${string}`]),
+    addBatchToWhitelist: (vaultId: number, userAddresses: string[]) =>
+      write('addBatchToWhitelist', [vaultId, asAddresses(userAddresses)]),
+    removeFromWhitelist: (vaultId: number, userAddress: string) =>
+      write('removeFromWhitelist', [vaultId, userAddress as `0x${string}`]),
+    removeBatchFromWhitelist: (vaultId: number, userAddresses: string[]) =>
+      write('removeBatchFromWhitelist', [vaultId, asAddresses(userAddresses)]),
+    setWhitelistEnabled: (vaultId: number, enabled: boolean) =>
+      write('setWhitelistEnabled', [vaultId, enabled]),
+    canManage: Boolean(faucetManager && wallet),
   };
 }
 
-/**
- * Hook to check if a user is whitelisted for a vault
- */
-export function useIsWhitelisted(vaultId: number | null, userAddress: string | null) {
-  const { faucetManager, chainId } = useSwagAddresses();
+/** Whether `userAddress` is whitelisted for `vaultId` on `chainId`. */
+export function useIsWhitelisted(chainId: number, vaultId: number | null, userAddress: string | null) {
+  const faucetManager = getChain(chainId)?.contracts.FaucetManager;
 
   const query = useQuery({
-    queryKey: ['faucet-whitelist-check', faucetManager, chainId, vaultId, userAddress],
+    queryKey: ['faucet-whitelist-check', chainId, vaultId, userAddress?.toLowerCase()],
     queryFn: async () => {
-      if (!faucetManager || !chainId || vaultId === null || !userAddress) {
-        return false;
-      }
+      const client = publicClientFor(chainId);
+      if (!faucetManager || !client || vaultId === null || !userAddress) return false;
 
-      const rpcUrl = getChainRpc(chainId);
-      const client = createPublicClient({
-        transport: http(rpcUrl),
-      });
-
-      const isWhitelisted = await (client.readContract as any)({
-        address: faucetManager as `0x${string}`,
+      const isWhitelisted = await client.readContract({
+        address: faucetManager,
         abi: FaucetManagerABI,
         functionName: 'isWhitelisted',
         args: [vaultId, userAddress as `0x${string}`],
-      });
+      } as any);
 
       return Boolean(isWhitelisted);
     },
-    enabled: Boolean(faucetManager && chainId && vaultId !== null && userAddress),
+    enabled: Boolean(faucetManager && vaultId !== null && userAddress),
     staleTime: 1000 * 30,
   });
 

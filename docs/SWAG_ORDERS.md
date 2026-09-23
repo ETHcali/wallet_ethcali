@@ -38,8 +38,9 @@ the caller is read from a request body.
 
 1. Buyer pays on `qpsxyq-9g.myshopify.com`; Shopify sends `orders/paid` to
    `POST /api/shopify/webhook`.
-2. Raw-body HMAC (`X-Shopify-Hmac-Sha256`, `SHOPIFY_WEBHOOK_SECRET`, `timingSafeEqual`)
-   and `X-Shopify-Shop-Domain === SHOPIFY_STORE_DOMAIN`, else 401.
+2. Raw-body HMAC (`X-Shopify-Hmac-Sha256` against `SHOPIFY_WEBHOOK_SECRET` or
+   `SHOPIFY_CLIENT_SECRET`, whichever is set, `timingSafeEqual`) and
+   `X-Shopify-Shop-Domain === SHOPIFY_STORE_DOMAIN`, else 401.
 3. Per line item: SKU → `swag_shopify_variants` (exact, knows the size) or the
    convention `<designSku>-<SIZE>` → `swag_products` → `swag_variants` on 8453.
    Unknown SKUs are logged and skipped.
@@ -134,10 +135,14 @@ pesos for the card channel — keep them equal.
 
 **Roles.** Collection shows which of ADMIN_ROLE, DEFAULT_ADMIN_ROLE and
 SIGNER_ROLE the connected wallet holds. Add/remove admin and add/remove signer
-are DEFAULT_ADMIN calls: the buttons say so and stay disabled unless the Safe is
-the connected wallet. Rotating the voucher signer: grant the new address
-SIGNER_ROLE, swap `SWAG_VOUCHER_SIGNER_KEY` on Vercel, then revoke the old one.
-`setTreasury` is deliberately not in the UI.
+are DEFAULT_ADMIN calls: the buttons stay disabled unless the connected wallet
+holds DEFAULT_ADMIN_ROLE (`isSuperAdmin()`). The UI copy calls that holder "the
+Safe", but on chain (verified 2026-09-23) DEFAULT_ADMIN_ROLE is held by the ops
+EOA `0x3B89…415B` — the `itemAdmin` the seed passed to `deployCollection` — and
+the Safe holds nothing on the collection except the treasury seat. Moving the
+role to the Safe is an open item in the spec's Status block. Rotating the
+voucher signer: grant the new address SIGNER_ROLE, swap `SWAG_VOUCHER_SIGNER_KEY`
+on Vercel, then revoke the old one. `setTreasury` is deliberately not in the UI.
 
 **Re-price the card channel.** `pages/api/cron/swag-prices.ts` runs daily at
 12:00 UTC (`vercel.json`), gated by `Authorization: Bearer $CRON_SECRET`. For
@@ -150,23 +155,29 @@ the catalogue file; both call `repriceDesign()` in `lib/shopify.mjs`. A variant
 whose `price_synced_at` is older than a day was skipped or failed — the cron's
 JSON response lists the reason per design in the Vercel function log.
 
-## Register the webhook in Shopify
+## The webhook subscriptions
 
-Shopify admin → **Settings → Notifications → Webhooks** (or the app's
-subscriptions in the Dev Dashboard):
+They are **app-owned**, created through the Admin API by
+`scripts/shopify-webhooks.mjs`, and were registered on 2026-09-23:
 
-| Field | Value |
-|---|---|
-| URL | `https://app.ethcali.org/api/shopify/webhook` |
-| Format | JSON |
-| API version | `2026-07` (same as `SHOPIFY_API_VERSION`) |
-| Events | `Order payment` (`orders/paid`) and `Refund create` (`refunds/create`) |
+| Topic | Format | URL |
+|---|---|---|
+| `ORDERS_PAID` (`orders/paid`) | JSON | `https://app.ethcali.org/api/shopify/webhook` |
+| `REFUNDS_CREATE` (`refunds/create`) | JSON | `https://app.ethcali.org/api/shopify/webhook` |
 
-Then copy the signing secret shown at the bottom of that page into
-`SHOPIFY_WEBHOOK_SECRET` on Vercel. Webhooks created from the app's own
-subscriptions are signed with `SHOPIFY_CLIENT_SECRET` instead — set whichever
-applies. Use **Send test notification** and expect `200 { ok: true, topic, … }`
-in the Vercel function log.
+```bash
+node --env-file=.env scripts/shopify-webhooks.mjs list            # what Shopify has now
+node --env-file=.env scripts/shopify-webhooks.mjs create [url]    # register both topics
+node --env-file=.env scripts/shopify-webhooks.mjs delete <gid>
+```
+
+App-owned subscriptions are signed with `SHOPIFY_CLIENT_SECRET`; the route
+accepts that or `SHOPIFY_WEBHOOK_SECRET`, so `SHOPIFY_WEBHOOK_SECRET` is only
+needed if a subscription is ever created by hand under **Settings →
+Notifications → Webhooks** (which signs with the secret shown on that page).
+Run `create` only against a live URL: Shopify retries a failing endpoint for
+48 hours and then drops the subscription. A test delivery should log
+`200 { ok: true, topic, … }` in the Vercel function log.
 
 ## Environment (Vercel, production)
 
@@ -175,9 +186,9 @@ in the Vercel function log.
 | `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SUPABASE_URL` | already set for the indexer |
 | `NEXT_PUBLIC_PRIVY_APP_ID`, `PRIVY_APP_SECRET` | already set for admin routes |
 | `SHOPIFY_STORE_DOMAIN` | `qpsxyq-9g.myshopify.com` |
-| `SHOPIFY_WEBHOOK_SECRET` | from the Notifications page (see above) |
-| `SWAG_VOUCHER_SIGNER_KEY` | **new** — the signer's private key; address must hold `SIGNER_ROLE` |
+| `SHOPIFY_WEBHOOK_SECRET` | only for hand-made subscriptions (see above); app-owned ones verify with `SHOPIFY_CLIENT_SECRET` |
+| `SWAG_VOUCHER_SIGNER_KEY` | the signer's private key; its address (`0x3977…62e6`) holds `SIGNER_ROLE` — `scripts/swag-voucher-selftest.mjs` checks both |
 | `SWAG_COLLECTION_ADDRESS` | optional; defaults to `0xA5C02Ee3029Ce7f0FdD147734D11905E3cA99479` |
 | `NEXT_PUBLIC_BASE_RPC_URL` | optional; the server reads receipts through it |
-| `CRON_SECRET` | **new** — bearer token Vercel sends to `/api/cron/swag-prices`; the route refuses everything when unset |
-| `SHOPIFY_CLIENT_ID`, `SHOPIFY_CLIENT_SECRET`, `SHOPIFY_API_VERSION` | the cron exchanges them for an Admin API token to push prices |
+| `CRON_SECRET` | bearer token Vercel sends to `/api/cron/swag-prices`; the route refuses everything when unset |
+| `SHOPIFY_CLIENT_ID`, `SHOPIFY_CLIENT_SECRET`, `SHOPIFY_API_VERSION` (`2026-07`) | the cron and the scripts exchange them for a 24h Admin API token; the client secret also verifies app-owned webhooks |

@@ -2,6 +2,9 @@ import { useState } from 'react';
 import Head from 'next/head';
 import { useWallets } from '@privy-io/react-auth';
 import AdminShell from '../../components/admin/AdminShell';
+import ChainPicker from '../../components/shared/ChainPicker';
+import SwitchChainButton from '../../components/shared/SwitchChainButton';
+import { useRequireChain } from '../../hooks/useRequireChain';
 import CampaignAdminForm from '../../components/donations/CampaignAdminForm';
 import CurrencyTierManager from '../../components/donations/CurrencyTierManager';
 import BankAccountManager from '../../components/donations/BankAccountManager';
@@ -10,7 +13,7 @@ import {
   useCampaignTotals,
   useCampaignRowId,
   useDonationAddresses,
-  useDeployedDonationChains,
+  DONATION_CHAINS,
   useDisplayCurrency,
 } from '../../hooks/donations';
 import {
@@ -18,16 +21,16 @@ import {
   useDonationAdminActions,
   useReceiptMinterStatus,
 } from '../../hooks/donations/useDonationAdmin';
-import { CHAIN_IDS, NETWORK_NAMES, type ChainId } from '../../config/constants';
+import { CHAIN_IDS, getChain } from '../../config/chains';
 
 type Tab = 'campaigns' | 'create' | 'receipts' | 'bank';
 
 export default function DonationsAdminPage() {
   const { ready } = useWallets();
-  const deployedChains = useDeployedDonationChains();
-  const [chainId, setChainId] = useState<number>(
-    deployedChains[0]?.chainId ?? CHAIN_IDS.CELO
-  );
+  const [chainId, setChainId] = useState<number>(DONATION_CHAINS[0]?.id ?? CHAIN_IDS.CELO);
+  // Every write on this page is on `chainId`; the wallet is moved here, once,
+  // before any of them is reachable.
+  const chain = useRequireChain(chainId);
 
   const { vault, receiptCollection, isDeployed, tokens } = useDonationAddresses(chainId);
   const { isAdmin, isSuperAdmin, isPaused, walletAddress, isLoading } =
@@ -52,7 +55,7 @@ export default function DonationsAdminPage() {
 
   if (!ready || isLoading) {
     return (
-      <AdminShell active="donations" title="Donations" chainId={chainId}>
+      <AdminShell active="donations" title="Donations">
         <p className="py-16 text-center text-sm text-content-faint">Checking permissions…</p>
       </AdminShell>
     );
@@ -60,12 +63,12 @@ export default function DonationsAdminPage() {
 
   if (!isDeployed) {
     return (
-      <AdminShell active="donations" title="Donations" chainId={chainId}>
+      <AdminShell active="donations" title="Donations">
         <div className="rounded-card border border-line-hairline bg-surface-inset/50 p-6 text-center sm:p-8">
           <h2 className="mb-2 text-lg font-bold text-content-primary">Not deployed</h2>
             <p className="text-sm text-content-muted">
               DonationVault is not deployed on{' '}
-              {NETWORK_NAMES[chainId as ChainId] ?? 'this network'} yet.
+              {getChain(chainId)?.name ?? 'this network'} yet.
             </p>
         </div>
       </AdminShell>
@@ -74,7 +77,7 @@ export default function DonationsAdminPage() {
 
   if (!isAdmin && !isSuperAdmin) {
     return (
-      <AdminShell active="donations" title="Donations" chainId={chainId}>
+      <AdminShell active="donations" title="Donations">
         <div className="rounded-card border border-line-hairline bg-surface-inset/50 p-6 text-center sm:p-8">
           <h2 className="mb-2 text-lg font-bold text-content-primary">Not authorised</h2>
             <p className="text-sm text-content-muted">
@@ -97,7 +100,6 @@ export default function DonationsAdminPage() {
       active="donations"
       title="Donations Admin"
       subtitle={vault ?? undefined}
-      chainId={chainId}
     >
       <Head>
         <title>Donations Admin · ETH Cali</title>
@@ -156,22 +158,14 @@ export default function DonationsAdminPage() {
           </div>
         )}
 
-        {deployedChains.length > 1 && (
-          <div className="mb-6 flex flex-wrap gap-2">
-            {deployedChains.map((c) => (
-              <button
-                key={c.chainId}
-                type="button"
-                onClick={() => setChainId(c.chainId)}
-                className={`rounded-control border px-3 py-1.5 text-sm font-semibold transition-colors ${
-                  c.chainId === chainId
-                    ? 'border-eth-blue bg-eth-blue/15 text-eth-blue-text'
-                    : 'border-line-hairline bg-surface-inset text-content-secondary hover:border-line-strong'
-                }`}
-              >
-                {c.name}
-              </button>
-            ))}
+        <ChainPicker chains={DONATION_CHAINS} value={chainId} onChange={setChainId} className="mb-6" />
+
+        {!chain.ready && (
+          <div className="mb-6 max-w-sm">
+            <p className="mb-2 text-xs text-content-muted">
+              Reads come from {chain.chainName}; to sign anything below your wallet has to be there too.
+            </p>
+            <SwitchChainButton chain={chain} />
           </div>
         )}
 

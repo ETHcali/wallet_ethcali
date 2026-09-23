@@ -4,6 +4,7 @@ import { useVaultDeposit, useVaultWithdraw } from '../../hooks/faucet';
 import { Vault } from '../../types/faucet';
 
 interface VaultDepositWithdrawProps {
+  chainId: number;
   vault: Vault;
   onClose: () => void;
   onSuccess: () => void;
@@ -11,9 +12,9 @@ interface VaultDepositWithdrawProps {
 
 type ActionMode = 'deposit' | 'withdraw';
 
-export function VaultDepositWithdraw({ vault, onClose, onSuccess }: VaultDepositWithdrawProps) {
-  const { deposit, canDeposit } = useVaultDeposit();
-  const { withdraw, canWithdraw } = useVaultWithdraw();
+export function VaultDepositWithdraw({ chainId, vault, onClose, onSuccess }: VaultDepositWithdrawProps) {
+  const { deposit, canDeposit } = useVaultDeposit(chainId);
+  const { withdraw, canWithdraw } = useVaultWithdraw(chainId);
 
   const [mode, setMode] = useState<ActionMode>('deposit');
   const [amount, setAmount] = useState('');

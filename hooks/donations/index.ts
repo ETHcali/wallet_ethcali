@@ -5,9 +5,10 @@
 // Address / deployment resolution
 export {
   useDonationAddresses,
-  useDeployedDonationChains,
   getDonationChainConfig,
   getDonationTokens,
+  donationClient,
+  DONATION_CHAINS,
   DONATION_CHAIN_IDS,
   type DonationChainConfig,
 } from './useDonationAddresses';

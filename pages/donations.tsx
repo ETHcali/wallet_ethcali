@@ -8,20 +8,19 @@ import DonorWall from '../components/donations/DonorWall';
 import BeneficiaryCard from '../components/donations/BeneficiaryCard';
 import BankTransferPanel from '../components/donations/BankTransferPanel';
 import CurrencyToggle from '../components/donations/CurrencyToggle';
+import ChainPicker from '../components/shared/ChainPicker';
 import {
   useActiveCampaigns,
   useCampaignRowId,
   useDonationAddresses,
-  useDeployedDonationChains,
+  DONATION_CHAINS,
 } from '../hooks/donations';
-import { CHAIN_IDS, NETWORK_NAMES, type ChainId } from '../config/constants';
+import { CHAIN_IDS, getChain } from '../config/chains';
 import type { Campaign } from '../types/donations';
 
 export default function DonationsPage() {
-  const deployedChains = useDeployedDonationChains();
-
   // Celo first — it is where COPm lives, the natural currency for local donors.
-  const defaultChainId = deployedChains[0]?.chainId ?? CHAIN_IDS.CELO;
+  const defaultChainId = DONATION_CHAINS[0]?.id ?? CHAIN_IDS.CELO;
   const [chainId, setChainId] = useState<number>(defaultChainId);
 
   const { tokens, isDeployed, vault } = useDonationAddresses(chainId);
@@ -69,27 +68,15 @@ export default function DonationsPage() {
           </header>
 
           {/* Network picker — only chains with a deployed vault */}
-          {deployedChains.length > 1 && (
-            <div className="mb-6 flex flex-wrap gap-2">
-              {deployedChains.map((chain) => (
-                <button
-                  key={chain.chainId}
-                  type="button"
-                  onClick={() => {
-                    setChainId(chain.chainId);
-                    setWallToken(0);
-                  }}
-                  className={`min-h-tap rounded-control border px-4 text-sm font-semibold transition-colors ${
-                    chain.chainId === chainId
-                      ? 'border-eth-blue bg-eth-blue/15 text-eth-blue-text'
-                      : 'border-line-hairline bg-surface-inset text-content-secondary hover:border-line-strong'
-                  }`}
-                >
-                  {chain.name}
-                </button>
-              ))}
-            </div>
-          )}
+          <ChainPicker
+            chains={DONATION_CHAINS}
+            value={chainId}
+            onChange={(id) => {
+              setChainId(id);
+              setWallToken(0);
+            }}
+            className="mb-6"
+          />
 
           {/* Not deployed anywhere yet — an honest empty state, not a broken page */}
           {!isDeployed && (
@@ -100,7 +87,7 @@ export default function DonationsPage() {
               </h2>
               <p className="mx-auto max-w-md text-sm text-content-muted">
                 The donation contract has not been deployed to{' '}
-                {NETWORK_NAMES[chainId as ChainId] ?? 'this network'} yet. Once
+                {getChain(chainId)?.name ?? 'this network'} yet. Once
                 it is, campaigns will appear here automatically.
               </p>
             </div>
@@ -119,7 +106,7 @@ export default function DonationsPage() {
               </h2>
               <p className="text-sm text-content-muted">
                 There are no active campaigns on{' '}
-                {NETWORK_NAMES[chainId as ChainId]} right now.
+                {getChain(chainId)?.name ?? 'this network'} right now.
               </p>
             </div>
           )}

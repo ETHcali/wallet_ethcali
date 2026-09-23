@@ -3,16 +3,19 @@
  *
  * Uses on-chain ZK proof verification (mode: "compressed-evm").
  * The proof is passed directly to the contract's mint(ProofVerificationParams, isIDCard) function.
+ *
+ * The chain is explicit: the identity page picks it from `chainsFor('identity')`.
+ * The mint is gated by `useRequireChain(chainId)` — the UI shows "Switch to
+ * <chain>" until the wallet is there, and `mintNFT` refuses to sign elsewhere.
  */
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { useWallets, useSendTransaction } from '@privy-io/react-auth';
+import { useSendTransaction } from '@privy-io/react-auth';
 import { encodeFunctionData } from 'viem';
-import {
-  hasNFTByAddress,
-  hasNFTByIdentifier,
-  getContractAddresses,
-} from '../utils/contracts';
+import { hasNFTByAddress, hasNFTByIdentifier } from '../utils/contracts';
+import { getChain } from '../config/chains';
 import ZKPassportNFTABI from '../frontend/abis/ZKPassportNFT.json';
+import { useActiveWallet } from './useActiveWallet';
+import { useRequireChain, type RequireChainResult } from './useRequireChain';
 
 // Dynamic import for ZKPassport (browser-only)
 let requestPersonhoodVerification: any;
@@ -48,12 +51,14 @@ export interface UseZKPassportVerificationResult extends VerificationState {
   startVerification: () => Promise<void>;
   mintNFT: () => Promise<void>;
   resetVerification: () => void;
+  /** Wallet-vs-chain state for the mint step; render `SwitchChainButton` while `!ready`. */
+  chain: RequireChainResult;
 }
 
 export function useZKPassportVerification(chainId: number, onMintSuccess?: () => void): UseZKPassportVerificationResult {
-  const { wallets } = useWallets();
+  const { wallet } = useActiveWallet();
+  const chain = useRequireChain(chainId);
   const { sendTransaction } = useSendTransaction();
-  const userWallet = wallets?.[0];
 
   // Refs hold cross-callback data without triggering re-renders
   const zkPassportRef = useRef<any>(null);
@@ -107,7 +112,7 @@ export function useZKPassportVerification(chainId: number, onMintSuccess?: () =>
       setErrorMessage('Please wait for the page to load completely.');
       return;
     }
-    if (!userWallet?.address) {
+    if (!wallet?.address) {
       setErrorMessage('Please connect your wallet first.');
       return;
     }
@@ -124,7 +129,7 @@ export function useZKPassportVerification(chainId: number, onMintSuccess?: () =>
     verifierParamsRef.current = null;
 
     try {
-      const result = await requestPersonhoodVerification(userWallet.address);
+      const result = await requestPersonhoodVerification(wallet.address);
 
       const {
         url,
@@ -225,15 +230,21 @@ export function useZKPassportVerification(chainId: number, onMintSuccess?: () =>
       setStatus('failed');
       setErrorMessage(`Error starting verification: ${error.message || 'Unknown error'}`);
     }
-  }, [isClient, chainId, userWallet?.address]);
+  }, [isClient, chainId, wallet?.address]);
 
   const mintNFT = useCallback(async () => {
-    if (!userWallet) {
+    if (!wallet) {
       setErrorMessage('Wallet not connected. Please connect your wallet first.');
       return;
     }
     if (!verifierParamsRef.current) {
       setErrorMessage('Missing proof parameters. Please complete verification again.');
+      return;
+    }
+
+    const nftContractAddress = getChain(chainId)?.contracts.ZKPassportNFT;
+    if (!nftContractAddress) {
+      setErrorMessage('Identity is not deployed on this network.');
       return;
     }
 
@@ -252,7 +263,7 @@ export function useZKPassportVerification(chainId: number, onMintSuccess?: () =>
     }
 
     try {
-      const addressHasNFT = await hasNFTByAddress(chainId, userWallet.address);
+      const addressHasNFT = await hasNFTByAddress(chainId, wallet.address);
       if (addressHasNFT) {
         setErrorMessage('This address already has an NFT. Only one NFT per address is allowed.');
         setStatus('duplicate');
@@ -267,13 +278,12 @@ export function useZKPassportVerification(chainId: number, onMintSuccess?: () =>
     setErrorMessage(null);
 
     try {
-      const currentChainId = userWallet.chainId;
-      if (currentChainId && Number(currentChainId.replace('eip155:', '')) !== chainId) {
-        await userWallet.switchChain(chainId);
+      // The UI shows the switch button first; this is the last line of defence
+      // for a wallet that drifted between render and click.
+      if (!chain.ready) {
+        const switched = await chain.switchTo();
+        if (!switched) throw new Error(`Switch your wallet to ${chain.chainName} to mint.`);
       }
-
-      const addresses = getContractAddresses(chainId);
-      const nftContractAddress = addresses.ZKPassportNFT;
 
       // New contract signature: mint(ProofVerificationParams params, bool isIDCard)
       const mintTxData = encodeFunctionData({
@@ -283,11 +293,7 @@ export function useZKPassportVerification(chainId: number, onMintSuccess?: () =>
       });
 
       const result = await sendTransaction(
-        {
-          to: nftContractAddress as `0x${string}`,
-          data: mintTxData,
-          chainId,
-        },
+        { to: nftContractAddress, data: mintTxData, chainId },
         { sponsor: true }
       );
 
@@ -300,7 +306,7 @@ export function useZKPassportVerification(chainId: number, onMintSuccess?: () =>
     } finally {
       setIsMinting(false);
     }
-  }, [userWallet, uniqueIdentifier, chainId, sendTransaction, onMintSuccess]);
+  }, [wallet, uniqueIdentifier, chainId, chain, sendTransaction, onMintSuccess]);
 
   return {
     status,
@@ -318,5 +324,6 @@ export function useZKPassportVerification(chainId: number, onMintSuccess?: () =>
     startVerification,
     mintNFT,
     resetVerification,
+    chain,
   };
 }

@@ -1,19 +1,20 @@
 import { useState } from 'react';
 import { useVaultWhitelist, useIsWhitelisted } from '../../hooks/faucet';
 import { Vault } from '../../types/faucet';
-import { useWallets } from '@privy-io/react-auth';
 
 interface VaultWhitelistManagerProps {
+  chainId: number;
   vault: Vault;
   onSuccess?: () => void;
 }
 
-export function VaultWhitelistManager({ vault, onSuccess }: VaultWhitelistManagerProps) {
-  const { wallets: _wallets } = useWallets();
+export function VaultWhitelistManager({ chainId, vault, onSuccess }: VaultWhitelistManagerProps) {
   const [addressInput, setAddressInput] = useState('');
   const [batchInput, setBatchInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [activeMode, setActiveMode] = useState<'single' | 'batch'>('single');
+  /** Inline, next to the actions — never a browser alert. */
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const {
     addToWhitelist,
@@ -22,20 +23,22 @@ export function VaultWhitelistManager({ vault, onSuccess }: VaultWhitelistManage
     removeBatchFromWhitelist,
     setWhitelistEnabled,
     canManage,
-  } = useVaultWhitelist();
+  } = useVaultWhitelist(chainId);
 
   const isValidAddress = addressInput && addressInput.match(/^0x[a-fA-F0-9]{40}$/);
   const { isWhitelisted, refetch: refetchWhitelist } = useIsWhitelisted(
+    chainId,
     vault.id,
     isValidAddress ? addressInput : null
   );
 
   const handleAddSingle = async () => {
     if (!addressInput || !addressInput.match(/^0x[a-fA-F0-9]{40}$/)) {
-      alert('Invalid address');
+      setActionError('Invalid address');
       return;
     }
 
+    setActionError(null);
     setIsProcessing(true);
     try {
       await addToWhitelist(vault.id, addressInput);
@@ -43,7 +46,7 @@ export function VaultWhitelistManager({ vault, onSuccess }: VaultWhitelistManage
       refetchWhitelist();
       onSuccess?.();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to add to whitelist');
+      setActionError(err instanceof Error ? err.message : 'Failed to add to whitelist');
     } finally {
       setIsProcessing(false);
     }
@@ -51,10 +54,11 @@ export function VaultWhitelistManager({ vault, onSuccess }: VaultWhitelistManage
 
   const handleRemoveSingle = async () => {
     if (!addressInput || !addressInput.match(/^0x[a-fA-F0-9]{40}$/)) {
-      alert('Invalid address');
+      setActionError('Invalid address');
       return;
     }
 
+    setActionError(null);
     setIsProcessing(true);
     try {
       await removeFromWhitelist(vault.id, addressInput);
@@ -62,7 +66,7 @@ export function VaultWhitelistManager({ vault, onSuccess }: VaultWhitelistManage
       refetchWhitelist();
       onSuccess?.();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to remove from whitelist');
+      setActionError(err instanceof Error ? err.message : 'Failed to remove from whitelist');
     } finally {
       setIsProcessing(false);
     }
@@ -75,17 +79,18 @@ export function VaultWhitelistManager({ vault, onSuccess }: VaultWhitelistManage
       .filter(addr => addr.match(/^0x[a-fA-F0-9]{40}$/));
 
     if (addresses.length === 0) {
-      alert('No valid addresses found');
+      setActionError('No valid addresses found');
       return;
     }
 
+    setActionError(null);
     setIsProcessing(true);
     try {
       await addBatchToWhitelist(vault.id, addresses);
       setBatchInput('');
       onSuccess?.();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to add batch to whitelist');
+      setActionError(err instanceof Error ? err.message : 'Failed to add batch to whitelist');
     } finally {
       setIsProcessing(false);
     }
@@ -98,29 +103,31 @@ export function VaultWhitelistManager({ vault, onSuccess }: VaultWhitelistManage
       .filter(addr => addr.match(/^0x[a-fA-F0-9]{40}$/));
 
     if (addresses.length === 0) {
-      alert('No valid addresses found');
+      setActionError('No valid addresses found');
       return;
     }
 
+    setActionError(null);
     setIsProcessing(true);
     try {
       await removeBatchFromWhitelist(vault.id, addresses);
       setBatchInput('');
       onSuccess?.();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to remove batch from whitelist');
+      setActionError(err instanceof Error ? err.message : 'Failed to remove batch from whitelist');
     } finally {
       setIsProcessing(false);
     }
   };
 
   const handleToggleWhitelist = async () => {
+    setActionError(null);
     setIsProcessing(true);
     try {
       await setWhitelistEnabled(vault.id, !vault.whitelistEnabled);
       onSuccess?.();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to toggle whitelist');
+      setActionError(err instanceof Error ? err.message : 'Failed to toggle whitelist');
     } finally {
       setIsProcessing(false);
     }
@@ -151,6 +158,12 @@ export function VaultWhitelistManager({ vault, onSuccess }: VaultWhitelistManage
           </button>
         </div>
       </div>
+
+      {actionError && (
+        <div className="rounded-chip border border-signal-reverted/30 bg-signal-reverted/10 p-2 text-[10px] font-mono text-signal-reverted">
+          {actionError}
+        </div>
+      )}
 
       {/* Mode Toggle */}
       <div className="flex gap-1 mb-3">

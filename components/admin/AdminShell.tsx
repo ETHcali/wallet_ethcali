@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { CloseIcon } from '../shared/icons';
 import Link from 'next/link';
-import { useWallets } from '@privy-io/react-auth';
 import Navigation from '../Navigation';
-import { useAdminStatus } from '../../hooks/useAdminStatus';
-import { useDonationAdmin } from '../../hooks/donations/useDonationAdmin';
+import { useActiveWallet } from '../../hooks/useActiveWallet';
+import { useAdminRoles } from '../../hooks/useAdminStatus';
 
 export type AdminSection =
   | 'overview'
@@ -22,7 +21,6 @@ interface AdminShellProps {
   title: string;
   /** One line under the heading — say what this area controls. */
   subtitle?: string;
-  chainId?: number;
   children: React.ReactNode;
 }
 
@@ -54,24 +52,23 @@ function truncate(address?: string): string {
  * sheet on a phone.
  *
  * Visibility here is presentation only. A section appears because the contract
- * says this address holds the role, but the contract re-checks on every write —
- * hiding a link has never been, and must never become, the access control.
+ * says this address holds the role on at least one chain it is deployed on;
+ * the contract re-checks on every write — hiding a link has never been, and
+ * must never become, the access control. Each admin page picks its own chain
+ * in-page; the shell knows nothing about networks.
  */
-const AdminShell: React.FC<AdminShellProps> = ({
-  active,
-  title,
-  subtitle,
-  chainId,
-  children,
-}) => {
+const AdminShell: React.FC<AdminShellProps> = ({ active, title, subtitle, children }) => {
   const [navOpen, setNavOpen] = useState(false);
-  const { wallets } = useWallets();
-  const address = wallets?.[0]?.address;
+  const { address } = useActiveWallet();
 
-  const { isSwagAdmin, isFaucetAdmin, isFaucetSuperAdmin, isZKPassportOwner } =
-    useAdminStatus(chainId);
-  const { isAdmin: isDonationAdmin, isSuperAdmin: isDonationSuperAdmin } =
-    useDonationAdmin(chainId);
+  const {
+    isSwagAdmin,
+    isFaucetAdmin,
+    isFaucetSuperAdmin,
+    isZKPassportOwner,
+    isDonationAdmin,
+    isDonationSuperAdmin,
+  } = useAdminRoles();
 
   const permitted: Record<AdminSection, boolean> = {
     overview: true,
@@ -127,8 +124,8 @@ const AdminShell: React.FC<AdminShellProps> = ({
       </p>
       <p className="mt-1 font-mono text-xs text-content-muted">{truncate(address)}</p>
       <p className="mt-2 text-[10px] leading-relaxed text-content-faint">
-        Roles are read from the contracts. The chain rejects a call your address
-        cannot make, whatever this menu shows.
+        Roles are read from the contracts on every chain they are deployed on.
+        The chain rejects a call your address cannot make, whatever this menu shows.
       </p>
     </div>
   );
@@ -138,7 +135,7 @@ const AdminShell: React.FC<AdminShellProps> = ({
     // under prefers-color-scheme: dark, so without this the app renders white
     // and every white heading disappears. Every other page root does the same.
     <div className="min-h-screen bg-surface-void">
-      <Navigation currentChainId={chainId} />
+      <Navigation />
 
       <div className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-6 lg:py-8">
         <div className="lg:grid lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-8">

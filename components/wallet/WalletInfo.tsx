@@ -1,1201 +1,307 @@
 import Image from 'next/image';
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Wallet, TokenBalance } from '../../types/index';
+import { formatUnits } from 'viem';
 import Loading from '../../components/shared/Loading';
 import { getTokenLogoUrl, formatTokenBalance } from '../../utils/tokenUtils';
-import { useWallets, useSendTransaction } from '@privy-io/react-auth';
-import SendTokenModal from './SendTokenModal';
-import QRScanner from './QRScanner';
-import { parseUnits, encodeFunctionData } from 'viem';
+import { chainsFor } from '../../config/chains';
 import { useTokenPrices } from '../../hooks/useTokenPrices';
-import { getTokenAddresses } from '../../utils/network';
-import ReceiveModal from './ReceiveModal';
+import { useFxRates } from '../../hooks/donations/useDisplayCurrency';
 import { useUserNFTs } from '../../hooks/useUserNFTs';
-import { NFTCard } from './NFTCard';
-import { logger } from '../../utils/logger';
+import type { BalanceRow, ChainBalances } from '../../hooks/useChainBalances';
+import SendTokenModal, { type SendOption } from './SendTokenModal';
+import QRScanner from './QRScanner';
+import ReceiveModal from './ReceiveModal';
 import SwapModal from './SwapModal';
+import { NFTCard } from './NFTCard';
 
 interface WalletInfoProps {
-  wallet: Wallet;
-  balances: TokenBalance;
+  address: string;
+  /** One group per chain in `chainsFor('send')`, from `useChainBalances`. */
+  balances: ChainBalances[];
   isLoading: boolean;
   onRefresh: () => void;
-  chainId?: number;
 }
 
-const WalletInfo: React.FC<WalletInfoProps> = ({
-  wallet,
-  balances,
-  isLoading,
-  onRefresh,
-  chainId,
-}) => {
-  const { wallets } = useWallets();
-  const { sendTransaction } = useSendTransaction();
+const SWAP_CHAINS = chainsFor('swap');
+
+const formatUsd = (value: number) =>
+  new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+
+/** Display precision per row: the native coin gets 4 places, stablecoins and pesos 2. */
+function displayAmount(row: BalanceRow): string {
+  return formatTokenBalance(formatUnits(row.balance, row.decimals), row.isNative ? 4 : 2);
+}
+
+const actionButton =
+  'inline-flex min-h-tap flex-1 items-center justify-center rounded-control border border-line-strong px-4 font-mono text-xs uppercase tracking-[0.12em] text-content-primary transition-colors hover:border-line-brand hover:text-eth-blue-text';
+
+const WalletInfo: React.FC<WalletInfoProps> = ({ address, balances, isLoading, onRefresh }) => {
   const { getPriceForToken } = useTokenPrices();
-  const activeWallet = wallets?.[0];
+  const { data: fx } = useFxRates();
 
-  // States for send token modal
-  const [isSendModalOpen, setIsSendModalOpen] = useState(false);
-  const [_selectedToken, setSelectedToken] = useState<'ETH' | 'USDC'>('ETH');
-  const [isSendingTx, setIsSendingTx] = useState(false);
-  const [txHash, setTxHash] = useState<string | null>(null);
-
-  // Tab state for Tokens/Collectibles
   const [activeTab, setActiveTab] = useState<'tokens' | 'collectibles'>('tokens');
-
-  // New state for QR scanner
+  const [sendTarget, setSendTarget] = useState<{ chainId: number; symbol: string } | null>(null);
+  const [isSendOpen, setIsSendOpen] = useState(false);
+  const [isReceiveOpen, setIsReceiveOpen] = useState(false);
+  const [isSwapOpen, setIsSwapOpen] = useState(false);
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
   const [scannedAddress, setScannedAddress] = useState<string | null>(null);
 
-  // State for Receive modal
-  const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
+  const { data: nfts = [], isLoading: isLoadingNFTs, refetch: refetchNFTs } = useUserNFTs();
 
-  // Swap modal state
-  const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
+  /**
+   * USD per whole token. CoinGecko for anything with an id; COPm is a peso, so
+   * it is 1 / TRM. Null when we honestly do not know, and the UI shows nothing
+   * rather than $0.00.
+   */
+  const priceOf = useCallback(
+    (symbol: string): number | null => {
+      if (symbol === 'COPm') return fx?.usdToCop ? 1 / fx.usdToCop : null;
+      const { price } = getPriceForToken(symbol);
+      return price > 0 ? price : null;
+    },
+    [getPriceForToken, fx?.usdToCop]
+  );
 
-  // NFTs for collectibles tab - pass chainId to ensure correct chain on refresh
-  const { data: nfts = [], isLoading: isLoadingNFTs, refetch: refetchNFTs } = useUserNFTs(chainId);
+  const usdOf = useCallback(
+    (row: BalanceRow): number | null => {
+      const price = priceOf(row.symbol);
+      if (price === null) return null;
+      return Number(formatUnits(row.balance, row.decimals)) * price;
+    },
+    [priceOf]
+  );
 
-  // Refetch NFTs when chainId changes
-  useEffect(() => {
-    if (activeTab === 'collectibles' && chainId) {
-      refetchNFTs();
-    }
-  }, [chainId, activeTab, refetchNFTs]);
-  
-  // Get the actual wallet instance from Privy's useWallets hook
-  const privyWallet = wallets?.find(w => w.address.toLowerCase() === wallet.address.toLowerCase());
-  
-  // Get token logo URLs from CoinGecko
-  const ethLogoUrl = getTokenLogoUrl('ETH');
-  const usdcLogoUrl = getTokenLogoUrl('USDC');
-  const eurclogoUrl = getTokenLogoUrl('EURC');
-  const usdtLogoUrl = getTokenLogoUrl('USDT');
-  
-  // Explorer mapping per chain
-  const explorerBase = (() => {
-    switch (chainId) {
-      case 1:
-        return 'https://etherscan.io';
-      case 10:
-        return 'https://optimism.etherscan.io';
-      case 8453:
-        return 'https://basescan.org';
-      case 130:
-        return 'https://unichain.blockscout.com';
-      default:
-        return undefined;
-    }
-  })();
-  
-  // Calculate USD values
-  const ethPrice = getPriceForToken('ETH');
-  const usdcPrice = getPriceForToken('USDC');
-  const usdtPrice = getPriceForToken('USDT');
-  const eurcPrice = getPriceForToken('EURC');
+  const totalUsd = useMemo(
+    () =>
+      balances.reduce(
+        (sum, group) => sum + group.rows.reduce((s, row) => s + (usdOf(row) ?? 0), 0),
+        0
+      ),
+    [balances, usdOf]
+  );
 
-  const ethValueUsd = parseFloat(balances.ethBalance) * ethPrice.price;
-  const usdcValueUsd = parseFloat(balances.uscBalance) * usdcPrice.price;
-  const usdtValueUsd = parseFloat(balances.usdtBalance || '0') * usdtPrice.price;
-  const eurcValueUsd = parseFloat(balances.eurcBalance || '0') * eurcPrice.price;
-  
-  // Format USD values
-  const formatUsd = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(value);
-  };
-  
-  // Get token addresses based on chain (using centralized config)
-  const getTokenAddress = (tokenSymbol: string): string | null => {
-    if (tokenSymbol === 'ETH') return null; // Native token
-    if (!chainId) return null;
-    
-    // Use centralized token addresses from utils/network
-    const tokenAddresses = getTokenAddresses(chainId);
-    const address = tokenAddresses[tokenSymbol as keyof typeof tokenAddresses];
-    
-    // Return null if token not available on this chain (empty string)
-    return address && address.trim() !== '' ? address : null;
+  const sendOptions: SendOption[] = useMemo(
+    () =>
+      balances.flatMap((group) =>
+        group.rows.map((row) => ({
+          chainId: group.chain.id,
+          chainName: group.chain.name,
+          symbol: row.symbol,
+          name: row.name,
+          decimals: row.decimals,
+          balance: row.balance,
+        }))
+      ),
+    [balances]
+  );
+
+  const openSend = (target: { chainId: number; symbol: string } | null) => {
+    setSendTarget(target ?? sendOptions.find((o) => o.balance > 0n) ?? sendOptions[0] ?? null);
+    setIsSendOpen(true);
   };
 
-  // Prepare available tokens for SendTokenModal - show all 4 tokens regardless of balance
-  const availableTokens = [
-    { symbol: 'ETH', balance: balances.ethBalance, name: 'Ethereum' },
-    { symbol: 'USDC', balance: balances.uscBalance, name: 'USD Coin' },
-    { symbol: 'USDT', balance: balances.usdtBalance || '0', name: 'Tether USD' },
-    { symbol: 'EURC', balance: balances.eurcBalance || '0', name: 'Euro Coin' },
-  ];
-
-  // Handle sending tokens
-  const handleSendToken = async (recipient: string, amount: string, tokenType: string) => {
-    const walletToUse = activeWallet || privyWallet;
-
-    if (!walletToUse) {
-      logger.error('No wallet found');
-      return;
-    }
-
-    logger.tx('Sending transaction', {
-      hash: undefined,
-      chainId,
-      status: 'pending'
-    });
-
-    setIsSendingTx(true);
-    setTxHash(null);
-
-    try {
-      const transferAbi = [{
-        inputs: [
-          { name: 'to', type: 'address' },
-          { name: 'amount', type: 'uint256' }
-        ],
-        name: 'transfer',
-        outputs: [{ name: '', type: 'bool' }],
-        stateMutability: 'nonpayable',
-        type: 'function'
-      }] as const;
-
-      // Ensure chainId is available for gas sponsorship
-      if (!chainId) {
-        throw new Error('Chain ID is required for transaction');
-      }
-
-      if (tokenType === 'ETH') {
-        const value = parseUnits(amount, 18);
-        const result = await sendTransaction(
-          {
-            to: recipient as `0x${string}`,
-            value,
-            chainId,
-          },
-          { sponsor: true }
-        );
-        setTxHash(result.hash);
-      } else {
-        // ERC20 token transfer
-        const tokenAddress = getTokenAddress(tokenType);
-        if (!tokenAddress) {
-          throw new Error(`Token ${tokenType} not supported on this network`);
-        }
-
-        const decimals = tokenType === 'USDT' || tokenType === 'USDC' || tokenType === 'EURC' ? 6 : 18;
-        const tokenAmount = parseUnits(amount, decimals);
-        const data = encodeFunctionData({
-          abi: transferAbi,
-          functionName: 'transfer',
-          args: [recipient as `0x${string}`, tokenAmount]
-        });
-
-        const result = await sendTransaction(
-          {
-            to: tokenAddress as `0x${string}`,
-            data,
-            chainId,
-          },
-          { sponsor: true }
-        );
-        setTxHash(result.hash);
-      }
-
-      // Refresh balances after successful transaction
-      onRefresh();
-
-    } catch (error) {
-      logger.error('Error sending transaction', error);
-      throw error;
-    } finally {
-      setIsSendingTx(false);
-    }
-  };
-  
-  // Handle QR code scan result
-  const handleQRScan = (address: string) => {
-    setScannedAddress(address);
+  const handleQRScan = (scanned: string) => {
+    setScannedAddress(scanned);
     setIsQRScannerOpen(false);
-    
-    // Open send modal with the scanned address
-    setSelectedToken('ETH'); // Default to ETH
-    setIsSendModalOpen(true);
+    openSend(null);
   };
-  
-  // Open QR scanner
-  const openQRScanner = () => {
-    setIsQRScannerOpen(true);
-  };
-  
+
   return (
-    <div>
-      <div className="balance-section">
+    <div className="space-y-4">
+      {/* Portfolio header */}
+      <div className="rounded-card border border-line-hairline bg-surface-slab p-5">
+        <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-content-faint">Total balance</p>
+        <p className="mt-1 font-mono text-3xl font-bold text-content-primary">
+          {isLoading ? '…' : formatUsd(totalUsd)}
+        </p>
+        <p className="mt-1 text-xs text-content-faint">
+          Across {balances.length} networks · same address on each
+        </p>
 
-        <div className="balance-header">
-          <h4>Assets</h4>
-        </div>
-
-        {/* Tabs for Tokens/Collectibles */}
-        <div className="wallet-tabs">
-          <button
-            className={`wallet-tab ${activeTab === 'tokens' ? 'active' : ''}`}
-            onClick={() => setActiveTab('tokens')}
-          >
-            Tokens
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button type="button" onClick={() => openSend(null)} className={actionButton}>
+            Send
           </button>
-          <button
-            className={`wallet-tab ${activeTab === 'collectibles' ? 'active' : ''}`}
-            onClick={() => setActiveTab('collectibles')}
-          >
-            Collectibles
+          <button type="button" onClick={() => setIsReceiveOpen(true)} className={actionButton}>
+            Receive
           </button>
-          {activeTab === 'collectibles' && (
-            <button
-              className="refresh-collectibles-btn"
-              onClick={() => refetchNFTs()}
-              disabled={isLoadingNFTs}
-              title="Refresh collectibles"
-            >
-              <svg 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2"
-                className={isLoadingNFTs ? 'spinning' : ''}
-              >
-                <path d="M23 4v6h-6M1 20v-6h6" />
-                <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
-              </svg>
+          {/* Swap only exists on chains with a LI.FI token list. */}
+          {SWAP_CHAINS.length > 0 && (
+            <button type="button" onClick={() => setIsSwapOpen(true)} className={actionButton}>
+              Swap
             </button>
           )}
         </div>
-
-        {isLoading ? (
-          <div className="loading-balances">
-            <Loading size="small" text="Loading balances..." />
-          </div>
-        ) : activeTab === 'tokens' ? (
-          <div className="token-list">
-            {/* ETH Balance */}
-            <div className="token-item">
-              <div className="token-info">
-                <Image src={ethLogoUrl} alt="ETH" width={32} height={32} className="token-icon" unoptimized />
-                <div className="token-details">
-                  <span className="token-name">Ethereum</span>
-                  <span className="token-symbol">ETH</span>
-                </div>
-              </div>
-              <div className="token-balance">
-                <div className="balance-amount">{formatTokenBalance(balances.ethBalance, 6)}</div>
-                <div className="balance-usd">{formatUsd(ethValueUsd)}</div>
-              </div>
-            </div>
-
-            {/* USDC Balance */}
-            <div className="token-item">
-              <div className="token-info">
-                <Image src={usdcLogoUrl} alt="USDC" width={32} height={32} className="token-icon" unoptimized />
-                <div className="token-details">
-                  <span className="token-name">USD Coin</span>
-                  <span className="token-symbol">USDC</span>
-                </div>
-              </div>
-              <div className="token-balance">
-                <div className="balance-amount">{formatTokenBalance(balances.uscBalance, 6)}</div>
-                <div className="balance-usd">{formatUsd(usdcValueUsd)}</div>
-              </div>
-            </div>
-
-            {/* USDT Balance */}
-            <div className="token-item">
-              <div className="token-info">
-                <Image src={usdtLogoUrl} alt="USDT" width={32} height={32} className="token-icon" unoptimized />
-                <div className="token-details">
-                  <span className="token-name">Tether USD</span>
-                  <span className="token-symbol">USDT</span>
-                </div>
-              </div>
-              <div className="token-balance">
-                <div className="balance-amount">{formatTokenBalance(balances.usdtBalance || '0', 6)}</div>
-                <div className="balance-usd">{formatUsd(usdtValueUsd)}</div>
-              </div>
-            </div>
-
-            {/* EURC Balance */}
-            <div className="token-item">
-              <div className="token-info">
-                <Image src={eurclogoUrl} alt="EURC" width={32} height={32} className="token-icon" unoptimized />
-                <div className="token-details">
-                  <span className="token-name">Euro Coin</span>
-                  <span className="token-symbol">EURC</span>
-                </div>
-              </div>
-              <div className="token-balance">
-                <div className="balance-amount">{formatTokenBalance(balances.eurcBalance || '0', 6)}</div>
-                <div className="balance-usd">{formatUsd(eurcValueUsd)}</div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          /* Collectibles Tab */
-          <div className="collectibles-list">
-            {isLoadingNFTs ? (
-              <div className="collectibles-loading">
-                <Loading size="small" text="Loading collectibles..." />
-              </div>
-            ) : nfts.length === 0 ? (
-              <div className="collectibles-empty">
-                <div className="empty-icon">
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <rect x="3" y="3" width="18" height="18" rx="2" />
-                    <circle cx="8.5" cy="8.5" r="1.5" />
-                    <path d="M21 15l-5-5L5 21" />
-                  </svg>
-                </div>
-                <h4>No Collectibles Yet</h4>
-                <p>Your NFTs and collectibles will appear here</p>
-                <Link href="/swag" className="browse-swag-link">
-                  Browse ETH CALI Swag
-                </Link>
-              </div>
-            ) : (
-              <div>
-                <div className="collectibles-summary">
-                  <span className="summary-label">Total Collectibles:</span>
-                  <span className="summary-value">{nfts.length}</span>
-                </div>
-                <div className="nfts-grid">
-                  {nfts.map((nft) => (
-                    <NFTCard key={nft.tokenId.toString()} nft={nft} />
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
       </div>
-      
-      {txHash && (
-        <div className="transaction-receipt">
-          <div className="receipt-header">
-            <div className="success-icon">✓</div>
-            <h4>Transaction Sent</h4>
-          </div>
-          <div className="receipt-content">
-            <div className="tx-hash-container">
-              <span className="tx-label">Transaction Hash:</span>
-              <code className="tx-hash">{txHash.substring(0, 10)}...{txHash.substring(txHash.length - 8)}</code>
-              {explorerBase && (
-                <a 
-                  href={`${explorerBase}/tx/${txHash}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="explorer-button"
-                >
-                  View on Explorer
-                </a>
-              )}
+
+      {/* Tabs */}
+      <div className="flex items-center gap-1 border-b border-line-hairline">
+        {(['tokens', 'collectibles'] as const).map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => setActiveTab(tab)}
+            className={`min-h-tap border-b-2 px-4 font-mono text-[11px] uppercase tracking-[0.12em] transition-colors ${
+              activeTab === tab
+                ? 'border-eth-blue text-eth-blue-text'
+                : 'border-transparent text-content-muted hover:text-content-primary'
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
+        <button
+          type="button"
+          onClick={() => (activeTab === 'tokens' ? onRefresh() : refetchNFTs())}
+          className="ml-auto min-h-tap px-3 font-mono text-[11px] uppercase tracking-[0.12em] text-content-faint hover:text-content-primary"
+        >
+          Refresh
+        </button>
+      </div>
+
+      {activeTab === 'tokens' ? (
+        <div className="space-y-3">
+          {balances.map((group) => {
+            const groupUsd = group.rows.reduce((s, row) => s + (usdOf(row) ?? 0), 0);
+            return (
+              <section
+                key={group.chain.id}
+                className="rounded-card border border-line-hairline bg-surface-slab"
+                aria-label={group.chain.name}
+              >
+                <header className="flex items-center justify-between border-b border-line-hairline px-4 py-3">
+                  <h3 className="font-mono text-xs uppercase tracking-[0.12em] text-content-secondary">
+                    {group.chain.name}
+                  </h3>
+                  <span className="font-mono text-xs text-content-muted">
+                    {group.pending ? '…' : group.error ? 'Unavailable' : formatUsd(groupUsd)}
+                  </span>
+                </header>
+
+                {group.error ? (
+                  <p className="px-4 py-3 text-xs text-signal-reverted">
+                    Could not read {group.chain.name}. Balances here are not shown rather than shown wrong.
+                  </p>
+                ) : group.pending ? (
+                  <div className="px-4 py-4">
+                    <Loading size="small" text={`Reading ${group.chain.name}…`} />
+                  </div>
+                ) : (
+                  <ul>
+                    {group.rows.map((row) => {
+                      const usd = usdOf(row);
+                      return (
+                        <li key={`${group.chain.id}-${row.symbol}`}>
+                          <button
+                            type="button"
+                            onClick={() => openSend({ chainId: group.chain.id, symbol: row.symbol })}
+                            className="flex min-h-tap w-full items-center gap-3 px-4 py-2 text-left transition-colors hover:bg-surface-inset"
+                            title={`Send ${row.symbol} on ${group.chain.name}`}
+                          >
+                            <Image
+                              src={getTokenLogoUrl(row.symbol)}
+                              alt=""
+                              width={32}
+                              height={32}
+                              className="h-8 w-8 rounded-full"
+                              unoptimized
+                            />
+                            <span className="flex min-w-0 flex-1 flex-col">
+                              <span className="truncate text-sm text-content-primary">{row.name}</span>
+                              <span className="font-mono text-[11px] text-content-faint">{row.symbol}</span>
+                            </span>
+                            <span className="flex flex-col items-end">
+                              <span className="font-mono text-sm text-content-primary">{displayAmount(row)}</span>
+                              <span className="font-mono text-[11px] text-content-faint">
+                                {usd === null ? '—' : formatUsd(usd)}
+                              </span>
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </section>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="rounded-card border border-line-hairline bg-surface-slab p-4">
+          {isLoadingNFTs ? (
+            <Loading size="small" text="Loading collectibles…" />
+          ) : nfts.length === 0 ? (
+            <div className="py-8 text-center">
+              <h4 className="text-base font-semibold text-content-primary">No collectibles yet</h4>
+              <p className="mt-1 text-sm text-content-muted">Your NFTs and collectibles will appear here.</p>
+              <Link
+                href="/swag"
+                className="mt-4 inline-flex min-h-tap items-center rounded-control bg-eth-blue px-5 text-sm font-semibold text-on-brand transition-colors hover:bg-eth-blue-lift"
+              >
+                Browse ETH Cali swag
+              </Link>
             </div>
-            <div className="receipt-info">
-              {/* Add any additional receipt information here */}
+          ) : (
+            <div className="space-y-4">
+              <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-content-faint">
+                {nfts.length} collectible{nfts.length === 1 ? '' : 's'}
+              </p>
+              <div className="grid gap-4">
+                {nfts.map((nft) => (
+                  <NFTCard key={`${nft.chainId}-${nft.designAddress}-${nft.tokenId.toString()}`} nft={nft} />
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
-      {/* Add the QR Scanner component */}
       {isQRScannerOpen && (
-        <QRScanner 
-          onScan={handleQRScan} 
-          onClose={() => setIsQRScannerOpen(false)} 
-        />
+        <QRScanner onScan={handleQRScan} onClose={() => setIsQRScannerOpen(false)} />
       )}
 
-      {/* Send Token Modal */}
-      {isSendModalOpen && (
+      {isSendOpen && (
         <SendTokenModal
-          onClose={() => setIsSendModalOpen(false)}
-          onSend={handleSendToken}
-          availableTokens={availableTokens}
-          isSending={isSendingTx}
-          txHash={txHash}
-          initialRecipient={scannedAddress || ''}
-          chainId={chainId}
+          options={sendOptions}
+          initial={sendTarget ?? undefined}
+          initialRecipient={scannedAddress ?? ''}
+          priceOf={priceOf}
+          onClose={() => {
+            setIsSendOpen(false);
+            setScannedAddress(null);
+          }}
+          onSent={onRefresh}
         />
       )}
 
-      {/* Receive Modal */}
-      {isReceiveModalOpen && (
+      {isReceiveOpen && (
         <ReceiveModal
-          address={wallet.address}
-          onClose={() => setIsReceiveModalOpen(false)}
+          address={address}
+          onClose={() => setIsReceiveOpen(false)}
           onScanQR={() => {
-            setIsReceiveModalOpen(false);
-            openQRScanner();
+            setIsReceiveOpen(false);
+            setIsQRScannerOpen(true);
           }}
         />
       )}
 
-      {/* Swap Modal */}
-      {isSwapModalOpen && (
+      {isSwapOpen && (
         <SwapModal
-          userAddress={wallet.address}
-          chainId={chainId || 8453}
-          onClose={() => setIsSwapModalOpen(false)}
+          userAddress={address}
+          onClose={() => setIsSwapOpen(false)}
           onSuccess={() => {
-            setIsSwapModalOpen(false);
+            setIsSwapOpen(false);
             onRefresh();
           }}
         />
       )}
-
-      <style jsx>{`
-        .wallet-info {
-          background: transparent;
-          padding: 0;
-          border-radius: 0;
-          margin-top: 0;
-          position: relative;
-          max-width: 100%;
-        }
-
-        /* Portfolio Hero Section */
-        .portfolio-hero {
-          background: var(--surface-slab);
-          border-radius: 20px;
-          padding: 1.5rem;
-          margin-bottom: 1rem;
-          border: 1px solid var(--line-hairline);
-        }
-
-        .portfolio-value-section {
-          text-align: center;
-          margin-bottom: 1.25rem;
-        }
-
-        .portfolio-label {
-          display: block;
-          font-size: 0.75rem;
-          font-weight: 500;
-          color: var(--text-muted);
-          text-transform: uppercase;
-          letter-spacing: 0.1em;
-          margin-bottom: 0.5rem;
-        }
-
-        .portfolio-amount {
-          font-family: var(--font-mono);
-          font-size: 2.25rem;
-          font-weight: 500;
-          letter-spacing: -0.02em;
-          color: var(--text-primary);
-          line-height: 1.2;
-        }
-
-        /* Wallet Address Card - Compact */
-        .wallet-address-card {
-          background: var(--surface-slab);
-          border-radius: 12px;
-          padding: 0.875rem 1rem;
-          margin-bottom: 1.25rem;
-          border: 1px solid var(--line-hairline);
-        }
-
-        .address-row {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 0.75rem;
-        }
-
-        .address-info {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          flex: 1;
-          min-width: 0;
-        }
-
-        .qr-code-mini {
-          width: 44px;
-          height: 44px;
-          background: white;
-          border-radius: 8px;
-          padding: 3px;
-          flex-shrink: 0;
-        }
-
-        .qr-code-mini img {
-          width: 100%;
-          height: 100%;
-          display: block;
-        }
-
-        .address-text {
-          display: flex;
-          flex-direction: column;
-          min-width: 0;
-        }
-
-        .address-label {
-          font-size: 0.7rem;
-          font-weight: 500;
-          color: var(--text-faint);
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-        }
-
-        .address-value {
-          font-family: 'SF Mono', 'Menlo', monospace;
-          font-size: 0.875rem;
-          color: var(--eth-blue);
-          font-weight: 500;
-        }
-
-        .address-actions-row {
-          display: flex;
-          gap: 0.5rem;
-          flex-shrink: 0;
-        }
-
-        .action-icon-btn {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 36px;
-          height: 36px;
-          border-radius: 8px;
-          background: var(--surface-ridge);
-          border: 1px solid var(--surface-ridge);
-          color: var(--text-muted);
-          cursor: pointer;
-          transition: all 0.2s ease;
-          text-decoration: none;
-        }
-
-        .action-icon-btn:hover {
-          background: var(--surface-ridge);
-          color: var(--text-secondary);
-          border-color: var(--line-strong);
-        }
-
-        .action-icon-btn svg {
-          width: 16px;
-          height: 16px;
-        }
-
-        /* Login Info Row */
-        .login-info-row {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          margin-top: 0.875rem;
-          padding-top: 0.875rem;
-          border-top: 1px solid var(--line-hairline);
-        }
-
-        .login-info-icon {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 32px;
-          height: 32px;
-          background: rgb(var(--eth-blue-rgb) / 0.15);
-          border-radius: 8px;
-          color: var(--eth-blue);
-          flex-shrink: 0;
-        }
-
-        .login-info-icon svg {
-          width: 16px;
-          height: 16px;
-        }
-
-        .login-info-text {
-          display: flex;
-          flex-direction: column;
-          min-width: 0;
-        }
-
-        .login-info-label {
-          font-size: 0.6875rem;
-          font-weight: 500;
-          color: var(--text-faint);
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-        }
-
-        .login-info-value {
-          font-size: 0.8125rem;
-          color: var(--text-secondary);
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .balance-section {
-          margin-top: 0;
-        }
-
-        .balance-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 0.75rem;
-          padding: 0 0.25rem;
-        }
-
-        .balance-header h4 {
-          margin: 0;
-          color: var(--text-muted);
-          font-size: 0.75rem;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-        }
-
-        .loading-balances {
-          padding: 2rem;
-          text-align: center;
-          color: var(--text-muted);
-        }
-
-        .token-list {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-
-        .token-item {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 0.875rem 1rem;
-          background: var(--surface-slab);
-          border-radius: 12px;
-          border: 1px solid var(--line-hairline);
-          transition: all 0.15s ease;
-        }
-
-        .token-info {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-        }
-
-        .token-icon {
-          width: 36px;
-          height: 36px;
-          border-radius: 50%;
-          object-fit: contain;
-        }
-
-        .token-details {
-          display: flex;
-          flex-direction: column;
-          gap: 0.125rem;
-        }
-
-        .token-name {
-          font-weight: 500;
-          font-size: 0.9375rem;
-          color: var(--text-secondary);
-        }
-
-        .token-symbol {
-          font-size: 0.75rem;
-          color: var(--text-faint);
-        }
-
-        .token-balance {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-          gap: 0.125rem;
-        }
-
-        .balance-amount {
-          font-weight: 600;
-          font-size: 0.9375rem;
-          color: var(--text-secondary);
-        }
-
-        .balance-usd {
-          font-size: 0.75rem;
-          color: var(--text-faint);
-        }
-        
-        .transaction-receipt {
-          margin: 1.5rem 0;
-          background-color: var(--surface-inset);
-          border-radius: 12px;
-          border: 1px solid var(--line-hairline);
-          overflow: hidden;
-        }
-        
-        .receipt-header {
-          background-color: var(--surface-slab);
-          padding: 1rem 1.5rem;
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          border-bottom: 1px solid var(--line-hairline);
-        }
-        
-        .receipt-header h4 {
-          margin: 0;
-          color: var(--signal-confirmed);
-          font-size: 1.1rem;
-        }
-        
-        .success-icon {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 24px;
-          height: 24px;
-          background-color: rgb(var(--signal-confirmed-rgb) / 0.15);
-          color: var(--signal-confirmed);
-          border-radius: 50%;
-          font-weight: bold;
-        }
-        
-        .receipt-content {
-          padding: 1.25rem 1.5rem;
-        }
-        
-        .tx-hash-container {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          margin-bottom: 1rem;
-          flex-wrap: wrap;
-        }
-        
-        .tx-label {
-          font-weight: 500;
-          color: var(--text-color);
-          font-size: 0.9rem;
-        }
-        
-        .tx-hash {
-          font-family: monospace;
-          background: var(--bg-tertiary);
-          padding: 0.25rem 0.5rem;
-          border-radius: 4px;
-          color: var(--text-color);
-          font-size: 0.9rem;
-        }
-        
-        .explorer-button {
-          display: inline-flex;
-          align-items: center;
-          background-color: var(--signal-confirmed);
-          color: white;
-          text-decoration: none;
-          padding: 0.25rem 0.75rem;
-          border-radius: 4px;
-          font-size: 0.85rem;
-          transition: background-color 0.2s;
-        }
-        
-        .explorer-button:hover {
-          background-color: var(--eth-blue-lift);
-        }
-        
-        .receipt-info {
-          margin: 0;
-          color: var(--text-secondary);
-          font-size: 0.9rem;
-        }
-        
-        /* Mobile-first responsive design */
-        @media (max-width: 480px) {
-          .portfolio-hero {
-            padding: 1.25rem;
-            border-radius: 16px;
-          }
-
-          .portfolio-amount {
-            font-size: 1.875rem;
-          }
-
-          .quick-action-btn .action-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 12px;
-          }
-
-          .quick-action-btn svg {
-            width: 18px;
-            height: 18px;
-          }
-
-          .wallet-address-card {
-            padding: 0.75rem;
-          }
-
-          .qr-code-mini {
-            width: 38px;
-            height: 38px;
-          }
-
-          .address-value {
-            font-size: 0.8125rem;
-          }
-
-          .action-icon-btn {
-            width: 32px;
-            height: 32px;
-          }
-
-          .action-icon-btn svg {
-            width: 14px;
-            height: 14px;
-          }
-
-          .token-item {
-            padding: 0.75rem;
-          }
-
-          .token-icon {
-            width: 32px;
-            height: 32px;
-          }
-
-          .token-name {
-            font-size: 0.875rem;
-          }
-
-          .balance-amount {
-            font-size: 0.875rem;
-          }
-
-          .wallet-tab {
-            padding: 0.625rem 0.75rem;
-            font-size: 0.8125rem;
-          }
-        }
-
-        @media (min-width: 768px) {
-          .portfolio-hero {
-            padding: 2rem;
-          }
-
-          .portfolio-amount {
-            font-size: 2.75rem;
-          }
-
-          .quick-action-btn .action-icon {
-            width: 52px;
-            height: 52px;
-          }
-
-          .quick-action-btn svg {
-            width: 24px;
-            height: 24px;
-          }
-
-          .wallet-address-card {
-            padding: 1rem 1.25rem;
-          }
-
-          .qr-code-mini {
-            width: 52px;
-            height: 52px;
-          }
-
-          .token-icon {
-            width: 40px;
-            height: 40px;
-          }
-        }
-
-        /* Wallet Tabs */
-        .wallet-tabs {
-          display: flex;
-          gap: 0;
-          margin-bottom: 1.5rem;
-          background: var(--surface-slab);
-          border-radius: 8px;
-          padding: 4px;
-          border: 1px solid var(--line-hairline);
-        }
-
-        .wallet-tab {
-          flex: 1;
-          padding: 0.75rem 1rem;
-          font-size: 0.875rem;
-          font-weight: 600;
-          color: var(--text-muted);
-          background: transparent;
-          border: none;
-          border-radius: 6px;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .wallet-tab:hover {
-          color: var(--text-secondary);
-          background: var(--line-hairline);
-        }
-
-        .wallet-tab.active {
-          color: var(--eth-blue);
-          background: rgb(var(--eth-blue-rgb) / 0.15);
-        }
-
-        .refresh-collectibles-btn {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0.5rem;
-          margin-left: auto;
-          background: var(--surface-ridge);
-          border: 1px solid var(--surface-ridge);
-          border-radius: 6px;
-          color: var(--text-muted);
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .refresh-collectibles-btn:hover:not(:disabled) {
-          background: var(--surface-ridge);
-          color: var(--eth-blue);
-          border-color: rgb(var(--eth-blue-rgb) / 0.4);
-        }
-
-        .refresh-collectibles-btn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        .refresh-collectibles-btn svg {
-          width: 16px;
-          height: 16px;
-        }
-
-        .refresh-collectibles-btn svg.spinning {
-          animation: spin 1s linear infinite;
-        }
-
-        /* Collectibles Section */
-        .collectibles-list {
-          min-height: 200px;
-        }
-
-        .collectibles-loading {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 3rem 1.5rem;
-        }
-
-        .collectibles-empty {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: 3rem 1.5rem;
-          text-align: center;
-          background: var(--surface-slab);
-          border-radius: 12px;
-          border: 1px dashed var(--surface-ridge);
-        }
-
-        .collectibles-empty .empty-icon {
-          color: var(--surface-ridge);
-          margin-bottom: 1rem;
-        }
-
-        .collectibles-empty h4 {
-          color: var(--text-secondary);
-          font-size: 1.125rem;
-          font-weight: 600;
-          margin: 0 0 0.5rem 0;
-        }
-
-        .collectibles-empty p {
-          color: var(--text-muted);
-          font-size: 0.875rem;
-          margin: 0 0 1.5rem 0;
-        }
-
-        .collectibles-summary {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 1rem;
-          margin-bottom: 1rem;
-          background: rgb(var(--eth-blue-rgb) / 0.1);
-          border: 1px solid rgb(var(--eth-blue-rgb) / 0.3);
-          border-radius: 8px;
-        }
-
-        .summary-label {
-          font-size: 0.875rem;
-          color: var(--text-muted);
-          font-weight: 500;
-        }
-
-        .summary-value {
-          font-size: 1.125rem;
-          color: var(--eth-blue);
-          font-weight: 700;
-        }
-
-        .nfts-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-          gap: 1rem;
-        }
-
-        @media (max-width: 640px) {
-          .nfts-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .collectibles-summary {
-            padding: 0.875rem;
-          }
-
-          .summary-value {
-            font-size: 1rem;
-          }
-        }
-
-        .browse-swag-link {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.75rem 1.5rem;
-          background: rgb(var(--eth-blue-rgb) / 0.2);
-          border: 1px solid rgb(var(--eth-blue-rgb) / 0.4);
-          border-radius: 8px;
-          color: var(--eth-blue);
-          font-size: 0.875rem;
-          font-weight: 600;
-          text-decoration: none;
-          transition: all 0.2s ease;
-        }
-
-        /* Quick Actions - Professional Mobile UI */
-        .quick-actions {
-          display: grid;
-          grid-template-columns: repeat(5, 1fr);
-          gap: 0.5rem;
-        }
-
-        .quick-action-btn {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 0.375rem;
-          padding: 0.75rem 0.5rem;
-          background: transparent;
-          border: none;
-          border-radius: 12px;
-          color: var(--text-muted);
-          font-size: 0.6875rem;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.15s ease;
-        }
-
-        .quick-action-btn:hover:not(:disabled) {
-          color: var(--text-secondary);
-        }
-
-        .quick-action-btn:active:not(:disabled) {
-          transform: scale(0.95);
-        }
-
-        .quick-action-btn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        .quick-action-btn .action-icon {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 44px;
-          height: 44px;
-          border-radius: 14px;
-          transition: all 0.15s ease;
-        }
-
-        .quick-action-btn svg {
-          width: 20px;
-          height: 20px;
-          stroke-width: 2;
-        }
-
-        .quick-action-btn.fund-btn .action-icon {
-          background: rgb(var(--eth-blue-rgb) / 0.2);
-          color: var(--eth-blue-text);
-        }
-
-        .quick-action-btn.fund-btn:hover:not(:disabled) .action-icon {
-          background: rgb(var(--eth-blue-rgb) / 0.3);
-        }
-
-        .quick-action-btn.swap-btn .action-icon {
-          background: rgb(var(--eth-blue-rgb) / 0.2);
-          color: var(--eth-blue-text);
-        }
-
-        .quick-action-btn.swap-btn:hover:not(:disabled) .action-icon {
-          background: rgb(var(--eth-blue-rgb) / 0.3);
-        }
-
-        .quick-action-btn.send-btn .action-icon {
-          background: rgb(var(--eth-blue-rgb) / 0.2);
-          color: var(--eth-blue-text);
-        }
-
-        .quick-action-btn.send-btn:hover:not(:disabled) .action-icon {
-          background: rgb(var(--eth-blue-rgb) / 0.3);
-        }
-
-        .quick-action-btn.receive-btn .action-icon {
-          background: rgb(var(--eth-blue-rgb) / 0.2);
-          color: var(--eth-blue-text);
-        }
-
-        .quick-action-btn.receive-btn:hover:not(:disabled) .action-icon {
-          background: rgb(var(--eth-blue-rgb) / 0.3);
-        }
-
-        .quick-action-btn.refresh-btn .action-icon {
-          background: var(--surface-ridge);
-          color: var(--text-muted);
-        }
-
-        .quick-action-btn.refresh-btn:hover:not(:disabled) .action-icon {
-          background: var(--surface-ridge);
-          color: var(--text-secondary);
-        }
-
-        .quick-action-btn.refresh-btn svg.spinning {
-          animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-
-        .browse-swag-link:hover {
-          background: rgb(var(--eth-blue-rgb) / 0.3);
-          border-color: rgb(var(--eth-blue-rgb) / 0.6);
-          transform: translateY(-1px);
-        }
-      `}</style>
     </div>
   );
 };

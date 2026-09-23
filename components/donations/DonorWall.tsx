@@ -1,7 +1,7 @@
 import React from 'react';
 import { useDonorWall, useDisplayCurrency } from '../../hooks/donations';
 import type { DonationToken } from '../../types/donations';
-import { EXPLORER_URLS, type ChainId } from '../../config/constants';
+import { getChain } from '../../config/chains';
 
 interface DonorWallProps {
   campaignId: number;
@@ -26,7 +26,7 @@ const DonorWall: React.FC<DonorWallProps> = ({ campaignId, token, chainId }) => 
   const { data, isLoading } = useDonorWall(campaignId, token, chainId);
   const { format, formatToken } = useDisplayCurrency();
 
-  const explorer = EXPLORER_URLS[chainId as ChainId];
+  const explorer = getChain(chainId)?.explorerUrl;
   const entries = data?.entries ?? [];
 
   return (

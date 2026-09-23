@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Loading from '../components/shared/Loading';
 import { safeNext, DEFAULT_NEXT } from '../lib/returnTo';
 import Navigation from '../components/Navigation';
+import { CHAINS } from '../config/chains';
 import {
   ArrowRightIcon,
   BagIcon,
@@ -59,7 +60,8 @@ const INFRA = [
   { src: '/infraused/opensea.png', name: 'OpenSea' },
 ];
 
-const NETWORKS = ['Base', 'Ethereum', 'Optimism', 'Unichain', 'Celo'];
+/** Straight from the registry, so a chain added there shows up here. */
+const NETWORKS = CHAINS.map((chain) => chain.name);
 
 /**
  * What the sign-in button says, per destination.

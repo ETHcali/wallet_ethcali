@@ -2,33 +2,35 @@ import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { useSendTransaction } from '@privy-io/react-auth';
 import { useSwapQuote } from '../../hooks/useSwapQuote';
-import { getPopularTokens, parseTokenAmount, formatTokenAmount } from '../../lib/lifi';
+import { useRequireChain } from '../../hooks/useRequireChain';
+import { getSwapTokens, parseTokenAmount, formatTokenAmount, type SwapToken } from '../../lib/lifi';
+import { chainsFor, explorerTx, type ChainId } from '../../config/chains';
+import ChainPicker from '../shared/ChainPicker';
+import SwitchChainButton from '../shared/SwitchChainButton';
 import { logger } from '../../utils/logger';
 
 interface SwapModalProps {
   onClose: () => void;
   userAddress: string;
-  chainId: number;
   onSuccess?: () => void;
 }
 
-interface TokenOption {
-  address: string;
-  symbol: string;
-  name: string;
-  decimals: number;
-  logoURI?: string;
-}
+/** Only chains with a LI.FI token list. Empty means the Swap button is not rendered at all. */
+const SWAP_CHAINS = chainsFor('swap');
 
-export default function SwapModal({ onClose, userAddress, chainId, onSuccess }: SwapModalProps) {
+export default function SwapModal({ onClose, userAddress, onSuccess }: SwapModalProps) {
   const { sendTransaction } = useSendTransaction();
 
-  // Token lists
-  const tokens = useMemo(() => getPopularTokens(chainId), [chainId]);
+  // The swap owns its chain. Picked here, never read from the wallet; the
+  // wallet is moved right before signing.
+  const [chainId, setChainId] = useState<ChainId>(SWAP_CHAINS[0].id);
+  const chain = useRequireChain(chainId);
+
+  const tokens = useMemo(() => getSwapTokens(chainId), [chainId]);
 
   // Form state
-  const [fromToken, setFromToken] = useState<TokenOption>(tokens[0]); // ETH
-  const [toToken, setToToken] = useState<TokenOption>(tokens[1]); // USDC
+  const [fromToken, setFromToken] = useState<SwapToken>(tokens[0]);
+  const [toToken, setToToken] = useState<SwapToken>(tokens[1] ?? tokens[0]);
   const [fromAmount, setFromAmount] = useState('');
   const [showFromTokenList, setShowFromTokenList] = useState(false);
   const [showToTokenList, setShowToTokenList] = useState(false);
@@ -38,12 +40,14 @@ export default function SwapModal({ onClose, userAddress, chainId, onSuccess }: 
   const [txHash, setTxHash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Reset tokens when chain changes
+  // Reset tokens when the chain changes
   useEffect(() => {
-    const newTokens = getPopularTokens(chainId);
-    setFromToken(newTokens[0]);
-    setToToken(newTokens[1]);
-  }, [chainId]);
+    setFromToken(tokens[0]);
+    setToToken(tokens[1] ?? tokens[0]);
+    setFromAmount('');
+    setTxHash(null);
+    setError(null);
+  }, [tokens]);
 
   // Calculate from amount in smallest unit
   const fromAmountWei = useMemo(() => {
@@ -63,7 +67,7 @@ export default function SwapModal({ onClose, userAddress, chainId, onSuccess }: 
     toToken: toToken.address,
     fromAmount: fromAmountWei,
     fromAddress: userAddress,
-    enabled: !!fromAmountWei && fromAmountWei !== '0',
+    enabled: !!fromAmountWei && fromAmountWei !== '0' && fromToken.address !== toToken.address,
   });
 
   // Formatted output amount
@@ -81,7 +85,7 @@ export default function SwapModal({ onClose, userAddress, chainId, onSuccess }: 
   };
 
   // Select token
-  const handleSelectToken = (token: TokenOption, isFrom: boolean) => {
+  const handleSelectToken = (token: SwapToken, isFrom: boolean) => {
     if (isFrom) {
       // If selecting same as toToken, swap them
       if (token.address === toToken.address) {
@@ -138,16 +142,6 @@ export default function SwapModal({ onClose, userAddress, chainId, onSuccess }: 
     }
   };
 
-  // Get explorer URL
-  const getExplorerUrl = (hash: string) => {
-    switch (chainId) {
-      case 1: return `https://etherscan.io/tx/${hash}`;
-      case 10: return `https://optimism.etherscan.io/tx/${hash}`;
-      case 8453: return `https://basescan.org/tx/${hash}`;
-      default: return `https://basescan.org/tx/${hash}`;
-    }
-  };
-
   const canSwap = quote && !isQuoteLoading && !isSwapping && fromAmountWei && fromAmountWei !== '0';
 
   return (
@@ -168,6 +162,9 @@ export default function SwapModal({ onClose, userAddress, chainId, onSuccess }: 
         </div>
 
         <div className="p-4 space-y-3">
+          {/* Network */}
+          <ChainPicker chains={SWAP_CHAINS} value={chainId} onChange={setChainId} alwaysShow />
+
           {/* From Token */}
           <div className="rounded-card bg-surface-inset p-4">
             <div className="flex items-center justify-between mb-2">
@@ -321,39 +318,43 @@ export default function SwapModal({ onClose, userAddress, chainId, onSuccess }: 
           {/* Success */}
           {txHash && (
             <div className="rounded-control bg-signal-confirmed/10 border border-signal-confirmed/30 p-3">
-              <p className="text-sm text-signal-confirmed mb-2">Swap submitted successfully!</p>
+              <p className="text-sm text-signal-confirmed mb-2">Swap submitted.</p>
               <a
-                href={getExplorerUrl(txHash)}
+                href={explorerTx(chainId, txHash)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs text-eth-blue-text hover:text-eth-blue-text underline"
               >
-                View on Explorer →
+                View on explorer →
               </a>
             </div>
           )}
 
-          {/* Swap Button */}
-          <button
-            onClick={handleSwap}
-            disabled={!canSwap}
-            className="w-full rounded-card bg-eth-blue hover:bg-eth-blue-lift py-4 font-semibold text-content-primary hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition"
-          >
-            {isSwapping ? (
-              <span className="flex items-center justify-center gap-2">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                Swapping...
-              </span>
-            ) : !fromAmount || fromAmount === '0' ? (
-              'Enter amount'
-            ) : isQuoteLoading ? (
-              'Getting quote...'
-            ) : quoteError ? (
-              'Unable to swap'
-            ) : (
-              'Swap'
-            )}
-          </button>
+          {/* Exactly one primary action: switch first, then swap */}
+          {!chain.ready ? (
+            <SwitchChainButton chain={chain} />
+          ) : (
+            <button
+              onClick={handleSwap}
+              disabled={!canSwap}
+              className="w-full min-h-tap rounded-card bg-eth-blue hover:bg-eth-blue-lift py-4 font-semibold text-on-brand disabled:opacity-50 disabled:cursor-not-allowed transition"
+            >
+              {isSwapping ? (
+                <span className="flex items-center justify-center gap-2">
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  Swapping...
+                </span>
+              ) : !fromAmount || fromAmount === '0' ? (
+                'Enter amount'
+              ) : isQuoteLoading ? (
+                'Getting quote...'
+              ) : quoteError ? (
+                'Unable to swap'
+              ) : (
+                'Swap'
+              )}
+            </button>
+          )}
 
           {/* Powered by LiFi */}
           <p className="text-center text-xs text-content-faint">

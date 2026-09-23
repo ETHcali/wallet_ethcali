@@ -1,29 +1,35 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { useWallets, useSendTransaction } from '@privy-io/react-auth';
+import { useSendTransaction } from '@privy-io/react-auth';
 import { formatEther } from 'viem';
 import { logger } from '../../utils/logger';
 import {
   hasNFTByAddress,
   isFaucetPaused,
   getClaimTxData,
-  getExplorerUrl,
-  getNetworkName,
   getActiveVaults,
   canUserClaim,
   getClaimInfo,
+  type ActiveVault,
+  type ClaimInfo,
 } from '../../utils/contracts';
+import { explorerTx, getChain } from '../../config/chains';
+import { useActiveWallet } from '../../hooks/useActiveWallet';
+import { useRequireChain } from '../../hooks/useRequireChain';
+import SwitchChainButton from '../shared/SwitchChainButton';
 import { VaultType } from '../../types/faucet';
 
 interface FaucetClaimProps {
+  /** The chain the page picked from `chainsFor('faucet')`. Every read below uses it. */
   chainId: number;
   onClaimSuccess?: () => void;
 }
 
 const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) => {
-  const { wallets } = useWallets();
+  const { wallet: userWallet } = useActiveWallet();
   const { sendTransaction } = useSendTransaction();
-  const userWallet = wallets?.[0];
+  // The wallet is moved right before signing, never before reading.
+  const chain = useRequireChain(chainId);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isClaiming, setIsClaiming] = useState(false);
@@ -34,11 +40,11 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
   // Faucet state
   const [hasNFT, setHasNFT] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const [activeVaults, setActiveVaults] = useState<any[]>([]);
-  const [vaultClaimInfo, setVaultClaimInfo] = useState<Record<number, any>>({});
+  const [activeVaults, setActiveVaults] = useState<ActiveVault[]>([]);
+  const [vaultClaimInfo, setVaultClaimInfo] = useState<Record<number, ClaimInfo | null>>({});
   const [vaultEligibility, setVaultEligibility] = useState<Record<number, { canClaim: boolean; reason: string }>>({});
 
-  const networkName = getNetworkName(chainId) || 'UNKNOWN';
+  const networkName = getChain(chainId)?.name ?? 'Unsupported network';
 
   const loadFaucetData = useCallback(async () => {
     if (!userWallet?.address) return;
@@ -59,18 +65,18 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
 
       // Fetch claim info and eligibility for each vault
       if (vaults.length > 0) {
-        const claimInfoPromises = vaults.map(async (vault) => {
-          const [claimInfo, eligibility] = await Promise.all([
-            getClaimInfo(chainId, vault.id, userWallet.address),
-            canUserClaim(chainId, vault.id, userWallet.address),
-          ]);
-          return { vaultId: vault.id, claimInfo, eligibility };
-        });
+        const results = await Promise.all(
+          vaults.map(async (vault) => {
+            const [claimInfo, eligibility] = await Promise.all([
+              getClaimInfo(chainId, vault.id, userWallet.address),
+              canUserClaim(chainId, vault.id, userWallet.address),
+            ]);
+            return { vaultId: vault.id, claimInfo, eligibility };
+          })
+        );
 
-        const results = await Promise.all(claimInfoPromises);
-        const claimInfoMap: Record<number, any> = {};
+        const claimInfoMap: Record<number, ClaimInfo | null> = {};
         const eligibilityMap: Record<number, { canClaim: boolean; reason: string }> = {};
-
         results.forEach(({ vaultId, claimInfo, eligibility }) => {
           claimInfoMap[vaultId] = claimInfo;
           eligibilityMap[vaultId] = eligibility;
@@ -91,51 +97,6 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
     loadFaucetData();
   }, [loadFaucetData]);
 
-  const switchWalletChain = async () => {
-    if (!userWallet) return false;
-
-    try {
-      const provider = await userWallet.getEthereumProvider();
-      const chainHex = `0x${chainId.toString(16)}`;
-
-      await provider.request({
-        method: 'wallet_switchEthereumChain',
-        params: [{ chainId: chainHex }],
-      });
-
-      return true;
-    } catch (error: any) {
-      if (error.code === 4902) {
-        try {
-          const provider = await userWallet.getEthereumProvider();
-          const chainConfig = chainId === 130 ? {
-            chainId: '0x82',
-            chainName: 'Unichain',
-            nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-            rpcUrls: ['https://mainnet.unichain.org'],
-            blockExplorerUrls: ['https://unichain.blockscout.com'],
-          } : {
-            chainId: '8453',
-            chainName: 'Base',
-            nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-            rpcUrls: ['https://mainnet.base.org'],
-            blockExplorerUrls: ['https://basescan.org'],
-          };
-
-          await provider.request({
-            method: 'wallet_addEthereumChain',
-            params: [chainConfig],
-          });
-
-          return true;
-        } catch (addError) {
-          return false;
-        }
-      }
-      return false;
-    }
-  };
-
   const handleClaim = async (vaultId: number) => {
     if (!userWallet) return;
 
@@ -145,19 +106,18 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
     setTxHash(null);
 
     try {
-      const switched = await switchWalletChain();
-      if (!switched) {
-        throw new Error('Network switch failed');
+      // The switch button is shown first; this catches a wallet that drifted
+      // between render and click rather than signing on the wrong chain.
+      if (!chain.ready) {
+        const switched = await chain.switchTo();
+        if (!switched) throw new Error(`Switch your wallet to ${chain.chainName} to claim.`);
       }
 
       const txData = getClaimTxData(chainId, vaultId);
+      if (!txData) throw new Error(`The faucet is not deployed on ${networkName}.`);
 
       const result = await sendTransaction(
-        {
-          to: txData.to as `0x${string}`,
-          data: txData.data,
-          chainId,
-        },
+        { to: txData.to, data: txData.data, chainId },
         { sponsor: true }
       );
 
@@ -173,12 +133,13 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
       logger.error('Claim error:', err);
       setError(err.message || 'Claim failed. Nothing left the faucet.');
     } finally {
+      // Always released, or a rejected claim locks every vault's button.
       setIsClaiming(false);
       setClaimingVaultId(null);
     }
   };
 
-  const getVaultEligibilityStatus = (vault: any) => {
+  const getVaultEligibilityStatus = (vault: ActiveVault) => {
     if (isPaused) return { canClaim: false, code: 'PAUSED', message: 'Faucet is paused' };
     if (!hasNFT) return { canClaim: false, code: 'NO_NFT', message: 'ZKPassport required' };
 
@@ -269,7 +230,7 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
         {/* Get NFT Link */}
         {!hasNFT && (
           <Link
-            href="/sybil"
+            href={{ pathname: '/sybil', query: { chain: String(chainId) } }}
             className="block mt-3 text-center text-[10px] text-eth-blue-text/70 hover:text-eth-blue-text font-mono transition-colors"
           >
             GET_ZKPassport →
@@ -284,6 +245,7 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
         const claimAmount = formatEther(vault.claimAmount);
         const vaultBalance = formatEther(vault.balance);
         const isReturnable = vault.vaultType === VaultType.Returnable;
+        const explorerLink = txHash ? explorerTx(chainId, txHash) : undefined;
 
         return (
           <div key={vault.id} className="bg-black/60 border border-line-hairline rounded-control p-4 space-y-3">
@@ -297,11 +259,7 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
                   <p className="text-[9px] text-content-faint font-mono mb-2">{vault.description}</p>
                 )}
                 <div className="flex gap-2 text-[9px] font-mono">
-                  <span className={`px-2 py-0.5 rounded-chip ${
-                    isReturnable
-                      ? 'bg-eth-blue/10 text-eth-blue-text border border-eth-blue/30'
-                      : 'bg-eth-blue/10 text-eth-blue-text border border-eth-blue/30'
-                  }`}>
+                  <span className="px-2 py-0.5 rounded-chip bg-eth-blue/10 text-eth-blue-text border border-eth-blue/30">
                     {isReturnable ? 'RETURNABLE' : 'NON-RETURNABLE'}
                   </span>
                   {vault.whitelistEnabled && (
@@ -363,13 +321,17 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
               </div>
             )}
 
-            {/* Claim Button */}
-            {!claimInfo?.hasClaimed && (
+            {/* One primary action: switch first, then claim */}
+            {!claimInfo?.hasClaimed && eligibility.canClaim && !chain.ready && (
+              <SwitchChainButton chain={chain} />
+            )}
+
+            {!claimInfo?.hasClaimed && (eligibility.canClaim ? chain.ready : true) && (
               <button
                 onClick={() => handleClaim(vault.id)}
                 disabled={!eligibility.canClaim || isClaiming}
-                className={`w-full py-3 rounded-chip font-mono font-bold text-sm transition-all ${
-                  eligibility.canClaim && !isClaiming && claimingVaultId !== vault.id
+                className={`w-full min-h-tap rounded-chip font-mono font-bold text-sm transition-all ${
+                  eligibility.canClaim && !isClaiming
                     ? 'bg-eth-blue hover:bg-eth-blue-lift text-on-brand'
                     : 'bg-surface-slab/50 border border-line-hairline text-content-faint cursor-not-allowed'
                 }`}
@@ -392,14 +354,18 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
                   <div className="w-2 h-2 bg-signal-confirmed rounded-full"></div>
                   <span className="text-[10px] text-signal-confirmed font-mono tracking-wider">SUCCESS</span>
                 </div>
-                <a
-                  href={getExplorerUrl(chainId, txHash)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[9px] text-content-faint hover:text-eth-blue-text font-mono"
-                >
-                  tx: {txHash.slice(0, 10)}...{txHash.slice(-6)} →
-                </a>
+                {explorerLink ? (
+                  <a
+                    href={explorerLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[9px] text-content-faint hover:text-eth-blue-text font-mono"
+                  >
+                    tx: {txHash.slice(0, 10)}…{txHash.slice(-6)} →
+                  </a>
+                ) : (
+                  <span className="text-[9px] text-content-faint font-mono">tx: {txHash.slice(0, 10)}…{txHash.slice(-6)}</span>
+                )}
               </div>
             )}
           </div>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useENSAvailability, useENSMint, useUserENS } from '../../hooks/ens';
-import { ENS_CONFIG, CHAIN_IDS } from '../../config/constants';
-import { getAddressUrl, getTxUrl } from '../../utils/explorer';
+import { ENS_CONFIG } from '../../config/constants';
+import { explorerAddress, explorerTx } from '../../config/chains';
 import { CheckIcon } from '../shared/icons';
 
 interface ENSSectionProps {
@@ -24,7 +24,7 @@ const ContractLine = () => (
   <p className="mt-4 font-mono text-[11px] text-content-faint">
     Registrar{' '}
     <a
-      href={getAddressUrl(CHAIN_IDS.BASE, ENS_CONFIG.registrar)}
+      href={explorerAddress(ENS_CONFIG.chainId, ENS_CONFIG.registrar)}
       target="_blank"
       rel="noopener noreferrer"
       className="text-eth-blue-text hover:underline"
@@ -38,9 +38,9 @@ const ContractLine = () => (
 /**
  * Claim and show the user's `<label>.ethcali.eth` name.
  *
- * Registration happens on Base. The transaction carries its own chainId, so
- * Privy switches an embedded wallet itself; there is no network picker here.
- * The topbar owns chain switching for everything else.
+ * Registration happens on Base and only there (`chainsFor('ens')`), so there
+ * is no network picker. The transaction pins `ENS_CONFIG.chainId`; Privy moves
+ * an embedded wallet itself and prompts an external one.
  */
 const ENSSection: React.FC<ENSSectionProps> = ({ userAddress }) => {
   const owner = userAddress as `0x${string}`;
@@ -105,7 +105,7 @@ const ENSSection: React.FC<ENSSectionProps> = ({ userAddress }) => {
             {copied ? 'Copied' : 'Copy name'}
           </button>
           <a
-            href={`${getAddressUrl(CHAIN_IDS.BASE, ENS_CONFIG.registry)}?a=${BigInt(node).toString()}`}
+            href={`${explorerAddress(ENS_CONFIG.chainId, ENS_CONFIG.registry)}?a=${BigInt(node).toString()}`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex min-h-[40px] items-center rounded-control border border-line-strong px-3 text-xs font-semibold text-content-primary transition-colors duration-base hover:border-line-brand hover:text-eth-blue-text"
@@ -146,7 +146,7 @@ const ENSSection: React.FC<ENSSectionProps> = ({ userAddress }) => {
           is registered to this wallet on Base.
         </p>
         <a
-          href={getTxUrl(CHAIN_IDS.BASE, hash)}
+          href={explorerTx(ENS_CONFIG.chainId, hash)}
           target="_blank"
           rel="noopener noreferrer"
           className="mt-3 inline-block font-mono text-xs text-eth-blue-text hover:underline"

@@ -1,102 +1,77 @@
 /**
- * Resolves the DonationVault deployment and accepted currencies for a chain.
+ * Resolves the DonationVault deployment and accepted currencies for a chain,
+ * from the chain registry.
  *
- * Kept separate from utils/network.ts on purpose: that helper hardcodes a fixed
- * set of chains and contracts for the faucet/swag modules. Donations ship to five
- * networks including Celo, and must degrade gracefully on any chain where the
- * vault is not deployed yet rather than throwing.
+ * Donations ship to every chain `frontend/addresses.json` lists a vault on,
+ * and must degrade gracefully on any chain where it is not deployed rather
+ * than throwing.
  */
 import { useMemo } from 'react';
-import addressesJson from '../../frontend/addresses.json';
 import {
   CHAIN_IDS,
-  TOKEN_ADDRESSES,
-  TOKEN_DECIMALS,
-  NATIVE_SYMBOLS,
   NATIVE_TOKEN_SENTINEL,
-  EXPLORER_URLS,
-  NETWORK_NAMES,
-  type ChainId,
-} from '../../config/constants';
+  chainsFor,
+  getChain,
+  publicClientFor,
+  type ChainInfo,
+} from '../../config/chains';
 import type { DonationToken } from '../../types/donations';
 
-type AddressBook = Record<string, { addresses?: Record<string, string> }>;
+/** The registry tokens a campaign can accept. USDT/EURC are wallet-only. */
+const DONATION_SYMBOLS: ReadonlySet<string> = new Set(['USDC', 'COPm']);
 
-const CHAIN_ID_TO_KEY: Record<number, string> = {
-  [CHAIN_IDS.BASE]: 'base',
-  [CHAIN_IDS.ETHEREUM]: 'ethereum',
-  [CHAIN_IDS.OPTIMISM]: 'optimism',
-  [CHAIN_IDS.UNICHAIN]: 'unichain',
-  [CHAIN_IDS.CELO]: 'celo',
-};
+/**
+ * Every chain with a deployed vault. Celo first — it is where COPm lives, the
+ * natural currency for local donors — then registry order.
+ */
+export const DONATION_CHAINS: readonly ChainInfo[] = [...chainsFor('donations')].sort(
+  (a, b) => Number(b.id === CHAIN_IDS.CELO) - Number(a.id === CHAIN_IDS.CELO)
+);
 
-/** Every chain the donation module can run on. */
-export const DONATION_CHAIN_IDS: ChainId[] = [
-  CHAIN_IDS.CELO,
-  CHAIN_IDS.BASE,
-  CHAIN_IDS.OPTIMISM,
-  CHAIN_IDS.ETHEREUM,
-  CHAIN_IDS.UNICHAIN,
-];
+export const DONATION_CHAIN_IDS: number[] = DONATION_CHAINS.map((c) => c.id);
 
-function readAddress(chainId: number, contract: string): string | null {
-  const key = CHAIN_ID_TO_KEY[chainId];
-  if (!key) return null;
-  const entry = (addressesJson as AddressBook)[key];
-  const value = entry?.addresses?.[contract];
-  return value ? value.toLowerCase() : null;
+/** A client for a chain the vault is deployed on. Throws for an unknown chain rather than guessing. */
+export function donationClient(chainId: number) {
+  const client = publicClientFor(chainId);
+  if (!client) throw new Error(`Donations are not available on chain ${chainId}`);
+  return client;
 }
 
 /**
  * Currencies a campaign can accept on a chain.
  *
  * The contract is the authority on what is actually accepted — this is the
- * catalogue the UI uses to label and format them. Decimals come from here and
- * are never assumed.
+ * catalogue the UI uses to label and format them. Decimals come from the
+ * registry and are never assumed.
  */
 export function getDonationTokens(chainId: number): DonationToken[] {
-  const tokens: DonationToken[] = [];
+  const chain = getChain(chainId);
+  if (!chain) return [];
 
-  const nativeSymbol = NATIVE_SYMBOLS[chainId as ChainId] ?? 'ETH';
-  tokens.push({
-    address: NATIVE_TOKEN_SENTINEL.toLowerCase(),
-    symbol: nativeSymbol,
-    name: nativeSymbol === 'CELO' ? 'Celo' : 'Ether',
-    decimals: 18,
-    coingeckoId: nativeSymbol === 'CELO' ? 'celo' : 'ethereum',
-    isNative: true,
-  });
-
-  const chainTokens = TOKEN_ADDRESSES[chainId as ChainId];
-  if (chainTokens?.USDC) {
-    tokens.push({
-      address: chainTokens.USDC.toLowerCase(),
-      symbol: 'USDC',
-      name: 'USD Coin',
-      decimals: TOKEN_DECIMALS.USDC,
-      coingeckoId: 'usd-coin',
-      isNative: false,
-    });
-  }
-
-  // COPm exists only on Celo. 18 decimals, unlike the 6-decimal stablecoins.
-  if (chainTokens?.COPm) {
-    tokens.push({
-      address: chainTokens.COPm.toLowerCase(),
-      symbol: 'COPm',
-      name: 'Mento Colombian Peso',
-      decimals: TOKEN_DECIMALS.COPm,
-      // Not on CoinGecko under a stable id; valued via the USD→COP rate instead.
-      coingeckoId: null,
-      isNative: false,
-    });
-  }
-
-  return tokens;
+  return [
+    {
+      address: NATIVE_TOKEN_SENTINEL.toLowerCase(),
+      symbol: chain.nativeSymbol,
+      name: chain.nativeName,
+      decimals: 18,
+      coingeckoId: chain.nativeCoingeckoId,
+      isNative: true,
+    },
+    ...chain.tokens
+      .filter((t) => DONATION_SYMBOLS.has(t.symbol))
+      .map((t) => ({
+        address: t.address.toLowerCase(),
+        symbol: t.symbol,
+        name: t.name,
+        decimals: t.decimals,
+        coingeckoId: t.coingeckoId,
+        isNative: false,
+      })),
+  ];
 }
 
 export interface DonationChainConfig {
-  chainId: ChainId;
+  chainId: number;
   name: string;
   explorerUrl: string;
   /** Null when DonationVault has not been deployed to this chain yet. */
@@ -107,34 +82,21 @@ export interface DonationChainConfig {
 }
 
 export function getDonationChainConfig(chainId: number): DonationChainConfig {
-  const vault = readAddress(chainId, 'DonationVault');
+  const chain = getChain(chainId);
+  const vault = chain?.contracts.DonationVault?.toLowerCase() ?? null;
 
   return {
-    chainId: chainId as ChainId,
-    name: NETWORK_NAMES[chainId as ChainId] ?? `Chain ${chainId}`,
-    explorerUrl: EXPLORER_URLS[chainId as ChainId] ?? '',
+    chainId,
+    name: chain?.name ?? `Chain ${chainId}`,
+    explorerUrl: chain?.explorerUrl ?? '',
     vault,
-    receiptCollection: readAddress(chainId, 'DonationReceipt1155'),
+    receiptCollection: chain?.contracts.DonationReceipt1155?.toLowerCase() ?? null,
     tokens: getDonationTokens(chainId),
     isDeployed: Boolean(vault),
   };
 }
 
-/** Config for the active chain. */
+/** Config for the chosen chain; Celo when none is given. */
 export function useDonationAddresses(chainId?: number): DonationChainConfig {
-  return useMemo(
-    () => getDonationChainConfig(chainId ?? CHAIN_IDS.CELO),
-    [chainId]
-  );
-}
-
-/** Every chain that currently has a deployed vault. */
-export function useDeployedDonationChains(): DonationChainConfig[] {
-  return useMemo(
-    () =>
-      DONATION_CHAIN_IDS.map((id) => getDonationChainConfig(id)).filter(
-        (c) => c.isDeployed
-      ),
-    []
-  );
+  return useMemo(() => getDonationChainConfig(chainId ?? CHAIN_IDS.CELO), [chainId]);
 }

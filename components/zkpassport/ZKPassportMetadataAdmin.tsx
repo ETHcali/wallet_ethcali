@@ -2,9 +2,13 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useZKPassportMetadata, useUpdateZKPassportMetadata, ZKPassportMetadata } from '../../hooks/useZKPassportAdmin';
 
-export function ZKPassportMetadataAdmin() {
-  const { metadata, isLoading, error, refetch } = useZKPassportMetadata();
-  const { updateMetadata, canUpdate } = useUpdateZKPassportMetadata();
+interface ZKPassportMetadataAdminProps {
+  chainId: number;
+}
+
+export function ZKPassportMetadataAdmin({ chainId }: ZKPassportMetadataAdminProps) {
+  const { metadata, isLoading, error, refetch } = useZKPassportMetadata(chainId);
+  const { updateMetadata, canUpdate } = useUpdateZKPassportMetadata(chainId);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);

@@ -1,32 +1,47 @@
 /**
- * useTokenTransfer - Hook for handling ETH and ERC20 token transfers
+ * Send the native coin or a registry ERC-20 on an explicit chain.
+ *
+ * The chain comes with each transfer, not from the wallet: the send form picks
+ * it from the balance the user chose, and `useRequireChain(chainId)` has moved
+ * the wallet before this is called. The transaction still pins `chainId` so a
+ * wallet that drifted cannot sign on the wrong network.
  */
 import { useState, useCallback } from 'react';
 import { useSendTransaction } from '@privy-io/react-auth';
 import { parseUnits, encodeFunctionData } from 'viem';
-import { getTokenAddresses } from '../utils/network';
+import { findToken, getChain } from '../config/chains';
 import { useActiveWallet } from './useActiveWallet';
 
-const ERC20_TRANSFER_ABI = [{
-  inputs: [
-    { name: 'to', type: 'address' },
-    { name: 'amount', type: 'uint256' }
-  ],
-  name: 'transfer',
-  outputs: [{ name: '', type: 'bool' }],
-  stateMutability: 'nonpayable',
-  type: 'function'
-}] as const;
+const ERC20_TRANSFER_ABI = [
+  {
+    inputs: [
+      { name: 'to', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+    ],
+    name: 'transfer',
+    outputs: [{ name: '', type: 'bool' }],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+] as const;
+
+export interface TransferRequest {
+  chainId: number;
+  recipient: string;
+  /** Human amount, e.g. "0.25" — parsed with the token's own decimals here. */
+  amount: string;
+  symbol: string;
+}
 
 interface UseTokenTransferResult {
-  sendToken: (recipient: string, amount: string, tokenType: string) => Promise<string>;
+  sendToken: (request: TransferRequest) => Promise<string>;
   isSending: boolean;
   txHash: string | null;
   error: Error | null;
   clearTxHash: () => void;
 }
 
-export function useTokenTransfer(chainId?: number): UseTokenTransferResult {
+export function useTokenTransfer(): UseTokenTransferResult {
   const { sendTransaction } = useSendTransaction();
   const { wallet } = useActiveWallet();
 
@@ -34,109 +49,58 @@ export function useTokenTransfer(chainId?: number): UseTokenTransferResult {
   const [txHash, setTxHash] = useState<string | null>(null);
   const [error, setError] = useState<Error | null>(null);
 
-  const getTokenAddress = useCallback((tokenSymbol: string): string | null => {
-    if (tokenSymbol === 'ETH') return null;
-    if (!chainId) return null;
+  const sendToken = useCallback(
+    async ({ chainId, recipient, amount, symbol }: TransferRequest): Promise<string> => {
+      if (!wallet) throw new Error('No wallet connected');
 
-    const tokenAddresses = getTokenAddresses(chainId);
-    const address = tokenAddresses[tokenSymbol as keyof typeof tokenAddresses];
+      const chain = getChain(chainId);
+      if (!chain) throw new Error(`Chain ${chainId} is not supported`);
 
-    return address && address.trim() !== '' ? address : null;
-  }, [chainId]);
+      setIsSending(true);
+      setTxHash(null);
+      setError(null);
 
-  const getDecimals = (tokenType: string): number => {
-    return ['USDT', 'USDC', 'EURC'].includes(tokenType) ? 6 : 18;
-  };
+      try {
+        let hash: string;
 
-  const sendToken = useCallback(async (
-    recipient: string,
-    amount: string,
-    tokenType: string
-  ): Promise<string> => {
-    if (!wallet) {
-      throw new Error('No wallet found');
-    }
+        if (symbol === chain.nativeSymbol) {
+          const result = await sendTransaction(
+            { to: recipient as `0x${string}`, value: parseUnits(amount, 18), chainId: chain.id },
+            { sponsor: true }
+          );
+          hash = result.hash;
+        } else {
+          const token = findToken(chain.id, symbol);
+          if (!token) throw new Error(`${symbol} is not available on ${chain.name}`);
 
-    // Get chainId from wallet or use provided chainId
-    let txChainId = chainId;
-    if (!txChainId && wallet.chainId) {
-      // Handle both string format (eip155:8453) and number format
-      if (typeof wallet.chainId === 'string') {
-        const parts = wallet.chainId.split(':');
-        txChainId = parseInt(parts[parts.length - 1], 10);
-      } else {
-        txChainId = wallet.chainId;
-      }
-    }
+          const data = encodeFunctionData({
+            abi: ERC20_TRANSFER_ABI,
+            functionName: 'transfer',
+            args: [recipient as `0x${string}`, parseUnits(amount, token.decimals)],
+          });
 
-    if (!txChainId) {
-      throw new Error('Chain ID is required for transaction');
-    }
-
-    setIsSending(true);
-    setTxHash(null);
-    setError(null);
-
-    try {
-      let hash: string;
-
-      if (tokenType === 'ETH') {
-        const value = parseUnits(amount, 18);
-        const result = await sendTransaction(
-          {
-            to: recipient as `0x${string}`,
-            value,
-            chainId: txChainId,
-          },
-          { sponsor: true }
-        );
-        hash = result.hash;
-      } else {
-        // ERC20 token transfer
-        const tokenAddress = getTokenAddress(tokenType);
-        if (!tokenAddress) {
-          throw new Error(`Token ${tokenType} not supported on this network`);
+          const result = await sendTransaction(
+            { to: token.address, data, chainId: chain.id },
+            { sponsor: true }
+          );
+          hash = result.hash;
         }
 
-        const decimals = getDecimals(tokenType);
-        const tokenAmount = parseUnits(amount, decimals);
-        const data = encodeFunctionData({
-          abi: ERC20_TRANSFER_ABI,
-          functionName: 'transfer',
-          args: [recipient as `0x${string}`, tokenAmount]
-        });
-
-        const result = await sendTransaction(
-          {
-            to: tokenAddress as `0x${string}`,
-            data,
-            chainId: txChainId,
-          },
-          { sponsor: true }
-        );
-        hash = result.hash;
+        setTxHash(hash);
+        return hash;
+      } catch (err) {
+        const failure = err instanceof Error ? err : new Error('Transfer failed. Nothing left your wallet.');
+        setError(failure);
+        throw failure;
+      } finally {
+        // Always released, or a rejected transfer locks the button for good.
+        setIsSending(false);
       }
+    },
+    [wallet, sendTransaction]
+  );
 
-      setTxHash(hash);
-      return hash;
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('Transaction failed');
-      setError(error);
-      throw error;
-    } finally {
-      setIsSending(false);
-    }
-  }, [wallet, sendTransaction, getTokenAddress, chainId]);
+  const clearTxHash = useCallback(() => setTxHash(null), []);
 
-  const clearTxHash = useCallback(() => {
-    setTxHash(null);
-  }, []);
-
-  return {
-    sendToken,
-    isSending,
-    txHash,
-    error,
-    clearTxHash,
-  };
+  return { sendToken, isSending, txHash, error, clearTxHash };
 }

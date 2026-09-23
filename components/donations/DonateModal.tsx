@@ -1,7 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { CheckIcon, CloseIcon } from '../shared/icons';
 import { parseUnits, formatUnits } from 'viem';
-import { usePrivy, useWallets } from '@privy-io/react-auth';
+import { usePrivy } from '@privy-io/react-auth';
+import { useActiveWallet } from '../../hooks/useActiveWallet';
+import { useRequireChain } from '../../hooks/useRequireChain';
+import SwitchChainButton from '../shared/SwitchChainButton';
 import {
   useDonate,
   useDonationAllowance,
@@ -12,7 +15,7 @@ import {
   useDonationAddresses,
 } from '../../hooks/donations';
 import type { Campaign, DonationToken } from '../../types/donations';
-import { EXPLORER_URLS, NETWORK_NAMES, type ChainId } from '../../config/constants';
+import { explorerTx } from '../../config/chains';
 
 interface DonateModalProps {
   campaign: Campaign;
@@ -45,8 +48,9 @@ const SAFE_BOTTOM = 'pb-[max(1rem,env(safe-area-inset-bottom))]';
 
 const DonateModal: React.FC<DonateModalProps> = ({ campaign, chainId, onClose }) => {
   const { authenticated, login } = usePrivy();
-  const { wallets } = useWallets();
-  const wallet = wallets?.[0];
+  const { wallet } = useActiveWallet();
+  // The wallet is moved right before signing, through the one switch primitive.
+  const chain = useRequireChain(chainId);
 
   const { tokens } = useDonationAddresses(chainId);
   const { format, formatToken } = useDisplayCurrency();
@@ -54,8 +58,6 @@ const DonateModal: React.FC<DonateModalProps> = ({ campaign, chainId, onClose })
   const [token, setToken] = useState<DonationToken>(tokens[0]);
   const [amountInput, setAmountInput] = useState('');
   const [message, setMessage] = useState('');
-  const [isSwitching, setIsSwitching] = useState(false);
-  const [switchError, setSwitchError] = useState<string | null>(null);
 
   const {
     approve,
@@ -84,8 +86,7 @@ const DonateModal: React.FC<DonateModalProps> = ({ campaign, chainId, onClose })
   const { data: canDonate } = useCanDonate(campaign.id, token.address, amount, chainId);
   const { data: rewardTier } = useResolveTier(campaign.id, token.address, amount, chainId);
 
-  const walletChainId = wallet?.chainId ? Number(wallet.chainId.split(':').pop()) : undefined;
-  const wrongNetwork = Boolean(walletChainId && walletChainId !== chainId);
+  const wrongNetwork = Boolean(wallet) && !chain.ready;
 
   const needsApproval = !token.isNative && amount > 0n && allowance < amount;
   const insufficientBalance = amount > 0n && amount > balance;
@@ -106,22 +107,6 @@ const DonateModal: React.FC<DonateModalProps> = ({ campaign, chainId, onClose })
     insufficientBalance ||
     (canDonate ? !canDonate.allowed : false);
 
-  const handleSwitchNetwork = async () => {
-    if (!wallet) return;
-    setIsSwitching(true);
-    setSwitchError(null);
-    try {
-      await wallet.switchChain(chainId);
-    } catch (e) {
-      setSwitchError(
-        `Could not switch to ${NETWORK_NAMES[chainId as ChainId]}. Change it in your wallet and try again.`
-      );
-    } finally {
-      // Cleared in finally so a rejected switch does not lock the button.
-      setIsSwitching(false);
-    }
-  };
-
   const handleApprove = async () => {
     try {
       await approve(token, amount);
@@ -134,7 +119,7 @@ const DonateModal: React.FC<DonateModalProps> = ({ campaign, chainId, onClose })
     await donate(campaign.id, token, amount, message.trim());
   };
 
-  const explorer = EXPLORER_URLS[chainId as ChainId];
+  const explorerLink = txHash ? explorerTx(chainId, txHash) : undefined;
 
   // ── Success state ────────────────────────────────────────────────────────
   if (txHash) {
@@ -158,9 +143,9 @@ const DonateModal: React.FC<DonateModalProps> = ({ campaign, chainId, onClose })
               </p>
             )}
 
-            {explorer && (
+            {explorerLink && (
               <a
-                href={`${explorer}/tx/${txHash}`}
+                href={explorerLink}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mb-4 inline-block py-2 text-xs text-eth-blue-text hover:underline"
@@ -325,23 +310,7 @@ const DonateModal: React.FC<DonateModalProps> = ({ campaign, chainId, onClose })
             </button>
           )}
 
-          {step === 'switch' && (
-            <>
-              <button
-                type="button"
-                onClick={handleSwitchNetwork}
-                disabled={isSwitching}
-                className="min-h-tap w-full rounded-control bg-signal-pending py-3 font-semibold text-on-brand transition-colors hover:bg-signal-pending disabled:cursor-not-allowed disabled:bg-surface-ridge disabled:text-content-muted"
-              >
-                {isSwitching
-                  ? 'Switching…'
-                  : `Switch to ${NETWORK_NAMES[chainId as ChainId]}`}
-              </button>
-              {switchError && (
-                <p className="mt-2 text-center text-[11px] text-signal-reverted">{switchError}</p>
-              )}
-            </>
-          )}
+          {step === 'switch' && <SwitchChainButton chain={chain} />}
 
           {step === 'approve' && (
             <button

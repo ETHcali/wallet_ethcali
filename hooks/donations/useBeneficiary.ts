@@ -8,7 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import { createPublicClient, http } from 'viem';
 import { mainnet } from 'viem/chains';
 import { normalize } from 'viem/ens';
-import { CHAIN_IDS, getRpcUrl, type ChainId } from '../../config/constants';
+import { CHAIN_IDS, getChain, publicClientFor } from '../../config/chains';
 import type { BeneficiaryProfile } from '../../types/donations';
 import { logger } from '../../utils/logger';
 
@@ -51,7 +51,7 @@ export function useBeneficiaryProfile(beneficiaryAddress?: string) {
 
       const ensClient = createPublicClient({
         chain: mainnet,
-        transport: http(getRpcUrl(CHAIN_IDS.ETHEREUM)),
+        transport: http(getChain(CHAIN_IDS.ETHEREUM).rpcUrl),
       });
 
       const name = normalize(ETHCALI_ENS_NAME);
@@ -101,11 +101,8 @@ export function useBeneficiarySafe(beneficiaryAddress?: string, chainId?: number
   return useQuery({
     queryKey: ['donation-beneficiary-safe', beneficiaryAddress, chainId],
     queryFn: async (): Promise<{ threshold: number; ownerCount: number } | null> => {
-      if (!beneficiaryAddress || !chainId) return null;
-
-      const client = createPublicClient({
-        transport: http(getRpcUrl(chainId as ChainId)),
-      });
+      const client = publicClientFor(chainId);
+      if (!beneficiaryAddress || !client) return null;
 
       const code = await client.getBytecode({
         address: beneficiaryAddress as `0x${string}`,

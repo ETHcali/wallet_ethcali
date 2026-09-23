@@ -47,6 +47,7 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({
     startVerification,
     mintNFT,
     resetVerification,
+    chain,
   } = useZKPassportVerification(chainId, onMintSuccess);
 
   // Notify parent of status changes
@@ -102,6 +103,7 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({
               isOver18={isOver18}
               nationality={nationality}
               chainId={chainId}
+              chain={chain}
               isMinting={isMinting}
               errorMessage={errorMessage}
               onMint={mintNFT}

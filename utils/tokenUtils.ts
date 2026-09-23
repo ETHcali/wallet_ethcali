@@ -1,10 +1,11 @@
-
-// CoinGecko IDs for tokens
+// CoinGecko ids for the tokens the wallet prices. COPm has no stable id and is
+// valued through the USD→COP rate instead (hooks/donations/useDisplayCurrency).
 export const COINGECKO_IDS: Record<string, string> = {
   ETH: 'ethereum',
+  CELO: 'celo',
   USDC: 'usd-coin',
   EURC: 'euro-coin',
-  USDT: 'tether'
+  USDT: 'tether',
 };
 
 // Base URL for CoinGecko images
@@ -14,15 +15,11 @@ const COINGECKO_IMAGE_URL = 'https://assets.coingecko.com/coins/images';
 const FALLBACK_IMAGES: Record<string, string> = {
   ETH: '/images/ethereum.png',
   USDC: '/images/usdc.png',
-  EURC: '/images/eurc.png',
-  USDT: '/images/usdt.png',
-  DEFAULT: '/images/token-default.png'
+  DEFAULT: '/images/token-default.png',
 };
 
 /**
- * Get token logo URL from CoinGecko
- * @param tokenSymbol The token symbol (ETH, USDC, EURC)
- * @returns The URL to the token logo
+ * Token logo URL, from CoinGecko where we know the image id.
  */
 export function getTokenLogoUrl(tokenSymbol: string): string {
   const symbol = tokenSymbol.toUpperCase();
@@ -36,27 +33,10 @@ export function getTokenLogoUrl(tokenSymbol: string): string {
       return `${COINGECKO_IMAGE_URL}/26045/large/euro-coin.png`;
     case 'USDT':
       return `${COINGECKO_IMAGE_URL}/325/large/Tether.png`;
+    case 'CELO':
+      return `${COINGECKO_IMAGE_URL}/11090/large/InjXBNx9_400x400.jpg`;
     default:
       return FALLBACK_IMAGES[symbol] || FALLBACK_IMAGES.DEFAULT;
-  }
-}
-
-/**
- * Get network logo URL using local chain logos from public/chains folder
- * @param networkId The network ID (1 for Ethereum, 8453 for Base, 10 for Optimism)
- * @returns The URL to the network logo
- */
-export function getNetworkLogoUrl(networkId: number): string {
-  switch (networkId) {
-    case 1: // Ethereum Mainnet
-      return '/chains/ethereum.png';
-    case 8453: // Base Mainnet
-      return '/chains/base.jpeg';
-    case 10: // Optimism Mainnet
-      return '/chains/op mainnet.png';
-    default:
-      // Fallback to default
-      return '/images/network-default.png';
   }
 }
 
@@ -69,11 +49,11 @@ export function getNetworkLogoUrl(networkId: number): string {
 export function formatTokenBalance(balance: string, decimals: number = 6): string {
   const value = parseFloat(balance);
   if (isNaN(value)) return '0.00';
-  
+
   // For very small amounts, don't show scientific notation
   if (value < 0.000001 && value > 0) {
     return '< 0.000001';
   }
-  
+
   return value.toFixed(decimals);
 }

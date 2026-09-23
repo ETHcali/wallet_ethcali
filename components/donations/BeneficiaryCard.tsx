@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useBeneficiaryProfile, useBeneficiarySafe } from '../../hooks/donations';
-import { EXPLORER_URLS, type ChainId } from '../../config/constants';
+import { getChain } from '../../config/chains';
 import { logger } from '../../utils/logger';
 
 interface BeneficiaryCardProps {
@@ -30,7 +30,7 @@ const BeneficiaryCard: React.FC<BeneficiaryCardProps> = ({
   const { data: safe } = useBeneficiarySafe(beneficiary, chainId);
   const [copied, setCopied] = useState(false);
 
-  const explorer = EXPLORER_URLS[chainId as ChainId];
+  const explorer = getChain(chainId)?.explorerUrl;
 
   const handleCopy = async () => {
     try {

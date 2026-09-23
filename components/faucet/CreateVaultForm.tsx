@@ -3,11 +3,12 @@ import { useCreateVault } from '../../hooks/faucet';
 import { VaultType, VaultFormData } from '../../types/faucet';
 
 interface CreateVaultFormProps {
+  chainId: number;
   onSuccess?: () => void;
 }
 
-export function CreateVaultForm({ onSuccess }: CreateVaultFormProps) {
-  const { createVault, canCreate } = useCreateVault();
+export function CreateVaultForm({ chainId, onSuccess }: CreateVaultFormProps) {
+  const { createVault, canCreate } = useCreateVault(chainId);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);

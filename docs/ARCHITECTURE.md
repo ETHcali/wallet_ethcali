@@ -98,15 +98,17 @@ wallet_ethcali/
 │   │   ├── useBuySwag.ts         # Four-state USDC flow, two flags per step, sponsored
 │   │   ├── useMySwag.ts          # balanceOfBatch + my orders
 │   │   ├── useSwagOrders.ts      # GET/POST /api/swag/orders with the Privy token
+│   │   ├── useSwagAdmin.ts       # /swag/admin: orders, summary, stock, collection state, useSwagAdminTx
 │   │   ├── useTrm.ts             # One shared /api/fx/trm read
 │   │   ├── useSwagLocale.ts      # es/en copy selection
 │   │   ├── swagErrors.ts         # decodeErrorResult against the typed ABI → es/en copy
 │   │   └── useSwagArtwork.ts     # Admin artwork pipeline
-│   ├── ens/            # ENS hooks
+│   ├── ens/, donations/, content/
 │   ├── useActiveWallet.ts
 │   ├── useRequireChain.ts        # { ready, switching, switchTo } for a chain-pinned feature
-│   ├── useFaucetAdmin.ts
-│   ├── useTokenBalances.ts
+│   ├── useAdminStatus.ts
+│   ├── useChainBalances.ts
+│   ├── useSwapQuote.ts
 │   ├── useTokenPrices.ts
 │   ├── useTokenTransfer.ts
 │   ├── useUserNFTs.ts
@@ -114,17 +116,27 @@ wallet_ethcali/
 │   ├── useZKPassportNFT.ts
 │   └── useZKPassportVerification.ts
 │
+├── lib/                 # Server-side integrations
+│   ├── swag/
+│   │   ├── onchain.ts      # Base public client for the server: findPurchased / findClaimed logs
+│   │   ├── orders.ts       # swag_orders reads/writes with the service role
+│   │   ├── voucher.ts      # EIP-712 `Claim` signing (ETHCaliSwag v1), 7-day deadline
+│   │   ├── requireUser.ts  # Privy token → DID → linked wallets and verified emails
+│   │   └── requireSwagAdmin.ts  # requireUser + isAdmin() on the collection on Base
+│   ├── shopify.mjs         # client-credentials token, gql(), fetchTrm / copPrice / repriceDesign
+│   ├── adminAuth.ts, supabase.ts, pinata.ts, lifi.ts, returnTo.ts
+│
 ├── utils/               # Utility functions
 │   ├── contracts.ts    # Contract interaction helpers
-│   ├── network.ts      # Network configuration
 │   ├── explorer.ts     # Block explorer URLs
 │   ├── tokenUtils.ts   # Token formatting
+│   ├── ens.ts, donationErrors.ts
 │   ├── zkpassport.ts   # ZKPassport utilities
 │   └── logger.ts       # Logging utility
 │
 ├── config/              # Configuration
-│   ├── constants.ts    # App-wide constants
-│   └── networks.ts     # Network/chain configs
+│   ├── constants.ts    # App-wide constants, SWAG_COLLECTION_BASE, SWAG_SHOPIFY_STORE
+│   └── chains.ts       # Chain configs
 │
 ├── frontend/            # Contract bindings, synced from scs-ethcali (npm run sync:contracts)
 │   ├── abis/           # ABI JSON + abis/swag.ts (typed `as const` Swag1155 ABI)
@@ -134,13 +146,19 @@ wallet_ethcali/
 │   └── CONTRACTS_SOURCE.json # { repo, commit, generatedAt } of the last sync
 │
 ├── pages/               # Next.js pages
-│   ├── api/            # API routes
+│   ├── api/
+│   │   ├── swag/orders.ts, swag/claim.ts, swag/variants.ts
+│   │   ├── swag/admin/orders/index.ts, swag/admin/orders/[id].ts, swag/admin/summary.ts
+│   │   ├── shopify/webhook.ts     # orders/paid + refunds/create
+│   │   ├── cron/swag-prices.ts    # daily Shopify re-price (vercel.json, 12:00 UTC)
+│   │   ├── fx/trm.ts, indexer/sync.ts, pinata/, poap/, ens/, cms/, donations/
 │   ├── index.tsx       # Landing page
 │   ├── wallet.tsx      # Wallet page
 │   ├── faucet.tsx      # Faucet page
 │   ├── faucet/admin.tsx
 │   ├── swag/index.tsx  # Public storefront
 │   ├── swag/orders.tsx # My NFTs + my orders (signed in)
+│   ├── swag/claim.tsx  # Claim a card order's NFT with the server-signed voucher
 │   ├── swag/admin.tsx
 │   ├── sybil/index.tsx
 │   └── sybil/admin.tsx
@@ -149,9 +167,12 @@ wallet_ethcali/
 │   ├── index.ts
 │   ├── faucet.ts
 │   ├── swag.ts
+│   ├── swag-orders.ts  # SwagOrder, ClaimVoucherFields, StoredVoucher
 │   └── zkpassport.ts
 │
-└── docs/                # Documentation
+├── scripts/             # sync-contracts, swag-pin, swag-seed-supabase, shopify-*, swag-voucher-selftest
+│
+└── docs/                # Documentation (see docs/README.md)
 ```
 
 ## Data Flow
@@ -195,7 +216,7 @@ All blockchain interactions go through custom hooks:
 ### 2. Configuration Centralization
 Single source of truth for:
 - Chain IDs: `config/constants.ts`
-- RPC URLs: `config/networks.ts`
+- RPC URLs: `config/chains.ts`
 - Contract addresses: `frontend/addresses.json`
 - Token addresses: `config/constants.ts`
 

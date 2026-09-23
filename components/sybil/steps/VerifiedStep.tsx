@@ -2,13 +2,17 @@
  * VerifiedStep - Shows verification result and mint button
  */
 import React from 'react';
-import { getNetworkName } from '../../../utils/contracts';
+import { getChain } from '../../../config/chains';
+import type { RequireChainResult } from '../../../hooks/useRequireChain';
+import SwitchChainButton from '../../shared/SwitchChainButton';
 
 interface VerifiedStepProps {
   uniqueIdentifier: `0x${string}` | null;
   isOver18: boolean;
   nationality: string | null;
   chainId: number;
+  /** Wallet-vs-chain state from the verification hook. */
+  chain: RequireChainResult;
   isMinting: boolean;
   errorMessage: string | null;
   onMint: () => void;
@@ -26,6 +30,7 @@ export const VerifiedStep: React.FC<VerifiedStepProps> = ({
   isOver18,
   nationality,
   chainId,
+  chain,
   isMinting,
   errorMessage,
   onMint,
@@ -64,7 +69,7 @@ export const VerifiedStep: React.FC<VerifiedStepProps> = ({
 
         <div className="mt-2 pt-2 border-t border-line-hairline">
           <span className="text-[9px] text-content-faint font-mono">
-            {getNetworkName(chainId).toUpperCase()} • SOULBOUND
+            {(getChain(chainId)?.name ?? 'Unsupported network').toUpperCase()} • SOULBOUND
           </span>
         </div>
       </div>
@@ -76,11 +81,14 @@ export const VerifiedStep: React.FC<VerifiedStepProps> = ({
         </div>
       )}
 
-      {/* Mint Button */}
+      {/* One primary action: switch first, then mint */}
+      {!chain.ready ? (
+        <SwitchChainButton chain={chain} />
+      ) : (
       <button
         onClick={onMint}
         disabled={isMinting}
-        className="w-full py-3 bg-eth-blue hover:bg-eth-blue-lift rounded-chip text-on-brand font-mono font-bold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full min-h-tap bg-eth-blue hover:bg-eth-blue-lift rounded-chip text-on-brand font-mono font-bold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isMinting ? (
           <span className="flex items-center justify-center gap-2">
@@ -91,6 +99,7 @@ export const VerifiedStep: React.FC<VerifiedStepProps> = ({
           'MINT →'
         )}
       </button>
+      )}
 
       <button
         onClick={onReset}

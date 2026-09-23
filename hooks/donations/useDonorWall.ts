@@ -7,11 +7,9 @@
  * behind. The chain always wins on disagreement.
  */
 import { useQuery } from '@tanstack/react-query';
-import { createPublicClient, http } from 'viem';
 import DonationVaultABI from '../../frontend/abis/DonationVault.json';
-import { getRpcUrl, type ChainId } from '../../config/constants';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
-import { useDonationAddresses } from './useDonationAddresses';
+import { donationClient, useDonationAddresses } from './useDonationAddresses';
 import type { DonorEntry, DonationToken } from '../../types/donations';
 import { logger } from '../../utils/logger';
 
@@ -93,9 +91,7 @@ export function useDonorWall(
       // ── Fallback: read the vault directly ──────────────────────────────
       // Returns cumulative totals per donor rather than individual donations,
       // and carries no messages — the index is what makes those available.
-      const publicClient = createPublicClient({
-        transport: http(getRpcUrl(resolvedChainId as ChainId)),
-      });
+      const publicClient = donationClient(resolvedChainId);
 
       const [donors, amounts] = (await publicClient.readContract({
         address: vault as `0x${string}`,

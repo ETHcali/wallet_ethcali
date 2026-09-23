@@ -2,12 +2,10 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
-import { usePrivy, useWallets } from '@privy-io/react-auth';
-import { getChainRpc } from '../config/networks';
-import { useAdminStatus } from '../hooks/useAdminStatus';
-import { useDonationAdmin } from '../hooks/donations/useDonationAdmin';
-import { logger } from '../utils/logger';
-import { CheckIcon, ChevronDownIcon, CloseIcon } from './shared/icons';
+import { usePrivy } from '@privy-io/react-auth';
+import { useActiveWallet } from '../hooks/useActiveWallet';
+import { useAdminRoles } from '../hooks/useAdminStatus';
+import { CloseIcon } from './shared/icons';
 
 // Icons as simple SVG components for cleaner mobile menu
 const WalletIcon = () => (
@@ -47,13 +45,6 @@ const LogoutIcon = () => (
   </svg>
 );
 
-const SUPPORTED_CHAINS = [
-  { id: 8453, name: 'Base', logo: '/chains/base.jpeg' },
-  { id: 1, name: 'Ethereum', logo: '/chains/ethereum.png' },
-  { id: 10, name: 'Optimism', logo: '/chains/op mainnet.png' },
-  { id: 130, name: 'Unichain', logo: '/chains/unichain.png' },
-];
-
 /** Real ellipsis, per BRAND.md: `0x55C9…711d`. */
 function truncateAddress(address: string): string {
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
@@ -61,63 +52,32 @@ function truncateAddress(address: string): string {
 
 interface NavigationProps {
   className?: string;
-  currentChainId?: number;
-  onChainChange?: (chainId: number) => void;
 }
 
 /* COMPONENTS.md — Nav (topbar): 60px, --surface-void at 86% + blur, bottom
    hairline. Items are mono 11 uppercase; the active one sits on --eth-blue-wash.
-   Chain switching lives here and nowhere else. */
-const Navigation: React.FC<NavigationProps> = ({
-  className = '',
-  currentChainId = 8453,
-  onChainChange
-}) => {
+
+   There is no chain selector here. Every feature owns its chain: it picks one
+   in-page from `chainsFor(feature)` and moves the wallet with `useRequireChain`
+   right before signing. The bar shows the connected wallet and nothing about
+   networks. */
+const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
   const router = useRouter();
   const { authenticated, login, logout } = usePrivy();
-  const { wallets } = useWallets();
-  const [displayChainId, setDisplayChainId] = useState(currentChainId);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [isSwitching, setIsSwitching] = useState(false);
+  const { wallet: userWallet } = useActiveWallet();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
   const signInRelease = useRef<number>();
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
-
-  // Sync displayChainId with prop
-  useEffect(() => {
-    setDisplayChainId(currentChainId);
-  }, [currentChainId]);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   // Close mobile menu on route change
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [router.pathname]);
 
-  const userWallet = wallets?.[0];
-
-  // Check if user is admin/owner on the current chain's contracts (single combined query)
-  const {
-    isSwagAdmin,
-    isFaucetAdmin,
-    isFaucetSuperAdmin,
-    isZKPassportOwner,
-  } = useAdminStatus(displayChainId);
-
-  // Donation roles live on a different contract, read separately.
-  const { isAdmin: isDonationAdmin } = useDonationAdmin(displayChainId);
+  // Admin roles OR'd across every chain each contract is deployed on, so the
+  // entry does not appear and vanish with a network choice made elsewhere.
+  const { hasAnyAdmin } = useAdminRoles();
 
   const mainNavItems = [
     { href: '/wallet', label: 'Wallet', icon: WalletIcon },
@@ -130,14 +90,7 @@ const Navigation: React.FC<NavigationProps> = ({
   // One entry, not four. The admin areas are reachable from the dashboard
   // sidebar now, so repeating each of them in the top nav is noise — and on a
   // phone four extra rows pushed the real navigation off the screen.
-  const hasAnyAdminRole =
-    isSwagAdmin ||
-    isFaucetAdmin ||
-    isFaucetSuperAdmin ||
-    isZKPassportOwner ||
-    isDonationAdmin;
-
-  const adminNavItems = hasAnyAdminRole
+  const adminNavItems = hasAnyAdmin
     ? [{ href: '/admin', label: 'Admin', icon: AdminIcon }]
     : [];
 
@@ -182,138 +135,6 @@ const Navigation: React.FC<NavigationProps> = ({
   useEffect(() => () => window.clearTimeout(signInRelease.current), []);
 
   const isActive = (href: string) => router.pathname === href || router.pathname.startsWith(href + '/');
-  const currentChain = SUPPORTED_CHAINS.find(c => c.id === displayChainId) || SUPPORTED_CHAINS[0];
-
-  // Chain configurations for adding new chains (uses centralized RPC config)
-  const CHAIN_CONFIGS: Record<number, any> = {
-    8453: {
-      chainId: '0x2105',
-      chainName: 'Base',
-      nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-      rpcUrls: [getChainRpc(8453)],
-      blockExplorerUrls: ['https://basescan.org'],
-    },
-    1: {
-      chainId: '0x1',
-      chainName: 'Ethereum',
-      nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-      rpcUrls: [getChainRpc(1)],
-      blockExplorerUrls: ['https://etherscan.io'],
-    },
-    10: {
-      chainId: '0xa',
-      chainName: 'Optimism',
-      nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-      rpcUrls: [getChainRpc(10)],
-      blockExplorerUrls: ['https://optimistic.etherscan.io'],
-    },
-    130: {
-      chainId: '0x82',
-      chainName: 'Unichain',
-      nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-      rpcUrls: [getChainRpc(130)],
-      blockExplorerUrls: ['https://unichain.blockscout.com'],
-    },
-  };
-
-  // Helper to check if error indicates chain needs to be added
-  const isChainNotFoundError = (error: any): boolean => {
-    if (!error) return false;
-    // Check common error codes
-    if (error.code === 4902 || error.code === -32603) return true;
-    // Check error message for common patterns
-    const message = (error.message || '').toLowerCase();
-    return (
-      message.includes('unsupported chainid') ||
-      message.includes('unrecognized chain') ||
-      message.includes('chain not found') ||
-      message.includes('unknown chain') ||
-      message.includes('not supported')
-    );
-  };
-
-  // Switch wallet chain
-  const handleChainSwitch = async (chainId: number) => {
-    if (!userWallet || isSwitching) return;
-    if (chainId === displayChainId) {
-      setIsDropdownOpen(false);
-      return;
-    }
-
-    setIsSwitching(true);
-    setIsDropdownOpen(false);
-
-    try {
-      const provider = await userWallet.getEthereumProvider();
-      const chainHex = `0x${chainId.toString(16)}`;
-      const chainConfig = CHAIN_CONFIGS[chainId];
-
-      // For less common chains like Unichain, try adding first
-      if (chainId === 130 && chainConfig) {
-        try {
-          await provider.request({
-            method: 'wallet_addEthereumChain',
-            params: [chainConfig],
-          });
-        } catch (addError: any) {
-          // Ignore if chain already exists (some wallets throw, some don't)
-          if (addError.code !== 4001) {
-            logger.debug('Chain add attempt', { message: addError.message });
-          }
-        }
-      }
-
-      try {
-        // Try to switch to the chain
-        await provider.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: chainHex }],
-        });
-      } catch (switchError: any) {
-        // If chain doesn't exist, try adding it
-        if (isChainNotFoundError(switchError)) {
-          if (chainConfig) {
-            await provider.request({
-              method: 'wallet_addEthereumChain',
-              params: [chainConfig],
-            });
-            // After adding, some wallets auto-switch, some don't - try switching again
-            try {
-              await provider.request({
-                method: 'wallet_switchEthereumChain',
-                params: [{ chainId: chainHex }],
-              });
-            } catch {
-              // Ignore - chain was added, user may need to switch manually
-            }
-          } else {
-            throw new Error(`Chain configuration not found for chainId ${chainId}`);
-          }
-        } else {
-          throw switchError;
-        }
-      }
-
-      // Update state after successful switch
-      setDisplayChainId(chainId);
-      onChainChange?.(chainId);
-
-    } catch (error: any) {
-      logger.error('Error switching chain', error);
-      // Only show alert for non-user-rejected errors
-      if (error.code !== 4001) {
-        const chainName = SUPPORTED_CHAINS.find(c => c.id === chainId)?.name || `Chain ${chainId}`;
-        // Provide more helpful message for Unichain
-        if (chainId === 130) {
-          alert(`Unable to switch to Unichain. Your wallet may not support this network yet. Try adding it manually in your wallet settings with RPC: https://rpc.unichain.org`);
-        } else {
-          alert(`Failed to switch to ${chainName}: ${error.message || 'Unknown error'}`);
-        }
-      }
-    } finally {
-      setIsSwitching(false);
-    }
-  };
 
   // Signed out, this component used to render nothing at all.
   //
@@ -324,8 +145,7 @@ const Navigation: React.FC<NavigationProps> = ({
   //
   // Same bar as the signed-in one — same height, same hairline, same blur — so
   // nothing shifts when a session appears. What it drops is everything that
-  // needs a wallet to mean anything: the chain switcher (which would read
-  // `userWallet` as undefined), the address chip and Sign out.
+  // needs a wallet to mean anything: the address chip and Sign out.
   if (!authenticated) {
     return (
       <nav className={`sticky top-0 z-50 border-b border-line-hairline bg-surface-void/85 backdrop-blur-[14px] ${className}`}>
@@ -405,75 +225,16 @@ const Navigation: React.FC<NavigationProps> = ({
             ))}
           </div>
 
-          {/* Right Side: Chain + Actions */}
+          {/* Right side: the connected wallet, Sign out, and the menu on a phone */}
           <div className="flex items-center gap-2">
-
-            {/* Chain Switcher Dropdown */}
-            <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                disabled={isSwitching}
-                aria-haspopup="listbox"
-                aria-expanded={isDropdownOpen}
-                className={`flex min-h-[36px] items-center gap-1.5 rounded-full border bg-surface-slab px-2 font-mono text-xs transition-colors duration-base sm:px-3 ${
-                  isSwitching
-                    ? 'border-signal-pending/50 text-signal-pending'
-                    : isDropdownOpen
-                    ? 'border-line-brand text-eth-blue-text'
-                    : 'border-line-strong text-content-secondary hover:border-line-brand'
-                }`}
-              >
-                <div className="flex h-5 w-5 items-center justify-center">
-                  {isSwitching ? (
-                    <div className="h-4 w-4 animate-[spin_0.9s_linear_infinite] rounded-full border-2 border-signal-pending border-t-transparent" />
-                  ) : (
-                    <Image src={currentChain.logo} alt="" width={20} height={20} className="h-5 w-5 rounded-full object-contain" unoptimized />
-                  )}
-                </div>
-                <span className="hidden sm:inline">{isSwitching ? 'Switching…' : currentChain.name}</span>
-                <ChevronDownIcon
-                  className={`h-3.5 w-3.5 text-content-faint transition-transform duration-base ${isDropdownOpen ? 'rotate-180' : ''}`}
-                />
-              </button>
-
-              {/* Dropdown Menu */}
-              <div
-                role="listbox"
-                aria-label="Network"
-                className={`absolute right-0 top-full z-50 mt-1 min-w-[180px] origin-top overflow-hidden rounded-control border border-line-hairline bg-surface-slab transition-all duration-base ${
-                  isDropdownOpen
-                    ? 'translate-y-0 scale-100 opacity-100'
-                    : 'pointer-events-none -translate-y-1 scale-95 opacity-0'
-                }`}
-              >
-                {SUPPORTED_CHAINS.map((chain) => (
-                  <button
-                    key={chain.id}
-                    role="option"
-                    aria-selected={displayChainId === chain.id}
-                    onClick={() => handleChainSwitch(chain.id)}
-                    disabled={isSwitching}
-                    className={`flex min-h-[44px] w-full items-center gap-2 px-3 text-left font-mono text-xs transition-colors duration-fast ${
-                      displayChainId === chain.id
-                        ? 'bg-eth-blue-wash text-eth-blue-text'
-                        : 'text-content-secondary hover:bg-surface-inset hover:text-content-primary'
-                    } ${isSwitching ? 'cursor-not-allowed opacity-50' : ''}`}
-                  >
-                    <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center">
-                      <Image src={chain.logo} alt="" width={20} height={20} className="h-5 w-5 rounded-full object-contain" unoptimized />
-                    </div>
-                    <span className="flex-1">{chain.name}</span>
-                    {displayChainId === chain.id && <CheckIcon className="h-4 w-4" />}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Address chip - Desktop */}
             {userWallet && (
-              <span className="hidden min-h-[36px] items-center rounded-full border border-line-hairline bg-surface-slab px-3 font-mono text-xs text-eth-blue-text lg:inline-flex">
+              <Link
+                href="/profile"
+                className="hidden min-h-[36px] items-center rounded-full border border-line-hairline bg-surface-slab px-3 font-mono text-xs text-eth-blue-text transition-colors duration-base hover:border-line-brand sm:inline-flex"
+                title={userWallet.address}
+              >
                 {truncateAddress(userWallet.address)}
-              </span>
+              </Link>
             )}
 
             {/* Sign out - Desktop (destructive-quiet) */}
@@ -526,23 +287,15 @@ const Navigation: React.FC<NavigationProps> = ({
         >
           {/* Header with close button */}
           <div className="flex flex-shrink-0 items-center justify-between border-b border-line-hairline px-4 py-3">
-            <div className="flex items-center gap-3">
-              <Image
-                src={currentChain.logo}
-                alt=""
-                width={28}
-                height={28}
-                className="h-7 w-7 rounded-full ring-1 ring-line-strong"
-                unoptimized
-              />
-              <div className="min-w-0">
-                <p className="font-mono text-xs text-content-primary">{currentChain.name}</p>
-                {userWallet && (
-                  <p className="truncate font-mono text-[11px] text-eth-blue-text">
-                    {truncateAddress(userWallet.address)}
-                  </p>
-                )}
-              </div>
+            <div className="min-w-0">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-content-faint">Signed in as</p>
+              {userWallet ? (
+                <p className="truncate font-mono text-xs text-eth-blue-text">
+                  {truncateAddress(userWallet.address)}
+                </p>
+              ) : (
+                <p className="font-mono text-xs text-content-muted">Setting up your wallet…</p>
+              )}
             </div>
             <button
               onClick={closeMobileMenu}

@@ -5,8 +5,7 @@ import Layout from '../components/shared/Layout';
 import Loading from '../components/shared/Loading';
 import WalletInfo from '../components/wallet/WalletInfo';
 import Navigation from '../components/Navigation';
-import { Wallet } from '../types/index';
-import { useTokenBalances } from '../hooks/useTokenBalances';
+import { useChainBalances } from '../hooks/useChainBalances';
 import { useActiveWallet } from '../hooks/useActiveWallet';
 
 export default function WalletPage() {
@@ -15,7 +14,6 @@ export default function WalletPage() {
   const { wallet: activeWallet } = useActiveWallet();
   const { wallets } = useWallets();
   const { connectWallet } = useConnectWallet();
-  const [currentChainId, setCurrentChainId] = useState(8453); // Default to Base
   const [isReconnecting, setIsReconnecting] = useState(false);
 
   // Redirect to home if not authenticated
@@ -57,15 +55,11 @@ export default function WalletPage() {
     }
   };
 
-  // Use the active wallet (prioritizes external over embedded)
-  const userWallet = activeWallet;
-  
-  // Use our custom hook to fetch real balances from selected network
-  const { 
-    balances, 
-    isLoading: isBalanceLoading, 
-    refetch: refreshBalances 
-  } = useTokenBalances(userWallet?.address, currentChainId);
+  // Every chain in `chainsFor('send')`, each read with its own client. The
+  // wallet's current network plays no part in what is shown.
+  const { balances, isLoading: isBalanceLoading, refetch: refreshBalances } = useChainBalances(
+    activeWallet?.address
+  );
 
   // Show loading state while Privy initializes
   if (!ready) {
@@ -79,25 +73,16 @@ export default function WalletPage() {
 
   return (
     <div className="min-h-screen bg-surface-void">
-      <Navigation 
-        currentChainId={currentChainId}
-        onChainChange={(newChainId) => {
-          setCurrentChainId(newChainId);
-          setTimeout(() => refreshBalances(), 100);
-        }}
-      />
+      <Navigation />
       <Layout>
         <div className="space-y-6">
-          {userWallet ? (
-            <div className="space-y-6" key={currentChainId}>
-              <WalletInfo
-                wallet={userWallet as unknown as Wallet}
-                balances={balances}
-                isLoading={isBalanceLoading}
-                onRefresh={refreshBalances}
-                chainId={currentChainId}
-              />
-            </div>
+          {activeWallet ? (
+            <WalletInfo
+              address={activeWallet.address}
+              balances={balances}
+              isLoading={isBalanceLoading}
+              onRefresh={refreshBalances}
+            />
           ) : (
             <div className="rounded-control border border-eth-blue/30 bg-surface-slab p-5 text-center  sm:p-8">
               {needsWalletReconnect ? (

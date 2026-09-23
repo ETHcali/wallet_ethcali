@@ -15,8 +15,12 @@ const vaultTypeColors: Record<VaultType, string> = {
   [VaultType.Returnable]: 'bg-eth-blue/10 text-eth-blue-text border-eth-blue/30',
 };
 
-export function VaultList() {
-  const { vaults, isLoading, error, refetch } = useAllVaults();
+interface VaultListProps {
+  chainId: number;
+}
+
+export function VaultList({ chainId }: VaultListProps) {
+  const { vaults, isLoading, error, refetch } = useAllVaults(chainId);
   const [editingVault, setEditingVault] = useState<Vault | null>(null);
   const [depositWithdrawVault, setDepositWithdrawVault] = useState<Vault | null>(null);
 
@@ -161,6 +165,7 @@ export function VaultList() {
 
       {editingVault && (
         <VaultEditModal
+          chainId={chainId}
           vault={editingVault}
           onClose={() => setEditingVault(null)}
           onSuccess={() => {
@@ -172,6 +177,7 @@ export function VaultList() {
 
       {depositWithdrawVault && (
         <VaultDepositWithdraw
+          chainId={chainId}
           vault={depositWithdrawVault}
           onClose={() => setDepositWithdrawVault(null)}
           onSuccess={() => {

@@ -1,34 +1,26 @@
 /**
- * useVaults - Hooks for fetching vault data
+ * useVaults - Vault reads from the FaucetManager on one explicit chain.
  */
 import { useQuery } from '@tanstack/react-query';
-import { createPublicClient, http } from 'viem';
 import FaucetManagerABI from '../../frontend/abis/FaucetManager.json';
-import { useSwagAddresses } from '../../utils/network';
-import { getChainRpc } from '../../config/networks';
+import { getChain, publicClientFor } from '../../config/chains';
 import { Vault, VaultType } from '../../types/faucet';
 
-/**
- * Hook to fetch all vaults from FaucetManager
- */
-export function useAllVaults() {
-  const { faucetManager, chainId } = useSwagAddresses();
+/** Every vault on `chainId`. */
+export function useAllVaults(chainId: number) {
+  const faucetManager = getChain(chainId)?.contracts.FaucetManager;
 
   const query = useQuery({
-    queryKey: ['faucet-all-vaults', faucetManager, chainId],
+    queryKey: ['faucet-all-vaults', chainId],
     queryFn: async () => {
-      if (!faucetManager || !chainId) throw new Error('Missing contract address or chain ID');
+      const client = publicClientFor(chainId);
+      if (!faucetManager || !client) throw new Error('Faucet is not deployed on this network');
 
-      const rpcUrl = getChainRpc(chainId);
-      const client = createPublicClient({
-        transport: http(rpcUrl),
-      });
-
-      const vaultsData = await (client.readContract as any)({
-        address: faucetManager as `0x${string}`,
+      const vaultsData = (await client.readContract({
+        address: faucetManager,
         abi: FaucetManagerABI,
         functionName: 'getAllVaults',
-      }) as any[];
+      } as any)) as any[];
 
       const vaults: Vault[] = vaultsData.map((vault, index) => ({
         id: index,
@@ -48,7 +40,7 @@ export function useAllVaults() {
 
       return vaults;
     },
-    enabled: Boolean(faucetManager && chainId),
+    enabled: Boolean(faucetManager),
     staleTime: 1000 * 30,
   });
 
@@ -60,59 +52,49 @@ export function useAllVaults() {
   };
 }
 
-/**
- * Hook to get only active vaults
- */
-export function useActiveVaults() {
-  const { vaults, isLoading, error, refetch } = useAllVaults();
+/** Only the active vaults on `chainId`. */
+export function useActiveVaults(chainId: number) {
+  const { vaults, isLoading, error, refetch } = useAllVaults(chainId);
 
   return {
-    vaults: vaults.filter(vault => vault.active),
+    vaults: vaults.filter((vault) => vault.active),
     isLoading,
     error,
     refetch,
   };
 }
 
-/**
- * Hook to get a vault by ID
- */
-export function useVaultById(vaultId: number | null) {
-  const { vaults, isLoading, error, refetch } = useAllVaults();
+/** One vault by id on `chainId`. */
+export function useVaultById(chainId: number, vaultId: number | null) {
+  const { vaults, isLoading, error, refetch } = useAllVaults(chainId);
 
   return {
-    vault: vaultId !== null ? vaults.find(v => v.id === vaultId) : undefined,
+    vault: vaultId !== null ? vaults.find((v) => v.id === vaultId) : undefined,
     isLoading,
     error,
     refetch,
   };
 }
 
-/**
- * Hook to check if the faucet is paused
- */
-export function useFaucetPaused() {
-  const { faucetManager, chainId } = useSwagAddresses();
+/** Whether the faucet on `chainId` is paused. */
+export function useFaucetPaused(chainId: number) {
+  const faucetManager = getChain(chainId)?.contracts.FaucetManager;
 
   const query = useQuery({
-    queryKey: ['faucet-paused', faucetManager, chainId],
+    queryKey: ['faucet-paused', chainId],
     queryFn: async () => {
-      if (!faucetManager || !chainId) throw new Error('Missing contract address or chain ID');
+      const client = publicClientFor(chainId);
+      if (!faucetManager || !client) throw new Error('Faucet is not deployed on this network');
 
-      const rpcUrl = getChainRpc(chainId);
-      const client = createPublicClient({
-        transport: http(rpcUrl),
-      });
-
-      const paused = await (client.readContract as any)({
-        address: faucetManager as `0x${string}`,
+      const paused = await client.readContract({
+        address: faucetManager,
         abi: FaucetManagerABI,
         functionName: 'paused',
-      });
+      } as any);
 
       return Boolean(paused);
     },
-    enabled: Boolean(faucetManager && chainId),
+    enabled: Boolean(faucetManager),
     staleTime: 1000 * 10,
   });
 

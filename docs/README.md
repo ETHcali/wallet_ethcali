@@ -14,6 +14,7 @@ Reference material for `wallet_ethcali`. The contracts themselves live in
 | [ZKPASSPORT_CONTRACT_REFERENCE.md](ZKPASSPORT_CONTRACT_REFERENCE.md) | ZKPassportNFT API as the app uses it |
 | [HACKATHON_STAKING_ARCHITECTURE.md](HACKATHON_STAKING_ARCHITECTURE.md) | HackathonStaking design notes |
 | [SECURITY_ADMIN_GUIDE.md](SECURITY_ADMIN_GUIDE.md) | Roles and admin operations |
+| [SWAG_ORDERS.md](SWAG_ORDERS.md) | Swag orders: crypto purchase, Shopify webhook, claim vouchers, `/swag/admin` runbook, env |
 
 ## Swag1155
 
