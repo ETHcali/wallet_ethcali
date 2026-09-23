@@ -7,6 +7,11 @@ const nextConfig = {
         hostname: 'assets.coingecko.com',
       },
       {
+        // Swag product photos are served from the site's public/ folder.
+        protocol: 'https',
+        hostname: 'ethcali.org',
+      },
+      {
         protocol: 'https',
         hostname: 'api.qrserver.com',
       },

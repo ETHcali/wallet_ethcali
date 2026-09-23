@@ -369,16 +369,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
                 </div>
                 <div className="nfts-grid">
                   {nfts.map((nft) => (
-                    <NFTCard
-                      key={`${nft.tokenId.toString()}-${nft.redemptionStatus}`}
-                      nft={nft}
-                      onRedeemSuccess={() => {
-                        // Refetch NFTs after redemption to update status
-                        setTimeout(() => {
-                          refetchNFTs();
-                        }, 2000);
-                      }}
-                    />
+                    <NFTCard key={nft.tokenId.toString()} nft={nft} />
                   ))}
                 </div>
               </div>

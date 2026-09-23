@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { createPublicClient, http } from 'viem';
 import { useWallets } from '@privy-io/react-auth';
-import Swag1155ABI from '../frontend/abis/Swag1155.json';
+import { swag1155Abi } from '../frontend/abis/swag';
 import { useSwagAddresses, getChainConfig } from '../utils/network';
 import { getChainRpc } from '../config/networks';
 import { logger } from '../utils/logger';
@@ -45,29 +45,16 @@ export function useContractAdmin(overrideChainId?: number) {
       try {
         const isAdmin = await client.readContract({
           address: swag1155 as `0x${string}`,
-          abi: Swag1155ABI as any,
+          abi: swag1155Abi,
           functionName: 'isAdmin',
           args: [walletAddress as `0x${string}`],
         });
 
-        logger.debug('[useContractAdmin] isAdmin result', { isAdmin: Boolean(isAdmin) });
-        return Boolean(isAdmin);
+        logger.debug('[useContractAdmin] isAdmin result', { isAdmin });
+        return isAdmin;
       } catch (error) {
-        logger.debug('[useContractAdmin] isAdmin failed, checking owner', { error });
-        // Fallback: check if wallet is the owner
-        try {
-          const owner = await (client.readContract as any)({
-            address: swag1155 as `0x${string}`,
-            abi: Swag1155ABI as any,
-            functionName: 'owner',
-          });
-          const isOwner = (owner as string).toLowerCase() === walletAddress.toLowerCase();
-          logger.debug('[useContractAdmin] owner check', { owner: (owner as string).slice(0, 10), isOwner });
-          return isOwner;
-        } catch (ownerError) {
-          logger.error('[useContractAdmin] owner check failed', ownerError);
-          return false;
-        }
+        logger.error('[useContractAdmin] isAdmin failed', error);
+        return false;
       }
     },
     enabled: Boolean(swag1155 && chainId && walletAddress),

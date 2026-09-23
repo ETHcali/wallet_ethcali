@@ -11,6 +11,7 @@ import {
   EXPLORER_URLS,
   TOKEN_ADDRESSES,
   DEFAULT_CHAIN_ID,
+  SWAG_COLLECTION_BASE,
   isSupportedChain,
 } from '../config/constants';
 import { getExplorerBaseUrl } from './explorer';
@@ -50,7 +51,8 @@ const CHAIN_CONFIGS: Record<ChainLabel, ChainConfig> = {
     id: CHAIN_IDS.BASE,
     label: 'base',
     name: 'Base',
-    swag1155: ADDRESSES.base.addresses.Swag1155,
+    // The live ETHCALI-SWAG-2026 clone. Swag is Base-only; every other chain is ''.
+    swag1155: SWAG_COLLECTION_BASE.address,
     faucetManager: ADDRESSES.base.addresses.FaucetManager,
     zkpassport: ADDRESSES.base.addresses.ZKPassportNFT,
     swagFactory: (ADDRESSES.base.addresses as any).SwagFactory || '',
@@ -61,7 +63,7 @@ const CHAIN_CONFIGS: Record<ChainLabel, ChainConfig> = {
     id: CHAIN_IDS.ETHEREUM,
     label: 'ethereum',
     name: 'Ethereum',
-    swag1155: ADDRESSES.ethereum.addresses.Swag1155,
+    swag1155: '',
     faucetManager: ADDRESSES.ethereum.addresses.FaucetManager,
     zkpassport: ADDRESSES.ethereum.addresses.ZKPassportNFT,
     swagFactory: '', // No SwagFactory deployed on Ethereum yet
@@ -72,7 +74,7 @@ const CHAIN_CONFIGS: Record<ChainLabel, ChainConfig> = {
     id: CHAIN_IDS.UNICHAIN,
     label: 'unichain',
     name: 'Unichain',
-    swag1155: ADDRESSES.unichain.addresses.Swag1155,
+    swag1155: '',
     faucetManager: ADDRESSES.unichain.addresses.FaucetManager,
     zkpassport: ADDRESSES.unichain.addresses.ZKPassportNFT,
     swagFactory: (ADDRESSES.unichain.addresses as any).SwagFactory || '',
@@ -83,7 +85,7 @@ const CHAIN_CONFIGS: Record<ChainLabel, ChainConfig> = {
     id: CHAIN_IDS.OPTIMISM,
     label: 'optimism',
     name: 'Optimism',
-    swag1155: ADDRESSES.optimism.addresses.Swag1155,
+    swag1155: '',
     faucetManager: ADDRESSES.optimism.addresses.FaucetManager,
     zkpassport: ADDRESSES.optimism.addresses.ZKPassportNFT,
     swagFactory: (ADDRESSES.optimism.addresses as any).SwagFactory || '',

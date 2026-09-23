@@ -1,21 +1,123 @@
-export type SizeOption = 'S' | 'M' | 'L' | 'XL' | 'NA';
-export type GenderOption = 'Male' | 'Female' | 'Unisex';
+/**
+ * Swag store types.
+ *
+ * One tokenId = one design. Size is a Shopify variant option and an order
+ * field, never an on-chain attribute: the NFT proves the design, the
+ * fulfilment record says the size.
+ */
 
-export interface ProductTraits {
-  gender: GenderOption;
-  color: string;
-  style: string;
+export type SwagCategory = 'Cap' | 'Mug' | 'Hoodie' | 'T-shirt';
+
+export type SwagSize = 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL';
+
+/** Artwork pipeline state of a design on a chain (public.swag_variants.status). */
+export type SwagVariantStatus = 'draft' | 'artwork_ready' | 'pinned' | 'live';
+
+/** public.swag_variants — the design on one chain. */
+export interface SwagChainVariant {
+  id: number;
+  chain_id: number;
+  token_id: number;
+  /** Lowercase hex address of the Swag1155 clone; null until deployed. */
+  collection_address: string | null;
+  status: SwagVariantStatus;
 }
 
-export interface ProductFormData {
+/** public.swag_shopify_variants — the card channel's handle on a design. */
+export interface SwagShopifyVariant {
+  id: number;
+  /** GID, e.g. gid://shopify/ProductVariant/46749005971642. */
+  shopify_variant_id: string;
+  sku: string;
+  size: SwagSize | null;
+  /** Last COP price pushed to Shopify. A cache, never the price of record. */
+  price_cop: number | null;
+}
+
+/** public.swag_products joined with its Base variant and its Shopify variants. */
+export interface SwagProduct {
+  id: number;
+  sku: string;
+  category: SwagCategory;
+  name_es: string;
+  name_en: string;
+  description_es: string;
+  description_en: string;
+  /** Path under the site's public/, e.g. 'swags/cap-pepe.png'. */
+  image_path: string | null;
+  image_cid: string | null;
+  metadata_cid: string | null;
+  price_usd: number;
+  sized: boolean;
+  sizes: SwagSize[];
+  shopify_product_id: string | null;
+  shopify_handle: string | null;
+  sort_order: number;
+  active: boolean;
+  /** The live Base (8453) variant, or null when the design is not on chain yet. */
+  variant: SwagChainVariant | null;
+  shopify: SwagShopifyVariant[];
+}
+
+// ── Orders (public.swag_orders, written server-side only) ───────────────────
+
+export type SwagOrderChannel = 'onchain' | 'shopify' | 'event';
+
+export type SwagOrderStatus = 'paid' | 'shipped' | 'delivered' | 'cancelled';
+
+export interface SwagShipping {
   name: string;
-  description: string;
-  imageUri: string;
-  price: number;
-  totalSupply: number;
-  traits: ProductTraits;
-  sizes: SizeOption[];
+  phone: string;
+  address1: string;
+  address2?: string;
+  city: string;
+  region: string;
+  /** ISO 3166-1 alpha-2, defaults to CO. */
+  country: string;
+  notes?: string;
 }
+
+/** The EIP-712 ClaimVoucher the signer issues for a Shopify or event order. */
+export interface SwagClaimVoucher {
+  tokenId: string;
+  to: string;
+  quantity: string;
+  orderRef: string;
+  deadline: string;
+  signature: string;
+}
+
+export interface SwagOrder {
+  id: number;
+  channel: SwagOrderChannel;
+  product_id: number;
+  variant_id: number | null;
+  quantity: number;
+  size: SwagSize | null;
+  buyer_wallet: string | null;
+  buyer_email: string | null;
+  shipping: SwagShipping | null;
+  status: SwagOrderStatus;
+  tx_hash: string | null;
+  shopify_order_id: string | null;
+  shopify_line_item_id: string | null;
+  /** bytes32 hex, the claim key. */
+  order_ref: string;
+  voucher: SwagClaimVoucher | null;
+  claim_tx_hash: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** What POST /api/swag/orders takes after a confirmed on-chain buy. */
+export interface CreateSwagOrderInput {
+  txHash: string;
+  shipping: SwagShipping;
+  size: SwagSize | null;
+  quantity: number;
+}
+
+// ── NFT metadata (what the pin route writes to IPFS) ────────────────────────
 
 export interface Swag1155MetadataAttribute {
   trait_type: 'Product' | 'Color' | 'Gender' | 'Style' | 'Size';
@@ -27,40 +129,4 @@ export interface Swag1155Metadata {
   description: string;
   image: string;
   attributes?: Swag1155MetadataAttribute[];
-}
-
-export enum DiscountType {
-  Percentage = 0,
-  Fixed = 1,
-}
-
-export interface PoapDiscount {
-  eventId: bigint;
-  discountBps: bigint;
-  active: boolean;
-}
-
-export interface HolderDiscount {
-  token: string;
-  discountType: DiscountType;
-  value: bigint;
-  active: boolean;
-}
-
-export interface Variant {
-  price: bigint;
-  maxSupply: bigint;
-  minted: bigint;
-  active: boolean;
-}
-
-export interface RoyaltyInfo {
-  recipient: string;
-  percentage: bigint;
-}
-
-export enum RedemptionStatus {
-  NotRedeemed = 0,
-  PendingFulfillment = 1,
-  Fulfilled = 2,
 }

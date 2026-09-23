@@ -5,7 +5,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useWallets } from '@privy-io/react-auth';
 import { createPublicClient, http } from 'viem';
-import Swag1155ABI from '../frontend/abis/Swag1155.json';
+import { swag1155Abi } from '../frontend/abis/swag';
 import FaucetManagerABI from '../frontend/abis/FaucetManager.json';
 import ZKPassportNFTABI from '../frontend/abis/ZKPassportNFT.json';
 import { useSwagAddresses, getChainConfig } from '../utils/network';
@@ -69,7 +69,7 @@ export function useAdminStatus(overrideChainId?: number) {
         calls.push(
           client.readContract({
             address: swag1155 as `0x${string}`,
-            abi: Swag1155ABI as any,
+            abi: swag1155Abi,
             functionName: 'isAdmin',
             args: [walletAddress as `0x${string}`],
           }).catch(() => false)

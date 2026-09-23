@@ -1,43 +1,25 @@
 /**
- * Swag hooks - Re-export all swag-related hooks
+ * Swag hooks. Base-only, USDC-only; see docs/swag-rebuild-spec.md in the workspace.
  */
 
-// Grouped products hook (user-facing store)
-export { useGroupedProducts } from './useGroupedProducts';
-export type { ProductGroup, VariantSize } from './useGroupedProducts';
-
-// Variant query hooks
-export { useTokenIds, useVariant, useVariantUri, useVariantRemaining, useContractSettings } from './useVariantQueries';
-
-// Variant mutation hooks
-export { useSetVariant, useSetVariantWithURI } from './useVariantMutations';
-
-// Royalty hooks
-export { useRoyalties, useTotalRoyaltyBps, useAddRoyalty, useClearRoyalties } from './useRoyalties';
-
-// Minted NFTs hooks
-export { useAllMintedNFTs } from './useMintedNFTs';
-export type { MintedNFT } from './useMintedNFTs';
-
-// Fulfillment hooks
-export { useMarkRedemptionFulfilled } from './useNFTFulfillment';
-
-// Discount hooks
-export { usePoapDiscounts, useHolderDiscounts, useDiscountedPrice, useAddPoapDiscount, useRemovePoapDiscount, useAddHolderDiscount, useRemoveHolderDiscount } from './useDiscounts';
-
-// POAP whitelist hooks
-export { useIsPoapWhitelisted, useAddPoapWhitelist, useRemovePoapWhitelist, fetchPoapHolders } from './usePoapWhitelist';
-
-// Serial minted hooks
-export { useSerialMinted, useNextSerial } from './useSerialMinted';
-export type { SerialMintedEvent } from './useSerialMinted';
-
-// SwagFactory hooks
-export { useActiveCollections, useAllCollections, useSetCollectionActive } from './useSwagFactory';
-
-// Re-export types
-export { RedemptionStatus } from '../../types/swag';
-export type { Variant, RoyaltyInfo, PoapDiscount, HolderDiscount } from '../../types/swag';
+export {
+  useSwagCatalogue,
+  productImageUrl,
+  shopifyCartUrl,
+  shopifyVariantFor,
+} from './useSwagCatalogue';
+export { useSwagOnchain } from './useSwagOnchain';
+export type { SwagTokenState, SwagOnchainState } from './useSwagOnchain';
+export { useBuySwag } from './useBuySwag';
+export type { BuyStep, UseBuySwagResult } from './useBuySwag';
+export { useMySwag } from './useMySwag';
+export type { OwnedSwag } from './useMySwag';
+export { useSwagOrdersQuery, useCreateSwagOrder } from './useSwagOrders';
+export { useTrm, formatUsd, formatCop } from './useTrm';
+export { useSwagLocale, productName, productDescription, productAltName } from './useSwagLocale';
+export type { SwagLocale } from './useSwagLocale';
+export { translateSwagError, describeBlockedReason, formatUsdc } from './swagErrors';
+export { SWAG, swagClient, swagKeys } from './client';
 
 // Artwork pipeline (admin)
 export {

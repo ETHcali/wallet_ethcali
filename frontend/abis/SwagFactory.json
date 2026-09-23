@@ -5,6 +5,11 @@
         "internalType": "address",
         "name": "admin",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_implementation",
+        "type": "address"
       }
     ],
     "stateMutability": "nonpayable",
@@ -43,6 +48,27 @@
   },
   {
     "inputs": [],
+    "name": "FailedDeployment",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "balance",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "needed",
+        "type": "uint256"
+      }
+    ],
+    "name": "InsufficientBalance",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "InvalidAddress",
     "type": "error"
   },
@@ -58,12 +84,12 @@
   },
   {
     "inputs": [],
-    "name": "InvalidPaymentToken",
+    "name": "InvalidTreasury",
     "type": "error"
   },
   {
     "inputs": [],
-    "name": "InvalidTreasury",
+    "name": "NoPaymentOptions",
     "type": "error"
   },
   {
@@ -100,12 +126,6 @@
       {
         "indexed": false,
         "internalType": "address",
-        "name": "paymentToken",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
         "name": "treasury",
         "type": "address"
       },
@@ -119,6 +139,12 @@
         "indexed": true,
         "internalType": "address",
         "name": "creator",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "signer",
         "type": "address"
       }
     ],
@@ -280,11 +306,6 @@
       },
       {
         "internalType": "address",
-        "name": "paymentToken",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
         "name": "treasury",
         "type": "address"
       },
@@ -345,11 +366,6 @@
       },
       {
         "internalType": "address",
-        "name": "paymentToken",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
         "name": "treasury",
         "type": "address"
       },
@@ -366,24 +382,46 @@
             "type": "string"
           },
           {
-            "internalType": "uint256",
-            "name": "price",
-            "type": "uint256"
+            "internalType": "uint128",
+            "name": "onchainCap",
+            "type": "uint128"
           },
           {
-            "internalType": "uint256",
-            "name": "maxSupply",
-            "type": "uint256"
+            "internalType": "uint128",
+            "name": "voucherCap",
+            "type": "uint128"
           },
           {
             "internalType": "bool",
             "name": "active",
             "type": "bool"
+          },
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+              },
+              {
+                "internalType": "uint256",
+                "name": "price",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct SwagFactory.PaymentOption[]",
+            "name": "payments",
+            "type": "tuple[]"
           }
         ],
         "internalType": "struct SwagFactory.VariantInit[]",
         "name": "sizes",
         "type": "tuple[]"
+      },
+      {
+        "internalType": "address",
+        "name": "signer",
+        "type": "address"
       }
     ],
     "name": "deployCollection",
@@ -444,11 +482,6 @@
             "internalType": "string",
             "name": "sku",
             "type": "string"
-          },
-          {
-            "internalType": "address",
-            "name": "paymentToken",
-            "type": "address"
           },
           {
             "internalType": "address",
@@ -553,6 +586,19 @@
         "internalType": "bool",
         "name": "",
         "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "implementation",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
       }
     ],
     "stateMutability": "view",

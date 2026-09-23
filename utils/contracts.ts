@@ -1,6 +1,6 @@
 import { createPublicClient, http, parseEther, formatEther, encodeFunctionData, type Chain } from 'viem';
 import { base, mainnet, optimism } from 'viem/chains';
-import { CONTRACTS, getAddresses } from '../frontend/contracts';
+import { ADDRESSES, CONTRACTS } from '../frontend/contracts';
 import { getChainRpc } from '../config/networks';
 import { ADMIN_ADDRESS, CHAIN_IDS, DEFAULT_RPC_URLS } from '../config/constants';
 import { getExplorerUrl, getAddressExplorerUrl } from './explorer';
@@ -41,8 +41,16 @@ export function getChainConfig(chainId: number): Chain {
   }
 }
 
+/**
+ * The networks that carry the identity/faucet/swag contracts. Celo is in the
+ * generated ADDRESSES too, but only for donations; keeping it out of this union
+ * is what lets `getContractAddresses()` return a shape with FaucetManager and
+ * ZKPassportNFT on it.
+ */
+export type ContractNetwork = 'base' | 'ethereum' | 'unichain' | 'optimism';
+
 // Get network name from chainId
-export function getNetworkName(chainId: number): string {
+export function getNetworkName(chainId: number): ContractNetwork {
   switch (chainId) {
     case CHAIN_IDS.ETHEREUM:
       return 'ethereum';
@@ -68,9 +76,9 @@ export function getPublicClient(chainId: number) {
 
 // Get contract addresses for a chain
 export function getContractAddresses(chainId: number) {
-  const network = getNetworkName(chainId);
-  // Use type assertion as network name comes from chainId
-  return getAddresses(network as any).addresses;
+  // Indexed directly rather than through getAddresses(): that helper is not
+  // generic, so it would return the union of every network including Celo.
+  return ADDRESSES[getNetworkName(chainId)].addresses;
 }
 
 // Get contract ABI (cast as any to avoid complex union type issues)

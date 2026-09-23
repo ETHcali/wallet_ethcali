@@ -1,11 +1,17 @@
+/**
+ * The swag NFTs a wallet holds, for the wallet page's collectibles tab.
+ *
+ * The collection is Base-only, so any other chain resolves to no contract and
+ * an empty list. Reads go through the typed ABI: a function the contract no
+ * longer has (redemption status, for one) fails typecheck rather than the tab.
+ */
 import { useQuery } from '@tanstack/react-query';
 import { createPublicClient, http } from 'viem';
 import { useWallets } from '@privy-io/react-auth';
 import { useSwagAddresses, getChainConfig } from '../utils/network';
 import { getChainRpc } from '../config/networks';
 import { getIPFSGatewayUrl } from '../lib/pinata';
-import Swag1155ABI from '../frontend/abis/Swag1155.json';
-import { RedemptionStatus } from './swag';
+import { swag1155Abi } from '../frontend/abis/swag';
 import { logger } from '../utils/logger';
 
 export interface UserNFT {
@@ -15,198 +21,114 @@ export interface UserNFT {
   description: string;
   image: string;
   attributes: Array<{ trait_type: string; value: string }>;
-  redemptionStatus: RedemptionStatus;
-  designAddress?: string; // Design contract address (required for new Design-based system)
-  chainId?: number; // Chain ID where the NFT exists
+  /** The collection this token lives in. */
+  designAddress: string;
+  chainId: number;
 }
 
-// Fetch all token IDs using listTokenIds() contract function
-async function fetchTokenIds(swag1155: string, chainId: number): Promise<bigint[]> {
-  const rpcUrl = getChainRpc(chainId);
-  const client = createPublicClient({ transport: http(rpcUrl) });
-
-  try {
-    const result = await client.readContract({
-      address: swag1155 as `0x${string}`,
-      abi: Swag1155ABI as any,
-      functionName: 'listTokenIds',
-      args: [],
-    });
-    return result as bigint[];
-  } catch (error) {
-    logger.error('Error fetching token IDs from contract', error);
-    return [];
-  }
+interface TokenMetadata {
+  name: string;
+  description: string;
+  image: string;
+  attributes: Array<{ trait_type: string; value: string }>;
 }
 
-// Fetch user balances for all token IDs
-async function fetchUserBalances(
-  swag1155: string,
-  chainId: number,
-  userAddress: string,
-  tokenIds: bigint[]
-): Promise<Map<string, number>> {
-  if (tokenIds.length === 0) return new Map();
-
-  const rpcUrl = getChainRpc(chainId);
-  const client = createPublicClient({ transport: http(rpcUrl) });
+async function fetchTokenMetadata(uri: string, tokenId: bigint): Promise<TokenMetadata | null> {
+  const gatewayUrl = getIPFSGatewayUrl(uri);
+  if (!gatewayUrl) return null;
 
   try {
-    // Create arrays for balanceOfBatch call
-    const accounts = tokenIds.map(() => userAddress);
-    const ids = tokenIds;
-
-    const balances = await (client.readContract as any)({
-      address: swag1155 as `0x${string}`,
-      abi: Swag1155ABI,
-      functionName: 'balanceOfBatch',
-      args: [accounts, ids],
-    }) as bigint[];
-
-    const balanceMap = new Map<string, number>();
-    tokenIds.forEach((tokenId, index) => {
-      const balance = Number(balances[index]);
-      if (balance > 0) {
-        balanceMap.set(tokenId.toString(), balance);
-      }
-    });
-
-    return balanceMap;
-  } catch (error) {
-    logger.error('Error fetching user balances', error);
-    return new Map();
-  }
-}
-
-// Fetch metadata for a token
-async function fetchTokenMetadata(
-  swag1155: string,
-  chainId: number,
-  tokenId: bigint
-): Promise<{ name: string; description: string; image: string; attributes: any[] } | null> {
-  const rpcUrl = getChainRpc(chainId);
-  const client = createPublicClient({ transport: http(rpcUrl) });
-
-  try {
-    const uri = await (client.readContract as any)({
-      address: swag1155 as `0x${string}`,
-      abi: Swag1155ABI,
-      functionName: 'uri',
-      args: [tokenId],
-    }) as string;
-
-    const gatewayUrl = getIPFSGatewayUrl(uri);
-    if (!gatewayUrl) return null;
-
     const response = await fetch(gatewayUrl);
     if (!response.ok) return null;
-
     const metadata = await response.json();
     return {
       name: metadata.name || `Token #${tokenId}`,
       description: metadata.description || '',
-      image: metadata.image || '', // Store raw image URL, process in component like ProductCard
-      attributes: metadata.attributes || [],
+      image: metadata.image || '',
+      attributes: Array.isArray(metadata.attributes) ? metadata.attributes : [],
     };
   } catch (error) {
-    logger.error('Error fetching token metadata', error);
+    logger.error(`Error fetching metadata for token ${tokenId}`, error);
     return null;
   }
 }
 
-// Main hook to fetch user's NFTs
 export function useUserNFTs(overrideChainId?: number) {
   const { wallets } = useWallets();
   const userAddress = wallets?.[0]?.address;
   const swagAddresses = useSwagAddresses();
-  
-  // Use override chainId if provided, otherwise fall back to useSwagAddresses
+
   const chainId = overrideChainId || swagAddresses.chainId;
-  const chainConfig = getChainConfig(chainId);
-  const swag1155 = chainConfig.swag1155;
+  const swag1155 = getChainConfig(chainId).swag1155;
 
   const query = useQuery({
     queryKey: ['user-nfts', userAddress, chainId, swag1155],
     queryFn: async (): Promise<UserNFT[]> => {
-      if (!userAddress || !swag1155 || !chainId) {
-        logger.debug('Missing required data for NFT fetch', { hasAddress: !!userAddress, hasContract: !!swag1155, chainId });
-        return [];
-      }
+      if (!userAddress || !swag1155) return [];
 
-      logger.debug('Fetching NFTs', { userAddress: userAddress.substring(0, 10), chainId });
+      const client = createPublicClient({ transport: http(getChainRpc(chainId)) });
+      const collection = swag1155 as `0x${string}`;
+      const owner = userAddress as `0x${string}`;
 
-      // Step 1: Get all token IDs from the contract
-      const tokenIds = await fetchTokenIds(swag1155, chainId);
-      logger.debug('Token IDs found', { count: tokenIds.length });
+      const tokenIds = await client.readContract({
+        address: collection,
+        abi: swag1155Abi,
+        functionName: 'listTokenIds',
+      });
       if (tokenIds.length === 0) return [];
 
-      // Step 2: Get user's balances for all tokens
-      const balanceMap = await fetchUserBalances(swag1155, chainId, userAddress, tokenIds);
-      logger.debug('User owns tokens', { count: balanceMap.size });
-      if (balanceMap.size === 0) return [];
+      const balances = await client.readContract({
+        address: collection,
+        abi: swag1155Abi,
+        functionName: 'balanceOfBatch',
+        args: [tokenIds.map(() => owner), tokenIds],
+      });
 
-      // Step 3: Fetch metadata and redemption status for tokens the user owns
-      const ownedTokenIds = Array.from(balanceMap.keys());
-      const nfts: UserNFT[] = [];
-      const rpcUrl = getChainRpc(chainId);
-      const client = createPublicClient({ transport: http(rpcUrl) });
+      const owned = tokenIds.filter((_, i) => (balances[i] ?? 0n) > 0n);
+      if (owned.length === 0) return [];
 
-      for (const tokenIdStr of ownedTokenIds) {
-        const tokenId = BigInt(tokenIdStr);
-        const balance = balanceMap.get(tokenIdStr) || 0;
-        
-        // Fetch metadata and redemption status in parallel
-        // Both should be resilient to failures - we still show NFT even if metadata fails
-        const [metadata, redemptionStatus] = await Promise.all([
-          fetchTokenMetadata(swag1155, chainId, tokenId).catch((error) => {
-            logger.error(`Error fetching metadata for token ${tokenId}`, error);
-            return null;
-          }),
-          (async () => {
-            try {
-              const status = await (client.readContract as any)({
-                address: swag1155 as `0x${string}`,
-                abi: Swag1155ABI,
-                functionName: 'getRedemptionStatus',
-                args: [tokenId, userAddress as `0x${string}`],
-              });
-              return Number(status) as RedemptionStatus;
-            } catch (error) {
-              logger.error(`Error fetching redemption status for token ${tokenId}`, error);
-              return RedemptionStatus.NotRedeemed;
-            }
-          })(),
-        ]);
+      const nfts = await Promise.all(
+        owned.map(async (tokenId): Promise<UserNFT> => {
+          const balance = Number(balances[tokenIds.indexOf(tokenId)] ?? 0n);
+          let metadata: TokenMetadata | null = null;
+          try {
+            const uri = await client.readContract({
+              address: collection,
+              abi: swag1155Abi,
+              functionName: 'uri',
+              args: [tokenId],
+            });
+            metadata = await fetchTokenMetadata(uri, tokenId);
+          } catch (error) {
+            logger.error(`Error reading uri for token ${tokenId}`, error);
+          }
 
-        // Always add NFT if user owns it (has balance > 0), even if metadata fetch failed
-        // Use fallback values for missing metadata
-        nfts.push({
-          tokenId,
-          balance,
-          name: metadata?.name || `Token #${tokenId}`,
-          description: metadata?.description || '',
-          image: metadata?.image || '',
-          attributes: metadata?.attributes || [],
-          redemptionStatus,
-          designAddress: swag1155, // Include Design address for new system
-          chainId, // Include chain ID
-        });
-      }
+          return {
+            tokenId,
+            balance,
+            name: metadata?.name || `Token #${tokenId}`,
+            description: metadata?.description || '',
+            image: metadata?.image || '',
+            attributes: metadata?.attributes || [],
+            designAddress: swag1155,
+            chainId,
+          };
+        })
+      );
 
-      logger.debug('Final NFTs loaded', { count: nfts.length });
+      logger.debug('Swag NFTs loaded', { count: nfts.length });
       return nfts;
     },
-    enabled: Boolean(userAddress && swag1155 && chainId),
-    staleTime: 1000 * 60 * 2, // 2 minutes
+    enabled: Boolean(userAddress && swag1155),
+    staleTime: 1000 * 60 * 2,
     refetchOnWindowFocus: false,
-    refetchOnMount: true, // Always refetch when component mounts (e.g., after login)
-    retry: 2, // Retry failed requests
-    retryDelay: 1000, // Wait 1 second between retries
+    refetchOnMount: true,
+    retry: 2,
+    retryDelay: 1000,
   });
 
   return {
     ...query,
-    // Add refetch function for manual refresh
     refetch: query.refetch,
   };
 }

@@ -2,6 +2,7 @@
  * Centralized constants for the ETH Cali Wallet
  * This is the single source of truth for all application-wide constants.
  */
+import swagCollection from '../frontend/swag-collection.json';
 
 // =============================================================================
 // CHAIN IDS
@@ -172,6 +173,29 @@ export const TOKEN_ADDRESSES: Record<ChainId, {
     COPm: process.env.NEXT_PUBLIC_COPM_CELO || '0x8a567e2ae79ca692bd748ab832081c45de4041ea',
   },
 } as const;
+
+// =============================================================================
+// SWAG COLLECTION
+// =============================================================================
+/**
+ * The live Swag1155 clone on Base, `ETHCALI-SWAG-2026`. Swag is Base-only and
+ * priced in USDC only; there is no chain selector anywhere in the swag UI.
+ *
+ * The address is not typed here by hand: `frontend/swag-collection.json` is
+ * written by `npm run sync:contracts` from scs-ethcali/deployments/base-latest.json,
+ * so a redeploy shows up as a diff in that file rather than as a stale literal.
+ */
+export const SWAG_COLLECTION_BASE = {
+  name: swagCollection.name,
+  chainId: CHAIN_IDS.BASE,
+  address: swagCollection.address as `0x${string}`,
+  /** Base USDC — the only payment token the collection accepts. */
+  usdc: TOKEN_ADDRESSES[CHAIN_IDS.BASE].USDC as `0x${string}`,
+  usdcDecimals: TOKEN_DECIMALS.USDC,
+} as const;
+
+/** The Shopify store behind "Pay with card". COP, Stripe connected. */
+export const SWAG_SHOPIFY_STORE = 'qpsxyq-9g.myshopify.com';
 
 // =============================================================================
 // SUPPORTED CHAINS

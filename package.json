@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "sync:contracts": "node scripts/sync-contracts.mjs",
     "clean": "rm -rf node_modules package-lock.json .next",
     "clean:cache": "rm -rf .next",
     "clean:install": "npm run clean && npm install",
