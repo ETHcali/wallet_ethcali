@@ -43,5 +43,8 @@ export type { Variant, RoyaltyInfo, PoapDiscount, HolderDiscount } from '../../t
 export {
   useSwagArtwork,
   type SwagVariant,
+  type SwagVariantPatch,
+  type SwagProductSummary,
+  type SwagCategory,
   type ArtworkStatus,
 } from './useSwagArtwork';

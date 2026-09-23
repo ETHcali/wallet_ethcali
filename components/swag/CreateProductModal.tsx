@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
+import { usePrivy } from '@privy-io/react-auth';
 import { useSetVariantWithURI } from '../../hooks/swag';
 import { pinImageToIPFS, pinMetadataToIPFS } from '../../lib/pinata';
 import type { SizeOption, GenderOption, Swag1155Metadata, Swag1155MetadataAttribute } from '../../types/swag';
@@ -35,6 +36,7 @@ export function CreateProductModal({ contractAddress, chainId, onClose, onSucces
   onSuccess: () => void;
 }) {
   const { setVariantWithURI, canSet } = useSetVariantWithURI(contractAddress, chainId);
+  const { getAccessToken } = usePrivy();
 
   // Form fields
   const [name, setName] = useState('');
@@ -134,7 +136,9 @@ export function CreateProductModal({ contractAddress, chainId, onClose, onSucces
     try {
       // 1. Upload image
       setProgress('Uploading image to IPFS...');
-      const imageUri = await pinImageToIPFS(imageBase64, `${name.trim().replace(/\s+/g, '-').toLowerCase()}.png`);
+      const accessToken = await getAccessToken();
+      if (!accessToken) throw new Error('Not signed in');
+      const imageUri = await pinImageToIPFS(imageBase64, accessToken, `${name.trim().replace(/\s+/g, '-').toLowerCase()}.png`);
 
       // 2. For each size, build metadata and create variant
       for (const sizeOpt of enabledSizes) {
@@ -156,7 +160,7 @@ export function CreateProductModal({ contractAddress, chainId, onClose, onSucces
           image: imageUri,
           attributes,
         };
-        const metadataUri = await pinMetadataToIPFS(metadata);
+        const metadataUri = await pinMetadataToIPFS(metadata, accessToken);
 
         setProgress(`Creating variant #${tokenId} (${sizeOpt.label})...`);
         await setVariantWithURI(tokenId, priceBigInt, BigInt(supply), active, metadataUri);

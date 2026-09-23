@@ -28,8 +28,10 @@ function VariantRow({ variant }: { variant: SwagVariant }) {
   const fileInput = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [driveDraft, setDriveDraft] = useState(variant.drive_url ?? '');
+  // The design carries the name and the CIDs; the row carries the chain state.
+  const { product } = variant;
 
-  // Per-row pending state. One shared flag across 18 rows would disable the
+  // Per-row pending state. One shared flag across 17 rows would disable the
   // whole table on every upload.
   const isPinning = pin.isPending && pin.variables?.id === variant.id;
   const isSaving = update.isPending && update.variables?.id === variant.id;
@@ -65,25 +67,26 @@ function VariantRow({ variant }: { variant: SwagVariant }) {
       <div className="mb-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="truncate font-semibold text-content-primary">
-            {variant.label}
+            {product.name_en}
             <span className="ml-2 text-xs font-normal text-content-faint">#{variant.token_id}</span>
           </h3>
+          <p className="truncate font-mono text-[10px] text-content-faint">{product.sku}</p>
         </div>
         <StatusPill status={variant.status} />
       </div>
 
       {/* Pinned preview, from IPFS — never from Drive */}
-      {variant.image_cid && (
+      {product.image_cid && (
         <a
-          href={`${PINATA_GATEWAY}/ipfs/${variant.image_cid}`}
+          href={`${PINATA_GATEWAY}/ipfs/${product.image_cid}`}
           target="_blank"
           rel="noopener noreferrer"
           className="mb-3 block overflow-hidden rounded-control border border-line-hairline"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={`${PINATA_GATEWAY}/ipfs/${variant.image_cid}`}
-            alt={`${variant.label} product image`}
+            src={`${PINATA_GATEWAY}/ipfs/${product.image_cid}`}
+            alt={`${product.name_en} product image`}
             className="h-32 w-full object-cover"
             loading="lazy"
           />
@@ -117,8 +120,8 @@ function VariantRow({ variant }: { variant: SwagVariant }) {
       <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-content-faint">
         Product image (IPFS)
       </label>
-      {variant.image_cid ? (
-        <p className="mb-2 break-all font-mono text-[11px] text-eth-blue-text">{variant.image_cid}</p>
+      {product.image_cid ? (
+        <p className="mb-2 break-all font-mono text-[11px] text-eth-blue-text">{product.image_cid}</p>
       ) : (
         <p className="mb-2 text-[11px] text-content-faint">
           Not pinned. The NFT cannot ship until this exists.
@@ -140,7 +143,7 @@ function VariantRow({ variant }: { variant: SwagVariant }) {
       >
         {isPinning
           ? 'Pinning to IPFS…'
-          : variant.image_cid
+          : product.image_cid
             ? 'Replace image'
             : 'Upload & pin image'}
       </button>
@@ -158,17 +161,20 @@ export default function SwagArtworkPage() {
   const { authenticated, ready, login } = usePrivy();
   const { variants } = useSwagArtwork();
 
+  // Grouped by category, in catalogue order. The old grouping was by SKU, back
+  // when a SKU was a product line and its rows were sizes; now a row is a
+  // design on a chain and the SKU is the design itself.
   const grouped = useMemo(() => {
     const out = new Map<string, SwagVariant[]>();
     for (const v of variants.data ?? []) {
-      const list = out.get(v.sku) ?? [];
+      const list = out.get(v.product.category) ?? [];
       list.push(v);
-      out.set(v.sku, list);
+      out.set(v.product.category, list);
     }
     return [...out.entries()];
   }, [variants.data]);
 
-  const pinnedCount = (variants.data ?? []).filter((v) => v.image_cid).length;
+  const pinnedCount = (variants.data ?? []).filter((v) => v.product.image_cid).length;
   const total = (variants.data ?? []).length;
 
   return (
@@ -224,10 +230,10 @@ export default function SwagArtworkPage() {
           </div>
 
           <div className="space-y-8">
-            {grouped.map(([sku, items]) => (
-              <section key={sku}>
+            {grouped.map(([category, items]) => (
+              <section key={category}>
                 <h2 className="mb-3 font-mono text-xs font-semibold uppercase tracking-wide text-content-muted">
-                  {sku}
+                  {category}
                 </h2>
                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                   {items.map((v) => (

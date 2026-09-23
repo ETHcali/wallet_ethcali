@@ -2,10 +2,14 @@ import { Swag1155Metadata } from '../types/swag';
 
 const DEFAULT_GATEWAY = process.env.NEXT_PUBLIC_PINATA_GATEWAY || process.env.PINATA_GATEWAY || 'https://gateway.pinata.cloud/ipfs';
 
-export async function pinMetadataToIPFS(metadata: Swag1155Metadata): Promise<string> {
+/**
+ * Both pin routes are gated by `requireAdmin`, so every call needs the
+ * caller's Privy access token. Callers get it from `usePrivy().getAccessToken()`.
+ */
+export async function pinMetadataToIPFS(metadata: Swag1155Metadata, accessToken: string): Promise<string> {
   const response = await fetch('/api/pinata/pin-json', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
     body: JSON.stringify({ metadata }),
   });
 
@@ -18,10 +22,10 @@ export async function pinMetadataToIPFS(metadata: Swag1155Metadata): Promise<str
   return payload.uri as string;
 }
 
-export async function pinImageToIPFS(base64: string, fileName?: string): Promise<string> {
+export async function pinImageToIPFS(base64: string, accessToken: string, fileName?: string): Promise<string> {
   const response = await fetch('/api/pinata/pin-image', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
     body: JSON.stringify({ file: base64, fileName }),
   });
 

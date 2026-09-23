@@ -10,20 +10,42 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 export type ArtworkStatus = 'draft' | 'artwork_ready' | 'pinned' | 'live';
 
-export interface SwagVariant {
+export type SwagCategory = 'Cap' | 'Mug' | 'Hoodie' | 'T-shirt';
+
+/** The design (public.swag_products), as embedded in a variant row. */
+export interface SwagProductSummary {
   id: number;
   sku: string;
-  token_id: number;
-  label: string;
-  drive_file_id: string | null;
-  drive_url: string | null;
+  category: SwagCategory;
+  name_es: string;
+  name_en: string;
+  image_path: string | null;
+  /** Bare CIDs. Live on the design because the same asset is used on every chain. */
   image_cid: string | null;
   metadata_cid: string | null;
+  active: boolean;
+}
+
+/** A design on a chain (public.swag_variants) joined to its design. */
+export interface SwagVariant {
+  id: number;
+  product_id: number;
+  chain_id: number;
+  token_id: number;
+  drive_file_id: string | null;
+  drive_url: string | null;
   collection_address: string | null;
   status: ArtworkStatus;
   notes: string | null;
   updated_at: string;
+  product: SwagProductSummary;
 }
+
+/** What PATCH /api/swag/variants accepts. CIDs are routed to the product server-side. */
+export type SwagVariantPatch = { id: number } & Partial<
+  Pick<SwagVariant, 'drive_url' | 'drive_file_id' | 'notes'> &
+    Pick<SwagProductSummary, 'image_cid' | 'metadata_cid'>
+>;
 
 export function useSwagArtwork() {
   const { getAccessToken, authenticated } = usePrivy();
@@ -61,12 +83,12 @@ export function useSwagArtwork() {
   });
 
   const update = useMutation({
-    mutationFn: async (patch: Partial<SwagVariant> & { id: number }) =>
+    mutationFn: async (patch: SwagVariantPatch) =>
       authedFetch('/api/swag/variants', { method: 'PATCH', body: JSON.stringify(patch) }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['swag-artwork'] }),
   });
 
-  /** Pin an image to IPFS, then record the CID against the variant. */
+  /** Pin an image to IPFS, then record the CID against the variant's design. */
   const pin = useMutation({
     mutationFn: async ({ id, file }: { id: number; file: File }) => {
       const base64 = await new Promise<string>((resolve, reject) => {

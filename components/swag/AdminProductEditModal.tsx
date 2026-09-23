@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { usePrivy } from '@privy-io/react-auth';
 import { useVariant, useVariantUri, useSetVariant, useSetVariantWithURI } from '../../hooks/swag';
 import { useRoyalties, useTotalRoyaltyBps, useAddRoyalty, useClearRoyalties } from '../../hooks/swag';
 import { usePoapDiscounts, useHolderDiscounts, useAddPoapDiscount, useRemovePoapDiscount, useAddHolderDiscount, useRemoveHolderDiscount } from '../../hooks/swag';
@@ -21,6 +22,7 @@ export function AdminProductEditModal({ tokenId, contractAddress, chainId, onClo
   const { uri: currentUri, refetch: refetchUri } = useVariantUri(contractAddress, chainId, tokenId);
   const { setVariant, canSet } = useSetVariant(contractAddress, chainId);
   const { setVariantWithURI } = useSetVariantWithURI(contractAddress, chainId);
+  const { getAccessToken } = usePrivy();
   const { royalties, isLoading: isLoadingRoyalties, refetch: refetchRoyalties } = useRoyalties(contractAddress, chainId, tokenId);
   const { totalBps, refetch: refetchBps } = useTotalRoyaltyBps(contractAddress, chainId, tokenId);
   const { addRoyalty, canAdd } = useAddRoyalty(contractAddress, chainId);
@@ -140,11 +142,13 @@ export function AdminProductEditModal({ tokenId, contractAddress, chainId, onClo
     setIsSubmitting(true);
     try {
       let finalImageUri = metadataImageUri;
+      const accessToken = await getAccessToken();
+      if (!accessToken) throw new Error('Not signed in');
 
       // Upload new image if provided
       if (newImageBase64) {
         setMetadataProgress('Uploading new image...');
-        finalImageUri = await pinImageToIPFS(newImageBase64, `${metadataName.trim().replace(/\s+/g, '-').toLowerCase()}.png`);
+        finalImageUri = await pinImageToIPFS(newImageBase64, accessToken, `${metadataName.trim().replace(/\s+/g, '-').toLowerCase()}.png`);
       }
 
       // Build attributes array
@@ -163,7 +167,7 @@ export function AdminProductEditModal({ tokenId, contractAddress, chainId, onClo
       };
 
       setMetadataProgress('Uploading metadata to IPFS...');
-      const newUri = await pinMetadataToIPFS(metadata);
+      const newUri = await pinMetadataToIPFS(metadata, accessToken);
 
       setMetadataProgress('Updating on-chain URI...');
       const price = parseFloat(priceInput) || Number(variant?.price || 0) / 1e6;

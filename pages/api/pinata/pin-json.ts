@@ -2,6 +2,8 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import PinataSDK from '@pinata/sdk';
 
 import { logger } from '../../../utils/logger';
+import { requireAdmin, AdminAuthError } from '../../../lib/adminAuth';
+
 const PINATA_JWT = process.env.PINATA_JWT;
 
 const pinata = PINATA_JWT
@@ -13,6 +15,15 @@ type ResponseData = { uri: string } | { error: string };
 export default async function handler(req: NextApiRequest, res: NextApiResponse<ResponseData>) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Same hole pin-image had: without this, anyone on the internet could pin
+  // arbitrary JSON to our Pinata account. Pinning requires an operator.
+  try {
+    await requireAdmin(req);
+  } catch (e) {
+    const err = e as AdminAuthError;
+    return res.status(err.status ?? 401).json({ error: err.message });
   }
 
   if (!pinata) {
