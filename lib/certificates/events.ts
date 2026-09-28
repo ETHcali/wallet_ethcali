@@ -31,6 +31,15 @@ export interface CertEvent {
   sponsors: { name: string; file: string; height: number; /** Same artwork on ethcali.org, for the web page. */ src: string }[];
 }
 
+/**
+ * One entry per hackathon. Adding the next one:
+ *   1. an entry here, keyed by the `event` value its rows will carry
+ *      (e.g. 'eag-medellin-2027'), with its title, venue, dates and sponsors;
+ *   2. each sponsor's logo in lib/certificates/logos — artwork for a dark
+ *      ground, PNG (pdf-lib cannot embed progressive JPEGs);
+ *   3. its participants loaded into builder_certificates with that `event`.
+ * The diploma, the credential page, LinkedIn and the admin list follow.
+ */
 export const CERT_EVENTS: Record<string, CertEvent> = {
   'eag-cali-2026': {
     title: 'EAG Global Buildathon · Ethereum Builders Tour',

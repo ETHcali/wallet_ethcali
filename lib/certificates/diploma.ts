@@ -1,8 +1,14 @@
 /**
  * The builder diploma as a PDF — server-only (reads fonts and the logo from disk).
  *
- * One A4 landscape page on the brand's black, the ETH Cali mark, and the
- * builder's name in Sarun Pro. It is what the certificate email attaches and
+ * One A4 landscape page, paper-white like a diploma: ETH Cali's mark and
+ * name as the issuer at the top, the builder's name in Sarun Pro, and a black
+ * band along the bottom for the event's sponsors — their artwork is drawn for
+ * a dark ground, and the band frames the page the way a seal would.
+ *
+ * It is a template, not a one-off: everything event-specific (title, venue,
+ * dates, sponsors) comes from CERT_EVENTS in ./events, so the next hackathon
+ * is a new entry there and its logos in ./logos, and nothing here changes. It is what the certificate email attaches and
  * what /certificate/<id> downloads, from this one function, so the two are
  * always the same file. The onchain NFT comes later; this is the paper copy.
  *
@@ -27,18 +33,22 @@ export interface DiplomaInput {
 const W = 842;
 const H = 595;
 
+// Paper, ink, and the one brand blue. Greys are the ink at lower strength.
+const PAPER = rgb(0.992, 0.992, 1);
+const INK = rgb(12 / 255, 13 / 255, 22 / 255);
 const BLACK = rgb(0, 0, 0);
 const WHITE = rgb(1, 1, 1);
 const BLUE = rgb(43 / 255, 35 / 255, 239 / 255);
-const BLUE_TEXT = rgb(154 / 255, 150 / 255, 1);
-const MUTED = rgb(0.62, 0.63, 0.7);
-const FAINT = rgb(0.42, 0.43, 0.5);
+const MUTED = rgb(0.36, 0.37, 0.45);
+const FAINT = rgb(0.55, 0.56, 0.63);
+const ON_BAND = rgb(0.62, 0.63, 0.7);
 
 // TTF, not the design-tokens woff2: @pdf-lib/fontkit mis-decodes woff2 glyphs
 // (every character renders as a dot). Same files ethcali.org publishes in
 // public/branding/fonts.
 const FONT_DIR = path.join(process.cwd(), 'lib/certificates/fonts');
-const LOGO = path.join(process.cwd(), 'public/1x1ethcali.png');
+// The vertical lockup drawn for light grounds: the mark over "ETH·CO CALI".
+const LOGO = path.join(process.cwd(), 'public/logo_eth_cali.png');
 const SPONSOR_DIR = path.join(process.cwd(), 'lib/certificates/logos');
 const sponsorFiles = new Map<string, Buffer>();
 function sponsorFile(file: string): Buffer {
@@ -59,7 +69,7 @@ function assets() {
 }
 
 /** Centred text, shrunk until it fits `maxWidth`. */
-function centred(page: PDFPage, text: string, y: number, font: PDFFont, size: number, color = WHITE, maxWidth = W - 160) {
+function centred(page: PDFPage, text: string, y: number, font: PDFFont, size: number, color = INK, maxWidth = W - 160) {
   let s = size;
   while (s > 8 && font.widthOfTextAtSize(text, s) > maxWidth) s -= 1;
   page.drawText(text, { x: (W - font.widthOfTextAtSize(text, s)) / 2, y, size: s, font, color });
@@ -95,29 +105,29 @@ export async function renderDiploma(input: DiplomaInput): Promise<Uint8Array> {
   const logo = await doc.embedPng(a.logo);
 
   const page = doc.addPage([W, H]);
-  page.drawRectangle({ x: 0, y: 0, width: W, height: H, color: BLACK });
+  page.drawRectangle({ x: 0, y: 0, width: W, height: H, color: PAPER });
 
-  // Double frame: brand blue, then a hairline inside it.
-  page.drawRectangle({ x: 18, y: 18, width: W - 36, height: H - 36, borderColor: BLUE, borderWidth: 2 });
-  page.drawRectangle({ x: 26, y: 26, width: W - 52, height: H - 52, borderColor: rgb(0.16, 0.16, 0.3), borderWidth: 0.6 });
+  // Frame: a heavy brand-blue rule, a hairline inside it.
+  page.drawRectangle({ x: 16, y: 16, width: W - 32, height: H - 32, borderColor: BLUE, borderWidth: 3 });
+  page.drawRectangle({ x: 25, y: 25, width: W - 50, height: H - 50, borderColor: rgb(0.8, 0.8, 0.9), borderWidth: 0.6 });
 
-  // The mark. The PNG is square with generous black margins, so it is drawn
-  // larger than it reads and overlaps nothing.
-  const L = 140;
-  page.drawImage(logo, { x: (W - L) / 2, y: H - 30 - L, width: L, height: L });
+  // Issuer: the ETH Cali lockup, centred at the top.
+  const logoH = 104;
+  const logoW = (logo.width / logo.height) * logoH;
+  page.drawImage(logo, { x: (W - logoW) / 2, y: H - 40 - logoH, width: logoW, height: logoH });
 
-  spaced(page, 'CERTIFICADO DE BUILDER · BUILDER CERTIFICATE', 418, bold, 10, BLUE_TEXT);
-  centred(page, 'Se certifica que · This certifies that', 392, regular, 12, MUTED);
-  centred(page, input.memberName, 350, bold, 40, WHITE);
+  spaced(page, 'CERTIFICADO DE BUILDER · BUILDER CERTIFICATE', 426, bold, 10, BLUE);
+  centred(page, 'Se certifica que · This certifies that', 402, regular, 12, MUTED);
+  centred(page, input.memberName, 362, bold, 40, INK);
 
   // Underline under the name, the width of a signature line.
   const line = Math.min(W - 200, Math.max(340, bold.widthOfTextAtSize(input.memberName, 40) + 40)) / 2;
-  page.drawLine({ start: { x: W / 2 - line, y: 338 }, end: { x: W / 2 + line, y: 338 }, thickness: 0.8, color: BLUE });
+  page.drawLine({ start: { x: W / 2 - line, y: 350 }, end: { x: W / 2 + line, y: 350 }, thickness: 0.9, color: BLUE });
 
-  centred(page, 'construyó y publicó · built and shipped', 314, regular, 12, MUTED);
-  centred(page, input.projectName, 284, bold, 26, BLUE_TEXT);
-  centred(page, ev.title, 258, regular, 13, WHITE);
-  centred(page, `${ev.venue} · ${ev.dates.es} · ${ev.dates.en}`, 240, regular, 10.5, MUTED);
+  centred(page, 'construyó y publicó · built and shipped', 327, regular, 12, MUTED);
+  centred(page, input.projectName, 298, bold, 26, BLUE);
+  centred(page, ev.title, 274, regular, 13, INK);
+  centred(page, `${ev.venue} · ${ev.dates.es} · ${ev.dates.en}`, 257, regular, 10.5, MUTED);
 
   // Prizes, one pill each, side by side.
   if (input.honors.length > 0) {
@@ -126,37 +136,18 @@ export async function renderDiploma(input: DiplomaInput): Promise<Uint8Array> {
     const padX = 12;
     const gap = 10;
     const widths = labels.map((l) => bold.widthOfTextAtSize(l, size) + padX * 2);
-    let x = (W - (widths.reduce((s, w) => s + w, 0) + gap * (labels.length - 1))) / 2;
+    let x = (W - (widths.reduce((t, w) => t + w, 0) + gap * (labels.length - 1))) / 2;
     labels.forEach((l, i) => {
-      page.drawRectangle({ x, y: 202, width: widths[i], height: 22, color: BLUE });
-      page.drawText(l, { x: x + padX, y: 209, size, font: bold, color: WHITE });
+      page.drawRectangle({ x, y: 219, width: widths[i], height: 22, color: BLUE });
+      page.drawText(l, { x: x + padX, y: 226, size, font: bold, color: WHITE });
       x += widths[i] + gap;
     });
   }
 
-  // Sponsors: one row, centred, each logo scaled to its optical height.
-  if (ev.sponsors.length > 0) {
-    spaced(page, 'CON EL APOYO DE · WITH THE SUPPORT OF', 176, bold, 7.5, FAINT, 1.8);
-    const imgs = await Promise.all(
-      ev.sponsors.map(async (s) => {
-        const bytes = sponsorFile(s.file);
-        const img = s.file.endsWith('.jpg') ? await doc.embedJpg(bytes) : await doc.embedPng(bytes);
-        return { img, h: s.height, w: (img.width / img.height) * s.height };
-      })
-    );
-    const gap = 34;
-    const rowMid = 146;
-    let x = (W - (imgs.reduce((t, i) => t + i.w, 0) + gap * (imgs.length - 1))) / 2;
-    for (const i of imgs) {
-      page.drawImage(i.img, { x, y: rowMid - i.h / 2, width: i.w, height: i.h });
-      x += i.w + gap;
-    }
-  }
-
-  // Footer: issuer · date · credential.
+  // Issuer · date · credential.
   const [yy, mm, dd] = input.issueDate.split('-').map(Number);
   const dateEs = `${dd} de ${MONTHS_ES[mm - 1]} de ${yy}`;
-  const colY = 74;
+  const colY = 164;
   const cols: [string, string][] = [
     ['EMITIDO POR · ISSUED BY', 'ETH Cali · ethcali.org'],
     ['FECHA · DATE', dateEs],
@@ -166,11 +157,30 @@ export async function renderDiploma(input: DiplomaInput): Promise<Uint8Array> {
   cols.forEach(([label, value], i) => {
     const cx = 60 + colW * i + colW / 2;
     page.drawText(label, { x: cx - bold.widthOfTextAtSize(label, 7.5) / 2, y: colY + 16, size: 7.5, font: bold, color: FAINT });
-    page.drawText(value, { x: cx - regular.widthOfTextAtSize(value, 11) / 2, y: colY, size: 11, font: regular, color: WHITE });
+    page.drawText(value, { x: cx - regular.widthOfTextAtSize(value, 11) / 2, y: colY, size: 11, font: regular, color: INK });
   });
+  centred(page, `Verifica en · Verify at ${credentialUrl(input.credentialId)}`, 136, regular, 8.5, FAINT);
 
-  const verify = `Verifica en · Verify at ${credentialUrl(input.credentialId)}`;
-  centred(page, verify, 44, regular, 8.5, FAINT);
+  // Sponsor band: black, inside the frame, logos centred on it.
+  const band = { x: 25, y: 25, w: W - 50, h: 94 };
+  page.drawRectangle({ x: band.x, y: band.y, width: band.w, height: band.h, color: BLACK });
+  if (ev.sponsors.length > 0) {
+    spaced(page, 'CON EL APOYO DE · WITH THE SUPPORT OF', band.y + band.h - 20, bold, 7.5, ON_BAND, 1.8);
+    const imgs = await Promise.all(
+      ev.sponsors.map(async (sp) => {
+        const bytes = sponsorFile(sp.file);
+        const img = sp.file.endsWith('.jpg') ? await doc.embedJpg(bytes) : await doc.embedPng(bytes);
+        return { img, h: sp.height, w: (img.width / img.height) * sp.height };
+      })
+    );
+    const gap = 34;
+    const rowMid = band.y + 38;
+    let x = (W - (imgs.reduce((t, i) => t + i.w, 0) + gap * (imgs.length - 1))) / 2;
+    for (const i of imgs) {
+      page.drawImage(i.img, { x, y: rowMid - i.h / 2, width: i.w, height: i.h });
+      x += i.w + gap;
+    }
+  }
 
   return doc.save();
 }
