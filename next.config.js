@@ -47,6 +47,11 @@ const nextConfig = {
     minimumCacheTTL: 60,
   },
   reactStrictMode: true,
+  // The diploma PDF reads its fonts and the logo from disk; the tracer cannot
+  // see a path built at runtime, so name them for the routes that render it.
+  outputFileTracingIncludes: {
+    '/api/certificates/**': ['./lib/certificates/fonts/*.ttf', './public/1x1ethcali.png'],
+  },
   // Server-side only environment variables (not exposed to client)
   env: {
     PRIVY_APP_SECRET: process.env.PRIVY_APP_SECRET,
