@@ -2,12 +2,18 @@
  * /certificate/<credentialId> — the public credential page.
  *
  * This is the "Credential URL" a builder puts on LinkedIn, so it has to work
- * for a recruiter who has never heard of us: no sign-in, rendered on the
- * server, and the diploma readable at a glance. It shows the diploma now; once
+ * for a recruiter who has never heard of us: no sign-in, real HTML with the
+ * builder's name in the OG tags, and the diploma readable at a glance.
+ *
+ * Prerendered at build and revalidated, never rendered per request: _app
+ * mounts PrivyProvider, and loading @privy-io/react-auth in a Vercel request
+ * function fails (its ESM build imports named exports from CommonJS
+ * styled-components). Every other page in the app is static for the same
+ * reason. A failed revalidation keeps serving the last good page. It shows the diploma now; once
  * the certificate is minted as an NFT it also shows the token, so the URL on
  * a profile never has to change.
  */
-import type { GetServerSideProps } from 'next';
+import type { GetStaticPaths, GetStaticProps } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
 import { getSupabaseAdmin } from '../../lib/supabase';
@@ -187,13 +193,21 @@ export default function CredentialPage({ cert }: Props) {
   );
 }
 
-export const getServerSideProps: GetServerSideProps<Props> = async ({ params, res }) => {
+export const getStaticPaths: GetStaticPaths = async () => {
+  const { data, error } = await getSupabaseAdmin().from('builder_certificates').select('credential_id');
+  if (error) throw new Error(error.message);
+  return {
+    paths: ((data ?? []) as { credential_id: string }[]).map((r) => ({ params: { credentialId: r.credential_id } })),
+    // Unknown ids 404. A new roster is loaded rarely and ships with a deploy.
+    fallback: false,
+  };
+};
+
+export const getStaticProps: GetStaticProps<Props> = async ({ params }) => {
   const raw = params?.credentialId;
   if (typeof raw !== 'string') return { notFound: true };
   const cert = await getPublicCertificate(getSupabaseAdmin(), raw);
   if (!cert) return { notFound: true };
-  // Recruiters, crawlers and LinkedIn's preview bot all hit this; the row
-  // changes only when the NFT is issued.
-  res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=3600');
-  return { props: { cert } };
+  // Picks up the NFT once issued_tx is set.
+  return { props: { cert }, revalidate: 300 };
 };
