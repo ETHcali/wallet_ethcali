@@ -29,6 +29,9 @@ import { useRequireChain } from '../useRequireChain';
 import { SWAG, swagClient, swagKeys } from './client';
 import { translateSwagError } from './swagErrors';
 import type {
+  SwagAdminShippingPatchBody,
+  SwagAdminShippingResponse,
+  SwagAdminShippingZone,
   SwagAdminBatchResponse,
   SwagAdminBatchStartResponse,
   SwagAdminOrderPatchBody,
@@ -144,6 +147,32 @@ export function useStartSwagBatch() {
         queryClient.invalidateQueries({ queryKey: swagKeys.adminBatch }),
         queryClient.invalidateQueries({ queryKey: ['swag-admin-orders'] }),
         queryClient.invalidateQueries({ queryKey: swagKeys.adminSummary }),
+      ]),
+  });
+}
+
+// ── Shipping zones ──────────────────────────────────────────────────────────
+
+export function useSwagAdminShipping() {
+  const adminFetch = useAdminFetch();
+  return useQuery({
+    queryKey: swagKeys.adminShipping,
+    queryFn: () => adminFetch<SwagAdminShippingResponse>('/api/swag/admin/shipping'),
+    staleTime: 1000 * 30,
+    retry: 1,
+  });
+}
+
+export function usePatchShippingZone() {
+  const adminFetch = useAdminFetch();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: SwagAdminShippingPatchBody) =>
+      adminFetch<{ zone: SwagAdminShippingZone }>('/api/swag/admin/shipping', { method: 'PATCH', body: JSON.stringify(body) }),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: swagKeys.adminShipping }),
+        queryClient.invalidateQueries({ queryKey: swagKeys.shippingZones }),
       ]),
   });
 }

@@ -8,7 +8,8 @@
  */
 
 export type SwagOrderChannel = 'onchain' | 'shopify' | 'event';
-export type SwagOrderStatus = 'paid' | 'in_production' | 'shipped' | 'delivered' | 'cancelled';
+export type SwagOrderStatus = 'awaiting_shipping_payment' | 'paid' | 'in_production' | 'shipped' | 'delivered' | 'cancelled';
+export type SwagCurrency = 'USDC' | 'COP';
 export type SwagSize = 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL';
 
 export const SWAG_SIZES: readonly SwagSize[] = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
@@ -22,6 +23,8 @@ export interface SwagShipping {
   city: string;
   region?: string;
   country: string;
+  /** Recipient's ID number (cédula / NIT), digits only. Envia requires it for Colombian labels. */
+  document?: string;
   notes?: string;
 }
 
@@ -61,6 +64,15 @@ export interface SwagOrderRow {
   voucher: StoredVoucher | null;
   claim_tx_hash: string | null;
   notes: string | null;
+  /** USDC orders: the signed quote accepted at checkout (lib/swag/shipping.ts). */
+  shipping_quote: SwagShippingQuote | null;
+  /** USDC orders: the transaction that paid shipping. */
+  shipping_tx_hash: string | null;
+  /** Copied from the payment of record when verified. Display and totals only. */
+  item_amount: number | string | null;
+  item_currency: SwagCurrency | null;
+  shipping_amount: number | string | null;
+  shipping_currency: SwagCurrency | null;
   created_at: string;
   updated_at: string;
 }
@@ -74,6 +86,65 @@ export interface SwagTracking {
   number: string | null;
   url: string | null;
   company: string | null;
+}
+
+/**
+ * A signed shipping quote, as POST /api/swag/shipping/quote returns it and as
+ * swag_orders.shipping_quote stores it. amountUnits is USDC base units (6
+ * decimals) as a decimal string; exp is unix seconds.
+ */
+export interface SwagShippingQuote {
+  v: 1;
+  zone: string;
+  amountUnits: string;
+  wallet: string;
+  country: string;
+  exp: number;
+  sig: string;
+}
+
+/** A zone as the storefront sees it. */
+export interface SwagShippingZoneView {
+  code: string;
+  labelEs: string;
+  labelEn: string;
+  countries: string[];
+  priceUsd: number;
+  etaMinDays: number;
+  etaMaxDays: number;
+}
+
+/** GET /api/swag/shipping/zones — active zones only. */
+export interface SwagShippingZonesResponse {
+  zones: SwagShippingZoneView[];
+}
+
+/** POST /api/swag/shipping/quote */
+export interface SwagShippingQuoteBody {
+  country: string;
+  city: string;
+  /** The linked wallet that will pay; defaults to the embedded one. */
+  wallet?: string;
+}
+
+export interface SwagShippingQuoteResponse {
+  zone: SwagShippingZoneView;
+  quote: SwagShippingQuote;
+}
+
+/** POST /api/swag/shipping/pay — prove the shipping transfer for an order. */
+export interface SwagPayShippingBody {
+  orderId: number;
+  txHash: string;
+}
+
+/** Where a USDC order's shipping stands, on the buyer's view of it. */
+export interface SwagOrderShippingPayment {
+  zone: string;
+  amountUnits: string;
+  /** The wallet it must be paid from. */
+  wallet: string;
+  txHash: string | null;
 }
 
 /** What GET /api/swag/orders returns per row: the row minus PII, plus the design. */
@@ -99,6 +170,8 @@ export interface SwagOrderView {
   };
   /** Present once Shopify has fulfilled the order (or an operator added a reference). */
   tracking?: SwagTracking;
+  /** USDC orders with a shipping quote: what is owed and whether it is paid. */
+  shippingPayment?: SwagOrderShippingPayment;
 }
 
 export interface SwagOrdersResponse {
@@ -109,6 +182,8 @@ export interface SwagOrdersResponse {
 export interface CreateSwagOrderBody {
   txHash: string;
   shipping: SwagShipping;
+  /** Required: the signed quote for this address, from POST /api/swag/shipping/quote. */
+  shippingQuote: SwagShippingQuote;
   size?: SwagSize;
   /** Defaults to the quantity in the Purchased log; must match it when given. */
   quantity?: number;
@@ -219,6 +294,15 @@ export interface SwagAdminOrderView {
   trackingDetail: SwagTracking | null;
   /** The Shopify mirror of a USDC order failed and has to be created by hand. */
   mirrorFailed: boolean;
+  /** What was charged, copied from the payment of record. Null where not recorded. */
+  payment: {
+    item: { amount: number; currency: SwagCurrency } | null;
+    shipping: { amount: number; currency: SwagCurrency; zone: string | null; txHash: string | null } | null;
+    /** A USDC order whose shipping quote is not paid yet: the amount owed. */
+    shippingDue: { amount: number; currency: 'USDC'; zone: string } | null;
+  };
+  /** Every status the order entered, oldest first. */
+  timeline: Array<{ status: SwagOrderStatus; at: string }>;
 }
 
 /** GET /api/swag/admin/orders?status=&channel=&q=&cursor= — pages of 50, newest first. */
@@ -279,6 +363,13 @@ export interface SwagAdminSummary {
     treasury: `0x${string}`;
     stock: SwagAdminTokenStock[];
   };
+  /**
+   * Money in, per currency, over orders that are not cancelled. Item and
+   * shipping kept apart; USDC is on-chain, COP is card through Shopify.
+   */
+  revenue: Record<SwagCurrency, { item: number; shipping: number; orders: number }>;
+  /** Orders whose USDC shipping is still unpaid, and the USDC owed. */
+  shippingDue: { orders: number; usdc: number };
   /** Orders still flagged voucher_needs_cancel=true, with the chain's own answer. */
   voucherCancelQueue: Array<{
     id: number;
@@ -356,4 +447,27 @@ export interface SwagStaffRecordBody {
 
 export interface SwagStaffRecordResponse {
   member: SwagStaffView;
+}
+
+/** A zone as the admin edits it: the storefront view plus the city list and the switch. */
+export interface SwagAdminShippingZone extends SwagShippingZoneView {
+  cities: string[];
+  active: boolean;
+  updatedAt: string;
+}
+
+/** GET /api/swag/admin/shipping */
+export interface SwagAdminShippingResponse {
+  zones: SwagAdminShippingZone[];
+}
+
+/** PATCH /api/swag/admin/shipping { code, …changes } */
+export interface SwagAdminShippingPatchBody {
+  code: string;
+  priceUsd?: number;
+  etaMinDays?: number;
+  etaMaxDays?: number;
+  active?: boolean;
+  /** Replaces the list. Normalised server-side (lowercase, no accents). */
+  cities?: string[];
 }

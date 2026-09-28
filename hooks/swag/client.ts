@@ -43,6 +43,16 @@ export const erc20Abi = [
     outputs: [{ name: '', type: 'uint256' }],
   },
   {
+    name: 'transfer',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'to', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+    ],
+    outputs: [{ name: '', type: 'bool' }],
+  },
+  {
     name: 'balanceOf',
     type: 'function',
     stateMutability: 'view',
@@ -60,6 +70,9 @@ export const swagKeys = {
   usdcBalance: (owner?: string) => ['swag-usdc-balance', owner?.toLowerCase()] as const,
   myBalances: (owner?: string) => ['swag-my-balances', owner?.toLowerCase()] as const,
   orders: (owner?: string) => ['swag-orders', owner?.toLowerCase()] as const,
+  shippingZones: ['swag-shipping-zones'] as const,
+  treasury: ['swag-treasury'] as const,
+  adminShipping: ['swag-admin-shipping'] as const,
   // Admin surface (/swag/admin)
   adminOrders: (filters: string) => ['swag-admin-orders', filters] as const,
   adminSummary: ['swag-admin-summary'] as const,

@@ -75,6 +75,8 @@ interface ShopifyLineItem {
   id: number | string;
   sku?: string | null;
   quantity?: number;
+  /** Unit price in the shop currency, as a decimal string. */
+  price?: string | null;
   variant_title?: string | null;
   title?: string | null;
 }
@@ -114,6 +116,9 @@ interface ShopifyOrder {
   billing_address?: ShopifyAddress | null;
   line_items?: ShopifyLineItem[];
   fulfillments?: ShopifyFulfillment[] | null;
+  /** The shop currency (COP for this store). */
+  currency?: string | null;
+  total_shipping_price_set?: { shop_money?: { amount?: string | null } | null } | null;
 }
 
 interface ShopifyRefund {
@@ -232,6 +237,11 @@ async function onOrderPaid(order: ShopifyOrder) {
   const shipping = toShipping(order);
   const result = { created: 0, existing: 0, skipped: 0 };
   const items: string[] = [];
+  // Amounts are recorded only in the currency the ledger knows. The order's
+  // shipping goes on its first recorded line, so a sum over rows counts it once.
+  const cop = (order.currency ?? '').toUpperCase() === 'COP';
+  const orderShipping = Number(order.total_shipping_price_set?.shop_money?.amount ?? NaN);
+  let shippingRecorded = false;
 
   if (isOwnMirror(order)) {
     // Our own mirror of a USDC purchase coming back to us. The onchain row
@@ -260,8 +270,12 @@ async function onOrderPaid(order: ShopifyOrder) {
     const size = resolved.size ?? sizeFromTitle(item.variant_title);
     const quantity = Math.max(1, Number(item.quantity ?? 1));
 
+    const unitPrice = Number(item.price ?? NaN);
+    const withShipping = cop && !shippingRecorded && Number.isFinite(orderShipping);
     try {
       await insertOrder(db, {
+        ...(cop && Number.isFinite(unitPrice) ? { item_amount: unitPrice * quantity, item_currency: 'COP' as const } : {}),
+        ...(withShipping ? { shipping_amount: orderShipping, shipping_currency: 'COP' as const } : {}),
         channel: 'shopify',
         product_id: resolved.variant.productId,
         variant_id: resolved.variant.variantId,
@@ -274,6 +288,7 @@ async function onOrderPaid(order: ShopifyOrder) {
         order_ref: orderRefFor(gid, lineItemId),
       });
       result.created += 1;
+      if (withShipping) shippingRecorded = true;
       items.push(`${item.title ?? sku}${size ? ` · ${size}` : ''} ×${quantity}`);
     } catch (e) {
       if (e instanceof OrderError && e.status === 409) {

@@ -26,6 +26,7 @@ import { logger } from '../../../../utils/logger';
 import type {
   SwagAdminSummary,
   SwagAdminTokenStock,
+  SwagCurrency,
   SwagOrderChannel,
   SwagOrderStatus,
 } from '../../../../types/swag-orders';
@@ -78,17 +79,49 @@ async function readCollection(): Promise<SwagAdminSummary['collection']> {
   return { address, chainId: SWAG_CHAIN_ID, paused, treasury, stock };
 }
 
-async function readCounts(): Promise<SwagAdminSummary['counts']> {
-  const { data, error } = await getSupabaseAdmin().from('swag_orders').select('status, channel');
+type LedgerRow = {
+  status: SwagOrderStatus;
+  channel: SwagOrderChannel;
+  item_amount: number | string | null;
+  item_currency: SwagCurrency | null;
+  shipping_amount: number | string | null;
+  shipping_currency: SwagCurrency | null;
+  shipping_quote: { amountUnits?: string } | null;
+};
+
+async function readCounts(): Promise<Pick<SwagAdminSummary, 'counts' | 'revenue' | 'shippingDue'>> {
+  const { data, error } = await getSupabaseAdmin()
+    .from('swag_orders')
+    .select('status, channel, item_amount, item_currency, shipping_amount, shipping_currency, shipping_quote');
   if (error) throw new OrderError(error.message, 500);
 
-  const byStatus: Record<SwagOrderStatus, number> = { paid: 0, in_production: 0, shipped: 0, delivered: 0, cancelled: 0 };
+  // Amounts are copies of the payment of record (see the ledger migration);
+  // summed here for the desk, never used to decide anything.
+  const revenue: SwagAdminSummary['revenue'] = {
+    USDC: { item: 0, shipping: 0, orders: 0 },
+    COP: { item: 0, shipping: 0, orders: 0 },
+  };
+  const shippingDue = { orders: 0, usdc: 0 };
+  for (const row of (data ?? []) as LedgerRow[]) {
+    if (row.status === 'cancelled') continue;
+    if (row.item_currency) {
+      revenue[row.item_currency].item += Number(row.item_amount ?? 0);
+      revenue[row.item_currency].orders += 1;
+    }
+    if (row.shipping_currency) revenue[row.shipping_currency].shipping += Number(row.shipping_amount ?? 0);
+    if (row.status === 'awaiting_shipping_payment' && row.shipping_quote?.amountUnits) {
+      shippingDue.orders += 1;
+      shippingDue.usdc += Number(row.shipping_quote.amountUnits) / 1e6;
+    }
+  }
+
+  const byStatus: Record<SwagOrderStatus, number> = { awaiting_shipping_payment: 0, paid: 0, in_production: 0, shipped: 0, delivered: 0, cancelled: 0 };
   const byChannel: Record<SwagOrderChannel, number> = { onchain: 0, shopify: 0, event: 0 };
   for (const row of (data ?? []) as Array<{ status: SwagOrderStatus; channel: SwagOrderChannel }>) {
     if (row.status in byStatus) byStatus[row.status] += 1;
     if (row.channel in byChannel) byChannel[row.channel] += 1;
   }
-  return { byStatus, byChannel, total: data?.length ?? 0 };
+  return { counts: { byStatus, byChannel, total: data?.length ?? 0 }, revenue, shippingDue };
 }
 
 async function readQueue(): Promise<SwagAdminSummary['voucherCancelQueue']> {
@@ -130,13 +163,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
   }
 
   try {
-    const [counts, collection, voucherCancelQueue] = await Promise.all([
+    const [ledger, collection, voucherCancelQueue] = await Promise.all([
       readCounts(),
       readCollection(),
       readQueue(),
     ]);
     res.setHeader('Cache-Control', 'no-store');
-    return res.status(200).json({ viewer, counts, collection, voucherCancelQueue });
+    return res.status(200).json({ viewer, ...ledger, collection, voucherCancelQueue });
   } catch (e) {
     if (e instanceof OrderError) return res.status(e.status).json({ error: e.message });
     logger.error('[swag/admin/summary] failed', e);

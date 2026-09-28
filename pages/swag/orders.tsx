@@ -5,6 +5,7 @@ import { usePrivy } from '@privy-io/react-auth';
 import Navigation from '../../components/Navigation';
 import Loading from '../../components/shared/Loading';
 import { HashChip } from '../../components/swag/HashChip';
+import { PayShippingButton } from '../../components/swag/PayShippingButton';
 import {
   productAltName,
   productImageUrl,
@@ -16,6 +17,7 @@ import {
 import type { SwagOrder, SwagOrderStatus } from '../../types/swag';
 
 const STATUS_LABEL: Record<SwagOrderStatus, { es: string; en: string; className: string }> = {
+  awaiting_shipping_payment: { es: 'Falta pagar el envío', en: 'Shipping unpaid', className: 'bg-signal-pending/15 text-signal-pending' },
   paid: { es: 'Pagado', en: 'Paid', className: 'bg-signal-pending/15 text-signal-pending' },
   in_production: { es: 'En producción', en: 'In production', className: 'bg-signal-pending/15 text-signal-pending' },
   shipped: { es: 'Enviado', en: 'Shipped', className: 'bg-eth-blue-wash text-eth-blue-text' },
@@ -77,6 +79,7 @@ function OrderRow({ order }: { order: SwagOrder }) {
             {locale === 'es' ? 'Reclamo' : 'Claim'} <HashChip hash={order.claimTxHash} />
           </p>
         )}
+        <PayShippingButton order={order} />
         {order.claimable && (
           <Link href="/swag/claim" className="mt-1 inline-flex min-h-[44px] items-center text-sm font-semibold text-eth-blue-text hover:underline">
             {locale === 'es' ? 'Reclamar el NFT' : 'Claim the NFT'}

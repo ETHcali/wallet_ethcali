@@ -1,4 +1,4 @@
-import type { SwagOrderView } from './swag-orders';
+import type { SwagOrderView, SwagShippingQuote } from './swag-orders';
 /**
  * Swag store types.
  *
@@ -71,7 +71,7 @@ export interface SwagProduct {
 
 export type SwagOrderChannel = 'onchain' | 'shopify' | 'event';
 
-export type SwagOrderStatus = 'paid' | 'in_production' | 'shipped' | 'delivered' | 'cancelled';
+export type SwagOrderStatus = 'awaiting_shipping_payment' | 'paid' | 'in_production' | 'shipped' | 'delivered' | 'cancelled';
 
 export interface SwagShipping {
   name: string;
@@ -82,6 +82,8 @@ export interface SwagShipping {
   region: string;
   /** ISO 3166-1 alpha-2, defaults to CO. */
   country: string;
+  /** Recipient's ID number (cédula / NIT), digits only. Envia requires it for Colombian labels. */
+  document?: string;
   notes?: string;
 }
 
@@ -106,6 +108,8 @@ export type SwagOrder = SwagOrderView;
 export interface CreateSwagOrderInput {
   txHash: string;
   shipping: SwagShipping;
+  /** The signed quote from POST /api/swag/shipping/quote for this address. */
+  shippingQuote: SwagShippingQuote;
   size: SwagSize | null;
   quantity: number;
 }

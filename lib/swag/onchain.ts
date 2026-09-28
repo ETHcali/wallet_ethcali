@@ -178,3 +178,52 @@ export async function findClaimed(txHash: Hex): Promise<ClaimedLog | null> {
   }
   return null;
 }
+
+const ERC20_TRANSFER_ABI = [
+  {
+    type: 'event',
+    name: 'Transfer',
+    anonymous: false,
+    inputs: [
+      { name: 'from', type: 'address', indexed: true },
+      { name: 'to', type: 'address', indexed: true },
+      { name: 'value', type: 'uint256', indexed: false },
+    ],
+  },
+] as const;
+
+/** The collection's payment token (USDC), from the generated json. */
+export function getSwagUsdc(): Address {
+  return getAddress(swagCollection.usdc);
+}
+
+/** Where buy() sends the money, read from the collection now. */
+export async function readSwagTreasury(): Promise<Address> {
+  const treasury = await getSwagClient().readContract({
+    address: getSwagCollection(),
+    abi: [{ type: 'function', name: 'treasury', stateMutability: 'view', inputs: [], outputs: [{ type: 'address' }] }] as const,
+    functionName: 'treasury',
+  });
+  return getAddress(treasury);
+}
+
+/**
+ * USDC base units moved from `from` to `to` in txHash, summed over every
+ * Transfer log the USDC contract emitted in that receipt. Logs from any other
+ * contract are ignored, so a look-alike token cannot pay shipping.
+ */
+export async function usdcTransferred(txHash: Hex, from: Address, to: Address): Promise<bigint> {
+  const receipt = await successfulReceipt(txHash);
+  const usdc = getSwagUsdc().toLowerCase();
+  let total = 0n;
+  for (const log of receipt.logs) {
+    if (log.address.toLowerCase() !== usdc) continue;
+    try {
+      const { args } = decodeEventLog({ abi: ERC20_TRANSFER_ABI, eventName: 'Transfer', data: log.data, topics: log.topics });
+      if (args.from.toLowerCase() === from.toLowerCase() && args.to.toLowerCase() === to.toLowerCase()) total += args.value;
+    } catch {
+      // Approval or another event from the token. Keep looking.
+    }
+  }
+  return total;
+}

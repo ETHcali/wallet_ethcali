@@ -29,6 +29,7 @@ import { HashChip } from './HashChip';
 import { CARD, FIELD, LABEL, Pill, Spinner, TxButton, buttonClass, ChainGate } from './AdminPrimitives';
 
 const STATUS_TONE: Record<SwagOrderStatus, { label: string; tone: 'pending' | 'brand' | 'confirmed' | 'reverted' }> = {
+  awaiting_shipping_payment: { label: 'Shipping unpaid', tone: 'pending' },
   paid: { label: 'Paid', tone: 'pending' },
   in_production: { label: 'In production', tone: 'pending' },
   shipped: { label: 'Shipped', tone: 'brand' },
@@ -51,11 +52,61 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
+function formatAmount(amount: number, currency: 'USDC' | 'COP'): string {
+  return currency === 'COP'
+    ? `COP ${Math.round(amount).toLocaleString('es-CO')}`
+    : `${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC`;
+}
+
+/** What was charged and when the order moved. Copied from the payment of record by the server. */
+function LedgerBlock({ order }: { order: SwagAdminOrderView }) {
+  const { item, shipping, shippingDue } = order.payment;
+  return (
+    <div className="mt-4 grid grid-cols-1 gap-4 border-t border-line-hairline pt-3 text-sm sm:grid-cols-2">
+      <dl className="space-y-1">
+        <dt className="text-[10px] font-semibold uppercase tracking-wide text-content-faint">Charged</dt>
+        <dd className="flex justify-between gap-2">
+          <span className="text-content-muted">Item</span>
+          <span className="font-mono text-content-primary">{item ? formatAmount(item.amount, item.currency) : '—'}</span>
+        </dd>
+        <dd className="flex justify-between gap-2">
+          <span className="text-content-muted">Shipping{shipping?.zone ? ` · ${shipping.zone}` : shippingDue ? ` · ${shippingDue.zone}` : ''}</span>
+          <span className="font-mono text-content-primary">
+            {shipping ? formatAmount(shipping.amount, shipping.currency) : shippingDue ? <span className="text-signal-pending">{formatAmount(shippingDue.amount, 'USDC')} due</span> : order.channel === 'shopify' ? 'on the first line' : '—'}
+          </span>
+        </dd>
+        {shipping?.txHash && (
+          <dd className="flex items-center justify-between gap-2 text-xs">
+            <span className="text-content-muted">Shipping transfer</span>
+            <HashChip hash={shipping.txHash} />
+          </dd>
+        )}
+      </dl>
+      <div>
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-content-faint">Timeline</p>
+        {order.timeline.length === 0 ? (
+          <p className="mt-1 text-xs text-content-faint">No status history recorded.</p>
+        ) : (
+          <ol className="mt-1 space-y-1">
+            {order.timeline.map((e, i) => (
+              <li key={`${e.status}-${i}`} className="flex justify-between gap-2 text-xs">
+                <span className="text-content-secondary">{STATUS_TONE[e.status]?.label ?? e.status}</span>
+                <span className="font-mono text-content-muted">{formatDate(e.at)}</span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ShippingBlock({ order }: { order: SwagAdminOrderView }) {
   const s = order.shipping;
   const rows: Array<[string, string | undefined]> = [
     ['Name', s.name],
     ['Phone', s.phone],
+    ['Cédula / NIT', s.document],
     ['Address', [s.address1, s.address2].filter(Boolean).join(', ')],
     ['City', [s.city, s.region].filter(Boolean).join(', ')],
     ['Country', s.country],
@@ -136,6 +187,7 @@ function OrderRow({ order, canAdmin }: { order: SwagAdminOrderView; canAdmin: bo
   const busy = producing || shipping || delivering || cancelling;
   const open = order.status === 'paid' || order.status === 'in_production';
   const showVoucher = canAdmin && order.voucherNeedsCancel;
+  const awaiting = order.status === 'awaiting_shipping_payment';
 
   return (
     <li className={CARD}>
@@ -191,16 +243,17 @@ function OrderRow({ order, canAdmin }: { order: SwagAdminOrderView; canAdmin: bo
         aria-expanded={expanded}
       >
         <ChevronDownIcon className={`h-4 w-4 transition-transform ${expanded ? 'rotate-180' : ''}`} />
-        {expanded ? 'Hide shipping' : 'Shipping address'}
+        {expanded ? 'Hide details' : 'Address, payment and timeline'}
       </button>
 
       {expanded && (
         <div className="mt-3 rounded-chip border border-line-hairline bg-surface-inset/50 p-3">
           <ShippingBlock order={order} />
+          <LedgerBlock order={order} />
         </div>
       )}
 
-      {(open || order.status === 'shipped' || showVoucher) && (
+      {(open || order.status === 'shipped' || showVoucher || (canAdmin && awaiting)) && (
         <div className="mt-4 space-y-3 border-t border-line-hairline pt-4">
           {askTracking && (
             <label className="block max-w-md">
@@ -261,7 +314,7 @@ function OrderRow({ order, canAdmin }: { order: SwagAdminOrderView; canAdmin: bo
                 {delivering ? 'Marking delivered…' : 'Mark delivered'}
               </button>
             )}
-            {canAdmin && (open || order.status === 'shipped') && (
+            {canAdmin && (open || awaiting || order.status === 'shipped') && (
               <button
                 type="button"
                 onClick={() => {
@@ -324,6 +377,7 @@ export function AdminOrders({ canAdmin }: { canAdmin: boolean }) {
           <span className={LABEL}>Status</span>
           <select value={filters.status} onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value as AdminOrderFilters['status'] }))} className={SELECT}>
             <option value="">All</option>
+            <option value="awaiting_shipping_payment">Shipping unpaid</option>
             <option value="paid">Paid</option>
             <option value="in_production">In production</option>
             <option value="shipped">Shipped</option>

@@ -24,6 +24,8 @@ export type { BuyStep, UseBuySwagResult } from './useBuySwag';
 export { useMySwag } from './useMySwag';
 export type { OwnedSwag } from './useMySwag';
 export { useSwagOrdersQuery, useCreateSwagOrder } from './useSwagOrders';
+export { useShippingZones, useShippingQuote, useSwagTreasury, usePayShipping } from './useShipping';
+export type { PayShippingResult } from './useShipping';
 export { useTrm } from './useTrm';
 export { formatUsd, formatCop } from '../../utils/money';
 export { useSwagLocale, productName, productDescription, productAltName } from './useSwagLocale';
@@ -42,6 +44,8 @@ export {
   useSwagAdminBatch,
   useStartSwagBatch,
   useSwagStaff,
+  useSwagAdminShipping,
+  usePatchShippingZone,
   useResolveStaffEmail,
   useRecordStaff,
   useForgetStaff,

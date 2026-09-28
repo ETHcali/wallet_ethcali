@@ -96,6 +96,14 @@ export function parseShipping(raw: unknown): SwagShipping {
   if (region) shipping.region = region;
   if (notes) shipping.notes = notes;
 
+  // Envia will not print a Colombian label without the recipient's cédula or
+  // NIT, so a Colombian address is not complete without it. Digits only.
+  const document = field(r, 'document', { min: 0, max: 20 }).replace(/[^0-9]/g, '');
+  if (country === 'CO' && !/^[0-9]{5,12}$/.test(document)) {
+    throw new OrderError('document (cédula or NIT) is required for Colombian addresses', 400);
+  }
+  if (document) shipping.document = document;
+
   return shipping;
 }
 
@@ -241,12 +249,16 @@ export async function resolveShopifyVariantId(
 // ── Rows in and out ─────────────────────────────────────────────────────────
 
 const ORDER_SELECT =
-  '*, product:swag_products!inner(sku, name_es, name_en, image_path), variant:swag_variants!inner(token_id)';
+  '*, product:swag_products!inner(sku, name_es, name_en, image_path), variant:swag_variants!inner(token_id), events:swag_order_events(to_status, at)';
 
 export type OrderJoined = SwagOrderRow & {
   product: { sku: string; name_es: string; name_en: string; image_path: string | null };
   variant: { token_id: number };
+  /** The status timeline (swag_order_events). May be empty on the row an insert returns. */
+  events?: Array<{ to_status: SwagOrderStatus; at: string }>;
 };
+
+const money = (v: number | string | null): number | null => (v === null || v === undefined ? null : Number(v));
 
 /**
  * shipping.tracking as stored → one shape. An operator's PATCH writes a bare
@@ -292,6 +304,14 @@ export function toOrderView(row: OrderJoined): SwagOrderView {
     },
   };
   if (tracking) view.tracking = tracking;
+  if (row.shipping_quote) {
+    view.shippingPayment = {
+      zone: row.shipping_quote.zone,
+      amountUnits: row.shipping_quote.amountUnits,
+      wallet: row.shipping_quote.wallet,
+      txHash: row.shipping_tx_hash,
+    };
+  }
   return view;
 }
 
@@ -356,7 +376,18 @@ export type NewSwagOrder = Pick<
   Partial<
     Pick<
       SwagOrderRow,
-      'buyer_wallet' | 'buyer_email' | 'shipping' | 'tx_hash' | 'shopify_order_id' | 'shopify_line_item_id'
+      | 'buyer_wallet'
+      | 'buyer_email'
+      | 'shipping'
+      | 'tx_hash'
+      | 'shopify_order_id'
+      | 'shopify_line_item_id'
+      | 'status'
+      | 'shipping_quote'
+      | 'item_amount'
+      | 'item_currency'
+      | 'shipping_amount'
+      | 'shipping_currency'
     >
   >;
 
@@ -434,12 +465,31 @@ export function toAdminOrderView(row: OrderJoined): SwagAdminOrderView {
     updatedAt: row.updated_at,
     trackingDetail: tracking,
     mirrorFailed: Boolean(row.notes?.includes(NOTE_MIRROR_FAILED)),
+    payment: {
+      item: row.item_currency ? { amount: money(row.item_amount) ?? 0, currency: row.item_currency } : null,
+      shipping: row.shipping_currency
+        ? {
+            amount: money(row.shipping_amount) ?? 0,
+            currency: row.shipping_currency,
+            zone: row.shipping_quote?.zone ?? null,
+            txHash: row.shipping_tx_hash,
+          }
+        : null,
+      shippingDue:
+        row.status === 'awaiting_shipping_payment' && row.shipping_quote
+          ? { amount: Number(row.shipping_quote.amountUnits) / 1e6, currency: 'USDC', zone: row.shipping_quote.zone }
+          : null,
+    },
+    timeline: (row.events ?? [])
+      .slice()
+      .sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0))
+      .map((e) => ({ status: e.to_status, at: e.at })),
   };
 }
 
 export const ADMIN_PAGE_SIZE = 50;
 
-const ORDER_STATUSES: readonly SwagOrderStatus[] = ['paid', 'in_production', 'shipped', 'delivered', 'cancelled'];
+const ORDER_STATUSES: readonly SwagOrderStatus[] = ['awaiting_shipping_payment', 'paid', 'in_production', 'shipped', 'delivered', 'cancelled'];
 const ORDER_CHANNELS: readonly SwagOrderChannel[] = ['onchain', 'shopify', 'event'];
 
 /**

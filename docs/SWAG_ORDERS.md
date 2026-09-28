@@ -59,6 +59,41 @@ the caller is read from a request body.
    - `scripts/swag-mirror-selftest.mjs --dry-run --variant <gid>` prints the
      exact variables for a fake receipt without creating anything.
 
+### Shipping on a USDC order
+
+`buy()` charges the item only, and the contract is not changed for this.
+Shipping is a separate USDC transfer from the buyer to the collection's
+`treasury()` (the Safe), priced by zone and paid in the same checkout:
+
+1. **Address first.** The checkout asks for the address before anything is
+   paid. `POST /api/swag/shipping/quote { country, city, wallet }` resolves
+   the zone (`lib/swag/shipping.ts › resolveZone`: a zone that lists the city
+   wins, otherwise the country's catch-all) and returns a **signed quote**
+   `{ zone, amountUnits, wallet, country, exp, sig }`. The signature is an
+   HMAC with `SWAG_QUOTE_SECRET`, or a key derived from `PRIVY_APP_SECRET`
+   when that is unset. The quote is valid for 30 minutes.
+2. The buyer sees **item, shipping and total** as separate lines, in USDC and
+   pesos, then approves and buys the item.
+3. `POST /api/swag/orders` now requires `shippingQuote`. The server checks
+   that it is ours, unexpired, for the buying wallet, and for the zone this
+   address resolves to (a Cali quote cannot ship to Bogotá). It then inserts
+   the row as **`awaiting_shipping_payment`** with the quote stored. A quote
+   that expired during checkout is renewed once, automatically.
+4. **Pay shipping**: `transfer(treasury, amountUnits)` on USDC, sponsored.
+   Then `POST /api/swag/shipping/pay { orderId, txHash }`. The server
+   re-verifies the stored quote's signature and reads the receipt: USDC
+   `Transfer` logs from the quote's wallet to `treasury()`, which must add up
+   to at least the quoted amount. One transaction pays one order (unique
+   `shipping_tx_hash`). Then `awaiting_shipping_payment → paid`, and the order
+   joins the batch.
+5. If the buyer closes the checkout after buying, the order is still saved,
+   and **My orders** shows **Pay shipping** for it. The batch never prints an
+   order whose shipping is unpaid.
+
+Zone prices are edited in `/swag/admin` → **Shipping** (ADMIN_ROLE). A change
+applies to new quotes; a quote already stored on an order is honoured at its
+signed price. `GET /api/swag/shipping/zones` is the public list.
+
 ## Flow 2 — card purchase (Shopify)
 
 1. Buyer pays on `store.ethcali.org` (Shopify's primary domain; the API host stays
@@ -138,12 +173,36 @@ normal path is Shopify.
 
 ## Status
 
-`paid → in_production → shipped → delivered`, with `paid → shipped` allowed (a
+`awaiting_shipping_payment → paid` (USDC orders, until the shipping transfer
+is proven), then `paid → in_production → shipped → delivered`, with `paid → shipped` allowed (a
 unit already in stock, an event handover); `cancelled` from `paid`,
 `in_production` or `shipped`. The trigger `swag_orders_guard_status` refuses
 everything else, including `paid → delivered` and any move out of `cancelled`
 (`20260928120000_swag_order_desk_and_staff.sql`). The Shopify fulfilment
 webhooks move `paid` and `in_production` rows to `shipped`.
+
+## Amounts and timeline (the ledger)
+
+`20260928160000_swag_order_ledger.sql`. Each row carries what it was charged,
+copied by the server from the payment of record at the moment it verifies it:
+
+- `item_amount` / `item_currency`: USDC from `Purchased.paid`, or COP from the
+  Shopify line (price × quantity).
+- `shipping_amount` / `shipping_currency`: USDC from the verified quote, or
+  the Shopify order's shipping in COP, recorded **on the order's first line
+  only** so a sum over rows counts it once.
+
+`swag_order_events` is written by trigger on every status change. The admin
+row shows payment and timeline under **Address, payment and timeline**, and
+the summary sums revenue per currency (cancelled orders excluded) plus the
+USDC shipping still owed. Nothing here is ever typed by hand or decides
+anything.
+
+**Colombian addresses need the recipient's cédula or NIT** (`shipping.document`,
+digits only). Envia will not print a Colombian label without it. The USDC
+checkout requires it. Shopify's checkout does not collect it, so a card order
+arrives without it until the store's checkout asks for it (Envia's own
+Shopify guidance: relabel the Company field "Nit/CC").
 
 ## The weekly batch
 
@@ -337,5 +396,6 @@ Run `create` only against a live URL: Shopify retries a failing endpoint for
 | `RESEND_API_KEY` | optional; the claim invite is off without it |
 | `SWAG_EMAIL_FROM` | optional; e.g. `ETH Cali <tienda@ethcali.org>`, on a domain verified in Resend |
 | `SWAG_APP_URL` | optional; defaults to `https://app.ethcali.org` |
+| `SWAG_QUOTE_SECRET` | optional; HMAC key for shipping quotes. Unset = derived from `PRIVY_APP_SECRET`. Rotating it voids unpaid quotes (the checkout re-quotes) |
 | `CRON_SECRET` | bearer token Vercel sends to `/api/cron/swag-prices`; the route refuses everything when unset |
 | `SHOPIFY_CLIENT_ID`, `SHOPIFY_CLIENT_SECRET`, `SHOPIFY_API_VERSION` (`2026-07`) | the cron, the scripts **and `POST /api/swag/orders` (the mirror)** exchange them for a 24h Admin API token; the client secret also verifies app-owned webhooks |

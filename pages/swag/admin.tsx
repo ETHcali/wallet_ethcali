@@ -7,6 +7,7 @@ import Loading from '../../components/shared/Loading';
 import { AdminBatch } from '../../components/swag/AdminBatch';
 import { AdminCollection } from '../../components/swag/AdminCollection';
 import { AdminOrders } from '../../components/swag/AdminOrders';
+import { AdminShipping } from '../../components/swag/AdminShipping';
 import { AdminStock } from '../../components/swag/AdminStock';
 import { AdminTeam } from '../../components/swag/AdminTeam';
 import { CARD, buttonClass } from '../../components/swag/AdminPrimitives';
@@ -14,13 +15,14 @@ import { HashChip } from '../../components/swag/HashChip';
 import { SWAG, useSwagAdminSummary } from '../../hooks/swag';
 import type { SwagAdminSummary } from '../../types/swag-orders';
 
-type Tab = 'batch' | 'orders' | 'stock' | 'collection' | 'team';
+type Tab = 'batch' | 'orders' | 'stock' | 'shipping' | 'collection' | 'team';
 
 /** `admin: true` tabs need ADMIN_ROLE; the rest are open to FULFILLMENT_ROLE. */
 const TABS: Array<{ id: Tab; label: string; admin: boolean }> = [
   { id: 'batch', label: 'This week', admin: false },
   { id: 'orders', label: 'Orders', admin: false },
   { id: 'stock', label: 'Stock', admin: true },
+  { id: 'shipping', label: 'Shipping', admin: true },
   { id: 'collection', label: 'Collection', admin: true },
   { id: 'team', label: 'Team', admin: true },
 ];
@@ -37,10 +39,22 @@ function StatTile({ label, value, hint }: { label: string; value: string; hint?:
   );
 }
 
+const usdc = (n: number) => `${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC`;
+const copFmt = (n: number) => `COP ${Math.round(n).toLocaleString('es-CO')}`;
+
 function Summary({ data }: { data: SwagAdminSummary }) {
   const queue = data.voucherCancelQueue.filter((q) => !q.closedOnChain).length;
   const admin = data.viewer.role === 'admin';
+  const { USDC, COP } = data.revenue;
   return (
+    <div className="space-y-3">
+    {admin && (
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <StatTile label="USDC in" value={usdc(USDC.item + USDC.shipping)} hint={`${USDC.orders} orders · items ${usdc(USDC.item)} · shipping ${usdc(USDC.shipping)}`} />
+        <StatTile label="Card in (COP)" value={copFmt(COP.item + COP.shipping)} hint={`${COP.orders} lines · items ${copFmt(COP.item)} · shipping ${copFmt(COP.shipping)}`} />
+        <StatTile label="Shipping unpaid" value={String(data.shippingDue.orders)} hint={data.shippingDue.orders ? `${usdc(data.shippingDue.usdc)} owed; not printed until paid` : 'Every USDC order has paid shipping'} />
+      </div>
+    )}
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       <StatTile label="To produce" value={String(data.counts.byStatus.paid)} hint="Paid, not yet on the press" />
       <StatTile label="In production" value={String(data.counts.byStatus.in_production)} hint="Printing or packing" />
@@ -50,6 +64,7 @@ function Summary({ data }: { data: SwagAdminSummary }) {
       ) : (
         <StatTile label="Store" value={data.collection.paused ? 'Paused' : 'Live'} hint={`${data.counts.total} orders in total`} />
       )}
+    </div>
     </div>
   );
 }
@@ -129,6 +144,7 @@ export default function SwagAdminPage() {
         {shown === 'batch' && <AdminBatch />}
         {shown === 'orders' && <AdminOrders canAdmin={isAdmin} />}
         {shown === 'stock' && isAdmin && <AdminStock />}
+        {shown === 'shipping' && isAdmin && <AdminShipping />}
         {shown === 'collection' && isAdmin && <AdminCollection />}
         {shown === 'team' && isAdmin && <AdminTeam />}
       </div>

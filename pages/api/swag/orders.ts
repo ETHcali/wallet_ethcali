@@ -15,6 +15,11 @@
  * the log is not one of the caller's wallets, there is no order — someone is
  * trying to attach a shipping address to a purchase that is not theirs.
  *
+ * The body also carries the signed shipping quote the buyer accepted
+ * (POST /api/swag/shipping/quote). The row is created as
+ * awaiting_shipping_payment with that quote stored; the shipping transfer is
+ * proven separately by POST /api/swag/shipping/pay.
+ *
  * Once the row exists it is mirrored into Shopify (lib/swag/shopifyMirror.ts)
  * so the parcel is packed from the same queue as a card order. The mirror is
  * best-effort: a Shopify failure is reported in the response (`mirror`) and
@@ -40,6 +45,7 @@ import {
   toOrderView,
   type OrderJoined,
 } from '../../../lib/swag/orders';
+import { loadZones, resolveZone, ShippingError, verifyQuote } from '../../../lib/swag/shipping';
 import { logger } from '../../../utils/logger';
 import type {
   CreateSwagOrderBody,
@@ -115,6 +121,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       return res.status(422).json({ error: 'That token is not in the catalogue. Contact the team.' });
     }
 
+    // Shipping: the quote must be ours, unexpired, for this buyer, and for
+    // the zone this address actually resolves to — a Cali quote cannot ship
+    // to Bogotá.
+    const quote = verifyQuote(body.shippingQuote, { checkExpiry: true });
+    if (quote.wallet !== buyer) {
+      return res.status(400).json({ error: 'The shipping quote was made for a different wallet' });
+    }
+    const zone = resolveZone(await loadZones(db, { activeOnly: true }), shipping.country, shipping.city);
+    if (!zone || zone.code !== quote.zone || quote.country !== shipping.country.toUpperCase()) {
+      return res.status(409).json({ error: 'The address changed since the shipping quote. Ask for a new one.' });
+    }
+
     if (variant.sized) {
       if (!size) return res.status(400).json({ error: 'size is required for this design' });
       if (!variant.sizes.includes(size)) {
@@ -138,6 +156,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         // A crypto order needs no claim key, but the column is the table's
         // idempotency spine, so it gets the receipt's own identity.
         order_ref: txHash,
+        // The item is paid; shipping is the next transfer. The batch does not
+        // print this row until POST /api/swag/shipping/pay moves it to paid.
+        status: 'awaiting_shipping_payment',
+        shipping_quote: quote,
+        // From the Purchased log, never the request: USDC has 6 decimals.
+        item_amount: Number(purchased.paid) / 1e6,
+        item_currency: 'USDC',
       });
     } catch (e) {
       // Two requests for the same receipt raced past the check above. The
@@ -156,7 +181,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     const mirror = await mirrorOnchainOrder(db, row, purchased, email);
     return res.status(201).json({ order: toOrderView(row), existing: false, mirror });
   } catch (e) {
-    if (e instanceof UserAuthError || e instanceof OrderError || e instanceof ReceiptError) {
+    if (e instanceof UserAuthError || e instanceof OrderError || e instanceof ReceiptError || e instanceof ShippingError) {
       return res.status(e.status).json({ error: e.message });
     }
     logger.error('[swag/orders] failed', e);
