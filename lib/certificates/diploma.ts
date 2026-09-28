@@ -39,6 +39,12 @@ const FAINT = rgb(0.42, 0.43, 0.5);
 // public/branding/fonts.
 const FONT_DIR = path.join(process.cwd(), 'lib/certificates/fonts');
 const LOGO = path.join(process.cwd(), 'public/1x1ethcali.png');
+const SPONSOR_DIR = path.join(process.cwd(), 'lib/certificates/logos');
+const sponsorFiles = new Map<string, Buffer>();
+function sponsorFile(file: string): Buffer {
+  if (!sponsorFiles.has(file)) sponsorFiles.set(file, readFileSync(path.join(SPONSOR_DIR, file)));
+  return sponsorFiles.get(file) as Buffer;
+}
 
 let cache: { bold: Buffer; regular: Buffer; logo: Buffer } | null = null;
 function assets() {
@@ -97,21 +103,21 @@ export async function renderDiploma(input: DiplomaInput): Promise<Uint8Array> {
 
   // The mark. The PNG is square with generous black margins, so it is drawn
   // larger than it reads and overlaps nothing.
-  const L = 170;
+  const L = 140;
   page.drawImage(logo, { x: (W - L) / 2, y: H - 30 - L, width: L, height: L });
 
-  spaced(page, 'CERTIFICADO DE BUILDER · BUILDER CERTIFICATE', 392, bold, 10, BLUE_TEXT);
-  centred(page, 'Se certifica que · This certifies that', 362, regular, 12, MUTED);
-  centred(page, input.memberName, 318, bold, 40, WHITE);
+  spaced(page, 'CERTIFICADO DE BUILDER · BUILDER CERTIFICATE', 418, bold, 10, BLUE_TEXT);
+  centred(page, 'Se certifica que · This certifies that', 392, regular, 12, MUTED);
+  centred(page, input.memberName, 350, bold, 40, WHITE);
 
   // Underline under the name, the width of a signature line.
   const line = Math.min(W - 200, Math.max(340, bold.widthOfTextAtSize(input.memberName, 40) + 40)) / 2;
-  page.drawLine({ start: { x: W / 2 - line, y: 306 }, end: { x: W / 2 + line, y: 306 }, thickness: 0.8, color: BLUE });
+  page.drawLine({ start: { x: W / 2 - line, y: 338 }, end: { x: W / 2 + line, y: 338 }, thickness: 0.8, color: BLUE });
 
-  centred(page, 'construyó y publicó · built and shipped', 280, regular, 12, MUTED);
-  centred(page, input.projectName, 248, bold, 26, BLUE_TEXT);
-  centred(page, ev.title, 220, regular, 13, WHITE);
-  centred(page, `${ev.venue} · ${ev.dates.es} · ${ev.dates.en}`, 201, regular, 10.5, MUTED);
+  centred(page, 'construyó y publicó · built and shipped', 314, regular, 12, MUTED);
+  centred(page, input.projectName, 284, bold, 26, BLUE_TEXT);
+  centred(page, ev.title, 258, regular, 13, WHITE);
+  centred(page, `${ev.venue} · ${ev.dates.es} · ${ev.dates.en}`, 240, regular, 10.5, MUTED);
 
   // Prizes, one pill each, side by side.
   if (input.honors.length > 0) {
@@ -122,16 +128,35 @@ export async function renderDiploma(input: DiplomaInput): Promise<Uint8Array> {
     const widths = labels.map((l) => bold.widthOfTextAtSize(l, size) + padX * 2);
     let x = (W - (widths.reduce((s, w) => s + w, 0) + gap * (labels.length - 1))) / 2;
     labels.forEach((l, i) => {
-      page.drawRectangle({ x, y: 160, width: widths[i], height: 22, color: BLUE });
-      page.drawText(l, { x: x + padX, y: 167, size, font: bold, color: WHITE });
+      page.drawRectangle({ x, y: 202, width: widths[i], height: 22, color: BLUE });
+      page.drawText(l, { x: x + padX, y: 209, size, font: bold, color: WHITE });
       x += widths[i] + gap;
     });
+  }
+
+  // Sponsors: one row, centred, each logo scaled to its optical height.
+  if (ev.sponsors.length > 0) {
+    spaced(page, 'CON EL APOYO DE · WITH THE SUPPORT OF', 176, bold, 7.5, FAINT, 1.8);
+    const imgs = await Promise.all(
+      ev.sponsors.map(async (s) => {
+        const bytes = sponsorFile(s.file);
+        const img = s.file.endsWith('.jpg') ? await doc.embedJpg(bytes) : await doc.embedPng(bytes);
+        return { img, h: s.height, w: (img.width / img.height) * s.height };
+      })
+    );
+    const gap = 34;
+    const rowMid = 146;
+    let x = (W - (imgs.reduce((t, i) => t + i.w, 0) + gap * (imgs.length - 1))) / 2;
+    for (const i of imgs) {
+      page.drawImage(i.img, { x, y: rowMid - i.h / 2, width: i.w, height: i.h });
+      x += i.w + gap;
+    }
   }
 
   // Footer: issuer · date · credential.
   const [yy, mm, dd] = input.issueDate.split('-').map(Number);
   const dateEs = `${dd} de ${MONTHS_ES[mm - 1]} de ${yy}`;
-  const colY = 78;
+  const colY = 74;
   const cols: [string, string][] = [
     ['EMITIDO POR · ISSUED BY', 'ETH Cali · ethcali.org'],
     ['FECHA · DATE', dateEs],

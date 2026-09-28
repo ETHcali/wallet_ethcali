@@ -133,6 +133,15 @@ export const HeartIcon: React.FC<IconProps> = (p) => (
   </svg>
 );
 
+/** A medal on a ribbon: builder certificates. */
+export const AwardIcon: React.FC<IconProps> = (p) => (
+  <svg {...svgProps(p)}>
+    <circle cx="12" cy="9" r="5.5" />
+    <path d="M9.2 13.8L8 21l4-2.2 4 2.2-1.2-7.2" />
+    <path d="M12 6.6l.8 1.6 1.7.2-1.2 1.2.3 1.7-1.6-.8-1.6.8.3-1.7-1.2-1.2 1.7-.2z" />
+  </svg>
+);
+
 export const CogIcon: React.FC<IconProps> = (p) => (
   <svg {...svgProps(p)}>
     <circle cx="12" cy="12" r="3" />

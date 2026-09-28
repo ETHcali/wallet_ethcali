@@ -5,6 +5,7 @@ import { useRouter } from 'next/router';
 import { usePrivy } from '@privy-io/react-auth';
 import { useAdminRoles } from '../hooks/useAdminStatus';
 import {
+  AwardIcon,
   BagIcon,
   CogIcon,
   DropIcon,
@@ -18,6 +19,8 @@ import {
 interface NavItem {
   href: string;
   label: string;
+  /** The phone tab bar is seven narrow columns; a long label gets a short one. */
+  short?: string;
   icon: React.FC<{ className?: string; strokeWidth?: number }>;
 }
 
@@ -28,6 +31,7 @@ const MAIN_NAV: NavItem[] = [
   { href: '/donations', label: 'Donate', icon: HeartIcon },
   { href: '/faucet', label: 'Faucet', icon: DropIcon },
   { href: '/sybil', label: 'Identity', icon: ShieldIcon },
+  { href: '/certificate', label: 'Certificates', short: 'Certs', icon: AwardIcon },
   { href: '/settings', label: 'Settings', icon: SlidersIcon },
 ];
 
@@ -172,7 +176,7 @@ const Navigation: React.FC = () => {
         aria-label="Main"
         className="fixed inset-x-0 bottom-0 z-40 border-t border-line-hairline bg-surface-void/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-[14px] md:hidden"
       >
-        <ul className="grid h-14 grid-cols-6">
+        <ul className="grid h-14 grid-cols-7">
           {MAIN_NAV.map((item) => {
             const active = isActive(item.href);
             const Icon = item.icon;
@@ -188,7 +192,7 @@ const Navigation: React.FC = () => {
                   {active && <span className="absolute top-0 h-0.5 w-7 rounded-full bg-eth-blue" aria-hidden />}
                   <Icon className="h-[22px] w-[22px]" strokeWidth={active ? 1.9 : 1.6} />
                   <span className="max-w-full truncate px-0.5 text-[10px] font-medium leading-none tracking-tight">
-                    {item.label}
+                    {item.short ?? item.label}
                   </span>
                 </Link>
               </li>

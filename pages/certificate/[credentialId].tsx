@@ -106,6 +106,20 @@ export default function CredentialPage({ cert }: Props) {
               </div>
             )}
 
+            {ev && ev.sponsors.length > 0 && (
+              <div className="mt-8">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-content-faint">
+                  Con el apoyo de · With the support of
+                </p>
+                <div className="mt-3 flex flex-wrap items-center justify-center gap-x-7 gap-y-3">
+                  {ev.sponsors.map((s) => (
+                    // eslint-disable-next-line @next/next/no-img-element -- sponsor artwork served by ethcali.org
+                    <img key={s.name} src={s.src} alt={s.name} title={s.name} style={{ height: s.height }} className="w-auto" />
+                  ))}
+                </div>
+              </div>
+            )}
+
             <dl className="mt-10 grid gap-4 text-center sm:grid-cols-3">
               <div>
                 <dt className="text-[10px] font-semibold uppercase tracking-wide text-content-faint">

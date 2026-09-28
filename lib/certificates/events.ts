@@ -22,6 +22,13 @@ export interface CertEvent {
   issueMonth: number;
   /** Suggested for LinkedIn's Skills field, which the add-link cannot prefill. */
   skills: string[];
+  /**
+   * Printed along the bottom of the diploma, in this order. Files live in
+   * lib/certificates/logos (the same artwork as ethcali.org's sponsor wall,
+   * all drawn for a dark ground). `height` evens out optical size: a square
+   * mark needs more height than a wide wordmark to read the same.
+   */
+  sponsors: { name: string; file: string; height: number; /** Same artwork on ethcali.org, for the web page. */ src: string }[];
 }
 
 export const CERT_EVENTS: Record<string, CertEvent> = {
@@ -33,6 +40,16 @@ export const CERT_EVENTS: Record<string, CertEvent> = {
     issueYear: 2026,
     issueMonth: 9,
     skills: ['Ethereum', 'Smart Contracts', 'Web3', 'Blockchain', 'Hackathon'],
+    // The tour's sponsor wall (ethcaliorg/content/builders-tour.ts), title
+    // sponsor first. ETH Cali is not repeated: it is the issuer, and its mark
+    // already heads the diploma.
+    sponsors: [
+      { name: 'HashKey Chain', file: 'hashkey-chain.png', src: 'https://www.ethcali.org/tour/hashkey-chain.jpg', height: 30 },
+      { name: 'Ethereum Applications Guild', file: 'eag.png', src: 'https://www.ethcali.org/tour/eag.png', height: 26 },
+      { name: 'Ethereum Foundation', file: 'ef-logo.png', src: 'https://www.ethcali.org/tour/ef-logo.png', height: 26 },
+      { name: 'Universidad Icesi', file: 'universidad_icesi.png', src: 'https://www.ethcali.org/universities/universidad_icesi.png', height: 26 },
+      { name: 'Ekinoxis Labs', file: 'ekinoxis.png', src: 'https://www.ethcali.org/tour/ekinoxis.png', height: 34 },
+    ],
   },
 };
 
