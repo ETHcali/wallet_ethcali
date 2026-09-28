@@ -1,10 +1,9 @@
 /**
  * The builder diploma as a PDF — server-only (reads fonts and the logo from disk).
  *
- * One A4 landscape page, paper-white like a diploma: ETH Cali's mark and
- * name as the issuer at the top, the builder's name in Sarun Pro, and a black
- * band along the bottom for the event's sponsors — their artwork is drawn for
- * a dark ground, and the band frames the page the way a seal would.
+ * One A4 landscape page, paper-white like a diploma: ETH Cali's mark as the
+ * issuer's seal at the top, the builder's name in Sarun Pro, and the event's
+ * sponsors along the bottom under a hairline rule.
  *
  * It is a template, not a one-off: everything event-specific (title, venue,
  * dates, sponsors) comes from CERT_EVENTS in ./events, so the next hackathon
@@ -36,19 +35,18 @@ const H = 595;
 // Paper, ink, and the one brand blue. Greys are the ink at lower strength.
 const PAPER = rgb(0.992, 0.992, 1);
 const INK = rgb(12 / 255, 13 / 255, 22 / 255);
-const BLACK = rgb(0, 0, 0);
 const WHITE = rgb(1, 1, 1);
 const BLUE = rgb(43 / 255, 35 / 255, 239 / 255);
 const MUTED = rgb(0.36, 0.37, 0.45);
 const FAINT = rgb(0.55, 0.56, 0.63);
-const ON_BAND = rgb(0.62, 0.63, 0.7);
+
 
 // TTF, not the design-tokens woff2: @pdf-lib/fontkit mis-decodes woff2 glyphs
 // (every character renders as a dot). Same files ethcali.org publishes in
 // public/branding/fonts.
 const FONT_DIR = path.join(process.cwd(), 'lib/certificates/fonts');
-// The vertical lockup drawn for light grounds: the mark over "ETH·CO CALI".
-const LOGO = path.join(process.cwd(), 'public/logo_eth_cali.png');
+// The mark alone, brand-blue line art on transparency: the issuer's seal.
+const LOGO = path.join(process.cwd(), 'public/logoethcali.png');
 const SPONSOR_DIR = path.join(process.cwd(), 'lib/certificates/logos');
 const sponsorFiles = new Map<string, Buffer>();
 function sponsorFile(file: string): Buffer {
@@ -111,8 +109,8 @@ export async function renderDiploma(input: DiplomaInput): Promise<Uint8Array> {
   page.drawRectangle({ x: 16, y: 16, width: W - 32, height: H - 32, borderColor: BLUE, borderWidth: 3 });
   page.drawRectangle({ x: 25, y: 25, width: W - 50, height: H - 50, borderColor: rgb(0.8, 0.8, 0.9), borderWidth: 0.6 });
 
-  // Issuer: the ETH Cali lockup, centred at the top.
-  const logoH = 104;
+  // Issuer: the ETH Cali mark, centred at the top.
+  const logoH = 100;
   const logoW = (logo.width / logo.height) * logoH;
   page.drawImage(logo, { x: (W - logoW) / 2, y: H - 40 - logoH, width: logoW, height: logoH });
 
@@ -161,11 +159,11 @@ export async function renderDiploma(input: DiplomaInput): Promise<Uint8Array> {
   });
   centred(page, `Verifica en · Verify at ${credentialUrl(input.credentialId)}`, 136, regular, 8.5, FAINT);
 
-  // Sponsor band: black, inside the frame, logos centred on it.
-  const band = { x: 25, y: 25, w: W - 50, h: 94 };
-  page.drawRectangle({ x: band.x, y: band.y, width: band.w, height: band.h, color: BLACK });
+  // Sponsors: a hairline rule, a label, one row of logos on the paper.
   if (ev.sponsors.length > 0) {
-    spaced(page, 'CON EL APOYO DE · WITH THE SUPPORT OF', band.y + band.h - 20, bold, 7.5, ON_BAND, 1.8);
+    const ruleY = 116;
+    page.drawLine({ start: { x: 60, y: ruleY }, end: { x: W - 60, y: ruleY }, thickness: 0.6, color: rgb(0.82, 0.82, 0.9) });
+    spaced(page, 'CON EL APOYO DE · WITH THE SUPPORT OF', ruleY - 18, bold, 7.5, FAINT, 1.8);
     const imgs = await Promise.all(
       ev.sponsors.map(async (sp) => {
         const bytes = sponsorFile(sp.file);
@@ -173,8 +171,8 @@ export async function renderDiploma(input: DiplomaInput): Promise<Uint8Array> {
         return { img, h: sp.height, w: (img.width / img.height) * sp.height };
       })
     );
-    const gap = 34;
-    const rowMid = band.y + 38;
+    const gap = 36;
+    const rowMid = 62;
     let x = (W - (imgs.reduce((t, i) => t + i.w, 0) + gap * (imgs.length - 1))) / 2;
     for (const i of imgs) {
       page.drawImage(i.img, { x, y: rowMid - i.h / 2, width: i.w, height: i.h });
