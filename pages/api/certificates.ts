@@ -19,39 +19,10 @@ import { isAddress } from 'viem';
 import { getSupabaseAdmin } from '../../lib/supabase';
 import { requireUser, sendAuthError } from '../../lib/swag/requireUser';
 import { logger } from '../../utils/logger';
-import type {
-  CertificateClaimResponse,
-  CertificatesResponse,
-  CertificateView,
-} from '../../types/certificates';
+import { OWNER_COLUMNS, toOwnerView, type CertificateRow } from '../../lib/certificates/rows';
+import type { CertificateClaimResponse, CertificatesResponse } from '../../types/certificates';
 
 type Reply = CertificatesResponse | CertificateClaimResponse | { error: string };
-
-const COLUMNS =
-  'id, event, project_slug, project_name, member_name, email, wallet, claimed_at, issued_tx';
-
-interface Row {
-  id: number;
-  event: string;
-  project_slug: string;
-  project_name: string;
-  member_name: string;
-  email: string;
-  wallet: string | null;
-  claimed_at: string | null;
-  issued_tx: string | null;
-}
-
-const toView = (r: Row): CertificateView => ({
-  id: r.id,
-  event: r.event,
-  projectSlug: r.project_slug,
-  projectName: r.project_name,
-  memberName: r.member_name,
-  wallet: r.wallet,
-  claimedAt: r.claimed_at,
-  issuedTx: r.issued_tx,
-});
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<Reply>) {
   if (req.method !== 'GET' && req.method !== 'POST') {
@@ -79,11 +50,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     if (req.method === 'GET') {
       const { data, error } = await db
         .from('builder_certificates')
-        .select(COLUMNS)
+        .select(OWNER_COLUMNS)
         .in('email', user.emails)
         .order('id');
       if (error) throw new Error(error.message);
-      return res.status(200).json({ certificates: (data as Row[]).map(toView) });
+      return res.status(200).json({ certificates: (data as CertificateRow[]).map(toOwnerView) });
     }
 
     const body = (req.body ?? {}) as { id?: unknown; to?: unknown };
@@ -116,7 +87,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       .eq('id', id)
       .in('email', user.emails)
       .is('issued_tx', null)
-      .select(COLUMNS)
+      .select(OWNER_COLUMNS)
       .maybeSingle();
     if (error) throw new Error(error.message);
 
@@ -135,7 +106,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       return res.status(404).json({ error: 'No such certificate' });
     }
 
-    return res.status(200).json({ certificate: toView(data as Row) });
+    return res.status(200).json({ certificate: toOwnerView(data as CertificateRow) });
   } catch (e) {
     logger.error('certificates: request failed', e);
     return res.status(500).json({ error: 'Could not reach the certificate list' });
