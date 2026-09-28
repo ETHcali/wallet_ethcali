@@ -4,8 +4,9 @@
  *   GET  /api/certificates                 → the caller's rows
  *   POST /api/certificates  { id, to? }    → record the wallet it goes to
  *
- * Ownership is the same rule as /api/swag/claim: a row is yours when its email
- * is one of the emails Privy verified for this session. The caller never names
+ * Ownership is the same rule as /api/swag/claim: a row is yours when one of
+ * its emails (Devfolio's, Luma's — a person may have several) is one Privy
+ * verified for this session. The caller never names
  * an email. `to` must be one of the caller's own linked wallets and defaults to
  * the embedded one, so a builder who signed up with only an email still ends
  * up with an address — the one the app made for them.
@@ -51,7 +52,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       const { data, error } = await db
         .from('builder_certificates')
         .select(OWNER_COLUMNS)
-        .in('email', user.emails)
+        .overlaps('emails', user.emails)
         .order('id');
       if (error) throw new Error(error.message);
       return res.status(200).json({ certificates: (data as CertificateRow[]).map(toOwnerView) });
@@ -85,7 +86,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       .from('builder_certificates')
       .update({ wallet: to, claimed_at: new Date().toISOString() })
       .eq('id', id)
-      .in('email', user.emails)
+      .overlaps('emails', user.emails)
       .is('issued_tx', null)
       .select(OWNER_COLUMNS)
       .maybeSingle();
@@ -98,7 +99,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         .from('builder_certificates')
         .select('issued_tx')
         .eq('id', id)
-        .in('email', user.emails)
+        .overlaps('emails', user.emails)
         .maybeSingle();
       if (own?.issued_tx) {
         return res.status(409).json({ error: 'This certificate was already issued' });

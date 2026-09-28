@@ -8,10 +8,12 @@
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { parseHonors } from './events';
-import type { CertificateView, PublicCertificate } from '../../types/certificates';
+import type { AdminCertificate, CertificateView, PublicCertificate } from '../../types/certificates';
 
 export const OWNER_COLUMNS =
   'id, event, project_slug, project_name, member_name, email, credential_id, issue_date, honors, wallet, claimed_at, issued_tx';
+
+export const ADMIN_COLUMNS = `${OWNER_COLUMNS}, emails, checked_in_at`;
 
 export interface CertificateRow {
   id: number;
@@ -40,6 +42,13 @@ export const toOwnerView = (r: CertificateRow): CertificateView => ({
   wallet: r.wallet,
   claimedAt: r.claimed_at,
   issuedTx: r.issued_tx,
+});
+
+export const toAdminView = (r: CertificateRow & { emails: string[]; checked_in_at: string | null }): AdminCertificate => ({
+  ...toOwnerView(r),
+  email: r.email,
+  emails: r.emails,
+  checkedInAt: r.checked_in_at,
 });
 
 /** Credential ids are uppercase letters, digits and one dash — anything else is not one. */
