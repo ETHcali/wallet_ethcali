@@ -40,3 +40,14 @@ export interface CertificatesResponse {
 export interface CertificateClaimResponse {
   certificate: CertificateView;
 }
+
+/** A participant as operators see them: every address, and the Luma check-in. */
+export interface AdminCertificate extends CertificateView {
+  email: string;
+  emails: string[];
+  checkedInAt: string | null;
+}
+
+export interface AdminCertificatesResponse {
+  certificates: AdminCertificate[];
+}

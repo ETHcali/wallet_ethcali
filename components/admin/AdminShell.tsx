@@ -11,7 +11,8 @@ export type AdminSection =
   | 'swag'
   | 'artwork'
   | 'identity'
-  | 'content';
+  | 'content'
+  | 'certificates';
 
 interface AdminShellProps {
   /** Which sidebar entry is current. */
@@ -39,6 +40,7 @@ const SECTIONS: SectionDef[] = [
   { id: 'artwork', href: '/admin/artwork', label: 'Artwork', accent: 'text-eth-blue-text' },
   { id: 'identity', href: '/sybil/admin', label: 'Identity', accent: 'text-eth-blue-text' },
   { id: 'content', href: '/admin/content', label: 'Site content', accent: 'text-eth-blue-text' },
+  { id: 'certificates', href: '/admin/certificates', label: 'Certificates', accent: 'text-eth-blue-text' },
 ];
 
 function truncate(address?: string): string {
@@ -79,6 +81,9 @@ const AdminShell: React.FC<AdminShellProps> = ({ active, title, subtitle, childr
     // Site content is editorial, not an on-chain role, so the menu does not
     // gate it. The API still checks ADMIN_ROLE before it writes anything.
     content: true,
+    // Participants' emails live here. Same authority as the API behind it:
+    // ADMIN_ROLE on the DonationVault (lib/adminAuth.ts).
+    certificates: isDonationAdmin || isDonationSuperAdmin,
   };
 
   // The current section stays listed even if the role read is still resolving,
