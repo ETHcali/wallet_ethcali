@@ -439,7 +439,7 @@ export function toAdminOrderView(row: OrderJoined): SwagAdminOrderView {
 
 export const ADMIN_PAGE_SIZE = 50;
 
-const ORDER_STATUSES: readonly SwagOrderStatus[] = ['paid', 'shipped', 'delivered', 'cancelled'];
+const ORDER_STATUSES: readonly SwagOrderStatus[] = ['paid', 'in_production', 'shipped', 'delivered', 'cancelled'];
 const ORDER_CHANNELS: readonly SwagOrderChannel[] = ['onchain', 'shopify', 'event'];
 
 /**
@@ -534,7 +534,7 @@ export async function listAdminOrders(
   return { orders: page.map(toAdminOrderView), nextCursor };
 }
 
-const PATCHABLE_STATUSES = ['shipped', 'delivered', 'cancelled'] as const;
+const PATCHABLE_STATUSES = ['in_production', 'shipped', 'delivered', 'cancelled'] as const;
 
 /** Body → validated patch. Nothing else in the body is read. */
 export function parseAdminOrderPatch(raw: unknown): SwagAdminOrderPatchBody {
@@ -701,7 +701,7 @@ export async function mirrorOnchainOrder(
 // ── Fulfilment from Shopify ─────────────────────────────────────────────────
 
 export interface FulfilmentOutcome {
-  /** Rows moved paid → shipped. */
+  /** Rows moved paid or in_production → shipped. */
   shipped: number;
   /** Rows already shipped whose tracking was updated. */
   tracked: number;
@@ -713,7 +713,7 @@ export interface FulfilmentOutcome {
 
 /**
  * Shopify says an order shipped. Every row that points at it — a card order's
- * line items or a USDC order's mirror — goes paid → shipped with the tracking
+ * line items or a USDC order's mirror — goes paid or in_production → shipped with the tracking
  * merged into `shipping`. Rows already shipped only pick up new tracking;
  * delivered and cancelled rows are not touched. The transition trigger has
  * the last word on status.
@@ -739,12 +739,12 @@ export async function applyFulfilment(
     const shipping: SwagStoredShipping = { ...stored };
     if (tracking && changed) shipping.tracking = tracking;
 
-    if (row.status === 'paid') {
+    if (row.status === 'paid' || row.status === 'in_production') {
       const { error: updateError } = await db
         .from('swag_orders')
         .update({ status: 'shipped', shipping })
         .eq('id', row.id)
-        .eq('status', 'paid');
+        .eq('status', row.status);
       if (updateError) throw new OrderError(updateError.message, 500);
       outcome.shipped += 1;
     } else if (row.status === 'shipped' && changed) {
@@ -757,4 +757,60 @@ export async function applyFulfilment(
   }
 
   return outcome;
+}
+
+// ── The weekly batch (lib/swag/batch.ts decides the window) ─────────────────
+
+/** Most open orders a batch view returns. A week of this store is far below it. */
+export const BATCH_LIMIT = 500;
+
+/**
+ * Open orders (paid or in production) created before the cutoff, oldest
+ * first — the ones that belong on this week's press — and how many open
+ * orders arrived after it and wait for next week.
+ */
+export async function listBatchOrders(
+  db: SupabaseClient,
+  cutoff: string
+): Promise<{ orders: SwagAdminOrderView[]; later: number; truncated: boolean }> {
+  const [inBatch, after] = await Promise.all([
+    db
+      .from('swag_orders')
+      .select(ORDER_SELECT)
+      .in('status', ['paid', 'in_production'])
+      .lt('created_at', cutoff)
+      .order('created_at', { ascending: true })
+      .limit(BATCH_LIMIT + 1),
+    db
+      .from('swag_orders')
+      .select('id', { count: 'exact', head: true })
+      .in('status', ['paid', 'in_production'])
+      .gte('created_at', cutoff),
+  ]);
+  if (inBatch.error) throw new OrderError(inBatch.error.message, 500);
+  if (after.error) throw new OrderError(after.error.message, 500);
+
+  const rows = (inBatch.data ?? []) as unknown as OrderJoined[];
+  return {
+    orders: rows.slice(0, BATCH_LIMIT).map(toAdminOrderView),
+    later: after.count ?? 0,
+    truncated: rows.length > BATCH_LIMIT,
+  };
+}
+
+/**
+ * Send the batch to the press: every paid order created before the cutoff
+ * moves to in_production in one statement. Orders already in production,
+ * shipped or cancelled are untouched; the transition trigger still checks
+ * each row. Returns the ids that moved.
+ */
+export async function startBatch(db: SupabaseClient, cutoff: string): Promise<number[]> {
+  const { data, error } = await db
+    .from('swag_orders')
+    .update({ status: 'in_production' })
+    .eq('status', 'paid')
+    .lt('created_at', cutoff)
+    .select('id');
+  if (error) throw new OrderError(error.message, error.code === '23514' ? 409 : 500);
+  return ((data ?? []) as Array<{ id: number }>).map((r) => r.id);
 }

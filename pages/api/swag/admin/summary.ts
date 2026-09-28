@@ -20,7 +20,7 @@ import { SWAG_COLLECTION } from '../../../../config/constants';
 import { getSupabaseAdmin } from '../../../../lib/supabase';
 import { getSwagClient, getSwagCollection, SWAG_CHAIN_ID } from '../../../../lib/swag/onchain';
 import { listVoucherCancelQueue, OrderError } from '../../../../lib/swag/orders';
-import { requireSwagAdmin } from '../../../../lib/swag/requireSwagAdmin';
+import { requireSwagStaff } from '../../../../lib/swag/requireSwagAdmin';
 import { sendAuthError } from '../../../../lib/swag/requireUser';
 import { logger } from '../../../../utils/logger';
 import type {
@@ -82,7 +82,7 @@ async function readCounts(): Promise<SwagAdminSummary['counts']> {
   const { data, error } = await getSupabaseAdmin().from('swag_orders').select('status, channel');
   if (error) throw new OrderError(error.message, 500);
 
-  const byStatus: Record<SwagOrderStatus, number> = { paid: 0, shipped: 0, delivered: 0, cancelled: 0 };
+  const byStatus: Record<SwagOrderStatus, number> = { paid: 0, in_production: 0, shipped: 0, delivered: 0, cancelled: 0 };
   const byChannel: Record<SwagOrderChannel, number> = { onchain: 0, shopify: 0, event: 0 };
   for (const row of (data ?? []) as Array<{ status: SwagOrderStatus; channel: SwagOrderChannel }>) {
     if (row.status in byStatus) byStatus[row.status] += 1;
@@ -121,8 +121,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  let viewer: SwagAdminSummary['viewer'];
   try {
-    await requireSwagAdmin(req);
+    const staff = await requireSwagStaff(req);
+    viewer = { role: staff.role, superAdmin: staff.superAdmin, wallet: staff.admin };
   } catch (e) {
     return sendAuthError(res, e);
   }
@@ -134,7 +136,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       readQueue(),
     ]);
     res.setHeader('Cache-Control', 'no-store');
-    return res.status(200).json({ counts, collection, voucherCancelQueue });
+    return res.status(200).json({ viewer, counts, collection, voucherCancelQueue });
   } catch (e) {
     if (e instanceof OrderError) return res.status(e.status).json({ error: e.message });
     logger.error('[swag/admin/summary] failed', e);

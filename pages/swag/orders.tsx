@@ -17,6 +17,7 @@ import type { SwagOrder, SwagOrderStatus } from '../../types/swag';
 
 const STATUS_LABEL: Record<SwagOrderStatus, { es: string; en: string; className: string }> = {
   paid: { es: 'Pagado', en: 'Paid', className: 'bg-signal-pending/15 text-signal-pending' },
+  in_production: { es: 'En producción', en: 'In production', className: 'bg-signal-pending/15 text-signal-pending' },
   shipped: { es: 'Enviado', en: 'Shipped', className: 'bg-eth-blue-wash text-eth-blue-text' },
   delivered: { es: 'Entregado', en: 'Delivered', className: 'bg-signal-confirmed/15 text-signal-confirmed' },
   cancelled: { es: 'Cancelado', en: 'Cancelled', className: 'bg-signal-reverted/15 text-signal-reverted' },

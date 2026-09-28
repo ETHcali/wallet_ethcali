@@ -3,7 +3,10 @@
  *
  *   PATCH /api/swag/admin/orders/[id]  { status?, tracking?, notes? }
  *
- * status moves the row along paid → shipped → delivered (or to cancelled).
+ * status moves the row along paid → in_production → shipped → delivered (or to
+ * cancelled). FULFILLMENT_ROLE may move a row forward and add tracking;
+ * cancelling and editing notes need ADMIN_ROLE, because a cancel is the
+ * operator's half of a refund.
  * The database trigger, not this route, decides which moves are legal; when
  * it refuses, its message comes back as a 409 so the UI can show the reason.
  * tracking is stored inside the shipping block. notes is replaced wholesale —
@@ -15,7 +18,7 @@
  */
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getSupabaseAdmin } from '../../../../../lib/supabase';
-import { requireSwagAdmin } from '../../../../../lib/swag/requireSwagAdmin';
+import { requireSwagStaff, type SwagStaff } from '../../../../../lib/swag/requireSwagAdmin';
 import { sendAuthError } from '../../../../../lib/swag/requireUser';
 import {
   OrderError,
@@ -34,12 +37,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  let admin: string;
+  let staff: SwagStaff;
   try {
-    admin = (await requireSwagAdmin(req)).admin;
+    staff = await requireSwagStaff(req);
   } catch (e) {
     return sendAuthError(res, e);
   }
+  const admin = staff.admin;
 
   const id = Number(Array.isArray(req.query.id) ? req.query.id[0] : req.query.id);
   if (!Number.isInteger(id) || id <= 0) {
@@ -48,6 +52,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
   try {
     const patch = parseAdminOrderPatch(req.body);
+    if (staff.role !== 'admin' && (patch.status === 'cancelled' || patch.notes !== undefined)) {
+      return res.status(403).json({ error: 'Cancelling an order or editing notes needs ADMIN_ROLE' });
+    }
     const row = await patchAdminOrder(getSupabaseAdmin(), id, patch);
     logger.info(`[swag/admin/orders] ${admin} patched order ${id}: ${Object.keys(patch).join(', ')}`);
     return res.status(200).json({ order: toAdminOrderView(row) });

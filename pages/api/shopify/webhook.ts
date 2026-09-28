@@ -33,7 +33,7 @@
  * orders/fulfilled, fulfillments/create, fulfillments/update
  *               shipping happens in Shopify and flows back: every row that
  *               carries the order's GID (card line items and USDC mirrors
- *               alike) goes paid → shipped and takes the tracking number, URL
+ *               alike) goes paid or in_production → shipped and takes the tracking number, URL
  *               and carrier into shipping.tracking. Rows already shipped only
  *               pick up new tracking; the status trigger owns the rest.
  */
@@ -47,6 +47,7 @@ import {
   OrderError,
   resolveVariantBySku,
 } from '../../../lib/swag/orders';
+import { sendClaimInvite } from '../../../lib/swag/email';
 import { MIRROR_GATEWAY, MIRROR_TAG } from '../../../lib/swag/shopifyMirror';
 import { orderRefFor } from '../../../lib/swag/voucher';
 import { logger } from '../../../utils/logger';
@@ -230,6 +231,7 @@ async function onOrderPaid(order: ShopifyOrder) {
   const email = buyerEmail(order);
   const shipping = toShipping(order);
   const result = { created: 0, existing: 0, skipped: 0 };
+  const items: string[] = [];
 
   if (isOwnMirror(order)) {
     // Our own mirror of a USDC purchase coming back to us. The onchain row
@@ -272,6 +274,7 @@ async function onOrderPaid(order: ShopifyOrder) {
         order_ref: orderRefFor(gid, lineItemId),
       });
       result.created += 1;
+      items.push(`${item.title ?? sku}${size ? ` · ${size}` : ''} ×${quantity}`);
     } catch (e) {
       if (e instanceof OrderError && e.status === 409) {
         // Redelivered webhook: the row is already there. That is the point.
@@ -282,6 +285,12 @@ async function onOrderPaid(order: ShopifyOrder) {
     }
   }
 
+  if (result.created > 0) {
+    // Only when this delivery created rows: a redelivery finds them existing
+    // and stays quiet. Best-effort; see lib/swag/email.ts.
+    const invite = await sendClaimInvite({ to: email, shopifyOrderId: gid, items });
+    return { ...result, inviteSent: invite.sent };
+  }
   return result;
 }
 

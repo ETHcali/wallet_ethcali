@@ -14,6 +14,13 @@
  *
  * The chain id is fixed on the transaction (`SWAG.chainId`), never read from
  * the wallet; the server's answer must name the same chain.
+ *
+ * `?email=` comes from the QR on the packing slip and from the order email.
+ * A signed-out visitor with it stays here and gets Privy's login with that
+ * email already typed: one code, and Privy creates the account and the
+ * embedded wallet in the same step. The value only fills a form — ownership is
+ * still the server matching the email Privy *verified*, so a wrong or forged
+ * parameter just means an empty list.
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
@@ -77,9 +84,16 @@ const STEP_LABEL: Record<Step, string> = {
   confirming: 'Confirming…',
 };
 
+const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
 export default function SwagClaimPage() {
   const router = useRouter();
-  const { ready, authenticated, user, getAccessToken } = usePrivy();
+  const { ready, authenticated, user, getAccessToken, login } = usePrivy();
+  const rawEmail = router.query.email;
+  const hintEmail = typeof rawEmail === 'string' && EMAIL.test(rawEmail.trim()) ? rawEmail.trim().toLowerCase() : null;
+  const signInWithHint = useCallback(() => {
+    if (hintEmail) login({ prefill: { type: 'email', value: hintEmail } });
+  }, [hintEmail, login]);
   const { sendTransaction } = useSendTransaction();
   const queryClient = useQueryClient();
 
@@ -89,11 +103,16 @@ export default function SwagClaimPage() {
   const [minted, setMinted] = useState<Record<number, string>>({});
 
   useEffect(() => {
-    if (ready && !authenticated) {
-      // With the destination attached, and `replace` so Back does not bounce.
-      router.replace(`/?next=${encodeURIComponent('/swag/claim')}`);
+    if (!ready || authenticated || !router.isReady) return;
+    if (hintEmail) {
+      // Open the login straight away with the email filled in; the card below
+      // stays as the way back if the modal is closed.
+      signInWithHint();
+      return;
     }
-  }, [ready, authenticated, router]);
+    // With the destination attached, and `replace` so Back does not bounce.
+    router.replace(`/?next=${encodeURIComponent('/swag/claim')}`);
+  }, [ready, authenticated, router, hintEmail, signInWithHint]);
 
   const ordersQuery = useQuery({
     queryKey: ['swag-orders', user?.id],
@@ -166,6 +185,27 @@ export default function SwagClaimPage() {
   );
 
   if (!ready) return <Loading fullScreen text="Loading…" />;
+  if (!authenticated && hintEmail) {
+    return (
+      <div className="min-h-screen bg-surface-void">
+        <Navigation />
+        <Layout>
+          <div className="mx-auto max-w-md rounded-card border border-line-hairline bg-surface-slab p-6 text-center">
+            <h1 className="text-xl font-bold text-content-primary">Reclama tu coleccionable digital</h1>
+            <p className="mt-2 text-sm text-content-muted">
+              Entra con <span className="break-all text-content-secondary">{hintEmail}</span>, el correo de tu compra. Te enviamos
+              un código; tu cuenta y tu wallet se crean en ese paso.
+            </p>
+            <div className="mt-5">
+              <Button onClick={signInWithHint} fullWidth>
+                Continuar con este correo
+              </Button>
+            </div>
+          </div>
+        </Layout>
+      </div>
+    );
+  }
   if (!authenticated) return <Loading fullScreen text="Redirecting…" />;
 
   const orders = ordersQuery.data ?? [];

@@ -12,6 +12,7 @@
  */
 import { useQuery } from '@tanstack/react-query';
 import { swag1155Abi } from '../frontend/abis/swag';
+import { FULFILLMENT_ROLE } from '../lib/swag/roles';
 import FaucetManagerABI from '../frontend/abis/FaucetManager.json';
 import ZKPassportNFTABI from '../frontend/abis/ZKPassportNFT.json';
 import DonationVaultABI from '../frontend/abis/DonationVault.json';
@@ -21,6 +22,8 @@ import { useActiveWallet } from './useActiveWallet';
 
 export interface AdminStatus {
   isSwagAdmin: boolean;
+  /** FULFILLMENT_ROLE on the collection: the order desk, nothing else. */
+  isSwagFulfilment: boolean;
   isFaucetAdmin: boolean;
   isFaucetSuperAdmin: boolean;
   isZKPassportOwner: boolean;
@@ -31,6 +34,7 @@ export interface AdminStatus {
 
 const NONE: AdminStatus = {
   isSwagAdmin: false,
+  isSwagFulfilment: false,
   isFaucetAdmin: false,
   isFaucetSuperAdmin: false,
   isZKPassportOwner: false,
@@ -44,6 +48,7 @@ function withAny(status: Omit<AdminStatus, 'hasAnyAdmin'>): AdminStatus {
     ...status,
     hasAnyAdmin:
       status.isSwagAdmin ||
+      status.isSwagFulfilment ||
       status.isFaucetAdmin ||
       status.isFaucetSuperAdmin ||
       status.isZKPassportOwner ||
@@ -61,11 +66,16 @@ async function readAdminStatus(chain: ChainInfo, wallet: `0x${string}`): Promise
   const read = (address: `0x${string}`, abi: unknown, functionName: string, args?: unknown[]) =>
     client.readContract({ address, abi, functionName, args } as any) as Promise<unknown>;
 
-  const [isSwagAdmin, isFaucetAdmin, isFaucetSuperAdmin, owner, isDonationAdmin, isDonationSuperAdmin] =
+  const [isSwagAdmin, isSwagFulfilment, isFaucetAdmin, isFaucetSuperAdmin, owner, isDonationAdmin, isDonationSuperAdmin] =
     await Promise.all([
       Swag1155
         ? client
             .readContract({ address: Swag1155, abi: swag1155Abi, functionName: 'isAdmin', args: [wallet] })
+            .catch(() => false)
+        : false,
+      Swag1155
+        ? client
+            .readContract({ address: Swag1155, abi: swag1155Abi, functionName: 'hasRole', args: [FULFILLMENT_ROLE, wallet] })
             .catch(() => false)
         : false,
       FaucetManager ? asBool(read(FaucetManager, FaucetManagerABI, 'isAdmin', [wallet])) : false,
@@ -77,6 +87,7 @@ async function readAdminStatus(chain: ChainInfo, wallet: `0x${string}`): Promise
 
   return withAny({
     isSwagAdmin: Boolean(isSwagAdmin),
+    isSwagFulfilment: Boolean(isSwagFulfilment),
     isFaucetAdmin,
     isFaucetSuperAdmin,
     isZKPassportOwner: typeof owner === 'string' && owner.toLowerCase() === wallet.toLowerCase(),

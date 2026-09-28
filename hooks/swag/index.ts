@@ -39,6 +39,12 @@ export {
   useSwagStock,
   useSwagCollectionState,
   useSwagAdminTx,
+  useSwagAdminBatch,
+  useStartSwagBatch,
+  useSwagStaff,
+  useResolveStaffEmail,
+  useRecordStaff,
+  useForgetStaff,
   looksLikeAddressInput,
   resolveAddressInput,
 } from './useSwagAdmin';

@@ -103,11 +103,11 @@ export default function AdminOverviewPage() {
   const { data: campaigns = [], isLoading } = useActiveCampaigns(chainId);
   const { isPaused, isSuperAdmin } = useDonationAdmin(chainId);
   // Other areas are linked when the wallet holds the role on that contract.
-  const { isSwagAdmin, isFaucetAdmin, isFaucetSuperAdmin, isZKPassportOwner } = useAdminRoles();
+  const { isSwagAdmin, isSwagFulfilment, isFaucetAdmin, isFaucetSuperAdmin, isZKPassportOwner } = useAdminRoles();
 
   const otherAreas = [
     { href: '/faucet/admin', label: 'Faucet', shown: isFaucetAdmin || isFaucetSuperAdmin },
-    { href: '/swag/admin', label: 'Swag', shown: isSwagAdmin },
+    { href: '/swag/admin', label: 'Swag', shown: isSwagAdmin || isSwagFulfilment },
     { href: '/sybil/admin', label: 'Identity', shown: isZKPassportOwner },
   ].filter((a) => a.shown);
 

@@ -145,10 +145,14 @@ Each domain (faucet, swag) has:
 - Swag UI never reads the wallet's network (nothing does — see § Chains). `hooks/useRequireChain.ts`
   gives `{ ready, switching, switchTo }` and the only chain UI is the "Switch to Ethereum" primary button
   shown right before signing, plus the footer line "Ethereum · USDC · ETH Cali Swag 2026".
-- **Admin surface is `/swag/admin`** (Orders · Stock · Collection; `components/swag/Admin*.tsx`,
-  `hooks/swag/useSwagAdmin.ts`). Its API lives under `pages/api/swag/admin/*` behind
-  `lib/swag/requireSwagAdmin.ts` — same three steps as `lib/adminAuth.ts` but the authority is
-  `isAdmin()` on the **swag collection**, not the Ethereum DonationVault. Onchain writes go through
+- **Admin surface is `/swag/admin`** (This week · Orders for staff; Stock · Collection · Team for
+  admins; `components/swag/Admin*.tsx`, `hooks/swag/useSwagAdmin.ts`). Its API lives under
+  `pages/api/swag/admin/*` behind `lib/swag/requireSwagAdmin.ts` — same three steps as
+  `lib/adminAuth.ts` but the authority is the **swag collection**: `requireSwagStaff` (ADMIN_ROLE or
+  FULFILLMENT_ROLE, `lib/swag/roles.ts`), `requireSwagAdmin`, `requireSwagSuperAdmin`
+  (DEFAULT_ADMIN_ROLE), across every linked wallet, embedded included — staff added by email
+  sign in with a code. `public.swag_staff` names them and grants nothing. Weekly batch window:
+  `lib/swag/batch.ts` (Tue 12:00 Bogotá cutoff, Thu dispatch). Onchain writes go through
   `useSwagAdminTx` (one instance per button: `submitting` + `cooldown`, cleared in `finally`).
   Card prices are re-pushed daily by `pages/api/cron/swag-prices.ts` (Vercel cron 12:00 UTC,
   `CRON_SECRET`), which shares `fetchTrm`/`copPrice`/`repriceDesign` in `lib/shopify.mjs` with

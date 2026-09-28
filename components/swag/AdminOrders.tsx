@@ -1,6 +1,8 @@
 /**
  * The order desk: every order through every channel, with what the warehouse
- * needs and the three moves an operator can make on a row.
+ * needs and the moves an operator can make on a row. FULFILLMENT_ROLE sees
+ * start production, shipped and delivered; cancelling and the voucher cancel
+ * are ADMIN_ROLE only (the API and the contract refuse them otherwise).
  *
  * Status changes are database writes and go through PATCH; the trigger there
  * decides which moves are legal and its refusal is shown verbatim. The one
@@ -28,6 +30,7 @@ import { CARD, FIELD, LABEL, Pill, Spinner, TxButton, buttonClass, ChainGate } f
 
 const STATUS_TONE: Record<SwagOrderStatus, { label: string; tone: 'pending' | 'brand' | 'confirmed' | 'reverted' }> = {
   paid: { label: 'Paid', tone: 'pending' },
+  in_production: { label: 'In production', tone: 'pending' },
   shipped: { label: 'Shipped', tone: 'brand' },
   delivered: { label: 'Delivered', tone: 'confirmed' },
   cancelled: { label: 'Cancelled', tone: 'reverted' },
@@ -83,7 +86,7 @@ function ShippingBlock({ order }: { order: SwagAdminOrderView }) {
   );
 }
 
-function OrderRow({ order }: { order: SwagAdminOrderView }) {
+function OrderRow({ order, canAdmin }: { order: SwagAdminOrderView; canAdmin: boolean }) {
   const patch = usePatchSwagOrder();
   const voucherTx = useSwagAdminTx();
 
@@ -91,6 +94,7 @@ function OrderRow({ order }: { order: SwagAdminOrderView }) {
   const [askTracking, setAskTracking] = useState(false);
   const [tracking, setTracking] = useState(order.shipping.tracking ?? '');
   // One flag per action. A shared flag would relabel the wrong button.
+  const [producing, setProducing] = useState(false);
   const [shipping, setShipping] = useState(false);
   const [delivering, setDelivering] = useState(false);
   const [cancelling, setCancelling] = useState(false);
@@ -129,7 +133,9 @@ function OrderRow({ order }: { order: SwagAdminOrderView }) {
   };
 
   const status = STATUS_TONE[order.status];
-  const busy = shipping || delivering || cancelling;
+  const busy = producing || shipping || delivering || cancelling;
+  const open = order.status === 'paid' || order.status === 'in_production';
+  const showVoucher = canAdmin && order.voucherNeedsCancel;
 
   return (
     <li className={CARD}>
@@ -194,7 +200,7 @@ function OrderRow({ order }: { order: SwagAdminOrderView }) {
         </div>
       )}
 
-      {(order.status === 'paid' || order.status === 'shipped' || order.voucherNeedsCancel) && (
+      {(open || order.status === 'shipped' || showVoucher) && (
         <div className="mt-4 space-y-3 border-t border-line-hairline pt-4">
           {askTracking && (
             <label className="block max-w-md">
@@ -213,11 +219,22 @@ function OrderRow({ order }: { order: SwagAdminOrderView }) {
 
           <div className="flex flex-wrap gap-2">
             {order.status === 'paid' && !askTracking && (
-              <button type="button" onClick={() => setAskTracking(true)} disabled={busy} className={buttonClass('primary')}>
+              <button
+                type="button"
+                onClick={() => void act(setProducing, { id: order.id, status: 'in_production' })}
+                disabled={busy}
+                className={buttonClass('primary')}
+              >
+                {producing && <Spinner />}
+                {producing ? 'Starting…' : 'Start production'}
+              </button>
+            )}
+            {open && !askTracking && (
+              <button type="button" onClick={() => setAskTracking(true)} disabled={busy} className={buttonClass(order.status === 'paid' ? 'secondary' : 'primary')}>
                 Mark shipped
               </button>
             )}
-            {order.status === 'paid' && askTracking && (
+            {open && askTracking && (
               <>
                 <button
                   type="button"
@@ -244,7 +261,7 @@ function OrderRow({ order }: { order: SwagAdminOrderView }) {
                 {delivering ? 'Marking delivered…' : 'Mark delivered'}
               </button>
             )}
-            {(order.status === 'paid' || order.status === 'shipped') && (
+            {canAdmin && (open || order.status === 'shipped') && (
               <button
                 type="button"
                 onClick={() => {
@@ -261,7 +278,7 @@ function OrderRow({ order }: { order: SwagAdminOrderView }) {
             )}
           </div>
 
-          {order.voucherNeedsCancel && (
+          {showVoucher && (
             <div className="rounded-chip border border-signal-pending/40 bg-signal-pending/10 p-3">
               <p className="mb-2 text-xs text-content-secondary">
                 This order was refunded after a voucher was issued. Until <span className="font-mono">cancelOrder</span> runs on
@@ -286,7 +303,7 @@ function OrderRow({ order }: { order: SwagAdminOrderView }) {
 
 const SELECT = `${FIELD} appearance-none`;
 
-export function AdminOrders() {
+export function AdminOrders({ canAdmin }: { canAdmin: boolean }) {
   const [filters, setFilters] = useState<AdminOrderFilters>({ status: '', channel: '', q: '' });
   const [qInput, setQInput] = useState('');
 
@@ -308,6 +325,7 @@ export function AdminOrders() {
           <select value={filters.status} onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value as AdminOrderFilters['status'] }))} className={SELECT}>
             <option value="">All</option>
             <option value="paid">Paid</option>
+            <option value="in_production">In production</option>
             <option value="shipped">Shipped</option>
             <option value="delivered">Delivered</option>
             <option value="cancelled">Cancelled</option>
@@ -338,7 +356,7 @@ export function AdminOrders() {
 
       <ul className="space-y-3">
         {orders.map((order) => (
-          <OrderRow key={order.id} order={order} />
+          <OrderRow key={order.id} order={order} canAdmin={canAdmin} />
         ))}
       </ul>
 

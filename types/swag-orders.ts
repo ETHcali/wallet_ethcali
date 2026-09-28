@@ -8,7 +8,7 @@
  */
 
 export type SwagOrderChannel = 'onchain' | 'shopify' | 'event';
-export type SwagOrderStatus = 'paid' | 'shipped' | 'delivered' | 'cancelled';
+export type SwagOrderStatus = 'paid' | 'in_production' | 'shipped' | 'delivered' | 'cancelled';
 export type SwagSize = 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL';
 
 export const SWAG_SIZES: readonly SwagSize[] = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
@@ -231,7 +231,7 @@ export interface SwagAdminOrdersResponse {
 /** PATCH /api/swag/admin/orders/[id] */
 export interface SwagAdminOrderPatchBody {
   /** Goes through the swag_orders_guard_status trigger; a refused move is a 409. */
-  status?: Extract<SwagOrderStatus, 'shipped' | 'delivered' | 'cancelled'>;
+  status?: Extract<SwagOrderStatus, 'in_production' | 'shipped' | 'delivered' | 'cancelled'>;
   /** Stored as shipping.tracking. Empty string removes it. */
   tracking?: string;
   /** Replaces notes. Send the existing text plus the new line to append. */
@@ -256,6 +256,17 @@ export interface SwagAdminTokenStock {
 
 /** GET /api/swag/admin/summary */
 export interface SwagAdminSummary {
+  /**
+   * The caller's level, read from the collection across every linked wallet
+   * (the embedded one included). Presentation only — each route re-checks.
+   */
+  viewer: {
+    role: 'admin' | 'fulfilment';
+    /** Holds DEFAULT_ADMIN_ROLE: may grant and revoke staff. */
+    superAdmin: boolean;
+    /** The wallet that carries the role. */
+    wallet: string;
+  };
   counts: {
     byStatus: Record<SwagOrderStatus, number>;
     byChannel: Record<SwagOrderChannel, number>;
@@ -277,4 +288,72 @@ export interface SwagAdminSummary {
     /** orderClaimed(orderRef) on the collection — true once claim() or cancelOrder() ran. */
     closedOnChain: boolean;
   }>;
+}
+
+/** GET /api/swag/admin/batch — the window lib/swag/batch.ts computes, and its orders. */
+export interface SwagAdminBatchResponse {
+  batch: {
+    /** ISO, UTC. Orders created before it are in this batch. */
+    cutoff: string;
+    /** Bogotá calendar date the batch is handed to the carrier. */
+    dispatchDate: string;
+    phase: 'collecting' | 'producing';
+  };
+  /** paid and in_production orders created before the cutoff, oldest first. */
+  orders: SwagAdminOrderView[];
+  /** Open orders created after the cutoff, waiting for next week. */
+  later: number;
+  /** More orders than the view returns; print from the order list instead. */
+  truncated: boolean;
+}
+
+/** POST /api/swag/admin/batch { action: 'start' } */
+export interface SwagAdminBatchStartResponse {
+  batch: SwagAdminBatchResponse['batch'];
+  /** Order ids moved paid → in_production. */
+  moved: number[];
+}
+
+// ── Staff (pages/api/swag/admin/staff*) ─────────────────────────────────────
+
+export type SwagStaffRole = 'admin' | 'fulfilment';
+
+/** A swag_staff row with the chain's current answer beside it. */
+export interface SwagStaffView {
+  address: string;
+  label: string;
+  email: string | null;
+  /** The role recorded when it was granted. */
+  role: SwagStaffRole;
+  grantedBy: string;
+  grantTxHash: string | null;
+  createdAt: string;
+  /** Read from the collection now. The row means nothing without these. */
+  onChain: { admin: boolean; fulfilment: boolean; superAdmin: boolean } | null;
+}
+
+export interface SwagStaffListResponse {
+  staff: SwagStaffView[];
+}
+
+/** POST /api/swag/admin/staff/resolve { email } */
+export interface SwagStaffResolveResponse {
+  address: string;
+  did: string;
+  /** The Privy account did not exist and was created by this call. */
+  created: boolean;
+}
+
+/** POST /api/swag/admin/staff — record a grant that is already on chain. */
+export interface SwagStaffRecordBody {
+  address: string;
+  role: SwagStaffRole;
+  label: string;
+  email?: string;
+  did?: string;
+  txHash?: string;
+}
+
+export interface SwagStaffRecordResponse {
+  member: SwagStaffView;
 }

@@ -59,6 +59,7 @@ const AdminShell: React.FC<AdminShellProps> = ({ active, title, subtitle, childr
 
   const {
     isSwagAdmin,
+    isSwagFulfilment,
     isFaucetAdmin,
     isFaucetSuperAdmin,
     isZKPassportOwner,
@@ -70,7 +71,7 @@ const AdminShell: React.FC<AdminShellProps> = ({ active, title, subtitle, childr
     overview: true,
     donations: isDonationAdmin || isDonationSuperAdmin,
     faucet: isFaucetAdmin || isFaucetSuperAdmin,
-    swag: isSwagAdmin,
+    swag: isSwagAdmin || isSwagFulfilment,
     // Artwork is production state, not an on-chain role. Anyone who can reach
     // an admin area can prepare artwork; the API still verifies ADMIN_ROLE.
     artwork: true,

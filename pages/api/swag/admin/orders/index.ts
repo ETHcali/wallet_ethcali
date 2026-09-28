@@ -6,12 +6,13 @@
  * Every order through every channel, newest first, 50 at a time. Unlike
  * /api/swag/orders this returns the shipping address and the buyer's email,
  * because the caller is the person putting the parcel in the post — and the
- * caller is that person because requireSwagAdmin asked the collection,
+ * caller is that person because requireSwagStaff asked the collection
+ * (ADMIN_ROLE or FULFILLMENT_ROLE),
  * not because a table said so.
  */
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getSupabaseAdmin } from '../../../../../lib/supabase';
-import { requireSwagAdmin } from '../../../../../lib/swag/requireSwagAdmin';
+import { requireSwagStaff } from '../../../../../lib/swag/requireSwagAdmin';
 import { sendAuthError } from '../../../../../lib/swag/requireUser';
 import { listAdminOrders, OrderError, parseAdminOrderFilters } from '../../../../../lib/swag/orders';
 import { logger } from '../../../../../utils/logger';
@@ -26,7 +27,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
   }
 
   try {
-    await requireSwagAdmin(req);
+    await requireSwagStaff(req);
   } catch (e) {
     return sendAuthError(res, e);
   }

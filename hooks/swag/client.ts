@@ -63,6 +63,8 @@ export const swagKeys = {
   // Admin surface (/swag/admin)
   adminOrders: (filters: string) => ['swag-admin-orders', filters] as const,
   adminSummary: ['swag-admin-summary'] as const,
+  adminBatch: ['swag-admin-batch'] as const,
+  adminStaff: ['swag-admin-staff'] as const,
   adminStock: (tokenIds: readonly number[]) => ['swag-admin-stock', tokenIds.join(',')] as const,
   adminRoles: (account?: string) => ['swag-admin-roles', account?.toLowerCase()] as const,
 };

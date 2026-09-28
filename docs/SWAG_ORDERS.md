@@ -138,23 +138,102 @@ normal path is Shopify.
 
 ## Status
 
-`paid → shipped → delivered`; `cancelled` from `paid` or `shipped`. The trigger
-`swag_orders_guard_status` refuses everything else, including `paid → delivered`
-and any move out of `cancelled`.
+`paid → in_production → shipped → delivered`, with `paid → shipped` allowed (a
+unit already in stock, an event handover); `cancelled` from `paid`,
+`in_production` or `shipped`. The trigger `swag_orders_guard_status` refuses
+everything else, including `paid → delivered` and any move out of `cancelled`
+(`20260928120000_swag_order_desk_and_staff.sql`). The Shopify fulfilment
+webhooks move `paid` and `in_production` rows to `shipped`.
+
+## The weekly batch
+
+Merch is printed on demand. `lib/swag/batch.ts` fixes the week, in Bogotá time:
+
+| When | What |
+|---|---|
+| Tuesday 12:00 | cutoff: orders created before it are this week's batch |
+| Tuesday–Wednesday | print and pack |
+| Thursday | carrier pickup (Coordinadora takes same-day requests before 11:00) |
+
+The worst case, paid Tuesday 12:01, leaves nine days later, inside the store's
+"ships in 1–10 days". **This week** in `/swag/admin` shows the dispatch date,
+the paid / in production / next-week counts, and:
+
+- **Send N paid orders to production**: `POST /api/swag/admin/batch
+  { action: 'start' }`. Every `paid` order before the cutoff goes to
+  `in_production` in one statement. The server computes the cutoff; the
+  request cannot name one.
+- **Print sheet**: units per design × size, for the printer.
+- **Print packing slips**: one per order with the address, the item and size,
+  and for card orders a QR code to `/swag/claim?email=<checkout email>`.
+
+## The team
+
+Three levels, all AccessControl on the collection:
+
+| Level | Role | Can |
+|---|---|---|
+| Super admin | `DEFAULT_ADMIN_ROLE` (the ops key `0x3B89…415B`) | add and remove people |
+| Admin | `ADMIN_ROLE` | everything below, plus Stock, Collection, Team (read), cancelling orders, the voucher cancel |
+| Fulfilment | `FULFILLMENT_ROLE` = `keccak256("FULFILLMENT_ROLE")` | This week and Orders: addresses, start production, shipped, delivered |
+
+`FULFILLMENT_ROLE` gates no function in `Swag1155`. It is a plain AccessControl
+role whose admin is `DEFAULT_ADMIN_ROLE` (`getRoleAdmin` reads `0x00` on the
+live clone, checked 2026-09-28), so `grantRole` / `hasRole` work without a
+redeploy. `lib/swag/requireSwagAdmin.ts` reads all three across every wallet the
+caller has linked: `requireSwagStaff` (admin or fulfilment),
+`requireSwagAdmin`, `requireSwagSuperAdmin`.
+
+**Adding someone**: Team → email or wallet, name, level → **Add to team**:
+
+1. An email goes to `POST /api/swag/admin/staff/resolve`
+   (`lib/swag/privyUsers.ts`). This finds the Privy account or creates it with
+   an embedded Ethereum wallet, and returns that wallet. A `0x` or `name.eth`
+   is used as is.
+2. The connected wallet (it must hold `DEFAULT_ADMIN_ROLE`) sends `addAdmin`
+   or `grantRole(FULFILLMENT_ROLE, …)`. This is skipped if the chain already
+   shows the role.
+3. `POST /api/swag/admin/staff` writes the name into `public.swag_staff`,
+   **only after the role reads true on chain**.
+
+Someone added by email then opens `app.ethcali.org/swag/admin`, signs in with
+the one-time code, and is recognised through their embedded wallet. They
+install nothing. **Remove** is the reverse: the revoke transaction, then
+`DELETE /api/swag/admin/staff?address=`, which refuses while a role is still
+held. `swag_staff` is a display registry with no client access; it never
+decides anything.
+
+## Card buyers and the claim email
+
+On `orders/paid`, when the delivery created rows, `lib/swag/email.ts` sends one
+email per Shopify order through Resend. It says the order is printed on demand
+and ships in 1–10 days, and links the claim page with the email pre-filled.
+The idempotency key is `swag-claim-invite/<order id>`. It is a logged no-op
+until `RESEND_API_KEY` and `SWAG_EMAIL_FROM` are set, and a failure never fails
+the webhook.
+
+`/swag/claim?email=…` opens Privy's login with that email typed in
+(`login({ prefill })`). One code creates the account and the wallet. The
+parameter only fills the form: ownership is still the server matching the email
+Privy verified.
 
 ## Operations (`/swag/admin`)
 
-The order desk is `app.ethcali.org/swag/admin`. The menu shows it to a wallet
-that `isAdmin()` on the collection says yes for; every call behind it is checked
-again — `pages/api/swag/admin/*` by `lib/swag/requireSwagAdmin.ts` (Privy token
-→ linked wallets → `isAdmin()` on the collection), and every onchain
-button by the contract itself. Nothing on the page grants anything.
+The order desk is `app.ethcali.org/swag/admin`. The page opens for anyone
+holding ADMIN_ROLE or FULFILLMENT_ROLE through any linked wallet, as read by
+`GET /api/swag/admin/summary` (which returns `viewer.role`). Every call behind it
+is checked again: `pages/api/swag/admin/*` by `lib/swag/requireSwagAdmin.ts`
+(Privy token → linked wallets → the role on the collection), and every onchain
+button by the contract itself. Nothing on the page grants anything. Tabs: This
+week and Orders for everyone; Stock, Collection and Team for admins.
 
 | Route | What it does |
 |---|---|
 | `GET /api/swag/admin/orders?status=&channel=&q=&cursor=` | every order, newest first, 50 per page, address and email included; `q` matches SKU, email or wallet |
-| `PATCH /api/swag/admin/orders/[id]` `{ status?, tracking?, notes? }` | status through the transition trigger (refusal → 409 with its sentence); `tracking` stored in `shipping.tracking`; `notes` replaced |
-| `GET /api/swag/admin/summary` | counts by status and channel, `getVariant` + USDC price per live token, `paused`, `treasury`, and the voucher-cancel queue with `orderClaimed(orderRef)` per row |
+| `PATCH /api/swag/admin/orders/[id]` `{ status?, tracking?, notes? }` | status through the transition trigger (refusal → 409 with its sentence); `tracking` stored in `shipping.tracking`; `notes` replaced. Fulfilment may set `in_production`, `shipped`, `delivered` and tracking; `cancelled` and `notes` need ADMIN_ROLE |
+| `GET` / `POST /api/swag/admin/batch` | this week's window and open orders / send the paid ones to production (staff) |
+| `GET` / `POST` / `DELETE /api/swag/admin/staff`, `POST …/staff/resolve` | the team: list (admin), record, forget and resolve an email (DEFAULT_ADMIN) |
+| `GET /api/swag/admin/summary` | the caller's `viewer` level, counts by status and channel, `getVariant` + USDC price per live token, `paused`, `treasury`, and the voucher-cancel queue with `orderClaimed(orderRef)` per row |
 
 **Ship a parcel.** In Shopify: the order (card orders natively; USDC orders are
 the ones tagged `usdc-onchain`) → fulfil, with tracking. The `orders/fulfilled`
@@ -254,7 +333,9 @@ Run `create` only against a live URL: Shopify retries a failing endpoint for
 | `SHOPIFY_STORE_DOMAIN` | `qpsxyq-9g.myshopify.com` |
 | `SHOPIFY_WEBHOOK_SECRET` | only for hand-made subscriptions (see above); app-owned ones verify with `SHOPIFY_CLIENT_SECRET` |
 | `SWAG_VOUCHER_SIGNER_KEY` | the signer's private key; its address (`0x3977…62e6`) holds `SIGNER_ROLE` — `scripts/swag-voucher-selftest.mjs` checks both |
-| `SWAG_COLLECTION_ADDRESS` | optional; defaults to `0xA5C02Ee3029Ce7f0FdD147734D11905E3cA99479` |
-| `NEXT_PUBLIC_BASE_RPC_URL` | optional; the server reads receipts through it |
+| `SWAG_COLLECTION_ADDRESS` | optional, for a staging collection; defaults to the live clone in `frontend/swag-collection.json` (Ethereum `0x5a10…79E7`) |
+| `RESEND_API_KEY` | optional; the claim invite is off without it |
+| `SWAG_EMAIL_FROM` | optional; e.g. `ETH Cali <tienda@ethcali.org>`, on a domain verified in Resend |
+| `SWAG_APP_URL` | optional; defaults to `https://app.ethcali.org` |
 | `CRON_SECRET` | bearer token Vercel sends to `/api/cron/swag-prices`; the route refuses everything when unset |
 | `SHOPIFY_CLIENT_ID`, `SHOPIFY_CLIENT_SECRET`, `SHOPIFY_API_VERSION` (`2026-07`) | the cron, the scripts **and `POST /api/swag/orders` (the mirror)** exchange them for a 24h Admin API token; the client secret also verifies app-owned webhooks |

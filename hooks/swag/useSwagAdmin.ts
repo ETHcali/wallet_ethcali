@@ -29,12 +29,18 @@ import { useRequireChain } from '../useRequireChain';
 import { SWAG, swagClient, swagKeys } from './client';
 import { translateSwagError } from './swagErrors';
 import type {
+  SwagAdminBatchResponse,
+  SwagAdminBatchStartResponse,
   SwagAdminOrderPatchBody,
   SwagAdminOrderPatchResponse,
   SwagAdminOrdersResponse,
   SwagAdminSummary,
   SwagOrderChannel,
   SwagOrderStatus,
+  SwagStaffListResponse,
+  SwagStaffRecordBody,
+  SwagStaffRecordResponse,
+  SwagStaffResolveResponse,
 } from '../../types/swag-orders';
 
 // ── Authenticated fetch ─────────────────────────────────────────────────────
@@ -103,7 +109,89 @@ export function usePatchSwagOrder() {
       Promise.all([
         queryClient.invalidateQueries({ queryKey: ['swag-admin-orders'] }),
         queryClient.invalidateQueries({ queryKey: swagKeys.adminSummary }),
+        queryClient.invalidateQueries({ queryKey: swagKeys.adminBatch }),
       ]),
+  });
+}
+
+// ── The weekly batch ────────────────────────────────────────────────────────
+
+/** This week's window and the open orders in it. */
+export function useSwagAdminBatch() {
+  const { authenticated } = usePrivy();
+  const adminFetch = useAdminFetch();
+  return useQuery({
+    queryKey: swagKeys.adminBatch,
+    queryFn: () => adminFetch<SwagAdminBatchResponse>('/api/swag/admin/batch'),
+    enabled: authenticated,
+    staleTime: 1000 * 20,
+    retry: 1,
+  });
+}
+
+/** paid → in_production for every order before the cutoff. The server picks the cutoff. */
+export function useStartSwagBatch() {
+  const adminFetch = useAdminFetch();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      adminFetch<SwagAdminBatchStartResponse>('/api/swag/admin/batch', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'start' }),
+      }),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: swagKeys.adminBatch }),
+        queryClient.invalidateQueries({ queryKey: ['swag-admin-orders'] }),
+        queryClient.invalidateQueries({ queryKey: swagKeys.adminSummary }),
+      ]),
+  });
+}
+
+// ── The team (names beside on-chain roles) ──────────────────────────────────
+
+export function useSwagStaff(enabled: boolean) {
+  const adminFetch = useAdminFetch();
+  return useQuery({
+    queryKey: swagKeys.adminStaff,
+    queryFn: () => adminFetch<SwagStaffListResponse>('/api/swag/admin/staff'),
+    enabled,
+    staleTime: 1000 * 20,
+    retry: 1,
+  });
+}
+
+/** Email → the Privy embedded wallet to grant to, creating the account if needed. */
+export function useResolveStaffEmail() {
+  const adminFetch = useAdminFetch();
+  return useMutation({
+    mutationFn: (email: string) =>
+      adminFetch<SwagStaffResolveResponse>('/api/swag/admin/staff/resolve', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      }),
+  });
+}
+
+/** Record a member after the grant has confirmed on chain. */
+export function useRecordStaff() {
+  const adminFetch = useAdminFetch();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: SwagStaffRecordBody) =>
+      adminFetch<SwagStaffRecordResponse>('/api/swag/admin/staff', { method: 'POST', body: JSON.stringify(body) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: swagKeys.adminStaff }),
+  });
+}
+
+/** Forget a member after the revoke has confirmed on chain. */
+export function useForgetStaff() {
+  const adminFetch = useAdminFetch();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (address: string) =>
+      adminFetch<{ ok: true }>(`/api/swag/admin/staff?address=${encodeURIComponent(address)}`, { method: 'DELETE' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: swagKeys.adminStaff }),
   });
 }
 

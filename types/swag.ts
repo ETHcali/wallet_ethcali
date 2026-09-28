@@ -71,7 +71,7 @@ export interface SwagProduct {
 
 export type SwagOrderChannel = 'onchain' | 'shopify' | 'event';
 
-export type SwagOrderStatus = 'paid' | 'shipped' | 'delivered' | 'cancelled';
+export type SwagOrderStatus = 'paid' | 'in_production' | 'shipped' | 'delivered' | 'cancelled';
 
 export interface SwagShipping {
   name: string;

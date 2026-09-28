@@ -192,3 +192,51 @@ input:focus {
 html, body {
   overflow-x: clip;
 }
+
+/* The order desk prints its print sheet and packing slips from a portal
+   (components/swag/AdminBatch.tsx). On screen the portal is hidden; on paper it
+   is the only thing on the page, black on white whatever the app theme. */
+#swag-print-root {
+  display: none;
+}
+@media print {
+  body > *:not(#swag-print-root) {
+    display: none !important;
+  }
+  html, body {
+    background: #fff !important;
+  }
+  #swag-print-root {
+    display: block;
+    color: #000;
+    background: #fff;
+    font-size: 11pt;
+  }
+  #swag-print-root .slip {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    border: 1px solid #000;
+    border-radius: 6px;
+    padding: 12pt;
+    margin-bottom: 12pt;
+  }
+  #swag-print-root .slip-page {
+    break-after: page;
+  }
+  #swag-print-root table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  #swag-print-root th,
+  #swag-print-root td {
+    border: 1px solid #000;
+    padding: 4pt 6pt;
+    text-align: left;
+  }
+  #swag-print-root .mono {
+    font-family: ui-monospace, monospace;
+  }
+  #swag-print-root .muted {
+    color: #444;
+  }
+}
