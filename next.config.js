@@ -50,7 +50,7 @@ const nextConfig = {
   // The diploma PDF reads its fonts and the logo from disk; the tracer cannot
   // see a path built at runtime, so name them for the routes that render it.
   outputFileTracingIncludes: {
-    '/api/certificates/**': ['./lib/certificates/fonts/*.ttf', './lib/certificates/logos/*', './public/logo_eth_cali.png'],
+    '/api/certificates/**': ['./lib/certificates/fonts/*.ttf', './lib/certificates/logos/*', './public/logoethcali.png'],
   },
   // Server-side only environment variables (not exposed to client)
   env: {

@@ -23,9 +23,11 @@ export interface CertEvent {
   /** Suggested for LinkedIn's Skills field, which the add-link cannot prefill. */
   skills: string[];
   /**
-   * Printed along the bottom of the diploma, in this order. Files live in
-   * lib/certificates/logos (the same artwork as ethcali.org's sponsor wall,
-   * all drawn for a dark ground). `height` evens out optical size: a square
+   * Printed along the bottom of the diploma, in this order. `file` is in
+   * lib/certificates/logos and must read on white paper: the *-light files
+   * are ethcali.org's sponsor artwork with its white parts recoloured to ink
+   * (colour and transparency untouched). `src` is the original, for the dark
+   * credential page. `height` evens out optical size: a square
    * mark needs more height than a wide wordmark to read the same.
    */
   sponsors: { name: string; file: string; height: number; /** Same artwork on ethcali.org, for the web page. */ src: string }[];
@@ -35,8 +37,9 @@ export interface CertEvent {
  * One entry per hackathon. Adding the next one:
  *   1. an entry here, keyed by the `event` value its rows will carry
  *      (e.g. 'eag-medellin-2027'), with its title, venue, dates and sponsors;
- *   2. each sponsor's logo in lib/certificates/logos — artwork for a dark
- *      ground, PNG (pdf-lib cannot embed progressive JPEGs);
+ *   2. each sponsor's logo in lib/certificates/logos — PNG (pdf-lib cannot
+ *      embed progressive JPEGs), legible on white; white-on-transparent
+ *      artwork needs its white recoloured to ink first;
  *   3. its participants loaded into builder_certificates with that `event`.
  * The diploma, the credential page, LinkedIn and the admin list follow.
  */
@@ -54,10 +57,10 @@ export const CERT_EVENTS: Record<string, CertEvent> = {
     // already heads the diploma.
     sponsors: [
       { name: 'HashKey Chain', file: 'hashkey-chain.png', src: 'https://www.ethcali.org/tour/hashkey-chain.jpg', height: 30 },
-      { name: 'Ethereum Applications Guild', file: 'eag.png', src: 'https://www.ethcali.org/tour/eag.png', height: 26 },
-      { name: 'Ethereum Foundation', file: 'ef-logo.png', src: 'https://www.ethcali.org/tour/ef-logo.png', height: 26 },
+      { name: 'Ethereum Applications Guild', file: 'eag-light.png', src: 'https://www.ethcali.org/tour/eag.png', height: 26 },
+      { name: 'Devcon VIII India', file: 'devcon-viii.png', src: 'https://www.ethcali.org/tour/devcon-viii.webp', height: 36 },
       { name: 'Universidad Icesi', file: 'universidad_icesi.png', src: 'https://www.ethcali.org/universities/universidad_icesi.png', height: 26 },
-      { name: 'Ekinoxis Labs', file: 'ekinoxis.png', src: 'https://www.ethcali.org/tour/ekinoxis.png', height: 34 },
+      { name: 'Ekinoxis Labs', file: 'ekinoxis-light.png', src: 'https://www.ethcali.org/tour/ekinoxis.png', height: 34 },
     ],
   },
 };
