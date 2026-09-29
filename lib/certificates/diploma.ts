@@ -16,7 +16,8 @@
  */
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { PDFDocument, rgb, type PDFFont, type PDFPage } from 'pdf-lib';
+import { PDFArray, PDFDocument, PDFName, PDFString, rgb, type PDFFont, type PDFPage } from 'pdf-lib';
+import QRCode from 'qrcode';
 import fontkit from '@pdf-lib/fontkit';
 import { CERT_EVENTS, credentialUrl, honorLabel, type Honor } from './events';
 
@@ -84,6 +85,21 @@ function spaced(page: PDFPage, text: string, y: number, font: PDFFont, size: num
     page.drawText(c, { x, y, size, font, color });
     x += font.widthOfTextAtSize(c, size) + tracking;
   }
+}
+
+/** A clickable URI annotation over a rectangle of the page. */
+function addLink(doc: PDFDocument, page: PDFPage, url: string, r: { x: number; y: number; w: number; h: number }) {
+  const annot = doc.context.obj({
+    Type: 'Annot',
+    Subtype: 'Link',
+    Rect: [r.x, r.y, r.x + r.w, r.y + r.h],
+    Border: [0, 0, 0],
+    A: { Type: 'Action', S: 'URI', URI: PDFString.of(url) },
+  });
+  const ref = doc.context.register(annot);
+  const existing = page.node.lookupMaybe(PDFName.of('Annots'), PDFArray);
+  if (existing) existing.push(ref);
+  else page.node.set(PDFName.of('Annots'), doc.context.obj([ref]));
 }
 
 const MONTHS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -159,7 +175,18 @@ export async function renderDiploma(input: DiplomaInput): Promise<Uint8Array> {
     page.drawText(label, { x: cx - bold.widthOfTextAtSize(label, 7.5) / 2, y: colY + 16, size: 7.5, font: bold, color: FAINT });
     page.drawText(value, { x: cx - regular.widthOfTextAtSize(value, 11) / 2, y: colY, size: 11, font: regular, color: INK });
   });
-  centred(page, `Verify at ${credentialUrl(input.credentialId)}`, 136, regular, 8.5, FAINT);
+  // Verification: a QR to the credential page in the top-right corner, and
+  // the QR itself is a link in the PDF — a printed copy scans, a digital one clicks.
+  const verifyUrl = credentialUrl(input.credentialId);
+  const qrPng = await QRCode.toBuffer(verifyUrl, { type: 'png', errorCorrectionLevel: 'M', margin: 1, width: 400, color: { dark: '#0C0D16', light: '#FDFDFF' } });
+  const qr = await doc.embedPng(qrPng);
+  const Q = 64;
+  const qx = W - 40 - Q;
+  const qy = H - 44 - Q;
+  page.drawImage(qr, { x: qx, y: qy, width: Q, height: Q });
+  const cap = 'SCAN TO VERIFY';
+  page.drawText(cap, { x: qx + (Q - bold.widthOfTextAtSize(cap, 5.5)) / 2, y: qy - 9, size: 5.5, font: bold, color: FAINT });
+  addLink(doc, page, verifyUrl, { x: qx, y: qy - 11, w: Q, h: Q + 11 });
 
   // Sponsors: a hairline rule, a label, one row of logos on the paper.
   if (ev.sponsors.length > 0) {
