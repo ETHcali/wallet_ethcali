@@ -81,9 +81,10 @@ const AdminShell: React.FC<AdminShellProps> = ({ active, title, subtitle, childr
     // Site content is editorial, not an on-chain role, so the menu does not
     // gate it. The API still checks ADMIN_ROLE before it writes anything.
     content: true,
-    // Participants' emails live here. Same authority as the API behind it:
-    // ADMIN_ROLE on the DonationVault (lib/adminAuth.ts).
-    certificates: isDonationAdmin || isDonationSuperAdmin,
+    // Gated by ADMIN_ROLE on BuilderCertificate, which the menu does not read;
+    // like content, it is listed for everyone who reaches the admin area and
+    // the API refuses anyone the contract does not know.
+    certificates: true,
   };
 
   // The current section stays listed even if the role read is still resolving,
