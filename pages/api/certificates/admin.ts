@@ -37,7 +37,7 @@ export default async function handler(
       .order('project_name')
       .order('member_name');
     if (error) throw new Error(error.message);
-    const rows = data as unknown as (CertificateRow & { emails: string[]; checked_in_at: string | null; metadata_cid: string | null })[];
+    const rows = data as unknown as (CertificateRow & { emails: string[]; checked_in_at: string | null; metadata_cid: string | null; planned_token_id: number | string | null })[];
     return res.status(200).json({ certificates: rows.map(toAdminView) });
   } catch (e) {
     logger.error('certificates: admin list failed', e);

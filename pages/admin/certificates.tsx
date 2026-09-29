@@ -265,7 +265,9 @@ export default function CertificatesAdmin() {
                           </a>
                         </span>
                       ) : (
-                        <span className="mt-1 block text-content-faint">{r.metadataCid ? 'Listo para emitir' : 'Sin metadata'}</span>
+                        <span className="mt-1 block text-content-faint">
+                          {r.metadataCid ? `Listo para emitir · token #${r.plannedTokenId ?? '?'}` : 'Sin metadata'}
+                        </span>
                       )}
                     </td>
                   </tr>
