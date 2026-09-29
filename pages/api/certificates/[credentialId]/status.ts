@@ -13,6 +13,20 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { getSupabaseAdmin } from '../../../../lib/supabase';
 import { getPublicCertificate } from '../../../../lib/certificates/rows';
 import { logger } from '../../../../utils/logger';
+import { publicClientFor } from '../../../../config/chains';
+import { CERT_CHAIN_ID } from '../../../../lib/certificates/nft';
+
+/** The mint's block time, from the chain. A certificate's issue moment is the block's, not a row's. */
+async function blockTime(txHash: string): Promise<string | null> {
+  try {
+    const client = publicClientFor(CERT_CHAIN_ID);
+    const receipt = await client.getTransactionReceipt({ hash: txHash as `0x${string}` });
+    const block = await client.getBlock({ blockNumber: receipt.blockNumber });
+    return new Date(Number(block.timestamp) * 1000).toISOString();
+  } catch {
+    return null;
+  }
+}
 import type { PublicCertificate } from '../../../../types/certificates';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<PublicCertificate | { error: string }>) {
@@ -25,8 +39,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
   try {
     const cert = await getPublicCertificate(getSupabaseAdmin(), raw);
     if (!cert) return res.status(404).json({ error: 'No such certificate' });
+    const issuedAt = cert.issuedTx ? await blockTime(cert.issuedTx) : null;
     res.setHeader('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=300');
-    return res.status(200).json(cert);
+    return res.status(200).json({ ...cert, issuedAt });
   } catch (e) {
     logger.error('certificates: status failed', e);
     return res.status(500).json({ error: 'Could not load the certificate' });

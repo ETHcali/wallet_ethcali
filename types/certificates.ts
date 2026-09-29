@@ -40,6 +40,8 @@ export interface PublicCertificate {
   plannedTokenId: string | null;
   imageCid: string | null;
   metadataCid: string | null;
+  /** ISO time of the mint's block, read from the chain (status route only). */
+  issuedAt?: string | null;
 }
 
 export interface CertificatesResponse {
