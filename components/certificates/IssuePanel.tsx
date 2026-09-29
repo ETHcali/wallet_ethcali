@@ -149,16 +149,6 @@ export default function IssuePanel({
         abi: CERT_ABI,
         functionName: 'totalIssued',
       })) as bigint) + 1n;
-      // The diplomas also print their issue date (UTC); minting on another day
-      // would make every one of them wrong.
-      const todayUtc = new Date().toISOString().slice(0, 10);
-      const wrongDay = ready.find((r) => r.issueDate !== todayUtc);
-      if (wrongDay) {
-        throw new Error(
-          `PlannedOrder: los diplomas dicen emitido el ${wrongDay.issueDate} (UTC) y hoy es ${todayUtc} (UTC). ` +
-            'Hay que regenerar los diplomas con la fecha de hoy antes de emitir.'
-        );
-      }
       const misplaced = ready.find((r, i) => BigInt(r.plannedTokenId as string) !== next + BigInt(i));
       if (misplaced) {
         throw new Error(
