@@ -76,7 +76,7 @@ export default function CredentialPage({ cert }: Props) {
         <article className="rounded-card border-2 border-eth-blue bg-black p-2">
           <div className="rounded-[10px] border border-line-hairline px-5 py-10 text-center sm:px-10 sm:py-14">
             {/* eslint-disable-next-line @next/next/no-img-element -- static brand mark */}
-            <img src="/logo_eth_cali.png" alt="ETH Cali" className="mx-auto h-24 w-auto sm:h-28" />
+            <img src="/logo_eth_cali_white.png" alt="ETH Cali" className="mx-auto h-16 w-auto sm:h-20" />
             <p className="mt-8 text-[11px] font-semibold uppercase tracking-[0.25em] text-eth-blue-text">
               Certificado de builder · Builder certificate
             </p>
