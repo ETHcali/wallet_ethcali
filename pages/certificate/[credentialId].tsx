@@ -150,7 +150,7 @@ export default function CredentialPage({ cert: built }: Props) {
           </div>
         )}
 
-        <div className="mt-3 flex justify-end">
+        <div className="mt-4 flex justify-center">
           <a
             href={`${credentialPdfPath(cert.credentialId)}?download=1`}
             className="inline-flex min-h-tap items-center justify-center rounded-control bg-eth-blue px-5 text-sm font-bold text-on-brand hover:bg-eth-blue-lift"
