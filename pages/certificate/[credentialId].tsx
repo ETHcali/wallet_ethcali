@@ -9,6 +9,10 @@
  * and links to Etherscan, OpenSea and the metadata, so the URL on a profile
  * never has to change.
  *
+ * The NFT panel is filled from /api/certificates/<id>/status in the browser,
+ * because the page cannot be re-rendered on the server (below), and a mint
+ * happens after the build.
+ *
  * Prerendered at build and revalidated, never rendered per request: _app
  * mounts PrivyProvider, and loading @privy-io/react-auth in a Vercel request
  * function fails (its ESM build imports named exports from CommonJS
@@ -18,6 +22,7 @@
 import type { GetStaticPaths, GetStaticProps } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { getSupabaseAdmin } from '../../lib/supabase';
 import { getPublicCertificate } from '../../lib/certificates/rows';
 import {
@@ -64,7 +69,21 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 
 const link = 'text-eth-blue-text hover:underline';
 
-export default function CredentialPage({ cert }: Props) {
+export default function CredentialPage({ cert: built }: Props) {
+  // What can change after the build (the mint) is read live; see the status route.
+  const [cert, setCert] = useState<PublicCertificate>(built);
+  useEffect(() => {
+    let live = true;
+    fetch(`/api/certificates/${built.credentialId}/status`)
+      .then((r) => (r.ok ? (r.json() as Promise<PublicCertificate>) : null))
+      .then((fresh) => {
+        if (live && fresh) setCert(fresh);
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [built.credentialId]);
   const ev = CERT_EVENTS[cert.event];
   const url = credentialUrl(cert.credentialId);
   const title = `${cert.memberName} — ${ev?.credentialName ?? 'Builder certificate'}`;
