@@ -21,7 +21,6 @@
  */
 import type { GetStaticPaths, GetStaticProps } from 'next';
 import Head from 'next/head';
-import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { getSupabaseAdmin } from '../../lib/supabase';
 import { getPublicCertificate } from '../../lib/certificates/rows';
@@ -140,16 +139,25 @@ export default function CredentialPage({ cert: built }: Props) {
 
         {/* The diploma, as pinned — the NFT's own image. */}
         {image ? (
-          <a href={image} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-card border border-line-hairline bg-white shadow-lg">
+          <div className="overflow-hidden rounded-card border border-line-hairline bg-white shadow-lg">
             {/* eslint-disable-next-line @next/next/no-img-element -- IPFS gateway, not a Next image host */}
             <img src={image} alt={`Certificado de builder de ${cert.memberName} — ${cert.projectName}`} className="h-auto w-full" />
-          </a>
+          </div>
         ) : (
           <div className="rounded-card border border-line-hairline bg-surface-slab p-10 text-center">
             <p className="text-3xl font-bold text-content-primary">{cert.memberName}</p>
             <p className="mt-2 text-xl text-eth-blue-text">{cert.projectName}</p>
           </div>
         )}
+
+        <div className="mt-3 flex justify-end">
+          <a
+            href={`${credentialPdfPath(cert.credentialId)}?download=1`}
+            className="inline-flex min-h-tap items-center justify-center rounded-control bg-eth-blue px-5 text-sm font-bold text-on-brand hover:bg-eth-blue-lift"
+          >
+            Descargar diploma (PDF) · Download
+          </a>
+        </div>
 
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           {/* What it certifies */}
@@ -261,28 +269,6 @@ export default function CredentialPage({ cert: built }: Props) {
           </section>
         </div>
 
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-          <a
-            href={`${credentialPdfPath(cert.credentialId)}?download=1`}
-            className="inline-flex min-h-tap items-center justify-center rounded-control bg-eth-blue px-5 text-sm font-bold text-on-brand hover:bg-eth-blue-lift"
-          >
-            Descargar PDF · Download PDF
-          </a>
-          <a
-            href={`https://devfolio.co/projects/${cert.projectSlug}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex min-h-tap items-center justify-center rounded-control border border-line-hairline px-5 text-sm font-semibold text-content-secondary hover:text-content-primary"
-          >
-            Ver el proyecto · See the project ↗
-          </a>
-          <Link
-            href="/certificate"
-            className="inline-flex min-h-tap items-center justify-center rounded-control px-5 text-sm font-semibold text-content-muted hover:text-content-primary"
-          >
-            ¿Es tuyo? Entra · Yours? Sign in
-          </Link>
-        </div>
       </main>
     </div>
   );
