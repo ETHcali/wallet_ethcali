@@ -86,7 +86,7 @@ function spaced(page: PDFPage, text: string, y: number, font: PDFFont, size: num
   }
 }
 
-const MONTHS_ES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+const MONTHS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 export async function renderDiploma(input: DiplomaInput): Promise<Uint8Array> {
   const ev = CERT_EVENTS[input.event];
@@ -116,22 +116,22 @@ export async function renderDiploma(input: DiplomaInput): Promise<Uint8Array> {
   const logoW = (logo.width / logo.height) * logoH;
   page.drawImage(logo, { x: (W - logoW) / 2, y: H - 40 - logoH, width: logoW, height: logoH });
 
-  spaced(page, 'CERTIFICADO DE BUILDER · BUILDER CERTIFICATE', 426, bold, 10, BLUE);
-  centred(page, 'Se certifica que · This certifies that', 402, regular, 12, MUTED);
+  spaced(page, 'BUILDER CERTIFICATE', 426, bold, 11, BLUE, 3.2);
+  centred(page, 'This certifies that', 402, regular, 12, MUTED);
   centred(page, input.memberName, 362, bold, 40, INK);
 
   // Underline under the name, the width of a signature line.
   const line = Math.min(W - 200, Math.max(340, bold.widthOfTextAtSize(input.memberName, 40) + 40)) / 2;
   page.drawLine({ start: { x: W / 2 - line, y: 350 }, end: { x: W / 2 + line, y: 350 }, thickness: 0.9, color: BLUE });
 
-  centred(page, 'construyó y publicó · built and shipped', 327, regular, 12, MUTED);
+  centred(page, 'built and shipped', 327, regular, 12, MUTED);
   centred(page, input.projectName, 298, bold, 26, BLUE);
   centred(page, ev.title, 274, regular, 13, INK);
-  centred(page, `${ev.venue} · ${ev.dates.es} · ${ev.dates.en}`, 257, regular, 10.5, MUTED);
+  centred(page, `${ev.venue} · ${ev.dates.en}`, 257, regular, 10.5, MUTED);
 
   // Prizes, one pill each, side by side.
   if (input.honors.length > 0) {
-    const labels = input.honors.map((h) => `${honorLabel(h, 'es')}  ·  ${honorLabel(h, 'en')}`);
+    const labels = input.honors.map((h) => honorLabel(h, 'en'));
     const size = 9.5;
     const padX = 12;
     const gap = 10;
@@ -146,12 +146,12 @@ export async function renderDiploma(input: DiplomaInput): Promise<Uint8Array> {
 
   // Issuer · date · credential.
   const [yy, mm, dd] = input.issueDate.split('-').map(Number);
-  const dateEs = `${dd} de ${MONTHS_ES[mm - 1]} de ${yy}`;
+  const dateEn = `${MONTHS_EN[mm - 1]} ${dd}, ${yy}`;
   const colY = 164;
   const cols: [string, string][] = [
-    ['EMITIDO POR · ISSUED BY', 'ETH Cali · ethcali.org'],
-    ['FECHA · DATE', dateEs],
-    ['ID DE CREDENCIAL · CREDENTIAL ID', input.credentialId],
+    ['ISSUED BY', 'ETH Cali · ethcali.org'],
+    ['DATE', dateEn],
+    ['CREDENTIAL ID', input.credentialId],
   ];
   const colW = (W - 120) / 3;
   cols.forEach(([label, value], i) => {
@@ -159,13 +159,13 @@ export async function renderDiploma(input: DiplomaInput): Promise<Uint8Array> {
     page.drawText(label, { x: cx - bold.widthOfTextAtSize(label, 7.5) / 2, y: colY + 16, size: 7.5, font: bold, color: FAINT });
     page.drawText(value, { x: cx - regular.widthOfTextAtSize(value, 11) / 2, y: colY, size: 11, font: regular, color: INK });
   });
-  centred(page, `Verifica en · Verify at ${credentialUrl(input.credentialId)}`, 136, regular, 8.5, FAINT);
+  centred(page, `Verify at ${credentialUrl(input.credentialId)}`, 136, regular, 8.5, FAINT);
 
   // Sponsors: a hairline rule, a label, one row of logos on the paper.
   if (ev.sponsors.length > 0) {
     const ruleY = 116;
     page.drawLine({ start: { x: 60, y: ruleY }, end: { x: W - 60, y: ruleY }, thickness: 0.6, color: rgb(0.82, 0.82, 0.9) });
-    spaced(page, 'CON EL APOYO DE · WITH THE SUPPORT OF', ruleY - 18, bold, 7.5, FAINT, 1.8);
+    spaced(page, 'WITH THE SUPPORT OF', ruleY - 18, bold, 7.5, FAINT, 1.8);
     const imgs = await Promise.all(
       ev.sponsors.map(async (sp) => {
         const bytes = sponsorFile(sp.file);
