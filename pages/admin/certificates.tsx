@@ -12,18 +12,20 @@ import Link from 'next/link';
 import { usePrivy } from '@privy-io/react-auth';
 import { useQuery } from '@tanstack/react-query';
 import AdminShell from '../../components/admin/AdminShell';
+import IssuePanel from '../../components/certificates/IssuePanel';
 import Loading from '../../components/shared/Loading';
 import { CheckIcon } from '../../components/shared/icons';
 import { DEFAULT_CHAIN, explorerAddress, explorerTx } from '../../config/chains';
 import { truncateAddress } from '../../utils/linkedAccounts';
 import { CERT_EVENTS, credentialUrl, honorLabel } from '../../lib/certificates/events';
+import { openseaUrl } from '../../lib/certificates/nft';
 import type { AdminCertificate, AdminCertificatesResponse } from '../../types/certificates';
 
 type Filter = 'all' | 'unclaimed' | 'claimed' | 'issued';
 
 function csv(rows: AdminCertificate[]): string {
   const cell = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-  const head = ['event', 'project', 'name', 'emails', 'checked_in_at', 'prizes', 'credential_id', 'credential_url', 'wallet', 'claimed_at', 'issued_tx'];
+  const head = ['event', 'project', 'name', 'emails', 'checked_in_at', 'prizes', 'credential_id', 'credential_url', 'wallet', 'claimed_at', 'issued_tx', 'token_id'];
   const body = rows.map((r) =>
     [
       r.event,
@@ -37,6 +39,7 @@ function csv(rows: AdminCertificate[]): string {
       r.wallet ?? '',
       r.claimedAt ?? '',
       r.issuedTx ?? '',
+      r.tokenId ?? '',
     ].map(cell).join(',')
   );
   return [head.join(','), ...body].join('\n');
@@ -46,6 +49,7 @@ export default function CertificatesAdmin() {
   const { ready, authenticated, getAccessToken } = usePrivy();
   const [filter, setFilter] = useState<Filter>('all');
   const [search, setSearch] = useState('');
+  const [picked, setPicked] = useState<Set<number>>(new Set());
 
   const query = useQuery({
     queryKey: ['certificates-admin'],
@@ -155,10 +159,19 @@ export default function CertificatesAdmin() {
             </button>
           </div>
 
+          <IssuePanel
+            selected={all.filter((r) => picked.has(r.id))}
+            onIssued={() => {
+              setPicked(new Set());
+              void query.refetch();
+            }}
+          />
+
           <div className="overflow-x-auto rounded-card border border-line-hairline">
             <table className="w-full min-w-[900px] text-left text-sm">
               <thead className="bg-surface-inset text-[11px] uppercase tracking-wide text-content-faint">
                 <tr>
+                  <th className="px-3 py-2.5 font-semibold" aria-label="Seleccionar" />
                   <th className="px-3 py-2.5 font-semibold">Builder</th>
                   <th className="px-3 py-2.5 font-semibold">Project</th>
                   <th className="px-3 py-2.5 font-semibold">Emails</th>
@@ -170,6 +183,23 @@ export default function CertificatesAdmin() {
               <tbody className="divide-y divide-line-hairline">
                 {rows.map((r) => (
                   <tr key={r.id} className="bg-surface-slab align-top">
+                    <td className="px-3 py-3">
+                      <input
+                        type="checkbox"
+                        aria-label={`Seleccionar ${r.memberName}`}
+                        disabled={Boolean(r.issuedTx) || !r.wallet || !r.metadataCid}
+                        checked={picked.has(r.id)}
+                        onChange={(e) =>
+                          setPicked((prev) => {
+                            const next = new Set(prev);
+                            if (e.target.checked) next.add(r.id);
+                            else next.delete(r.id);
+                            return next;
+                          })
+                        }
+                        className="h-4 w-4 accent-eth-blue"
+                      />
+                    </td>
                     <td className="px-3 py-3">
                       <p className="font-medium text-content-primary">{r.memberName}</p>
                       <p className="text-xs text-content-faint">{CERT_EVENTS[r.event]?.credentialName ?? r.event}</p>
@@ -224,15 +254,18 @@ export default function CertificatesAdmin() {
                       ) : (
                         <span className="text-content-faint">Not claimed</span>
                       )}
-                      {r.issuedTx && (
-                        <a
-                          href={explorerTx(DEFAULT_CHAIN.id, r.issuedTx)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="mt-1 block text-signal-confirmed hover:underline"
-                        >
-                          NFT issued ↗
-                        </a>
+                      {r.issuedTx && r.tokenId ? (
+                        <span className="mt-1 block">
+                          <a href={openseaUrl(r.tokenId)} target="_blank" rel="noopener noreferrer" className="text-signal-confirmed hover:underline">
+                            NFT #{r.tokenId} ↗
+                          </a>{' '}
+                          ·{' '}
+                          <a href={explorerTx(DEFAULT_CHAIN.id, r.issuedTx)} target="_blank" rel="noopener noreferrer" className="text-content-muted hover:underline">
+                            tx
+                          </a>
+                        </span>
+                      ) : (
+                        <span className="mt-1 block text-content-faint">{r.metadataCid ? 'Listo para emitir' : 'Sin metadata'}</span>
                       )}
                     </td>
                   </tr>
