@@ -3,6 +3,7 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { usePrivy } from '@privy-io/react-auth';
 import AdminShell from '../../components/admin/AdminShell';
+import { StatTile } from '../../components/admin/StatTile';
 import Loading from '../../components/shared/Loading';
 import { AdminBatch } from '../../components/swag/AdminBatch';
 import { AdminCollection } from '../../components/swag/AdminCollection';
@@ -28,16 +29,6 @@ const TABS: Array<{ id: Tab; label: string; admin: boolean }> = [
 ];
 
 const isTab = (v: unknown): v is Tab => TABS.some((t) => t.id === v);
-
-function StatTile({ label, value, hint }: { label: string; value: string; hint?: string }) {
-  return (
-    <div className="rounded-card border border-line-hairline bg-surface-inset/50 p-4">
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-content-faint">{label}</p>
-      <p className="mt-1 truncate text-xl font-bold text-content-primary">{value}</p>
-      {hint && <p className="mt-1 truncate text-[11px] text-content-faint">{hint}</p>}
-    </div>
-  );
-}
 
 const usdc = (n: number) => `${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC`;
 const copFmt = (n: number) => `COP ${Math.round(n).toLocaleString('es-CO')}`;

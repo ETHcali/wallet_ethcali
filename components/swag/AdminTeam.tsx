@@ -236,7 +236,7 @@ export function AdminTeam() {
   const reason = state.isLoading
     ? 'Reading your roles…'
     : !state.isSuperAdmin
-      ? 'Only the wallet holding DEFAULT_ADMIN_ROLE (the ops key) can add or remove people. Connect it to manage the team.'
+      ? 'Adding or removing people needs super admin (DEFAULT_ADMIN_ROLE) on the collection, and the connected wallet holds admin only. The current super admin can grant it from Admin → Admins & access.'
       : null;
 
   const members = staff.data?.staff ?? [];

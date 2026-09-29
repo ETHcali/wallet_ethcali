@@ -14,6 +14,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { DisplayCurrency, DonationToken } from '../../types/donations';
 import { logger } from '../../utils/logger';
+import { fetchUsdPrices } from '../useTokenPrices';
 
 interface DisplayCurrencyState {
   currency: DisplayCurrency;
@@ -38,8 +39,10 @@ export interface FxRates {
   usdToCop: number;
   /** True when the TRM feed failed and usdToCop is the stale constant below. */
   usdToCopIsStale: boolean;
-  /** USD price of 1 ETH, used for the ETH display mode. */
+  /** USD price of 1 ETH, used for the ETH display mode. 0 when unknown. */
   ethUsd: number;
+  /** True when no price source answered; USD/COP/ETH conversions are unknown. */
+  pricesUnavailable: boolean;
 }
 
 /**
@@ -57,39 +60,36 @@ export interface FxRates {
  */
 const STALE_TRM = 3062.96;
 
-const FALLBACK_RATES: FxRates = {
-  usd: { ethereum: 3500, 'usd-coin': 1 },
+/**
+ * Before the first answer: no crypto prices at all. `usd` empty means every
+ * USD figure reads 0 and `pricesUnavailable` tells the UI to show a dash —
+ * there is no hardcoded ETH price (a $3,500 fallback here once overstated
+ * every dollar figure by ~31%).
+ */
+const NO_RATES: FxRates = {
+  usd: {},
   usdToCop: STALE_TRM,
   usdToCopIsStale: true,
-  ethUsd: 3500,
+  ethUsd: 0,
+  pricesUnavailable: true,
 };
 
 /**
- * Crypto prices come from CoinGecko; the peso rate comes from the TRM endpoint,
- * which reads the Superintendencia Financiera feed. Two sources because no
- * single one is both authoritative for COP and useful for crypto.
+ * Crypto prices come from /api/prices (CoinGecko, then Coinbase, edge-cached);
+ * the peso rate comes from the TRM endpoint, which reads the Superintendencia
+ * Financiera feed. Two sources because no single one is both authoritative
+ * for COP and useful for crypto.
  */
 async function fetchFxRates(): Promise<FxRates> {
-  const ids = 'ethereum,usd-coin';
+  const [priceRes, trmRes] = await Promise.allSettled([fetchUsdPrices(), fetch('/api/fx/trm')]);
 
-  const [priceRes, trmRes] = await Promise.allSettled([
-    fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`),
-    fetch('/api/fx/trm'),
-  ]);
-
-  let usd = FALLBACK_RATES.usd;
-  let ethUsd = FALLBACK_RATES.ethUsd;
-
-  if (priceRes.status === 'fulfilled' && priceRes.value.ok) {
-    const data = (await priceRes.value.json()) as Record<string, { usd?: number }>;
-    ethUsd = data.ethereum?.usd ?? FALLBACK_RATES.ethUsd;
-    usd = {
-      ethereum: ethUsd,
-      'usd-coin': data['usd-coin']?.usd ?? 1,
-    };
+  const usd: Record<string, number> = {};
+  if (priceRes.status === 'fulfilled') {
+    for (const [id, quote] of Object.entries(priceRes.value.prices)) if (quote) usd[id] = quote.usd;
   } else {
-    logger.debug('[useDisplayCurrency] CoinGecko unavailable, using fallback USD prices');
+    logger.debug('[useDisplayCurrency] prices unavailable; USD figures will show as unknown');
   }
+  const ethUsd = usd.ethereum ?? 0;
 
   let usdToCop = STALE_TRM;
   let usdToCopIsStale = true;
@@ -104,7 +104,7 @@ async function fetchFxRates(): Promise<FxRates> {
     logger.debug('[useDisplayCurrency] TRM unavailable, peso figures are approximate');
   }
 
-  return { usd, usdToCop, usdToCopIsStale, ethUsd };
+  return { usd, usdToCop, usdToCopIsStale, ethUsd, pricesUnavailable: ethUsd === 0 };
 }
 
 export function useFxRates() {
@@ -112,10 +112,10 @@ export function useFxRates() {
     queryKey: ['donation-fx-rates'],
     queryFn: fetchFxRates,
     // Rates move slowly relative to a donation session; do not hammer the API.
-    staleTime: 1000 * 60 * 5,
-    refetchInterval: 1000 * 60 * 5,
+    staleTime: 1000 * 60 * 15,
+    refetchInterval: 1000 * 60 * 15,
     retry: 1,
-    placeholderData: FALLBACK_RATES,
+
   });
 }
 
@@ -127,6 +127,8 @@ export interface CurrencyFormatter {
   convert: (amount: bigint, token: DonationToken) => number;
   /** Formatted value in the selected display currency, e.g. "$1,250.00". */
   format: (amount: bigint, token: DonationToken) => string;
+  /** No price source answered: show token amounts only. */
+  pricesUnavailable: boolean;
   /** Formatted plain number, e.g. "1,250.00" — no symbol. */
   formatValue: (value: number) => string;
   /** The token amount itself, e.g. "25.00 USDC" — uses the token's decimals. */
@@ -155,7 +157,7 @@ export function useDisplayCurrency(): CurrencyFormatter {
   const { currency, setCurrency } = useDisplayCurrencyStore();
   const { data: rates, isLoading } = useFxRates();
 
-  const fx = rates ?? FALLBACK_RATES;
+  const fx = rates ?? NO_RATES;
 
   const toUsd = useCallback(
     (amount: bigint, token: DonationToken): number => tokenToUsd(amount, token, fx),
@@ -187,9 +189,10 @@ export function useDisplayCurrency(): CurrencyFormatter {
     [currency]
   );
 
+  // A conversion with no price is unknown, not zero.
   const format = useCallback(
-    (amount: bigint, token: DonationToken) => formatValue(convert(amount, token)),
-    [convert, formatValue]
+    (amount: bigint, token: DonationToken) => (fx.pricesUnavailable ? '—' : formatValue(convert(amount, token))),
+    [convert, formatValue, fx.pricesUnavailable]
   );
 
   const formatToken = useCallback((amount: bigint, token: DonationToken): string => {
@@ -203,5 +206,5 @@ export function useDisplayCurrency(): CurrencyFormatter {
     })} ${token.symbol}`;
   }, []);
 
-  return { currency, setCurrency, isLoading, convert, format, formatValue, formatToken };
+  return { currency, setCurrency, isLoading, pricesUnavailable: fx.pricesUnavailable, convert, format, formatValue, formatToken };
 }

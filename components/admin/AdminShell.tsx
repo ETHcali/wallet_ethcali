@@ -6,6 +6,7 @@ import { useAdminRoles } from '../../hooks/useAdminStatus';
 
 export type AdminSection =
   | 'overview'
+  | 'access'
   | 'donations'
   | 'faucet'
   | 'swag'
@@ -34,6 +35,7 @@ interface SectionDef {
 
 const SECTIONS: SectionDef[] = [
   { id: 'overview', href: '/admin', label: 'Overview', accent: 'text-eth-blue-text' },
+  { id: 'access', href: '/admin/access', label: 'Admins & access', accent: 'text-eth-blue-text' },
   { id: 'donations', href: '/donations/admin', label: 'Donations', accent: 'text-eth-blue-text' },
   { id: 'faucet', href: '/faucet/admin', label: 'Faucet', accent: 'text-eth-blue-text' },
   { id: 'swag', href: '/swag/admin', label: 'Swag', accent: 'text-eth-blue-text' },
@@ -67,10 +69,13 @@ const AdminShell: React.FC<AdminShellProps> = ({ active, title, subtitle, childr
     isZKPassportOwner,
     isDonationAdmin,
     isDonationSuperAdmin,
+    hasAnyAdmin,
   } = useAdminRoles();
 
   const permitted: Record<AdminSection, boolean> = {
     overview: true,
+    // Any role anywhere; the route re-checks, and the page shows who can grant.
+    access: hasAnyAdmin,
     donations: isDonationAdmin || isDonationSuperAdmin,
     faucet: isFaucetAdmin || isFaucetSuperAdmin,
     swag: isSwagAdmin || isSwagFulfilment,

@@ -1,16 +1,31 @@
 import { useState } from 'react';
+import Head from 'next/head';
+import Link from 'next/link';
 import { useWallets } from '@privy-io/react-auth';
+import { formatEther } from 'viem';
 import AdminShell from '../../components/admin/AdminShell';
+import { AccessManager } from '../../components/admin/AccessManager';
+import { StatTile } from '../../components/admin/StatTile';
 import SwitchChainButton from '../../components/shared/SwitchChainButton';
 import { VaultList } from '../../components/faucet/VaultList';
 import { CreateVaultForm } from '../../components/faucet/CreateVaultForm';
 import { VaultWhitelistManager } from '../../components/faucet/VaultWhitelistManager';
-import { DEFAULT_CHAIN, explorerAddress } from '../../config/chains';
+import { buttonClass, CARD, FIELD, LABEL } from '../../components/swag/AdminPrimitives';
+import { HashChip } from '../../components/swag/HashChip';
+import { DEFAULT_CHAIN } from '../../config/chains';
 import { useRequireChain } from '../../hooks/useRequireChain';
+import { useTokenPrices } from '../../hooks/useTokenPrices';
 import { useFaucetManagerAdmin, useFaucetPaused, useAllVaults, useFaucetPause } from '../../hooks/faucet';
-import { formatEther } from 'viem';
+import { formatTokenBalance } from '../../utils/tokenUtils';
+import { formatUsd } from '../../utils/money';
 
-type AdminTab = 'vaults' | 'create' | 'whitelist' | 'settings';
+type AdminTab = 'vaults' | 'whitelist' | 'access';
+
+const TABS: Array<{ id: AdminTab; label: string }> = [
+  { id: 'vaults', label: 'Vaults' },
+  { id: 'whitelist', label: 'Whitelist' },
+  { id: 'access', label: 'Access' },
+];
 
 export default function FaucetAdminPage() {
   // Every read and write below is on Ethereum; the wallet is moved once, here.
@@ -23,7 +38,10 @@ export default function FaucetAdminPage() {
   const { isPaused, isLoading: isLoadingPaused, refetch: refetchPaused } = useFaucetPaused(chainId);
   const { pause, unpause, canPause } = useFaucetPause(chainId);
   const { vaults, refetch: refetchVaults } = useAllVaults(chainId);
+  const { getPriceForToken } = useTokenPrices();
+
   const [activeTab, setActiveTab] = useState<AdminTab>('vaults');
+  const [creating, setCreating] = useState(false);
   const [selectedVaultForWhitelist, setSelectedVaultForWhitelist] = useState<number | null>(null);
   const [isTogglingPause, setIsTogglingPause] = useState(false);
   const [pauseError, setPauseError] = useState<string | null>(null);
@@ -32,11 +50,8 @@ export default function FaucetAdminPage() {
     setIsTogglingPause(true);
     setPauseError(null);
     try {
-      if (isPaused) {
-        await unpause();
-      } else {
-        await pause();
-      }
+      if (isPaused) await unpause();
+      else await pause();
       refetchPaused();
     } catch (err) {
       setPauseError(err instanceof Error ? err.message : 'Could not change the pause state.');
@@ -45,269 +60,174 @@ export default function FaucetAdminPage() {
     }
   };
 
-  const totalBalance = vaults.reduce((sum, v) => sum + v.balance, 0n);
-  const totalClaimed = vaults.reduce((sum, v) => sum + v.totalClaimed, 0n);
-  const activeVaults = vaults.filter(v => v.active).length;
+  const ethPrice = getPriceForToken('ETH').price;
+  const eth = (wei: bigint) => {
+    const value = formatEther(wei);
+    const usd = ethPrice > 0 ? ` (~${formatUsd(Number(value) * ethPrice, { cents: true })})` : '';
+    return { value: `${formatTokenBalance(value, 4)} ETH`, usd };
+  };
+  const balance = eth(vaults.reduce((sum, v) => sum + v.balance, 0n));
+  const claimed = eth(vaults.reduce((sum, v) => sum + v.totalClaimed, 0n));
+  const activeVaults = vaults.filter((v) => v.active).length;
 
   if (!ready || isCheckingAdmin) {
     return (
       <AdminShell active="faucet" title="Faucet">
-          <div className="flex items-center justify-center py-20">
-            <div className="w-3 h-3 border-2 border-eth-blue border-t-transparent rounded-full animate-spin" />
-            <span className="ml-3 text-eth-blue-text font-mono text-[10px] tracking-wider">VERIFYING...</span>
-          </div>
-        </AdminShell>
+        <p className="py-16 text-center text-sm text-content-faint">Checking permissions…</p>
+      </AdminShell>
     );
   }
 
   if (!isAdmin && !isSuperAdmin) {
     return (
       <AdminShell active="faucet" title="Faucet">
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="bg-black/60 border border-signal-reverted/30 rounded-control p-4 max-w-sm">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-2 h-2 bg-signal-reverted rounded-full"></div>
-                <span className="text-[10px] text-signal-reverted font-mono tracking-wider">Access denied</span>
-              </div>
-              <div className="space-y-2 text-[10px] font-mono">
-                <p className="text-content-faint">contract: <span className="text-content-faint">{faucetManager?.slice(0, 10)}…</span></p>
-                <p className="text-content-faint">wallet: <span className="text-content-faint">{walletAddress?.slice(0, 10)}…</span></p>
-              </div>
-            </div>
-          </div>
-        </AdminShell>
+        <div className={CARD}>
+          <h2 className="font-semibold text-content-primary">Not a faucet admin</h2>
+          <p className="mt-2 text-sm text-content-muted">
+            {walletAddress ? (
+              <>
+                <HashChip hash={walletAddress} kind="address" /> does not hold ADMIN_ROLE on FaucetManager
+                {faucetManager && <> <HashChip hash={faucetManager} kind="address" /></>}.
+              </>
+            ) : (
+              'Connect an admin wallet to continue.'
+            )}
+          </p>
+          <Link href="/admin/access" className={buttonClass('secondary', 'mt-4')}>
+            See who can grant it
+          </Link>
+        </div>
+      </AdminShell>
     );
   }
 
   return (
-    <AdminShell active="faucet" title="Faucet">
-        {/* Reads work from anywhere; the wallet only has to be here to sign. */}
-        {!chain.ready && (
-          <div className="mb-6 max-w-sm">
-            <p className="mb-2 text-xs text-content-muted">
-              Your wallet is on another network; to sign anything below it has to be on {chain.chainName}.
-            </p>
-            <SwitchChainButton chain={chain} />
-          </div>
-        )}
+    <AdminShell
+      active="faucet"
+      title="Faucet"
+      subtitle="ETH vaults people claim from. Balances and claims are read from FaucetManager on Ethereum."
+    >
+      <Head>
+        <title>Faucet admin · ETH Cali</title>
+      </Head>
 
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center gap-2 mb-1">
-            {isSuperAdmin && (
-              <span className="text-[9px] text-signal-pending font-mono bg-signal-pending/10 px-2 py-0.5 rounded-chip">SUPER</span>
-            )}
-          </div>
-          <p className="text-content-faint font-mono text-[10px] tracking-widest uppercase">
-            VAULT_MANAGEMENT • {vaults.length} VAULTS
+      {/* Reads work from anywhere; the wallet only has to be here to sign. */}
+      {!chain.ready && (
+        <div className="mb-6 max-w-sm">
+          <p className="mb-2 text-xs text-content-muted">
+            Your wallet is on another network; to sign anything below it has to be on {chain.chainName}.
           </p>
+          <SwitchChainButton chain={chain} />
         </div>
+      )}
 
-        {/* Stats Row */}
-        <div className="mb-6 grid grid-cols-2 gap-2 md:grid-cols-4">
-          <div className="bg-black/60 border border-line-hairline rounded-chip p-3">
-            <p className="text-[9px] text-content-faint font-mono tracking-wider mb-1">STATUS</p>
-            <div className="flex items-center gap-2">
-              <div className={`w-1.5 h-1.5 rounded-full ${isPaused ? 'bg-signal-reverted' : 'bg-signal-confirmed'}`}></div>
-              <span className={`text-xs font-mono ${isPaused ? 'text-signal-reverted' : 'text-signal-confirmed'}`}>
-                {isPaused ? 'PAUSED' : 'ACTIVE'}
-              </span>
-            </div>
-            {canPause && (
-              <button
-                onClick={handleTogglePause}
-                disabled={isLoadingPaused || isTogglingPause || !chain.ready}
-                className={`mt-2 text-[9px] font-mono px-2 py-1 rounded-chip transition disabled:opacity-50 ${
-                  isPaused
-                    ? 'bg-eth-blue/10 text-eth-blue-text hover:bg-eth-blue/20'
-                    : 'bg-signal-reverted/10 text-signal-reverted hover:bg-signal-reverted/20'
-                }`}
-              >
-                {isTogglingPause ? 'SAVING…' : isPaused ? 'UNPAUSE' : 'PAUSE'}
+      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="rounded-card border border-line-hairline bg-surface-inset/50 p-4">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-content-faint">Faucet</p>
+          <p className={`mt-1 text-xl font-bold ${isPaused ? 'text-signal-reverted' : 'text-signal-confirmed'}`}>
+            {isPaused ? 'Paused' : 'Live'}
+          </p>
+          {canPause && (
+            <button
+              type="button"
+              onClick={handleTogglePause}
+              disabled={isLoadingPaused || isTogglingPause || !chain.ready}
+              className="mt-2 text-xs font-semibold text-eth-blue-text hover:underline disabled:cursor-not-allowed disabled:text-content-faint"
+            >
+              {isTogglingPause ? 'Saving…' : isPaused ? 'Unpause' : 'Pause'}
+            </button>
+          )}
+          {pauseError && <p className="mt-1 text-[11px] text-signal-reverted">{pauseError}</p>}
+        </div>
+        <StatTile label="Balance" value={balance.value} hint={`Across every vault${balance.usd}`} />
+        <StatTile label="Claimed" value={claimed.value} hint={`All time${claimed.usd}`} />
+        <StatTile label="Vaults" value={`${activeVaults} / ${vaults.length}`} hint="Active / total" />
+      </div>
+
+      <div role="tablist" aria-label="Faucet admin sections" className="no-scrollbar -mx-4 mb-4 flex gap-2 overflow-x-auto px-4 lg:mx-0 lg:px-0">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            role="tab"
+            type="button"
+            aria-selected={activeTab === t.id}
+            onClick={() => setActiveTab(t.id)}
+            className={`min-h-tap shrink-0 rounded-control border px-4 text-sm font-semibold transition-colors ${
+              activeTab === t.id
+                ? 'border-eth-blue bg-eth-blue-wash text-eth-blue-text'
+                : 'border-line-hairline bg-surface-inset text-content-secondary hover:border-line-strong'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'vaults' && (
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-sm font-semibold text-content-secondary">
+              {vaults.length} vault{vaults.length === 1 ? '' : 's'}
+            </h2>
+            {!creating && (
+              <button type="button" onClick={() => setCreating(true)} className={buttonClass('primary')}>
+                Create vault
               </button>
             )}
-            {pauseError && <p className="mt-1 text-[9px] font-mono text-signal-reverted">{pauseError}</p>}
           </div>
 
-          <div className="bg-black/60 border border-line-hairline rounded-chip p-3">
-            <p className="text-[9px] text-content-faint font-mono tracking-wider mb-1">Total balance</p>
-            <p className="text-sm font-mono text-eth-blue-text">
-              {parseFloat(formatEther(totalBalance)).toFixed(4)}
-            </p>
-            <p className="text-[9px] text-content-faint font-mono">ETH</p>
-          </div>
+          {creating && (
+            <div className="space-y-2">
+              <div className="flex justify-end">
+                <button type="button" onClick={() => setCreating(false)} className={buttonClass('secondary')}>
+                  Close
+                </button>
+              </div>
+              <CreateVaultForm
+                chainId={chainId}
+                onSuccess={() => {
+                  refetchVaults();
+                  setCreating(false);
+                }}
+              />
+            </div>
+          )}
 
-          <div className="bg-black/60 border border-line-hairline rounded-chip p-3">
-            <p className="text-[9px] text-content-faint font-mono tracking-wider mb-1">CLAIMED</p>
-            <p className="text-sm font-mono text-eth-blue-text">
-              {parseFloat(formatEther(totalClaimed)).toFixed(4)}
-            </p>
-            <p className="text-[9px] text-content-faint font-mono">ETH</p>
-          </div>
-
-          <div className="bg-black/60 border border-line-hairline rounded-chip p-3">
-            <p className="text-[9px] text-content-faint font-mono tracking-wider mb-1">VAULTS</p>
-            <p className="text-sm font-mono text-content-primary">
-              {activeVaults}<span className="text-content-faint">/{vaults.length}</span>
-            </p>
-            <p className="text-[9px] text-content-faint font-mono">ACTIVE</p>
-          </div>
+          <VaultList chainId={chainId} />
         </div>
+      )}
 
-        {/* Admin Functions Reference */}
-        <div className="bg-black/40 border border-line-hairline rounded-chip p-3 mb-6">
-          <p className="text-[9px] text-content-faint font-mono tracking-wider mb-2">Admin functions</p>
-          <div className="grid grid-cols-1 gap-2 break-all text-[11px] font-mono sm:grid-cols-2 md:grid-cols-4">
-            <div className="text-content-faint">
-              <span className="text-eth-blue-text">addAdmin</span>(addr)
-            </div>
-            <div className="text-content-faint">
-              <span className="text-eth-blue-text">removeAdmin</span>(addr)
-            </div>
-            <div className="text-content-faint">
-              <span className="text-eth-blue-text">createVault</span>(...)
-            </div>
-            <div className="text-content-faint">
-              <span className="text-eth-blue-text">setNFTContract</span>(addr)
-            </div>
-            <div className="text-content-faint">
-              <span className="text-eth-blue-text">addToWhitelist</span>(vaultId, addr)
-            </div>
-            <div className="text-content-faint">
-              <span className="text-eth-blue-text">removeFromWhitelist</span>(vaultId, addr)
-            </div>
-            <div className="text-content-faint">
-              <span className="text-eth-blue-text">setWhitelistEnabled</span>(vaultId, bool)
-            </div>
-            <div className="text-content-faint">
-              <span className="text-eth-blue-text">addBatchToWhitelist</span>(vaultId, addrs[])
-            </div>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="no-scrollbar -mx-4 mb-4 flex gap-1 overflow-x-auto px-4 lg:mx-0 lg:px-0">
-          {(['vaults', 'create', 'whitelist', 'settings'] as AdminTab[]).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`min-h-[40px] shrink-0 rounded-chip border px-3 text-sm font-medium capitalize transition-colors ${
-                activeTab === tab
-                  ? 'border-line-brand bg-eth-blue-wash text-eth-blue-text'
-                  : 'border-transparent text-content-muted hover:text-content-primary'
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
-
-        {/* Tab Content */}
+      {activeTab === 'whitelist' && (
         <div className="space-y-4">
-          {activeTab === 'vaults' && (
-            <VaultList chainId={chainId} />
-          )}
+          <div className={CARD}>
+            <label className="block">
+              <span className={LABEL}>Vault</span>
+              <select
+                value={selectedVaultForWhitelist ?? ''}
+                onChange={(e) => setSelectedVaultForWhitelist(e.target.value ? Number(e.target.value) : null)}
+                className={`${FIELD} appearance-none`}
+              >
+                <option value="">Choose a vault</option>
+                {vaults.map((vault) => (
+                  <option key={vault.id} value={vault.id}>
+                    #{vault.id} {vault.name} — whitelist {vault.whitelistEnabled ? 'on' : 'off'}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
 
-          {activeTab === 'create' && (
-            <CreateVaultForm chainId={chainId} onSuccess={refetchVaults} />
-          )}
-
-          {activeTab === 'whitelist' && (
-            <div className="space-y-4">
-              <div className="bg-black/60 border border-line-hairline rounded-chip p-4">
-                <p className="text-[9px] text-content-faint font-mono tracking-wider mb-3">Select vault</p>
-                <select
-                  value={selectedVaultForWhitelist ?? ''}
-                  onChange={(e) => setSelectedVaultForWhitelist(e.target.value ? Number(e.target.value) : null)}
-                  className="w-full bg-black/40 border border-line-hairline rounded-chip px-3 py-2 text-[10px] font-mono text-content-secondary focus:border-eth-blue/50 focus:outline-none"
-                >
-                  <option value="">-- Select Vault --</option>
-                  {vaults.map((vault) => (
-                    <option key={vault.id} value={vault.id}>
-                      [{vault.id}] {vault.name} {vault.whitelistEnabled ? '(Whitelist ON)' : '(Whitelist OFF)'}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {selectedVaultForWhitelist !== null && (
-                <VaultWhitelistManager
-                  chainId={chainId}
-                  vault={vaults.find(v => v.id === selectedVaultForWhitelist)!}
-                  onSuccess={() => {
-                    refetchVaults();
-                  }}
-                />
-              )}
-            </div>
-          )}
-
-          {activeTab === 'settings' && (
-            <div className="space-y-4">
-              {/* Contract Info */}
-              <div className="bg-black/60 border border-line-hairline rounded-chip p-4">
-                <p className="text-[9px] text-content-faint font-mono tracking-wider mb-3">CONTRACT</p>
-                <div className="space-y-2 text-[10px] font-mono">
-                  <div className="flex justify-between">
-                    <span className="text-content-faint">address</span>
-                    {faucetManager && (
-                      <a
-                        href={explorerAddress(chainId, faucetManager)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-eth-blue-text hover:text-eth-blue-text"
-                      >
-                        {faucetManager.slice(0, 10)}…{faucetManager.slice(-8)}
-                      </a>
-                    )}
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-content-faint">your_wallet</span>
-                    <span className="text-content-muted">{walletAddress?.slice(0, 10)}…{walletAddress?.slice(-8)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-content-faint">role</span>
-                    <span className={isSuperAdmin ? 'text-signal-pending' : 'text-eth-blue-text'}>
-                      {isSuperAdmin ? 'Super admin' : 'ADMIN'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Admin Management Placeholder */}
-              <div className="bg-black/60 border border-line-hairline rounded-chip p-4">
-                <p className="text-[9px] text-content-faint font-mono tracking-wider mb-3">Admin management</p>
-                <div className="space-y-3">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="0x..."
-                      className="flex-1 bg-black/40 border border-line-hairline rounded-chip px-3 py-2 text-[10px] font-mono text-content-secondary placeholder-content-faint focus:border-eth-blue/50 focus:outline-none"
-                    />
-                    <button className="px-3 py-2 bg-eth-blue/10 border border-eth-blue/30 rounded-chip text-eth-blue-text text-[10px] font-mono hover:bg-eth-blue/20 transition">
-                      ADD
-                    </button>
-                    <button className="px-3 py-2 bg-signal-reverted/10 border border-signal-reverted/30 rounded-chip text-signal-reverted text-[10px] font-mono hover:bg-signal-reverted/20 transition">
-                      REMOVE
-                    </button>
-                  </div>
-                  <p className="text-[9px] text-content-faint font-mono">Enter address to add/remove admin</p>
-                </div>
-              </div>
-            </div>
+          {selectedVaultForWhitelist !== null && (
+            <VaultWhitelistManager
+              chainId={chainId}
+              vault={vaults.find((v) => v.id === selectedVaultForWhitelist)!}
+              onSuccess={() => refetchVaults()}
+            />
           )}
         </div>
+      )}
 
-        {/* Footer */}
-        {faucetManager && (
-          <div className="mt-6 pt-4 border-t border-line-hairline">
-            <div className="flex gap-2 text-[9px] font-mono text-content-faint">
-              <a href={explorerAddress(chainId, faucetManager)} target="_blank" rel="noopener noreferrer" className="hover:text-eth-blue-text">
-                VIEW_CONTRACT →
-              </a>
-            </div>
-          </div>
-        )}
-      </AdminShell>
+      {activeTab === 'access' && <AccessManager only={['faucet']} />}
+    </AdminShell>
   );
 }

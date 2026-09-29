@@ -64,7 +64,7 @@ export function CreateVaultForm({ chainId, onSuccess }: CreateVaultFormProps) {
   return (
     <form onSubmit={handleSubmit} className="rounded-card border border-line-hairline bg-surface-slab/60 p-6 space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-content-primary">Create New Vault</h2>
+        <h2 className="text-xl font-semibold text-content-primary">Create a vault</h2>
         <p className="text-sm text-content-faint">Configure a new faucet vault for distributing ETH</p>
       </div>
 

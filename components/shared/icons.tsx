@@ -23,6 +23,11 @@ function svgProps({ className = 'h-5 w-5', strokeWidth = 1.6 }: IconProps) {
   };
 }
 
+/** The Ethereum diamond: upper and lower halves, same stroke rules as every glyph here. */
+export const EthIcon: React.FC<IconProps> = (p) => (
+  <svg {...svgProps(p)}><path d="M12 2.5 5.5 12.6 12 16.3l6.5-3.7L12 2.5z" /><path d="M5.5 14.1 12 21.5l6.5-7.4L12 17.8l-6.5-3.7z" /></svg>
+);
+
 export const CloseIcon: React.FC<IconProps> = (p) => (
   <svg {...svgProps(p)}><path d="M6 6l12 12M18 6L6 18" /></svg>
 );

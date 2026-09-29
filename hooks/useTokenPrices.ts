@@ -1,88 +1,54 @@
-import { useState, useEffect, useCallback } from 'react';
+/**
+ * USD prices, from the app's own /api/prices (edge-cached 15 minutes).
+ *
+ * One query key for the whole app — the navbar ticker, wallet balances, the
+ * faucet and the donation totals share it, so a page load is one request.
+ * When prices are unavailable the price reads 0 and every caller shows a
+ * dash; there is no hardcoded fallback price anywhere.
+ */
+import { useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { COINGECKO_IDS } from '../utils/tokenUtils';
-import { logger } from '../utils/logger';
+import type { PriceId, PricesResponse } from '../lib/prices';
 
-interface TokenPrices {
-  [key: string]: {
-    usd: number;
-    usd_24h_change: number;
-  };
+const FIFTEEN_MINUTES = 15 * 60 * 1000;
+
+export const pricesKey = ['usd-prices'] as const;
+
+export async function fetchUsdPrices(): Promise<PricesResponse> {
+  const res = await fetch('/api/prices');
+  if (!res.ok) throw new Error('Prices are unavailable right now');
+  return (await res.json()) as PricesResponse;
 }
 
-/**
- * Custom hook to fetch token prices from CoinGecko API
- * @returns Object containing token prices and loading state
- */
+export function usePricesQuery() {
+  return useQuery({
+    queryKey: pricesKey,
+    queryFn: fetchUsdPrices,
+    staleTime: FIFTEEN_MINUTES,
+    refetchInterval: FIFTEEN_MINUTES,
+    retry: 1,
+  });
+}
+
 export function useTokenPrices() {
-  const [prices, setPrices] = useState<TokenPrices>({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const query = usePricesQuery();
+  const prices = query.data?.prices;
 
-  // Get comma-separated list of tokens to fetch
-  const tokenIds = Object.values(COINGECKO_IDS).join(',');
-
-  const fetchPrices = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // CoinGecko API URL for price data
-      const url = `https://api.coingecko.com/api/v3/simple/price?ids=${tokenIds}&vs_currencies=usd&include_24hr_change=true`;
-      
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch prices: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      setPrices(data);
-    } catch (err) {
-      logger.error('Error fetching token prices:', err);
-      setError('Failed to fetch token prices');
-      
-      // Set fallback prices
-      setPrices({
-        [COINGECKO_IDS.ETH]: { usd: 3500, usd_24h_change: 1.5 },
-        [COINGECKO_IDS.USDC]: { usd: 1, usd_24h_change: 0.01 },
-        [COINGECKO_IDS.EURC]: { usd: 1.08, usd_24h_change: 0.02 },
-        [COINGECKO_IDS.USDT]: { usd: 1, usd_24h_change: 0.01 }
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [tokenIds]);
-
-  useEffect(() => {
-    fetchPrices();
-    
-    // Refresh prices every 5 minutes
-    const intervalId = setInterval(fetchPrices, 5 * 60 * 1000);
-    
-    return () => clearInterval(intervalId);
-  }, [fetchPrices]);
-
-  // Helper function to get price for a specific token
-  const getPriceForToken = useCallback((tokenSymbol: string): { price: number; change24h: number } => {
-    const coinId = COINGECKO_IDS[tokenSymbol];
-    if (!coinId || !prices[coinId]) {
-      // Return approximate fallback values for stablecoins
-      if (tokenSymbol === 'EURC') return { price: 1.08, change24h: 0 };
-      if (tokenSymbol === 'USDC' || tokenSymbol === 'USDT') return { price: 1.00, change24h: 0 };
-      return { price: 0, change24h: 0 };
-    }
-
-    return {
-      price: prices[coinId].usd || 0,
-      change24h: prices[coinId].usd_24h_change || 0
-    };
-  }, [prices]);
+  /** { price: 0 } means unknown — callers render a dash, never $0.00. */
+  const getPriceForToken = useCallback(
+    (tokenSymbol: string): { price: number; change24h: number | null } => {
+      const quote = prices?.[COINGECKO_IDS[tokenSymbol] as PriceId];
+      return quote ? { price: quote.usd, change24h: quote.change24h } : { price: 0, change24h: null };
+    },
+    [prices]
+  );
 
   return {
     prices,
-    isLoading,
-    error,
-    refetch: fetchPrices,
-    getPriceForToken
+    isLoading: query.isLoading,
+    error: query.error instanceof Error ? query.error.message : null,
+    refetch: query.refetch,
+    getPriceForToken,
   };
-} 
+}

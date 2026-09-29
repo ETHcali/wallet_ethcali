@@ -20,7 +20,15 @@
  *   - Token addresses were read from the token itself when added
  *     (`symbol()`, `decimals()`); decimals are never assumed.
  */
-import { createPublicClient, http } from 'viem';
+import {
+  createPublicClient,
+  createTransport,
+  http,
+  HttpRequestError,
+  TimeoutError,
+  type EIP1193RequestFn,
+  type Transport,
+} from 'viem';
 import addressesJson from '../frontend/addresses.json';
 import swagCollection from '../frontend/swag-collection.json';
 
@@ -114,8 +122,20 @@ export const ENS_CHAIN_ID = CHAIN_IDS.BASE;
  * the browser.
  */
 const RPC_URLS: Record<ChainKey, string> = {
-  ethereum: process.env.NEXT_PUBLIC_MAINNET_RPC_URL || 'https://eth.llamarpc.com',
+  ethereum: process.env.NEXT_PUBLIC_MAINNET_RPC_URL || 'https://ethereum-rpc.publicnode.com',
   base: process.env.NEXT_PUBLIC_BASE_RPC_URL || 'https://mainnet.base.org',
+};
+
+/**
+ * Tried in order after the configured RPC. Every role check in the app is a
+ * read, and a read that fails is treated as "no role" — so one dead endpoint
+ * locked operators out of every admin page (eth.llamarpc.com answered 525 for
+ * every call on 2026-09-28). A second provider keeps a single outage from
+ * reading as a revoked role.
+ */
+const BACKUP_RPC_URLS: Record<ChainKey, readonly string[]> = {
+  ethereum: ['https://ethereum-rpc.publicnode.com', 'https://cloudflare-eth.com'],
+  base: ['https://base-rpc.publicnode.com'],
 };
 
 interface ChainDef {
@@ -241,8 +261,42 @@ export function findToken(id: number | undefined | null, symbol: string): TokenI
 
 // ── Clients ─────────────────────────────────────────────────────────────────
 
+/**
+ * Try each RPC in order, moving on after any transport failure (HTTP error,
+ * timeout) and stopping at the first answer. A JSON-RPC error — a revert, a
+ * bad param — is the chain's answer and is thrown as is.
+ *
+ * Not viem's `fallback`: in viem 1.x it treats most HTTP statuses (525
+ * included) as deterministic and throws instead of trying the next URL, which
+ * is exactly the outage this exists for.
+ */
+function resilient(urls: readonly string[]): Transport {
+  return (params) => {
+    const transports = urls.map((u) => http(u)({ ...params, retryCount: 0 }));
+    return createTransport({
+      key: 'resilient',
+      name: 'Resilient HTTP',
+      type: 'fallback',
+      retryCount: params.retryCount,
+      request: (async (args: Parameters<EIP1193RequestFn>[0]) => {
+        let last: unknown;
+        for (const t of transports) {
+          try {
+            return await t.request(args);
+          } catch (e) {
+            if (!(e instanceof HttpRequestError) && !(e instanceof TimeoutError)) throw e;
+            last = e;
+          }
+        }
+        throw last;
+      }) as EIP1193RequestFn,
+    });
+  };
+}
+
 function makeClient(chain: ChainInfo) {
-  return createPublicClient({ chain: chain.viem, transport: http(chain.rpcUrl) });
+  const urls = [chain.rpcUrl, ...BACKUP_RPC_URLS[chain.key].filter((u) => u !== chain.rpcUrl)];
+  return createPublicClient({ chain: chain.viem, transport: resilient(urls) });
 }
 
 export type RegistryPublicClient = ReturnType<typeof makeClient>;

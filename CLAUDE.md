@@ -158,6 +158,31 @@ Each domain (faucet, swag) has:
   `CRON_SECRET`), which shares `fetchTrm`/`copPrice`/`repriceDesign` in `lib/shopify.mjs` with
   `scripts/shopify-sync.mjs --prices-only`. Operations runbook: `docs/SWAG_ORDERS.md § Operations`.
 
+## Admin access (`/admin/access`)
+
+One module for who can do what, on every contract the app administers.
+`config/access.ts` names the contracts and roles, the seed operator
+(`SEED_OPERATORS`, 0x35b0…BC6B, owner decision 2026-09-28) and the known wallets.
+`lib/access.ts` builds the matrix server side: candidates from each contract's
+`RoleGranted` logs (Blockscout, topic-filtered) plus the seed and known wallets,
+then `hasRole` / `owner()` on chain decides. Emails come from Privy's
+lookup-by-wallet. `GET /api/admin/access` needs any admin role;
+`POST /api/admin/access/resolve` (email → embedded wallet, creating it) needs a
+wallet that can grant somewhere. `components/admin/AccessManager.tsx` renders it —
+full on `/admin/access`, scoped with `only` on the Access tab of Faucet, Donations
+and Identity. Every grant/revoke/transfer is a transaction from the connected
+wallet (`useAccessTx`, same shape as `useSwagAdminTx`), offered only when that
+wallet holds DEFAULT_ADMIN_ROLE (or is the owner); otherwise the button names who
+can sign. Swag keeps its own Team tab for desk names (`swag_staff`).
+
+Donations stop at ADMIN_ROLE for the seed: DEFAULT_ADMIN_ROLE on DonationVault and
+DonationReceipt1155 stays with the Safe.
+
+**RPC:** `publicClientFor` tries the configured RPC, then publicnode, then
+Cloudflare, on any HTTP/timeout failure (`resilient` in `config/chains.ts`). viem
+1.x's own `fallback` treats a 525 as final, which is how a dead
+`eth.llamarpc.com` made every role read as "no role".
+
 ## Rendering gotcha: no on-demand server render of a page that imports Privy
 
 On Vercel's runtime Privy is loaded as an external ES module and its

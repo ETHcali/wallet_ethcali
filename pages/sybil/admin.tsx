@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { useWallets } from '@privy-io/react-auth';
+import Link from 'next/link';
 import AdminShell from '../../components/admin/AdminShell';
+import { AccessManager } from '../../components/admin/AccessManager';
 import SwitchChainButton from '../../components/shared/SwitchChainButton';
 import { ZKPassportMetadataAdmin } from '../../components/zkpassport/ZKPassportMetadataAdmin';
 import { DEFAULT_CHAIN, explorerAddress } from '../../config/chains';
 import { useRequireChain } from '../../hooks/useRequireChain';
 import { useZKPassportAdmin, useZKPassportContractSettings } from '../../hooks/useZKPassportAdmin';
 
-type AdminTab = 'metadata' | 'ownership' | 'settings' | 'holders';
+type AdminTab = 'metadata' | 'access' | 'settings' | 'holders';
 
 export default function IdentityAdminPage() {
   // Every read and write below is on Ethereum; the wallet is moved once, here.
@@ -62,6 +64,9 @@ export default function IdentityAdminPage() {
                 <p className="text-content-faint">owner: <span className="text-eth-blue-text">{owner?.slice(0, 10)}…</span></p>
                 <p className="text-content-faint">wallet: <span className="text-content-faint">{walletAddress?.slice(0, 10)}…</span></p>
               </div>
+              <Link href="/admin/access" className="mt-3 inline-block text-xs font-semibold text-eth-blue-text hover:underline">
+                See who can grant it
+              </Link>
             </div>
           </div>
         </AdminShell>
@@ -120,22 +125,9 @@ export default function IdentityAdminPage() {
           </div>
         </div>
 
-        {/* Admin Functions Reference */}
-        <div className="bg-black/40 border border-line-hairline rounded-chip p-3 mb-6">
-          <p className="text-[9px] text-content-faint font-mono tracking-wider mb-2">Owner functions</p>
-          <div className="grid grid-cols-1 gap-2 break-all text-[11px] font-mono sm:grid-cols-2">
-            <div className="text-content-faint">
-              <span className="text-eth-blue-text">setMetadata</span>(imageURI, desc, url, ipfs)
-            </div>
-            <div className="text-content-faint">
-              <span className="text-eth-blue-text">transferOwnership</span>(newOwner)
-            </div>
-          </div>
-        </div>
-
         {/* Tabs */}
         <div className="no-scrollbar -mx-4 mb-4 flex gap-1 overflow-x-auto px-4 lg:mx-0 lg:px-0">
-          {(['metadata', 'ownership', 'settings', 'holders'] as AdminTab[]).map((tab) => (
+          {(['metadata', 'access', 'settings', 'holders'] as AdminTab[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -156,48 +148,7 @@ export default function IdentityAdminPage() {
             <ZKPassportMetadataAdmin chainId={chainId} />
           )}
 
-          {activeTab === 'ownership' && (
-            <div className="space-y-4">
-              <div className="bg-black/60 border border-line-hairline rounded-chip p-4">
-                <p className="text-[9px] text-content-faint font-mono tracking-wider mb-3">Transfer ownership</p>
-                <div className="space-y-3">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="0x... new owner address"
-                      className="flex-1 bg-black/40 border border-line-hairline rounded-chip px-3 py-2 text-[10px] font-mono text-content-secondary placeholder-content-faint focus:border-eth-blue/50 focus:outline-none"
-                    />
-                    <button className="px-4 py-2 bg-signal-reverted/10 border border-signal-reverted/30 rounded-chip text-signal-reverted text-[10px] font-mono hover:bg-signal-reverted/20 transition">
-                      TRANSFER
-                    </button>
-                  </div>
-                  <div className="p-2 bg-signal-pending/10 border border-signal-pending/20 rounded-chip">
-                    <p className="text-[9px] text-signal-pending font-mono">
-                      This action is irreversible. The new owner will have full control.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-black/60 border border-line-hairline rounded-chip p-4">
-                <p className="text-[9px] text-content-faint font-mono tracking-wider mb-3">Current status</p>
-                <div className="space-y-2 text-[10px] font-mono">
-                  <div className="flex justify-between">
-                    <span className="text-content-faint">current_owner</span>
-                    <span className="text-eth-blue-text">{owner}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-content-faint">your_wallet</span>
-                    <span className={isOwner ? 'text-eth-blue-text' : 'text-content-muted'}>{walletAddress}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-content-faint">status</span>
-                    <span className="text-eth-blue-text">OWNER</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          {activeTab === 'access' && <AccessManager only={['identity']} />}
 
           {activeTab === 'settings' && (
             <div className="space-y-4">

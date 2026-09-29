@@ -16,7 +16,7 @@ interface CampaignCardProps {
 
 const CampaignCard: React.FC<CampaignCardProps> = ({ campaign, chainId, onDonate }) => {
   const { data: totals = [], isLoading } = useCampaignTotals(campaign.id, chainId);
-  const { convert, formatValue, formatToken, currency } = useDisplayCurrency();
+  const { convert, formatValue, formatToken, currency, pricesUnavailable } = useDisplayCurrency();
   const { data: fx } = useFxRates();
 
   // Totals span several currencies with different decimals, so each is
@@ -55,7 +55,7 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign, chainId, onDonate
           live campaign as permanently empty. */}
       <div className="mb-4">
         <div className="font-mono text-3xl font-bold tabular-nums tracking-tight text-content-primary">
-          {isLoading ? '—' : formatValue(grandTotal)}
+          {isLoading || pricesUnavailable ? '—' : formatValue(grandTotal)}
         </div>
         <div className="text-xs text-content-faint">
           raised in total{currency !== 'USD' ? ` (shown in ${currency})` : ''}
@@ -78,13 +78,20 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign, chainId, onDonate
                 <span className="font-mono text-sm text-content-secondary">
                   {formatToken(t.raised, t.token)}
                 </span>
-                <span className="font-mono text-xs text-content-faint">
-                  ≈ {formatUsd(usd)} · {formatCop(usd * fx.usdToCop, { approx: false })}
-                </span>
+                {!fx.pricesUnavailable && (
+                  <span className="font-mono text-xs text-content-faint">
+                    ≈ {formatUsd(usd)} · {formatCop(usd * fx.usdToCop, { approx: false })}
+                  </span>
+                )}
               </div>
             );
           })}
-          {fx.usdToCopIsStale && (
+          {fx.pricesUnavailable && (
+            <p className="mb-0 py-2 text-xs text-content-muted">
+              Dollar and peso values are hidden — prices are unavailable right now. The amounts above are exact.
+            </p>
+          )}
+          {!fx.pricesUnavailable && fx.usdToCopIsStale && (
             <p className="mb-0 py-2 text-xs text-content-muted">
               Peso values are approximate — the TRM feed is unavailable right now.
             </p>

@@ -2,6 +2,8 @@ import { useState } from 'react';
 import Head from 'next/head';
 import { useWallets } from '@privy-io/react-auth';
 import AdminShell from '../../components/admin/AdminShell';
+import { AccessManager } from '../../components/admin/AccessManager';
+import { buttonClass } from '../../components/swag/AdminPrimitives';
 import SwitchChainButton from '../../components/shared/SwitchChainButton';
 import { useRequireChain } from '../../hooks/useRequireChain';
 import CampaignAdminForm from '../../components/donations/CampaignAdminForm';
@@ -21,7 +23,9 @@ import {
   useReceiptMinterStatus,
 } from '../../hooks/donations/useDonationAdmin';
 
-type Tab = 'campaigns' | 'create' | 'receipts' | 'bank';
+type Tab = 'campaigns' | 'receipts' | 'bank' | 'access';
+
+const TAB_LABEL: Record<Tab, string> = { campaigns: 'Campaigns', receipts: 'Receipts', bank: 'Bank', access: 'Access' };
 
 export default function DonationsAdminPage() {
   const { ready } = useWallets();
@@ -41,6 +45,7 @@ export default function DonationsAdminPage() {
   const { data: campaigns = [] } = useActiveCampaigns(chainId);
   const [tab, setTab] = useState<Tab>('campaigns');
   const [selectedCampaign, setSelectedCampaign] = useState<number | null>(null);
+  const [creating, setCreating] = useState(false);
 
   const [tierForm, setTierForm] = useState({ id: '1', name: '', uri: '' });
 
@@ -165,18 +170,18 @@ export default function DonationsAdminPage() {
         )}
 
         <div className="mb-5 flex gap-2 border-b border-line-hairline">
-          {(['campaigns', 'create', 'receipts', 'bank'] as Tab[]).map((t) => (
+          {(Object.keys(TAB_LABEL) as Tab[]).map((t) => (
             <button
               key={t}
               type="button"
               onClick={() => setTab(t)}
-              className={`px-4 py-2 text-sm font-semibold capitalize transition-colors ${
+              className={`px-4 py-2 text-sm font-semibold transition-colors ${
                 tab === t
                   ? 'border-b-2 border-eth-blue text-eth-blue-text'
                   : 'text-content-muted hover:text-content-primary'
               }`}
             >
-              {t}
+              {TAB_LABEL[t]}
             </button>
           ))}
         </div>
@@ -187,10 +192,21 @@ export default function DonationsAdminPage() {
           </div>
         )}
 
-        {tab === 'create' && (
-          <div className="max-w-xl rounded-card border border-line-hairline bg-surface-inset/50 p-5">
+        {tab === 'campaigns' && (
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-sm font-semibold text-content-secondary">
+              {campaigns.length} campaign{campaigns.length === 1 ? '' : 's'}
+            </h2>
+            <button type="button" onClick={() => setCreating((v) => !v)} className={buttonClass(creating ? 'secondary' : 'primary')}>
+              {creating ? 'Close' : 'Create campaign'}
+            </button>
+          </div>
+        )}
+
+        {tab === 'campaigns' && creating && (
+          <div className="mb-6 max-w-xl rounded-card border border-line-hairline bg-surface-inset/50 p-5">
             <h2 className="mb-4 text-sm font-bold text-content-primary">New campaign</h2>
-            <CampaignAdminForm chainId={chainId} onCreated={() => setTab('campaigns')} />
+            <CampaignAdminForm chainId={chainId} onCreated={() => setCreating(false)} />
           </div>
         )}
 
@@ -199,7 +215,7 @@ export default function DonationsAdminPage() {
             <div className="space-y-3">
               {campaigns.length === 0 && (
                 <p className="text-sm text-content-faint">
-                  No campaigns yet. Create one to begin.
+                  No campaigns yet. Use “Create campaign” to begin.
                 </p>
               )}
               {campaigns.map((c) => (
@@ -277,6 +293,8 @@ export default function DonationsAdminPage() {
             <BankAccountManager campaignId={campaignRowId ?? null} />
           </div>
         )}
+
+        {tab === 'access' && <AccessManager only={['donations', 'receipts']} />}
 
         {tab === 'receipts' && (
           <div className="max-w-xl space-y-4">

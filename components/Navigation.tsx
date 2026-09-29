@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { usePrivy } from '@privy-io/react-auth';
 import { useAdminRoles } from '../hooks/useAdminStatus';
+import { EthPriceTicker } from './shared/EthPriceTicker';
 import {
   AwardIcon,
   BagIcon,
@@ -116,7 +117,10 @@ const Navigation: React.FC = () => {
               </p>
             </>
           )}
-          <div className="ml-auto">{!authenticated && signInButton('sm')}</div>
+          <div className="ml-auto flex items-center gap-2">
+            <EthPriceTicker compact />
+            {!authenticated && signInButton('sm')}
+          </div>
         </div>
       </header>
 
@@ -145,6 +149,7 @@ const Navigation: React.FC = () => {
           )}
 
           <div className="flex items-center gap-2">
+            <EthPriceTicker />
             {authenticated ? (
               <button
                 type="button"
