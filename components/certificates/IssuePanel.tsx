@@ -60,7 +60,7 @@ export default function IssuePanel({
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [step, setStep] = useState<Step | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<{ hash: string; count: number } | null>(null);
+  const [result, setResult] = useState<{ hash: string; count: number; verb?: string } | null>(null);
 
   const address = wallet?.address as Address | undefined;
 
@@ -78,7 +78,56 @@ export default function IssuePanel({
   }, [address]);
 
   const ready = selected.filter((r) => !r.issuedTx && r.wallet && r.metadataCid);
-  const blocked = selected.length - ready.length;
+  // Already minted, selected to re-point their metadata (a corrected diploma).
+  const minted = selected.filter((r) => r.issuedTx && r.tokenId && r.metadataCid);
+  const blocked = selected.length - ready.length - minted.length;
+  const [syncing, setSyncing] = useState<string | null>(null);
+
+  /**
+   * setTokenCid for each selected minted token whose on-chain tokenURI is not
+   * ipfs://<metadata_cid> any more. One sponsored tx per token; the contract
+   * emits ERC-4906 MetadataUpdate so marketplaces refetch.
+   */
+  async function syncMetadata() {
+    if (step || syncing) return;
+    setError(null);
+    setResult(null);
+    setSyncing('Revisando en la cadena…');
+    let changed = 0;
+    let last = '';
+    try {
+      const client = publicClientFor(CERT_CHAIN_ID);
+      if (!chain.ready) {
+        const switched = await chain.switchTo();
+        if (!switched) throw new Error('Cambia tu wallet a Ethereum.');
+      }
+      for (const r of minted) {
+        const uri = (await client.readContract({
+          address: CERT_ADDRESS,
+          abi: CERT_ABI,
+          functionName: 'tokenURI',
+          args: [BigInt(r.tokenId as string)],
+        })) as string;
+        if (uri === `ipfs://${r.metadataCid}`) continue;
+        setSyncing(`Actualizando #${r.tokenId}…`);
+        const data = encodeFunctionData({
+          abi: CERT_ABI,
+          functionName: 'setTokenCid',
+          args: [BigInt(r.tokenId as string), r.metadataCid as string],
+        });
+        const { hash } = await sendTransaction({ to: CERT_ADDRESS, data, chainId: CERT_CHAIN_ID }, { sponsor: true });
+        const receipt = await client.waitForTransactionReceipt({ hash });
+        if (receipt.status !== 'success') throw new Error(`La actualización de #${r.tokenId} falló en la cadena.`);
+        changed++;
+        last = hash;
+      }
+      setResult({ hash: last, count: changed, verb: changed ? 'actualizado' : 'ya al día' });
+    } catch (e) {
+      setError(translate(e));
+    } finally {
+      setSyncing(null);
+    }
+  }
 
   async function issue() {
     if (step) return;
@@ -164,25 +213,39 @@ export default function IssuePanel({
         ) : !chain.ready ? (
           <SwitchChainButton chain={chain} />
         ) : (
-          <Button onClick={issue} disabled={Boolean(step) || ready.length === 0}>
-            {step ? STEP_LABEL[step] : `Emitir ${ready.length} NFT${ready.length === 1 ? '' : 's'}`}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            {minted.length > 0 && (
+              <Button variant="secondary" onClick={syncMetadata} disabled={Boolean(step) || Boolean(syncing)}>
+                {syncing ?? `Actualizar metadata (${minted.length})`}
+              </Button>
+            )}
+            <Button onClick={issue} disabled={Boolean(step) || Boolean(syncing) || ready.length === 0}>
+              {step ? STEP_LABEL[step] : `Emitir ${ready.length} NFT${ready.length === 1 ? '' : 's'}`}
+            </Button>
+          </div>
         )}
       </div>
 
       {selected.length === 0 && <p className="mt-2 text-xs text-content-muted">Selecciona certificados en la tabla.</p>}
       {blocked > 0 && (
         <p className="mt-2 text-xs text-content-muted">
-          {blocked} de los seleccionados no se incluyen: ya emitidos, o sin wallet o metadata.
+          {blocked} de los seleccionados no se incluyen: les falta wallet o metadata.
         </p>
       )}
       {error && <p className="mt-2 text-sm text-signal-reverted">{error}</p>}
       {result && (
         <p className="mt-2 text-sm text-signal-confirmed">
-          {result.count} emitido{result.count === 1 ? '' : 's'} ·{' '}
-          <a href={explorerTx(CERT_CHAIN_ID, result.hash)} target="_blank" rel="noopener noreferrer" className="underline">
-            ver transacción
-          </a>
+          {result.verb === 'ya al día'
+            ? 'La metadata de los seleccionados ya estaba al día.'
+            : `${result.count} ${result.verb ?? 'emitido'}${result.count === 1 ? '' : 's'}`}
+          {result.hash && (
+            <>
+              {' '}·{' '}
+              <a href={explorerTx(CERT_CHAIN_ID, result.hash)} target="_blank" rel="noopener noreferrer" className="underline">
+                ver transacción
+              </a>
+            </>
+          )}
         </p>
       )}
     </div>
