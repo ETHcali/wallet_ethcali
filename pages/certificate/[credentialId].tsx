@@ -186,7 +186,8 @@ export default function CredentialPage({ cert: built }: Props) {
                   </a>
                 </Row>
               )}
-              <Row label="Date">{formatDate(cert.issueDate)}</Row>
+              {ev && <Row label="Event dates">{ev.eventDates}</Row>}
+              <Row label="Issue date (UTC)">{formatDate(cert.issueDate)}</Row>
               {cert.honors.length > 0 && (
                 <Row label="Prizes">
                   <span className="flex flex-wrap justify-end gap-1.5">

@@ -16,6 +16,12 @@ export interface CertEvent {
   /** "Name" on LinkedIn. Short enough to read in a profile list. */
   credentialName: string;
   venue: string;
+  /** Diploma centre: "at <headline>", then the chapter line under it. */
+  headline: string;
+  chapter: string;
+  /** Diploma footer: where and when the event ran (the issue date is per token). */
+  location: string;
+  eventDates: string;
   /** Short event name for the credential page, and where it lives on ethcali.org. */
   eventName: string;
   eventUrl: string;
@@ -54,6 +60,10 @@ export const CERT_EVENTS: Record<string, CertEvent> = {
     title: 'EAG Global Buildathon · Ethereum Builders Tour',
     credentialName: 'Builder at EAG Global Buildathon 2026',
     venue: 'Universidad Icesi · Cali, Colombia',
+    headline: 'EAG Global Buildathon 2026',
+    chapter: 'Ethereum Builders Tour · Colombia chapter',
+    location: 'Universidad Icesi, Cali',
+    eventDates: 'Sep 19–20, 2026',
     eventName: 'EAG Global Buildathon · Colombia',
     eventUrl: 'https://www.ethcali.org/builders-tour',
     venueName: 'Auditorio SIDOC — Universidad Icesi, Cali',
@@ -114,15 +124,15 @@ export function parseHonors(raw: unknown): Honor[] {
  * LinkedIn's "Add to profile" link, with every field it accepts filled in.
  * Skills and media are not among them; the guide on the claim page covers those.
  */
-export function linkedInAddUrl(eventKey: string, credentialId: string): string | null {
+export function linkedInAddUrl(eventKey: string, credentialId: string, issueDate?: string): string | null {
   const ev = CERT_EVENTS[eventKey];
   if (!ev) return null;
   const q = new URLSearchParams({
     startTask: 'CERTIFICATION_NAME',
     name: ev.credentialName,
     organizationId: LINKEDIN_ORG.id,
-    issueYear: String(ev.issueYear),
-    issueMonth: String(ev.issueMonth),
+    issueYear: issueDate ? String(Number(issueDate.slice(0, 4))) : String(ev.issueYear),
+    issueMonth: issueDate ? String(Number(issueDate.slice(5, 7))) : String(ev.issueMonth),
     certUrl: credentialUrl(credentialId),
     certId: credentialId,
   });

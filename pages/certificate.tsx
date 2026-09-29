@@ -226,7 +226,7 @@ function CertificateHeader({ cert }: { cert: CertificateView }) {
  */
 function LinkedInBlock({ cert }: { cert: CertificateView }) {
   const ev = CERT_EVENTS[cert.event];
-  const addUrl = linkedInAddUrl(cert.event, cert.credentialId);
+  const addUrl = linkedInAddUrl(cert.event, cert.credentialId, cert.issueDate);
   const [, mm] = cert.issueDate.split('-').map(Number);
   const year = cert.issueDate.slice(0, 4);
 
