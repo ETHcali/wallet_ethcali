@@ -11,9 +11,9 @@ import { parseHonors } from './events';
 import type { AdminCertificate, CertificateView, PublicCertificate } from '../../types/certificates';
 
 export const OWNER_COLUMNS =
-  'id, event, project_slug, project_name, member_name, email, credential_id, issue_date, honors, wallet, claimed_at, issued_tx';
+  'id, event, project_slug, project_name, member_name, email, credential_id, issue_date, honors, wallet, claimed_at, issued_tx, token_id, image_cid';
 
-export const ADMIN_COLUMNS = `${OWNER_COLUMNS}, emails, checked_in_at`;
+export const ADMIN_COLUMNS = `${OWNER_COLUMNS}, emails, checked_in_at, metadata_cid`;
 
 export interface CertificateRow {
   id: number;
@@ -28,6 +28,8 @@ export interface CertificateRow {
   wallet: string | null;
   claimed_at: string | null;
   issued_tx: string | null;
+  token_id: number | string | null;
+  image_cid: string | null;
 }
 
 export const toOwnerView = (r: CertificateRow): CertificateView => ({
@@ -42,13 +44,18 @@ export const toOwnerView = (r: CertificateRow): CertificateView => ({
   wallet: r.wallet,
   claimedAt: r.claimed_at,
   issuedTx: r.issued_tx,
+  tokenId: r.token_id == null ? null : String(r.token_id),
+  imageCid: r.image_cid,
 });
 
-export const toAdminView = (r: CertificateRow & { emails: string[]; checked_in_at: string | null }): AdminCertificate => ({
+export const toAdminView = (
+  r: CertificateRow & { emails: string[]; checked_in_at: string | null; metadata_cid: string | null }
+): AdminCertificate => ({
   ...toOwnerView(r),
   email: r.email,
   emails: r.emails,
   checkedInAt: r.checked_in_at,
+  metadataCid: r.metadata_cid,
 });
 
 /** Credential ids are uppercase letters, digits and one dash — anything else is not one. */
@@ -62,7 +69,7 @@ export async function getPublicCertificate(
   if (!CREDENTIAL_RE.test(id)) return null;
   const { data, error } = await db
     .from('builder_certificates')
-    .select('event, project_slug, project_name, member_name, credential_id, issue_date, honors, wallet, issued_tx')
+    .select('event, project_slug, project_name, member_name, credential_id, issue_date, honors, wallet, issued_tx, token_id, image_cid, metadata_cid')
     .eq('credential_id', id)
     .maybeSingle();
   if (error) throw new Error(error.message);
@@ -77,5 +84,8 @@ export async function getPublicCertificate(
     honors: parseHonors(data.honors),
     issuedTx: data.issued_tx,
     wallet: data.issued_tx ? data.wallet : null,
+    tokenId: data.token_id == null ? null : String(data.token_id),
+    imageCid: data.image_cid,
+    metadataCid: data.metadata_cid,
   };
 }

@@ -35,6 +35,7 @@ import {
   honorLabel,
   linkedInAddUrl,
 } from '../lib/certificates/events';
+import { openseaUrl } from '../lib/certificates/nft';
 import type {
   CertificateClaimResponse,
   CertificatesResponse,
@@ -315,15 +316,20 @@ function WalletBlock({
 
   return (
     <div className="p-5">
-      <h2 className="text-base font-semibold text-content-primary">2 · Recibe el NFT</h2>
+      <h2 className="text-base font-semibold text-content-primary">2 · Tu NFT</h2>
 
       {cert.issuedTx ? (
         <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
           <span className="inline-flex items-center gap-1 font-medium text-signal-confirmed">
             <CheckIcon className="h-4 w-4" />
-            Emitido
+            NFT #{cert.tokenId} en tu wallet
           </span>
           {cert.wallet && <AddressLink address={cert.wallet} />}
+          {cert.tokenId && (
+            <a href={openseaUrl(cert.tokenId)} target="_blank" rel="noopener noreferrer" className="text-xs text-eth-blue-text hover:underline">
+              Ver en OpenSea ↗
+            </a>
+          )}
           <a
             href={explorerTx(DEFAULT_CHAIN.id, cert.issuedTx)}
             target="_blank"
@@ -336,8 +342,8 @@ function WalletBlock({
       ) : (
         <>
           <p className="mt-1 text-sm text-content-muted">
-            Tu certificado también será un NFT en Ethereum, emitido por nosotros sin costo de gas. Elige a
-            qué wallet va; puedes cambiarla hasta que lo emitamos.
+            Tu certificado también es un NFT soulbound en Ethereum, emitido por ETH Cali sin costo de gas
+            para ti. Va a la wallet de abajo; puedes cambiarla hasta que lo emitamos.
           </p>
 
           {cert.wallet && (

@@ -17,6 +17,10 @@ export interface CertificateView {
   claimedAt: string | null;
   /** Set once the certificate is issued on chain; the wallet is then fixed. */
   issuedTx: string | null;
+  /** The NFT, once minted (arrives with issuedTx). */
+  tokenId: string | null;
+  /** The diploma PNG on IPFS (the NFT's image), once pinned. */
+  imageCid: string | null;
 }
 
 /** What anyone holding the credential URL may see. No email, ever. */
@@ -31,6 +35,9 @@ export interface PublicCertificate {
   issuedTx: string | null;
   /** Only once issued: the address the NFT went to. */
   wallet: string | null;
+  tokenId: string | null;
+  imageCid: string | null;
+  metadataCid: string | null;
 }
 
 export interface CertificatesResponse {
@@ -46,6 +53,13 @@ export interface AdminCertificate extends CertificateView {
   email: string;
   emails: string[];
   checkedInAt: string | null;
+  /** The ERC-721 JSON on IPFS; what issue() mints against. */
+  metadataCid: string | null;
+}
+
+export interface IssueConfirmResponse {
+  /** Credential ids whose mint this transaction proved, with their token ids. */
+  issued: { credentialId: string; tokenId: string }[];
 }
 
 export interface AdminCertificatesResponse {

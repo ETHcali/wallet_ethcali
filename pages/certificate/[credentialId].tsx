@@ -3,15 +3,17 @@
  *
  * This is the "Credential URL" a builder puts on LinkedIn, so it has to work
  * for a recruiter who has never heard of us: no sign-in, real HTML with the
- * builder's name in the OG tags, and the diploma readable at a glance.
+ * builder's name in the OG tags, and the diploma itself — the same PNG that is
+ * the NFT's image on IPFS — rather than a re-drawing of it. Once the
+ * certificate is minted, the NFT panel shows the token, the wallet holding it,
+ * and links to Etherscan, OpenSea and the metadata, so the URL on a profile
+ * never has to change.
  *
  * Prerendered at build and revalidated, never rendered per request: _app
  * mounts PrivyProvider, and loading @privy-io/react-auth in a Vercel request
  * function fails (its ESM build imports named exports from CommonJS
  * styled-components). Every other page in the app is static for the same
- * reason. A failed revalidation keeps serving the last good page. It shows the diploma now; once
- * the certificate is minted as an NFT it also shows the token, so the URL on
- * a profile never has to change.
+ * reason. A failed revalidation keeps serving the last good page.
  */
 import type { GetStaticPaths, GetStaticProps } from 'next';
 import Head from 'next/head';
@@ -25,6 +27,13 @@ import {
   credentialUrl,
   honorLabel,
 } from '../../lib/certificates/events';
+import {
+  CERT_ADDRESS,
+  etherscanContractUrl,
+  etherscanTokenUrl,
+  ipfsHttp,
+  openseaUrl,
+} from '../../lib/certificates/nft';
 import { DEFAULT_CHAIN, explorerAddress, explorerTx } from '../../config/chains';
 import { truncateAddress } from '../../utils/linkedAccounts';
 import { CheckIcon } from '../../components/shared/icons';
@@ -33,8 +42,6 @@ import type { PublicCertificate } from '../../types/certificates';
 interface Props {
   cert: PublicCertificate;
 }
-
-const OG_IMAGE = 'https://www.ethcali.org/tour/builders-tour-closing.jpg';
 
 function formatDate(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number);
@@ -46,6 +53,17 @@ function formatDate(iso: string): string {
   });
 }
 
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-t border-line-hairline py-2.5 first:border-t-0">
+      <dt className="text-xs text-content-faint">{label}</dt>
+      <dd className="text-sm text-content-primary">{children}</dd>
+    </div>
+  );
+}
+
+const link = 'text-eth-blue-text hover:underline';
+
 export default function CredentialPage({ cert }: Props) {
   const ev = CERT_EVENTS[cert.event];
   const url = credentialUrl(cert.credentialId);
@@ -53,6 +71,8 @@ export default function CredentialPage({ cert }: Props) {
   const description = `${cert.memberName} built and shipped ${cert.projectName} at ${
     ev?.title ?? 'an ETH Cali event'
   }. Issued by ETH Cali.`;
+  const image = cert.imageCid ? ipfsHttp(cert.imageCid) : null;
+  const minted = Boolean(cert.issuedTx && cert.tokenId);
 
   return (
     <div className="min-h-screen bg-surface-void">
@@ -64,121 +84,125 @@ export default function CredentialPage({ cert }: Props) {
         <meta key="og:url" property="og:url" content={url} />
         <meta key="og:title" property="og:title" content={title} />
         <meta key="og:description" property="og:description" content={description} />
-        <meta key="og:image" property="og:image" content={OG_IMAGE} />
+        {image && <meta key="og:image" property="og:image" content={image} />}
         <meta key="twitter:card" property="twitter:card" content="summary_large_image" />
         <meta key="twitter:title" property="twitter:title" content={title} />
         <meta key="twitter:description" property="twitter:description" content={description} />
-        <meta key="twitter:image" property="twitter:image" content={OG_IMAGE} />
+        {image && <meta key="twitter:image" property="twitter:image" content={image} />}
       </Head>
 
-      <main className="mx-auto w-full max-w-3xl px-4 py-8 md:py-14">
-        {/* The diploma, as the PDF draws it. */}
-        <article className="rounded-card border-2 border-eth-blue bg-black p-2">
-          <div className="rounded-[10px] border border-line-hairline px-5 py-10 text-center sm:px-10 sm:py-14">
+      <main className="mx-auto w-full max-w-4xl px-4 py-8 md:py-12">
+        <header className="mb-6 flex items-center justify-between gap-4">
+          <a href="https://ethcali.org" aria-label="ETH Cali">
             {/* eslint-disable-next-line @next/next/no-img-element -- static brand mark */}
-            <img src="/logo_eth_cali_white.png" alt="ETH Cali" className="mx-auto h-16 w-auto sm:h-20" />
-            <p className="mt-8 text-[11px] font-semibold uppercase tracking-[0.25em] text-eth-blue-text">
-              Certificado de builder · Builder certificate
+            <img src="/logo_eth_cali_white.png" alt="ETH Cali" className="h-10 w-auto" />
+          </a>
+          <span className="inline-flex items-center gap-1.5 rounded-chip border border-signal-confirmed/40 bg-signal-confirmed/10 px-3 py-1 text-xs font-medium text-signal-confirmed">
+            <CheckIcon className="h-3.5 w-3.5" />
+            Certificado válido · Valid certificate
+          </span>
+        </header>
+
+        {/* The diploma, as pinned — the NFT's own image. */}
+        {image ? (
+          <a href={image} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-card border border-line-hairline bg-white shadow-lg">
+            {/* eslint-disable-next-line @next/next/no-img-element -- IPFS gateway, not a Next image host */}
+            <img src={image} alt={`Certificado de builder de ${cert.memberName} — ${cert.projectName}`} className="h-auto w-full" />
+          </a>
+        ) : (
+          <div className="rounded-card border border-line-hairline bg-surface-slab p-10 text-center">
+            <p className="text-3xl font-bold text-content-primary">{cert.memberName}</p>
+            <p className="mt-2 text-xl text-eth-blue-text">{cert.projectName}</p>
+          </div>
+        )}
+
+        <div className="mt-6 grid gap-4 md:grid-cols-2">
+          {/* What it certifies */}
+          <section className="rounded-card border border-line-hairline bg-surface-slab p-5">
+            <h1 className="text-lg font-bold text-content-primary">{cert.memberName}</h1>
+            <p className="text-sm text-content-muted">
+              construyó y publicó · built and shipped <span className="font-semibold text-content-primary">{cert.projectName}</span>
             </p>
-            <p className="mt-3 text-sm text-content-muted">Se certifica que · This certifies that</p>
-            <h1 className="mt-2 text-3xl font-bold text-content-primary sm:text-5xl">{cert.memberName}</h1>
-            <div className="mx-auto mt-3 h-px w-2/3 bg-eth-blue" />
-            <p className="mt-5 text-sm text-content-muted">construyó y publicó · built and shipped</p>
-            <p className="mt-1 text-2xl font-bold text-eth-blue-text sm:text-3xl">{cert.projectName}</p>
-            {ev && (
-              <>
-                <p className="mt-4 text-base text-content-primary">{ev.title}</p>
-                <p className="mt-1 text-xs text-content-muted">
-                  {ev.venue} · {ev.dates.es}
-                </p>
-              </>
-            )}
             {cert.honors.length > 0 && (
-              <div className="mt-5 flex flex-wrap justify-center gap-2">
+              <div className="mt-3 flex flex-wrap gap-2">
                 {cert.honors.map((h) => (
-                  <span
-                    key={`${h.track}-${h.place}`}
-                    className="rounded-chip bg-eth-blue px-3 py-1 text-xs font-bold text-on-brand"
-                  >
-                    {honorLabel(h, 'es')} · {honorLabel(h, 'en')}
+                  <span key={`${h.track}-${h.place}`} className="rounded-chip bg-eth-blue px-2.5 py-1 text-xs font-bold text-on-brand">
+                    {honorLabel(h, 'es')}
                   </span>
                 ))}
               </div>
             )}
-
-            {ev && ev.sponsors.length > 0 && (
-              <div className="mt-8">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-content-faint">
-                  Con el apoyo de · With the support of
-                </p>
-                <div className="mt-3 flex flex-wrap items-center justify-center gap-x-7 gap-y-3">
-                  {ev.sponsors.map((s) => (
-                    // eslint-disable-next-line @next/next/no-img-element -- sponsor artwork served by ethcali.org
-                    <img key={s.name} src={s.src} alt={s.name} title={s.name} style={{ height: s.height }} className="w-auto" />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <dl className="mt-10 grid gap-4 text-center sm:grid-cols-3">
-              <div>
-                <dt className="text-[10px] font-semibold uppercase tracking-wide text-content-faint">
-                  Emitido por · Issued by
-                </dt>
-                <dd className="mt-1 text-sm text-content-primary">
-                  <a href={LINKEDIN_ORG.url} target="_blank" rel="noopener noreferrer" className="hover:text-eth-blue-text">
-                    ETH Cali
-                  </a>
-                </dd>
-              </div>
-              <div>
-                <dt className="text-[10px] font-semibold uppercase tracking-wide text-content-faint">Fecha · Date</dt>
-                <dd className="mt-1 text-sm text-content-primary">{formatDate(cert.issueDate)}</dd>
-              </div>
-              <div>
-                <dt className="text-[10px] font-semibold uppercase tracking-wide text-content-faint">
-                  ID de credencial · Credential ID
-                </dt>
-                <dd className="mt-1 font-mono text-sm text-content-primary">{cert.credentialId}</dd>
-              </div>
+            <dl className="mt-4">
+              {ev && <Row label="Evento · Event">{ev.title}</Row>}
+              {ev && <Row label="Lugar · Venue">{ev.venue}</Row>}
+              <Row label="Fecha · Date">{formatDate(cert.issueDate)}</Row>
+              <Row label="Emitido por · Issued by">
+                <a href={LINKEDIN_ORG.url} target="_blank" rel="noopener noreferrer" className={link}>
+                  ETH Cali
+                </a>
+              </Row>
+              <Row label="ID de credencial · Credential ID">
+                <span className="font-mono">{cert.credentialId}</span>
+              </Row>
             </dl>
-          </div>
-        </article>
+          </section>
 
-        {/* Verified, and where the NFT is once it exists. */}
-        <section className="mt-6 rounded-card border border-line-hairline bg-surface-slab p-5 text-sm">
-          <p className="inline-flex items-center gap-2 font-medium text-signal-confirmed">
-            <CheckIcon className="h-4 w-4" />
-            Certificado válido, emitido por ETH Cali · Valid certificate issued by ETH Cali
-          </p>
-          {cert.issuedTx && cert.wallet ? (
-            <p className="mt-2 text-content-secondary">
-              NFT emitido a{' '}
-              <a
-                href={explorerAddress(DEFAULT_CHAIN.id, cert.wallet)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-mono text-eth-blue-text hover:underline"
-              >
-                {truncateAddress(cert.wallet)}
-              </a>{' '}
-              ·{' '}
-              <a
-                href={explorerTx(DEFAULT_CHAIN.id, cert.issuedTx)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-eth-blue-text hover:underline"
-              >
-                ver transacción
-              </a>
-            </p>
-          ) : (
-            <p className="mt-2 text-content-muted">
-              La versión onchain (NFT) se emite pronto y aparecerá aquí. · The onchain version (NFT) is
-              issued soon and will appear here.
-            </p>
-          )}
-        </section>
+          {/* The NFT */}
+          <section className="rounded-card border border-line-hairline bg-surface-slab p-5">
+            <h2 className="text-lg font-bold text-content-primary">NFT</h2>
+            <p className="text-sm text-content-muted">Soulbound · Ethereum</p>
+            <dl className="mt-4">
+              <Row label="Contrato · Contract">
+                <a href={etherscanContractUrl} target="_blank" rel="noopener noreferrer" className={`font-mono ${link}`}>
+                  {truncateAddress(CERT_ADDRESS)}
+                </a>
+              </Row>
+              {minted ? (
+                <>
+                  <Row label="Token">
+                    <a href={etherscanTokenUrl(cert.tokenId as string)} target="_blank" rel="noopener noreferrer" className={`font-mono ${link}`}>
+                      #{cert.tokenId}
+                    </a>
+                  </Row>
+                  {cert.wallet && (
+                    <Row label="En la wallet · Held by">
+                      <a href={explorerAddress(DEFAULT_CHAIN.id, cert.wallet)} target="_blank" rel="noopener noreferrer" className={`font-mono ${link}`}>
+                        {truncateAddress(cert.wallet)}
+                      </a>
+                    </Row>
+                  )}
+                  <Row label="Transacción · Transaction">
+                    <a href={explorerTx(DEFAULT_CHAIN.id, cert.issuedTx as string)} target="_blank" rel="noopener noreferrer" className={`font-mono ${link}`}>
+                      {truncateAddress(cert.issuedTx as string)}
+                    </a>
+                  </Row>
+                  <Row label="Ver en · View on">
+                    <a href={openseaUrl(cert.tokenId as string)} target="_blank" rel="noopener noreferrer" className={link}>
+                      OpenSea
+                    </a>{' '}
+                    ·{' '}
+                    <a href={etherscanTokenUrl(cert.tokenId as string)} target="_blank" rel="noopener noreferrer" className={link}>
+                      Etherscan
+                    </a>
+                    {cert.metadataCid && (
+                      <>
+                        {' '}
+                        ·{' '}
+                        <a href={ipfsHttp(cert.metadataCid)} target="_blank" rel="noopener noreferrer" className={link}>
+                          Metadata
+                        </a>
+                      </>
+                    )}
+                  </Row>
+                </>
+              ) : (
+                <Row label="Estado · Status">
+                  <span className="text-content-muted">Pendiente de emisión · Pending</span>
+                </Row>
+              )}
+            </dl>
+          </section>
+        </div>
 
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
           <a
@@ -199,7 +223,7 @@ export default function CredentialPage({ cert }: Props) {
             href="/certificate"
             className="inline-flex min-h-tap items-center justify-center rounded-control px-5 text-sm font-semibold text-content-muted hover:text-content-primary"
           >
-            ¿Es tuyo? Reclámalo · Yours? Claim it
+            ¿Es tuyo? Entra · Yours? Sign in
           </Link>
         </div>
       </main>
