@@ -16,6 +16,12 @@ export interface CertEvent {
   /** "Name" on LinkedIn. Short enough to read in a profile list. */
   credentialName: string;
   venue: string;
+  /** Short event name for the credential page, and where it lives on ethcali.org. */
+  eventName: string;
+  eventUrl: string;
+  /** The venue as the credential page names it, and its Google Maps link. */
+  venueName: string;
+  venueMapsUrl: string;
   dates: { es: string; en: string };
   /** For LinkedIn's issueYear / issueMonth. */
   issueYear: number;
@@ -48,6 +54,13 @@ export const CERT_EVENTS: Record<string, CertEvent> = {
     title: 'EAG Global Buildathon · Ethereum Builders Tour',
     credentialName: 'Builder — EAG Global Buildathon, Cali 2026',
     venue: 'Universidad Icesi · Cali, Colombia',
+    eventName: 'EAG Global Buildathon · Colombia',
+    eventUrl: 'https://www.ethcali.org/builders-tour',
+    venueName: 'Auditorio SIDOC — Universidad Icesi, Cali',
+    // The same query ethcali.org's Builders Tour page uses (TOUR.venue.query).
+    venueMapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+      'ICESI University Cl. 18 #122-135, Barrio Pance, Cali, Valle del Cauca, Colombia'
+    )}`,
     dates: { es: '19–20 de septiembre de 2026', en: '19–20 September 2026' },
     issueYear: 2026,
     issueMonth: 9,

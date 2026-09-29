@@ -27,7 +27,6 @@ import { getSupabaseAdmin } from '../../lib/supabase';
 import { getPublicCertificate } from '../../lib/certificates/rows';
 import {
   CERT_EVENTS,
-  LINKEDIN_ORG,
   credentialPdfPath,
   credentialUrl,
   honorLabel,
@@ -155,39 +154,59 @@ export default function CredentialPage({ cert: built }: Props) {
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           {/* What it certifies */}
           <section className="rounded-card border border-line-hairline bg-surface-slab p-5">
-            <h1 className="text-lg font-bold text-content-primary">{cert.memberName}</h1>
-            <p className="text-sm text-content-muted">
-              construyó y publicó · built and shipped <span className="font-semibold text-content-primary">{cert.projectName}</span>
-            </p>
-            {cert.honors.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {cert.honors.map((h) => (
-                  <span key={`${h.track}-${h.place}`} className="rounded-chip bg-eth-blue px-2.5 py-1 text-xs font-bold text-on-brand">
-                    {honorLabel(h, 'es')}
-                  </span>
-                ))}
-              </div>
-            )}
+            <h2 className="text-lg font-bold text-content-primary">Detalles del certificado</h2>
+            <p className="text-sm text-content-muted">Certificate details</p>
             <dl className="mt-4">
-              {ev && <Row label="Evento · Event">{ev.title}</Row>}
-              {ev && <Row label="Lugar · Venue">{ev.venue}</Row>}
-              <Row label="Fecha · Date">{formatDate(cert.issueDate)}</Row>
-              <Row label="Emitido por · Issued by">
-                <a href={LINKEDIN_ORG.url} target="_blank" rel="noopener noreferrer" className={link}>
-                  ETH Cali
+              <Row label="Nombre · Name">
+                <span className="font-semibold">{cert.memberName}</span>
+              </Row>
+              <Row label="Proyecto · Project">
+                <a href={`https://devfolio.co/projects/${cert.projectSlug}`} target="_blank" rel="noopener noreferrer" className={link}>
+                  {cert.projectName}
                 </a>
               </Row>
+              {ev && (
+                <Row label="Evento · Event">
+                  <a href={ev.eventUrl} target="_blank" rel="noopener noreferrer" className={link}>
+                    {ev.eventName}
+                  </a>
+                </Row>
+              )}
+              {ev && (
+                <Row label="Lugar · Venue">
+                  <a href={ev.venueMapsUrl} target="_blank" rel="noopener noreferrer" className={link}>
+                    {ev.venueName}
+                  </a>
+                </Row>
+              )}
+              <Row label="Fecha · Date">{formatDate(cert.issueDate)}</Row>
+              {cert.honors.length > 0 && (
+                <Row label="Premios · Prizes">
+                  <span className="flex flex-wrap justify-end gap-1.5">
+                    {cert.honors.map((h) => (
+                      <span key={`${h.track}-${h.place}`} className="rounded-chip bg-eth-blue px-2 py-0.5 text-xs font-bold text-on-brand">
+                        {honorLabel(h, 'es')}
+                      </span>
+                    ))}
+                  </span>
+                </Row>
+              )}
               <Row label="ID de credencial · Credential ID">
                 <span className="font-mono">{cert.credentialId}</span>
+              </Row>
+              <Row label="Emisor · Issuer">
+                <a href="https://www.ethcali.org" target="_blank" rel="noopener noreferrer" className={link}>
+                  ETH Cali
+                </a>
               </Row>
             </dl>
           </section>
 
           {/* The NFT */}
           <section className="flex flex-col rounded-card border border-line-hairline bg-surface-slab p-5">
-            <h2 className="text-lg font-bold text-content-primary">NFT</h2>
+            <h2 className="text-lg font-bold text-content-primary">Emisión en blockchain</h2>
             <p className="text-sm text-content-muted">
-              {minted ? 'Emitido · Issued' : 'Pendiente de emisión · Pending'}
+              Blockchain issuance · {minted ? 'Emitido · Issued' : 'Pendiente · Pending'}
             </p>
             <dl className="mt-4">
               <Row label="Token">Non-Fungible Token (NFT)</Row>
