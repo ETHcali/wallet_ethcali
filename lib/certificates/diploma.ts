@@ -105,7 +105,6 @@ function addLink(doc: PDFDocument, page: PDFPage, url: string, r: { x: number; y
   else page.node.set(PDFName.of('Annots'), doc.context.obj([ref]));
 }
 
-const MONTHS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 export async function renderDiploma(input: DiplomaInput): Promise<Uint8Array> {
   const ev = CERT_EVENTS[input.event];
@@ -164,14 +163,12 @@ export async function renderDiploma(input: DiplomaInput): Promise<Uint8Array> {
   }
 
   // Issuer · date · credential.
-  const [yy, mm, dd] = input.issueDate.split('-').map(Number);
-  const dateEn = `${MONTHS_EN[mm - 1]} ${dd}, ${yy}`;
-  // Two rows of four: the event (who issued, where, when it ran, which
-  // credential), then the token (when it was issued, on which chain, which
-  // contract, which id). The issue date is the NFT's, not the event's.
-  const cols = 4;
-  const colW = (W - 100) / cols;
-  const row = (y: number, cells: [string, string][]) =>
+  // Two rows: the event (who issued, where, when it ran, which credential),
+  // then the token (chain, contract, id). No issue date: a diploma is pinned
+  // before its mint, so it only carries what cannot change; the exact moment
+  // of issue is the block's, shown live on the credential page and Etherscan.
+  const row = (y: number, cells: [string, string][]) => {
+    const colW = (W - 100) / cells.length;
     cells.forEach(([label, value], i) => {
       const cx = 50 + colW * i + colW / 2;
       page.drawText(label, { x: cx - bold.widthOfTextAtSize(label, 7) / 2, y: y + 14, size: 7, font: bold, color: FAINT });
@@ -179,6 +176,7 @@ export async function renderDiploma(input: DiplomaInput): Promise<Uint8Array> {
       while (size > 7 && regular.widthOfTextAtSize(value, size) > colW - 8) size -= 0.5;
       page.drawText(value, { x: cx - regular.widthOfTextAtSize(value, size) / 2, y, size, font: regular, color: INK });
     });
+  };
   row(176, [
     ['ISSUED BY', 'ETH CALI'],
     ['LOCATION', ev.location],
@@ -186,7 +184,6 @@ export async function renderDiploma(input: DiplomaInput): Promise<Uint8Array> {
     ['CREDENTIAL ID', input.credentialId],
   ]);
   row(137, [
-    ['ISSUE DATE (UTC)', dateEn],
     ['BLOCKCHAIN', 'Ethereum Mainnet'],
     ['CONTRACT', `${CERT_ADDRESS.slice(0, 6)}…${CERT_ADDRESS.slice(-4)}`],
     ['TOKEN ID', input.tokenId ? `#${input.tokenId}` : '—'],
