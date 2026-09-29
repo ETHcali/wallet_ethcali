@@ -4,10 +4,11 @@
  * The history of who built at each event: all their emails, whether they
  * checked in on Luma, whether they claimed and to which wallet, and whether
  * the NFT is out. Unlike the owner and public views this carries emails, so it
- * sits behind requireAdmin (ADMIN_ROLE on chain), the same gate as site content.
+ * sits behind requireCertAdmin: ADMIN_ROLE on BuilderCertificate, read on chain.
  */
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { requireAdmin, AdminAuthError } from '../../../lib/adminAuth';
+import { requireCertAdmin } from '../../../lib/certificates/requireCertAdmin';
+import { sendAuthError } from '../../../lib/swag/requireUser';
 import { getSupabaseAdmin } from '../../../lib/supabase';
 import { ADMIN_COLUMNS, toAdminView, type CertificateRow } from '../../../lib/certificates/rows';
 import { logger } from '../../../utils/logger';
@@ -23,10 +24,9 @@ export default async function handler(
   }
 
   try {
-    await requireAdmin(req);
+    await requireCertAdmin(req);
   } catch (e) {
-    const err = e as AdminAuthError;
-    return res.status(err.status ?? 401).json({ error: err.message });
+    return sendAuthError(res, e);
   }
 
   try {

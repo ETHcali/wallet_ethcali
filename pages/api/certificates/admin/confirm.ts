@@ -8,12 +8,13 @@
  * wallet match the log. A log that matches no row, or a row whose wallet is
  * not the log's recipient, is reported and not written.
  *
- * Admin-only (ADMIN_ROLE on chain, lib/adminAuth.ts). Idempotent: confirming
+ * Admin-only: ADMIN_ROLE on BuilderCertificate (lib/certificates/requireCertAdmin.ts). Idempotent: confirming
  * the same transaction twice changes nothing.
  */
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { decodeEventLog, type Hex } from 'viem';
-import { requireAdmin, AdminAuthError } from '../../../../lib/adminAuth';
+import { requireCertAdmin } from '../../../../lib/certificates/requireCertAdmin';
+import { sendAuthError } from '../../../../lib/swag/requireUser';
 import { getSupabaseAdmin } from '../../../../lib/supabase';
 import { publicClientFor } from '../../../../config/chains';
 import { CERT_ABI, CERT_ADDRESS, CERT_CHAIN_ID, bytes32ToCredential } from '../../../../lib/certificates/nft';
@@ -31,10 +32,9 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' });
   }
   try {
-    await requireAdmin(req);
+    await requireCertAdmin(req);
   } catch (e) {
-    const err = e as AdminAuthError;
-    return res.status(err.status ?? 401).json({ error: err.message });
+    return sendAuthError(res, e);
   }
 
   const txHash = (req.body ?? {}).txHash;
