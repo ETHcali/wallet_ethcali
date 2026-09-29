@@ -34,7 +34,7 @@ import {
 } from '../../lib/certificates/events';
 import {
   CERT_ADDRESS,
-  etherscanContractUrl,
+  etherscanContractTokenUrl,
   etherscanTokenUrl,
   ipfsHttp,
   openseaUrl,
@@ -167,59 +167,72 @@ export default function CredentialPage({ cert: built }: Props) {
           </section>
 
           {/* The NFT */}
-          <section className="rounded-card border border-line-hairline bg-surface-slab p-5">
+          <section className="flex flex-col rounded-card border border-line-hairline bg-surface-slab p-5">
             <h2 className="text-lg font-bold text-content-primary">NFT</h2>
-            <p className="text-sm text-content-muted">Soulbound · Ethereum</p>
+            <p className="text-sm text-content-muted">
+              {minted ? 'Emitido · Issued' : 'Pendiente de emisión · Pending'}
+            </p>
             <dl className="mt-4">
+              <Row label="Token">Non-Fungible Token (NFT)</Row>
+              <Row label="Tipo de propiedad · Ownership">Soulbound</Row>
+              <Row label="Blockchain">
+                <span className="inline-flex items-center gap-1.5">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- static chain icon */}
+                  <img src="/chains/ethereum.png" alt="" className="h-4 w-4 rounded-full" />
+                  Ethereum
+                </span>
+              </Row>
               <Row label="Contrato · Contract">
-                <a href={etherscanContractUrl} target="_blank" rel="noopener noreferrer" className={`font-mono ${link}`}>
+                <a href={etherscanContractTokenUrl} target="_blank" rel="noopener noreferrer" className={`font-mono ${link}`}>
                   {truncateAddress(CERT_ADDRESS)}
                 </a>
               </Row>
-              {minted ? (
-                <>
-                  <Row label="Token">
-                    <a href={etherscanTokenUrl(cert.tokenId as string)} target="_blank" rel="noopener noreferrer" className={`font-mono ${link}`}>
-                      #{cert.tokenId}
-                    </a>
-                  </Row>
-                  {cert.wallet && (
-                    <Row label="En la wallet · Held by">
-                      <a href={explorerAddress(DEFAULT_CHAIN.id, cert.wallet)} target="_blank" rel="noopener noreferrer" className={`font-mono ${link}`}>
-                        {truncateAddress(cert.wallet)}
-                      </a>
-                    </Row>
-                  )}
-                  <Row label="Transacción · Transaction">
-                    <a href={explorerTx(DEFAULT_CHAIN.id, cert.issuedTx as string)} target="_blank" rel="noopener noreferrer" className={`font-mono ${link}`}>
-                      {truncateAddress(cert.issuedTx as string)}
-                    </a>
-                  </Row>
-                  <Row label="Ver en · View on">
-                    <a href={openseaUrl(cert.tokenId as string)} target="_blank" rel="noopener noreferrer" className={link}>
-                      OpenSea
-                    </a>{' '}
-                    ·{' '}
-                    <a href={etherscanTokenUrl(cert.tokenId as string)} target="_blank" rel="noopener noreferrer" className={link}>
-                      Etherscan
-                    </a>
-                    {cert.metadataCid && (
-                      <>
-                        {' '}
-                        ·{' '}
-                        <a href={ipfsHttp(cert.metadataCid)} target="_blank" rel="noopener noreferrer" className={link}>
-                          Metadata
-                        </a>
-                      </>
-                    )}
-                  </Row>
-                </>
-              ) : (
-                <Row label="Estado · Status">
-                  <span className="text-content-muted">Pendiente de emisión · Pending</span>
+              <Row label="Token ID">
+                {minted ? (
+                  <a href={etherscanTokenUrl(cert.tokenId as string)} target="_blank" rel="noopener noreferrer" className={`font-mono ${link}`}>
+                    {cert.tokenId}
+                  </a>
+                ) : (
+                  <span className="text-content-muted">—</span>
+                )}
+              </Row>
+              {minted && cert.wallet && (
+                <Row label="En la wallet · Held by">
+                  <a href={explorerAddress(DEFAULT_CHAIN.id, cert.wallet)} target="_blank" rel="noopener noreferrer" className={`font-mono ${link}`}>
+                    {truncateAddress(cert.wallet)}
+                  </a>
+                </Row>
+              )}
+              {minted && (
+                <Row label="Transacción · Transaction">
+                  <a href={explorerTx(DEFAULT_CHAIN.id, cert.issuedTx as string)} target="_blank" rel="noopener noreferrer" className={`font-mono ${link}`}>
+                    {truncateAddress(cert.issuedTx as string)}
+                  </a>
                 </Row>
               )}
             </dl>
+            {minted && (
+              <div className="mt-auto flex flex-wrap gap-2 pt-4">
+                <a
+                  href={openseaUrl(cert.tokenId as string)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex min-h-tap items-center justify-center rounded-control bg-[#2081E2] px-4 text-sm font-bold text-white hover:bg-[#1868B7]"
+                >
+                  Ver en OpenSea · View on OpenSea ↗
+                </a>
+                {cert.metadataCid && (
+                  <a
+                    href={ipfsHttp(cert.metadataCid)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex min-h-tap items-center justify-center rounded-control border border-line-hairline px-4 text-sm font-semibold text-content-secondary hover:text-content-primary"
+                  >
+                    Metadata ↗
+                  </a>
+                )}
+              </div>
+            )}
           </section>
         </div>
 

@@ -32,3 +32,5 @@ export const openseaUrl = (tokenId: string | number) =>
 export const etherscanTokenUrl = (tokenId: string | number) =>
   `https://etherscan.io/nft/${CERT_ADDRESS}/${tokenId}`;
 export const etherscanContractUrl = `https://etherscan.io/address/${CERT_ADDRESS}`;
+/** The collection as a token on Etherscan: holders, transfers, inventory. */
+export const etherscanContractTokenUrl = `https://etherscan.io/token/${CERT_ADDRESS}`;
