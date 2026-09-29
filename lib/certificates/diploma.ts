@@ -45,8 +45,10 @@ const FAINT = rgb(0.55, 0.56, 0.63);
 // (every character renders as a dot). Same files ethcali.org publishes in
 // public/branding/fonts.
 const FONT_DIR = path.join(process.cwd(), 'lib/certificates/fonts');
-// The mark alone, brand-blue line art on transparency: the issuer's seal.
-const LOGO = path.join(process.cwd(), 'public/logoethcali.png');
+// The full mark (frame + Ethereum diamond), cropped from logo_eth_cali.png
+// without the ETH·CO CALI text. logoethcali.png is the frame alone and read
+// as an empty outline on the paper.
+const LOGO = path.join(process.cwd(), 'public/logo_eth_cali_mark.png');
 const SPONSOR_DIR = path.join(process.cwd(), 'lib/certificates/logos');
 const sponsorFiles = new Map<string, Buffer>();
 function sponsorFile(file: string): Buffer {

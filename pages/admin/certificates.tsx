@@ -187,7 +187,7 @@ export default function CertificatesAdmin() {
                       <input
                         type="checkbox"
                         aria-label={`Seleccionar ${r.memberName}`}
-                        disabled={Boolean(r.issuedTx) || !r.wallet || !r.metadataCid}
+                        disabled={!r.wallet || !r.metadataCid}
                         checked={picked.has(r.id)}
                         onChange={(e) =>
                           setPicked((prev) => {
