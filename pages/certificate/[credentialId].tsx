@@ -60,7 +60,7 @@ function formatDate(iso: string): string {
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-t border-line-hairline py-2.5 first:border-t-0">
+    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-line-hairline py-2.5 first:border-t-0">
       <dt className="text-xs text-content-faint">{label}</dt>
       <dd className="text-sm text-content-primary">{children}</dd>
     </div>
@@ -68,6 +68,23 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 }
 
 const link = 'text-eth-blue-text hover:underline';
+
+/**
+ * The Ethereum diamond, drawn to the text it sits beside: 1em tall, the
+ * foundation's four facet tones, no raster padding to throw off alignment.
+ */
+function EthereumMark() {
+  return (
+    <svg viewBox="0 0 256 417" className="h-[1.05em] w-auto shrink-0" aria-hidden>
+      <path fill="#8C8C8C" d="M127.96 0 125.2 9.5v275.67l2.76 2.75 127.96-75.64z" />
+      <path fill="#E8E8E8" d="M127.96 0 0 212.28l127.96 75.64V154.16z" />
+      <path fill="#8C8C8C" d="M127.96 312.19 126.4 314.1v98.2l1.56 4.57L256 236.59z" />
+      <path fill="#E8E8E8" d="M127.96 416.87V312.19L0 236.59z" />
+      <path fill="#3C3C3B" d="m127.96 287.92 127.96-75.64-127.96-58.12z" />
+      <path fill="#8C8C8C" d="m0 212.28 127.96 75.64V154.16z" />
+    </svg>
+  );
+}
 
 export default function CredentialPage({ cert: built }: Props) {
   // What can change after the build (the mint) is read live; see the status route.
@@ -177,8 +194,7 @@ export default function CredentialPage({ cert: built }: Props) {
               <Row label="Tipo de propiedad · Ownership">Soulbound</Row>
               <Row label="Blockchain">
                 <span className="inline-flex items-center gap-1.5">
-                  {/* eslint-disable-next-line @next/next/no-img-element -- static chain icon */}
-                  <img src="/chains/ethereum.png" alt="" className="h-4 w-4 rounded-full" />
+                  <EthereumMark />
                   Ethereum
                 </span>
               </Row>
@@ -221,16 +237,6 @@ export default function CredentialPage({ cert: built }: Props) {
                 >
                   Ver en OpenSea · View on OpenSea ↗
                 </a>
-                {cert.metadataCid && (
-                  <a
-                    href={ipfsHttp(cert.metadataCid)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex min-h-tap items-center justify-center rounded-control border border-line-hairline px-4 text-sm font-semibold text-content-secondary hover:text-content-primary"
-                  >
-                    Metadata ↗
-                  </a>
-                )}
               </div>
             )}
           </section>
