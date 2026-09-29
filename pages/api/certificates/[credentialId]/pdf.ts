@@ -27,7 +27,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const cert = await getPublicCertificate(getSupabaseAdmin(), raw);
     if (!cert) return res.status(404).json({ error: 'No such certificate' });
 
-    const pdf = await renderDiploma(cert);
+    const pdf = await renderDiploma({ ...cert, tokenId: cert.tokenId ?? cert.plannedTokenId });
     const filename = `ETHCali-certificado-${cert.credentialId}.pdf`;
 
     res.setHeader('Content-Type', 'application/pdf');

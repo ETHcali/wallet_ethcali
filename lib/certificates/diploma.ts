@@ -20,6 +20,7 @@ import { PDFArray, PDFDocument, PDFName, PDFString, rgb, type PDFFont, type PDFP
 import QRCode from 'qrcode';
 import fontkit from '@pdf-lib/fontkit';
 import { CERT_EVENTS, credentialUrl, honorLabel, type Honor } from './events';
+import { CERT_ADDRESS, etherscanTokenUrl } from './nft';
 
 export interface DiplomaInput {
   event: string;
@@ -28,6 +29,8 @@ export interface DiplomaInput {
   credentialId: string;
   issueDate: string; // YYYY-MM-DD
   honors: Honor[];
+  /** The token this certificate is (or will be, once minted as planned). */
+  tokenId: string | null;
 }
 
 const W = 842;
@@ -163,21 +166,30 @@ export async function renderDiploma(input: DiplomaInput): Promise<Uint8Array> {
   // Issuer · date · credential.
   const [yy, mm, dd] = input.issueDate.split('-').map(Number);
   const dateEn = `${MONTHS_EN[mm - 1]} ${dd}, ${yy}`;
-  const colY = 164;
-  const cols: [string, string][] = [
-    ['ISSUED BY', 'ETH Cali · ethcali.org'],
+  // Two rows of three: who, when and which credential; then where it lives on chain.
+  const colW = (W - 120) / 3;
+  const row = (y: number, cells: [string, string][], mono = false) =>
+    cells.forEach(([label, value], i) => {
+      const cx = 60 + colW * i + colW / 2;
+      page.drawText(label, { x: cx - bold.widthOfTextAtSize(label, 7.5) / 2, y: y + 15, size: 7.5, font: bold, color: FAINT });
+      const size = mono ? 10 : 11;
+      page.drawText(value, { x: cx - regular.widthOfTextAtSize(value, size) / 2, y, size, font: regular, color: INK });
+    });
+  row(176, [
+    ['ISSUED BY', 'ETH CALI'],
     ['DATE', dateEn],
     ['CREDENTIAL ID', input.credentialId],
-  ];
-  const colW = (W - 120) / 3;
-  cols.forEach(([label, value], i) => {
-    const cx = 60 + colW * i + colW / 2;
-    page.drawText(label, { x: cx - bold.widthOfTextAtSize(label, 7.5) / 2, y: colY + 16, size: 7.5, font: bold, color: FAINT });
-    page.drawText(value, { x: cx - regular.widthOfTextAtSize(value, 11) / 2, y: colY, size: 11, font: regular, color: INK });
-  });
-  // Verification: a QR to the credential page in the top-right corner, and
-  // the QR itself is a link in the PDF — a printed copy scans, a digital one clicks.
-  const verifyUrl = credentialUrl(input.credentialId);
+  ]);
+  row(137, [
+    ['BLOCKCHAIN', 'Ethereum Mainnet'],
+    ['CONTRACT', `${CERT_ADDRESS.slice(0, 6)}…${CERT_ADDRESS.slice(-4)}`],
+    ['TOKEN ID', input.tokenId ? `#${input.tokenId}` : '—'],
+  ]);
+
+  // Verification: a QR to the token on Etherscan — the on-chain proof — in the
+  // top-right corner, and a link over it, so a printed copy scans and a digital
+  // one clicks. Before a token id exists it points at the credential page.
+  const verifyUrl = input.tokenId ? etherscanTokenUrl(input.tokenId) : credentialUrl(input.credentialId);
   const qrPng = await QRCode.toBuffer(verifyUrl, { type: 'png', errorCorrectionLevel: 'M', margin: 1, width: 400, color: { dark: '#0C0D16', light: '#FDFDFF' } });
   const qr = await doc.embedPng(qrPng);
   const Q = 64;

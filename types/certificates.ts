@@ -36,6 +36,8 @@ export interface PublicCertificate {
   /** Only once issued: the address the NFT went to. */
   wallet: string | null;
   tokenId: string | null;
+  /** The id this certificate mints as (reserved before minting; equals tokenId after). */
+  plannedTokenId: string | null;
   imageCid: string | null;
   metadataCid: string | null;
 }
@@ -55,6 +57,8 @@ export interface AdminCertificate extends CertificateView {
   checkedInAt: string | null;
   /** The ERC-721 JSON on IPFS; what issue() mints against. */
   metadataCid: string | null;
+  /** The token id reserved for it; issue() must land it exactly there. */
+  plannedTokenId: string | null;
 }
 
 export interface IssueConfirmResponse {

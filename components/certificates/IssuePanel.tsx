@@ -38,6 +38,7 @@ const STEP_LABEL: Record<Step, string> = {
 /** Contract errors in words. A revert selector is not a message. */
 function translate(e: unknown): string {
   const t = e instanceof Error ? `${e.name} ${e.message}` : String(e);
+  if (/PlannedOrder/.test(t)) return t.replace(/^.*PlannedOrder: /, '');
   if (/AlreadyIssued/.test(t)) return 'Uno de estos certificados ya está emitido. Recarga la lista.';
   if (/AccessControlUnauthorizedAccount/.test(t)) return 'Esta wallet no tiene ADMIN_ROLE en el contrato.';
   if (/BatchTooLarge/.test(t)) return 'Máximo 100 certificados por transacción.';
@@ -77,7 +78,10 @@ export default function IssuePanel({
     };
   }, [address]);
 
-  const ready = selected.filter((r) => !r.issuedTx && r.wallet && r.metadataCid);
+  // In reserved-token order: the diploma printed on each already names its token id.
+  const ready = selected
+    .filter((r) => !r.issuedTx && r.wallet && r.metadataCid && r.plannedTokenId)
+    .sort((a, b) => Number(a.plannedTokenId) - Number(b.plannedTokenId));
   // Already minted, selected to re-point their metadata (a corrected diploma).
   const minted = selected.filter((r) => r.issuedTx && r.tokenId && r.metadataCid);
   const blocked = selected.length - ready.length - minted.length;
@@ -136,6 +140,22 @@ export default function IssuePanel({
     setStep('checking');
     try {
       const client = publicClientFor(CERT_CHAIN_ID);
+      // Each diploma already prints its token id and a QR to it. issue() numbers
+      // tokens totalIssued + 1, + 2, … in batch order, so the batch must start
+      // exactly at the next id and run without gaps, or a diploma would name a
+      // token that is not its own.
+      const next = ((await client.readContract({
+        address: CERT_ADDRESS,
+        abi: CERT_ABI,
+        functionName: 'totalIssued',
+      })) as bigint) + 1n;
+      const misplaced = ready.find((r, i) => BigInt(r.plannedTokenId as string) !== next + BigInt(i));
+      if (misplaced) {
+        throw new Error(
+          `PlannedOrder: el siguiente token es #${next}, pero ${misplaced.memberName} tiene reservado el #${misplaced.plannedTokenId}. ` +
+            'Selecciona los certificados en orden desde el siguiente token, sin saltos.'
+        );
+      }
       // Read the chain first: a credential already live would revert the batch.
       for (const r of ready) {
         const live = (await client.readContract({
@@ -229,7 +249,7 @@ export default function IssuePanel({
       {selected.length === 0 && <p className="mt-2 text-xs text-content-muted">Selecciona certificados en la tabla.</p>}
       {blocked > 0 && (
         <p className="mt-2 text-xs text-content-muted">
-          {blocked} de los seleccionados no se incluyen: les falta wallet o metadata.
+          {blocked} de los seleccionados no se incluyen: les falta wallet, metadata o token reservado.
         </p>
       )}
       {error && <p className="mt-2 text-sm text-signal-reverted">{error}</p>}
