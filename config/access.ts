@@ -13,6 +13,7 @@
  * from a DEFAULT_ADMIN_ROLE holder is the one grant path for all of them.
  */
 import { keccak256, toBytes, type Address, type Hex } from 'viem';
+import { CERT_ADDRESS } from '../lib/certificates/nft';
 import { DEFAULT_ADMIN_ROLE, FULFILLMENT_ROLE } from '../lib/swag/roles';
 import { DEFAULT_CHAIN } from './chains';
 
@@ -45,6 +46,7 @@ export const SEED_OPERATORS: readonly SeedOperator[] = [
       donations: ['admin'],
       receipts: ['admin'],
       identity: ['owner'],
+      certificates: ['super', 'admin'],
     },
   },
 ];
@@ -70,13 +72,13 @@ export interface AccessRoleDef {
   grantable: boolean;
 }
 
-export type AccessContractKey = 'swag' | 'faucet' | 'donations' | 'receipts' | 'identity';
+export type AccessContractKey = 'swag' | 'faucet' | 'donations' | 'receipts' | 'identity' | 'certificates';
 
 export interface AccessContractDef {
   key: AccessContractKey;
   name: string;
   /** The admin page this contract belongs to. */
-  product: 'swag' | 'faucet' | 'donations' | 'identity';
+  product: 'swag' | 'faucet' | 'donations' | 'identity' | 'certificates';
   address: Address | undefined;
   kind: 'accessControl' | 'ownable';
   roles: readonly AccessRoleDef[];
@@ -143,6 +145,17 @@ export const ACCESS_CONTRACTS: readonly AccessContractDef[] = [
       { ...SUPER, unlocks: 'Grants roles and the minter. Held by the Safe by design.' },
       { key: 'admin', id: ADMIN_ROLE, label: 'Admin', unlocks: 'Receipt tiers', grantable: true },
       { key: 'minter', id: MINTER_ROLE, label: 'Minter', unlocks: 'Mints donor receipts (the DonationVault)', grantable: false },
+    ],
+  },
+  {
+    key: 'certificates',
+    name: 'BuilderCertificate',
+    product: 'certificates',
+    address: CERT_ADDRESS,
+    kind: 'accessControl',
+    roles: [
+      SUPER,
+      { key: 'admin', id: ADMIN_ROLE, label: 'Admin', unlocks: 'Issue builder certificates and re-point minted metadata', grantable: true },
     ],
   },
   {

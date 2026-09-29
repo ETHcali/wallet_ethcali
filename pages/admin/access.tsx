@@ -23,7 +23,7 @@ export default function AdminAccessPage() {
         <ul className="mt-2 list-inside list-disc space-y-1">
           <li><span className="text-content-secondary">Site content and artwork</span> (ethcali.org events, team, partners): Admin on DonationVault.</li>
           <li><span className="text-content-secondary">Swag desk</span>: Admin or Fulfilment on the swag collection. Names for the desk are kept on Swag → Team.</li>
-          <li><span className="text-content-secondary">Faucet</span>: Admin on FaucetManager. <span className="text-content-secondary">Identity</span>: owner of ZKPassportNFT.</li>
+          <li><span className="text-content-secondary">Faucet</span>: Admin on FaucetManager. <span className="text-content-secondary">Certificates</span>: Admin on BuilderCertificate. <span className="text-content-secondary">Identity</span>: owner of ZKPassportNFT.</li>
           <li>Super admin on a contract is what lets a wallet add or remove the others there.</li>
         </ul>
       </div>

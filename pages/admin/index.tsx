@@ -202,6 +202,10 @@ export default function AdminOverviewPage() {
             </p>
           </Area>
 
+          <Area title="Certificates" href="/admin/certificates">
+            <p className="text-sm text-content-muted">Builder certificates: soulbound NFTs, the PDF diploma and the credential page. Issuers need Admin on BuilderCertificate.</p>
+          </Area>
+
           <Area title="Site content" href="/admin/content">
             <p className="text-sm text-content-muted">Events, venues, team and partners on ethcali.org. Editors need Admin on DonationVault.</p>
           </Area>
