@@ -48,7 +48,7 @@ interface Props {
 
 function formatDate(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number);
-  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('es-CO', {
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-US', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -133,7 +133,7 @@ export default function CredentialPage({ cert: built }: Props) {
           </a>
           <span className="inline-flex items-center gap-1.5 rounded-chip border border-signal-confirmed/40 bg-signal-confirmed/10 px-3 py-1 text-xs font-medium text-signal-confirmed">
             <CheckIcon className="h-3.5 w-3.5" />
-            Certificado válido · Valid certificate
+            Valid certificate
           </span>
         </header>
 
@@ -141,7 +141,7 @@ export default function CredentialPage({ cert: built }: Props) {
         {image ? (
           <div className="overflow-hidden rounded-card border border-line-hairline bg-white shadow-lg">
             {/* eslint-disable-next-line @next/next/no-img-element -- IPFS gateway, not a Next image host */}
-            <img src={image} alt={`Certificado de builder de ${cert.memberName} — ${cert.projectName}`} className="h-auto w-full" />
+            <img src={image} alt={`Builder certificate — ${cert.memberName}, ${cert.projectName}`} className="h-auto w-full" />
           </div>
         ) : (
           <div className="rounded-card border border-line-hairline bg-surface-slab p-10 text-center">
@@ -155,54 +155,53 @@ export default function CredentialPage({ cert: built }: Props) {
             href={`${credentialPdfPath(cert.credentialId)}?download=1`}
             className="inline-flex min-h-tap items-center justify-center rounded-control bg-eth-blue px-5 text-sm font-bold text-on-brand hover:bg-eth-blue-lift"
           >
-            Descargar diploma (PDF) · Download
+            Download certificate (PDF)
           </a>
         </div>
 
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           {/* What it certifies */}
           <section className="rounded-card border border-line-hairline bg-surface-slab p-5">
-            <h2 className="text-lg font-bold text-content-primary">Detalles del certificado</h2>
-            <p className="text-sm text-content-muted">Certificate details</p>
+            <h2 className="text-lg font-bold text-content-primary">Certificate details</h2>
             <dl className="mt-4">
-              <Row label="Nombre · Name">
+              <Row label="Name">
                 <span className="font-semibold">{cert.memberName}</span>
               </Row>
-              <Row label="Proyecto · Project">
+              <Row label="Project">
                 <a href={`https://devfolio.co/projects/${cert.projectSlug}`} target="_blank" rel="noopener noreferrer" className={link}>
                   {cert.projectName}
                 </a>
               </Row>
               {ev && (
-                <Row label="Evento · Event">
+                <Row label="Event">
                   <a href={ev.eventUrl} target="_blank" rel="noopener noreferrer" className={link}>
                     {ev.eventName}
                   </a>
                 </Row>
               )}
               {ev && (
-                <Row label="Lugar · Venue">
+                <Row label="Venue">
                   <a href={ev.venueMapsUrl} target="_blank" rel="noopener noreferrer" className={link}>
                     {ev.venueName}
                   </a>
                 </Row>
               )}
-              <Row label="Fecha · Date">{formatDate(cert.issueDate)}</Row>
+              <Row label="Date">{formatDate(cert.issueDate)}</Row>
               {cert.honors.length > 0 && (
-                <Row label="Premios · Prizes">
+                <Row label="Prizes">
                   <span className="flex flex-wrap justify-end gap-1.5">
                     {cert.honors.map((h) => (
                       <span key={`${h.track}-${h.place}`} className="rounded-chip bg-eth-blue px-2 py-0.5 text-xs font-bold text-on-brand">
-                        {honorLabel(h, 'es')}
+                        {honorLabel(h, 'en')}
                       </span>
                     ))}
                   </span>
                 </Row>
               )}
-              <Row label="ID de credencial · Credential ID">
+              <Row label="Credential ID">
                 <span className="font-mono">{cert.credentialId}</span>
               </Row>
-              <Row label="Emisor · Issuer">
+              <Row label="Issuer">
                 <a href="https://www.ethcali.org" target="_blank" rel="noopener noreferrer" className={link}>
                   ETH Cali
                 </a>
@@ -212,20 +211,20 @@ export default function CredentialPage({ cert: built }: Props) {
 
           {/* The NFT */}
           <section className="flex flex-col rounded-card border border-line-hairline bg-surface-slab p-5">
-            <h2 className="text-lg font-bold text-content-primary">Emisión en blockchain</h2>
+            <h2 className="text-lg font-bold text-content-primary">Blockchain issuance</h2>
             <p className="text-sm text-content-muted">
-              Blockchain issuance · {minted ? 'Emitido · Issued' : 'Pendiente · Pending'}
+              {minted ? 'Issued' : 'Pending'}
             </p>
             <dl className="mt-4">
               <Row label="Token">Non-Fungible Token (NFT)</Row>
-              <Row label="Tipo de propiedad · Ownership">Soulbound</Row>
+              <Row label="Ownership">Soulbound</Row>
               <Row label="Blockchain">
                 <span className="inline-flex items-center gap-1.5">
                   <EthereumMark />
                   Ethereum
                 </span>
               </Row>
-              <Row label="Contrato · Contract">
+              <Row label="Contract">
                 <a href={etherscanContractTokenUrl} target="_blank" rel="noopener noreferrer" className={`font-mono ${link}`}>
                   {truncateAddress(CERT_ADDRESS)}
                 </a>
@@ -240,14 +239,14 @@ export default function CredentialPage({ cert: built }: Props) {
                 )}
               </Row>
               {minted && cert.wallet && (
-                <Row label="En la wallet · Held by">
+                <Row label="Held by">
                   <a href={explorerAddress(DEFAULT_CHAIN.id, cert.wallet)} target="_blank" rel="noopener noreferrer" className={`font-mono ${link}`}>
                     {truncateAddress(cert.wallet)}
                   </a>
                 </Row>
               )}
               {minted && (
-                <Row label="Transacción · Transaction">
+                <Row label="Transaction">
                   <a href={explorerTx(DEFAULT_CHAIN.id, cert.issuedTx as string)} target="_blank" rel="noopener noreferrer" className={`font-mono ${link}`}>
                     {truncateAddress(cert.issuedTx as string)}
                   </a>
@@ -262,7 +261,7 @@ export default function CredentialPage({ cert: built }: Props) {
                   rel="noopener noreferrer"
                   className="inline-flex min-h-tap items-center justify-center rounded-control bg-[#2081E2] px-4 text-sm font-bold text-white hover:bg-[#1868B7]"
                 >
-                  Ver en OpenSea · View on OpenSea ↗
+                  View on OpenSea ↗
                 </a>
               </div>
             )}
