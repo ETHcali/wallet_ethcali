@@ -187,7 +187,22 @@ export default function CredentialPage({ cert: built }: Props) {
                 </Row>
               )}
               {ev && <Row label="Event dates">{ev.eventDates}</Row>}
-              <Row label="Issue date (UTC)">{formatDate(cert.issueDate)}</Row>
+              <Row label="Issue date (UTC)">
+                <span className="flex flex-col items-end leading-tight">
+                  <span>{formatDate(cert.issueDate)}</span>
+                  {cert.issuedAt && cert.issuedTx && (
+                    <a
+                      href={explorerTx(DEFAULT_CHAIN.id, cert.issuedTx)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-0.5 font-mono text-xs text-content-muted hover:text-eth-blue-text"
+                      title="Block time of the mint"
+                    >
+                      {cert.issuedAt.slice(11, 19)} UTC
+                    </a>
+                  )}
+                </span>
+              </Row>
               {cert.honors.length > 0 && (
                 <Row label="Prizes">
                   <span className="flex flex-wrap justify-end gap-1.5">
