@@ -52,7 +52,7 @@ export interface CertEvent {
 export const CERT_EVENTS: Record<string, CertEvent> = {
   'eag-cali-2026': {
     title: 'EAG Global Buildathon · Ethereum Builders Tour',
-    credentialName: 'Builder — EAG Global Buildathon, Cali 2026',
+    credentialName: 'Builder at EAG Global Buildathon 2026',
     venue: 'Universidad Icesi · Cali, Colombia',
     eventName: 'EAG Global Buildathon · Colombia',
     eventUrl: 'https://www.ethcali.org/builders-tour',
