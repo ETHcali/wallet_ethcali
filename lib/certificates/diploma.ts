@@ -145,8 +145,8 @@ export async function renderDiploma(input: DiplomaInput): Promise<Uint8Array> {
 
   centred(page, 'built and shipped', 327, regular, 12, MUTED);
   centred(page, input.projectName, 298, bold, 26, BLUE);
-  centred(page, ev.title, 274, regular, 13, INK);
-  centred(page, `${ev.venue} · ${ev.dates.en}`, 257, regular, 10.5, MUTED);
+  centred(page, `at ${ev.headline}`, 274, bold, 13, INK);
+  centred(page, ev.chapter, 257, regular, 10.5, MUTED);
 
   // Prizes, one pill each, side by side.
   if (input.honors.length > 0) {
@@ -166,21 +166,27 @@ export async function renderDiploma(input: DiplomaInput): Promise<Uint8Array> {
   // Issuer · date · credential.
   const [yy, mm, dd] = input.issueDate.split('-').map(Number);
   const dateEn = `${MONTHS_EN[mm - 1]} ${dd}, ${yy}`;
-  // Two rows of three: who, when and which credential; then where it lives on chain.
-  const colW = (W - 120) / 3;
-  const row = (y: number, cells: [string, string][], mono = false) =>
+  // Two rows of four: the event (who issued, where, when it ran, which
+  // credential), then the token (when it was issued, on which chain, which
+  // contract, which id). The issue date is the NFT's, not the event's.
+  const cols = 4;
+  const colW = (W - 100) / cols;
+  const row = (y: number, cells: [string, string][]) =>
     cells.forEach(([label, value], i) => {
-      const cx = 60 + colW * i + colW / 2;
-      page.drawText(label, { x: cx - bold.widthOfTextAtSize(label, 7.5) / 2, y: y + 15, size: 7.5, font: bold, color: FAINT });
-      const size = mono ? 10 : 11;
+      const cx = 50 + colW * i + colW / 2;
+      page.drawText(label, { x: cx - bold.widthOfTextAtSize(label, 7) / 2, y: y + 14, size: 7, font: bold, color: FAINT });
+      let size = 10.5;
+      while (size > 7 && regular.widthOfTextAtSize(value, size) > colW - 8) size -= 0.5;
       page.drawText(value, { x: cx - regular.widthOfTextAtSize(value, size) / 2, y, size, font: regular, color: INK });
     });
   row(176, [
     ['ISSUED BY', 'ETH CALI'],
-    ['DATE', dateEn],
+    ['LOCATION', ev.location],
+    ['EVENT DATES', ev.eventDates],
     ['CREDENTIAL ID', input.credentialId],
   ]);
   row(137, [
+    ['ISSUE DATE (UTC)', dateEn],
     ['BLOCKCHAIN', 'Ethereum Mainnet'],
     ['CONTRACT', `${CERT_ADDRESS.slice(0, 6)}…${CERT_ADDRESS.slice(-4)}`],
     ['TOKEN ID', input.tokenId ? `#${input.tokenId}` : '—'],
