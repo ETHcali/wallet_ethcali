@@ -6,7 +6,7 @@
  * and whether the NFT is out. Read-only; /api/certificates/admin re-checks
  * ADMIN_ROLE on chain, and the menu entry hiding is presentation only.
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { usePrivy } from '@privy-io/react-auth';
@@ -78,6 +78,26 @@ export default function CertificatesAdmin() {
       return [r.memberName, r.projectName, r.credentialId, ...r.emails].some((v) => v.toLowerCase().includes(q));
     });
   }, [all, filter, search]);
+
+  // Select all: every row in the current filter that can be selected at all
+  // (has a wallet and pinned metadata). Rows outside the filter keep their state.
+  const selectable = useMemo(() => rows.filter((r) => r.wallet && r.metadataCid), [rows]);
+  const allPicked = selectable.length > 0 && selectable.every((r) => picked.has(r.id));
+  const somePicked = !allPicked && selectable.some((r) => picked.has(r.id));
+  const allRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (allRef.current) allRef.current.indeterminate = somePicked;
+  }, [somePicked]);
+  function toggleAll() {
+    setPicked((prev) => {
+      const next = new Set(prev);
+      for (const r of selectable) {
+        if (allPicked) next.delete(r.id);
+        else next.add(r.id);
+      }
+      return next;
+    });
+  }
 
   const stats = {
     people: all.length,
@@ -155,13 +175,24 @@ export default function CertificatesAdmin() {
                 </button>
               ))}
             </div>
-            <button
-              type="button"
-              onClick={download}
-              className="min-h-tap rounded-control border border-line-hairline px-4 text-sm font-semibold text-content-secondary hover:text-content-primary sm:ml-auto"
-            >
-              Export CSV ({rows.length})
-            </button>
+            <div className="flex items-center gap-3 sm:ml-auto">
+              {picked.size > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setPicked(new Set())}
+                  className="min-h-tap rounded-control px-3 text-xs font-semibold text-content-muted hover:text-content-primary"
+                >
+                  {picked.size} selected · clear
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={download}
+                className="min-h-tap rounded-control border border-line-hairline px-4 text-sm font-semibold text-content-secondary hover:text-content-primary"
+              >
+                Export CSV ({rows.length})
+              </button>
+            </div>
           </div>
 
           <IssuePanel
@@ -183,7 +214,18 @@ export default function CertificatesAdmin() {
             <table className="w-full min-w-[900px] text-left text-sm">
               <thead className="bg-surface-inset text-[11px] uppercase tracking-wide text-content-faint">
                 <tr>
-                  <th className="px-3 py-2.5 font-semibold" aria-label="Seleccionar" />
+                  <th className="px-3 py-2.5 font-semibold">
+                    <input
+                      ref={allRef}
+                      type="checkbox"
+                      aria-label={allPicked ? 'Deseleccionar todos' : `Seleccionar los ${selectable.length} de esta vista`}
+                      title={allPicked ? 'Deseleccionar todos' : `Seleccionar los ${selectable.length} de esta vista`}
+                      disabled={selectable.length === 0}
+                      checked={allPicked}
+                      onChange={toggleAll}
+                      className="h-4 w-4 accent-eth-blue"
+                    />
+                  </th>
                   <th className="px-3 py-2.5 font-semibold">Builder</th>
                   <th className="px-3 py-2.5 font-semibold">Project</th>
                   <th className="px-3 py-2.5 font-semibold">Emails</th>
