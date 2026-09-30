@@ -16,6 +16,7 @@
 import { CERT_EVENTS, credentialPdfPath, credentialUrl, honorLabel, linkedInAddUrl, type Honor } from './events';
 import { etherscanTokenUrl, openseaUrl } from './nft';
 import { appUrl, escapeHtml, sendEmail, type SendResult } from '../email/resend';
+import { truncateAddress } from '../../utils/linkedAccounts';
 
 export interface CertificateEmailInput {
   event: string;
@@ -25,6 +26,8 @@ export interface CertificateEmailInput {
   issueDate: string;
   honors: Honor[];
   tokenId: string;
+  /** Lowercase address the NFT went to. */
+  wallet: string;
   emails: string[];
 }
 
@@ -41,6 +44,9 @@ export function renderCertificateEmail(c: CertificateEmailInput) {
   const linkedin = linkedInAddUrl(c.event, c.credentialId, c.issueDate);
   const honors = c.honors.map((h) => honorLabel(h, 'es'));
   const firstName = c.memberName.trim().split(/\s+/)[0] || c.memberName;
+  /** The signed-in view: their NFT, their wallet, their credential. Sign-in is this email. */
+  const app = `${appUrl()}/certificate`;
+  const shortWallet = truncateAddress(c.wallet);
 
   const subject = `Tu certificado ETH Cali · ${eventName}`;
 
@@ -57,10 +63,11 @@ export function renderCertificateEmail(c: CertificateEmailInput) {
 ${honors.length ? `<p>${honors.map((h) => `🏆 <strong>${escapeHtml(h)}</strong>`).join('<br>')}</p>` : ''}
 <p>Tu diploma va adjunto en PDF. El certificado también es un <strong>NFT en Ethereum</strong> (token #${escapeHtml(
     c.tokenId
-  )}, no transferible), emitido a la wallet que elegiste.</p>
-<p style="margin:24px 0 8px">${button(page, 'Ver mi credencial', true)}${linkedin ? button(linkedin, 'Agregar a LinkedIn') : ''}</p>
+  )}, no transferible), y ya está en tu wallet <code>${escapeHtml(shortWallet)}</code>, la que quedó guardada con tu cuenta al reclamar.</p>
+<p>Para verlo, entra a la app con <strong>este mismo correo</strong>: te llega un código, sin contraseña. Ahí tienes tu NFT, tu wallet y tu credencial en un solo lugar.</p>
+<p style="margin:24px 0 8px">${button(app, 'Ver mi certificado en la app', true)}${linkedin ? button(linkedin, 'Agregar a LinkedIn') : ''}</p>
 <p style="margin:0 0 24px">${button(opensea, 'Ver en OpenSea')}${button(etherscan, 'Ver en Etherscan')}</p>
-<p style="color:#555;font-size:13px">ID de credencial: <code>${escapeHtml(c.credentialId)}</code> · ${escapeHtml(page)}</p>
+<p style="color:#555;font-size:13px">Tu credencial pública, para compartir: <a href="${escapeHtml(page)}" style="color:#555">${escapeHtml(page)}</a></p>
 <p style="color:#555;font-size:13px">¿Preguntas? Responde a este correo o escribe a hola@ethcali.org.</p>
 </div>`;
 
@@ -70,15 +77,17 @@ ${honors.length ? `<p>${honors.map((h) => `🏆 <strong>${escapeHtml(h)}</strong
     `Construiste ${c.projectName} en ${ev?.headline ?? c.event}${ev ? ` (${ev.location}, ${ev.eventDates})` : ''}, y ETH Cali lo certifica.`,
     ...honors.map((h) => `- ${h}`),
     '',
-    `Tu diploma va adjunto en PDF. El certificado también es un NFT en Ethereum (token #${c.tokenId}, no transferible), emitido a la wallet que elegiste.`,
+    `Tu diploma va adjunto en PDF. El certificado también es un NFT en Ethereum (token #${c.tokenId}, no transferible), y ya está en tu wallet ${shortWallet}, la que quedó guardada con tu cuenta al reclamar.`,
     '',
-    `Ver mi credencial: ${page}`,
+    `Para verlo, entra a la app con este mismo correo (te llega un código, sin contraseña): ${app}`,
+    'Ahí tienes tu NFT, tu wallet y tu credencial en un solo lugar.',
+    '',
     ...(linkedin ? [`Agregar a LinkedIn: ${linkedin}`] : []),
     `OpenSea: ${opensea}`,
     `Etherscan: ${etherscan}`,
     `Descargar el diploma: ${pdf}`,
     '',
-    `ID de credencial: ${c.credentialId}`,
+    `Tu credencial pública, para compartir: ${page}`,
     '¿Preguntas? Escribe a hola@ethcali.org.',
   ].join('\n');
 
