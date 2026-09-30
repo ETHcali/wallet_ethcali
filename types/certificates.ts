@@ -61,6 +61,17 @@ export interface AdminCertificate extends CertificateView {
   metadataCid: string | null;
   /** The token id reserved for it; issue() must land it exactly there. */
   plannedTokenId: string | null;
+  /** When the certificate email went out (after the mint), or null. */
+  notifiedAt: string | null;
+}
+
+/** POST /api/certificates/admin/notify — what happened to each selected certificate. */
+export interface NotifyResponse {
+  /** Nothing was sent: what each email would say, and to whom. */
+  dryRun: boolean;
+  sent: { credentialId: string; to: string[]; subject: string }[];
+  /** Not sent, with the reason: not issued, already notified, Resend refused. */
+  skipped: { credentialId: string; reason: string }[];
 }
 
 export interface IssueConfirmResponse {

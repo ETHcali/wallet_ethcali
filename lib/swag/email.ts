@@ -1,61 +1,17 @@
 /**
- * Transactional email for the swag store, through Resend's REST API.
+ * Transactional email for the swag store, over lib/email/resend.ts.
  *
- * Off until configured: with RESEND_API_KEY or SWAG_EMAIL_FROM unset every
- * send is a logged no-op, so the webhook behaves exactly as before. Always
- * best-effort — a failed email never fails the webhook that triggered it,
- * because Shopify retries a failing webhook and a retry would re-run the
- * order write for the sake of an email.
- *
- *   RESEND_API_KEY   sending-only key is enough
- *   SWAG_EMAIL_FROM  e.g. "ETH Cali <tienda@ethcali.org>" — the domain must be
- *                    verified in Resend or every send is a 403
- *   SWAG_APP_URL     optional, defaults to https://app.ethcali.org
- *
- * Each send carries an idempotency key (`<event>/<entity>`), so a webhook
- * redelivered within Resend's 24h window cannot send the same email twice.
+ * Off until configured (RESEND_API_KEY + EMAIL_FROM): every send is then a
+ * logged no-op, so the webhook behaves exactly as before. Always best-effort —
+ * a failed email never fails the webhook that triggered it, because Shopify
+ * retries a failing webhook and a retry would re-run the order write for the
+ * sake of an email. The idempotency key (swag-claim-invite/<order>) means a
+ * webhook redelivered within Resend's 24h window cannot send it twice.
  */
 import { logger } from '../../utils/logger';
+import { appUrl, escapeHtml, sendEmail, type SendResult } from '../email/resend';
 
-export interface SendResult {
-  sent: boolean;
-  id?: string;
-  /** Why nothing was sent: not configured, or the API's error. */
-  reason?: string;
-}
-
-function appUrl(): string {
-  return (process.env.SWAG_APP_URL?.trim() || 'https://app.ethcali.org').replace(/\/$/, '');
-}
-
-const escapeHtml = (s: string) =>
-  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-
-async function send(
-  idempotencyKey: string,
-  payload: { to: string; subject: string; html: string; text: string }
-): Promise<SendResult> {
-  const key = process.env.RESEND_API_KEY?.trim();
-  const from = process.env.SWAG_EMAIL_FROM?.trim();
-  if (!key || !from) return { sent: false, reason: 'email not configured' };
-
-  try {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${key}`,
-        'Content-Type': 'application/json',
-        'Idempotency-Key': idempotencyKey,
-      },
-      body: JSON.stringify({ from, to: [payload.to], subject: payload.subject, html: payload.html, text: payload.text }),
-    });
-    const body = (await res.json().catch(() => ({}))) as { id?: string; message?: string };
-    if (!res.ok) return { sent: false, reason: `${res.status} ${body.message ?? 'Resend refused the email'}` };
-    return { sent: true, id: body.id };
-  } catch (e) {
-    return { sent: false, reason: e instanceof Error ? e.message : 'network error' };
-  }
-}
+export type { SendResult };
 
 /**
  * After a card order is paid: the parcel is coming, and the digital
@@ -86,8 +42,8 @@ export async function sendClaimInvite(opts: { to: string; shopifyOrderId: string
     '¿Preguntas? Escribe a hola@ethcali.org.',
   ].join('\n');
 
-  const result = await send(`swag-claim-invite/${orderNumber}`, {
-    to: opts.to,
+  const result = await sendEmail(`swag-claim-invite/${orderNumber}`, {
+    to: [opts.to],
     subject: 'Tu pedido ETH Cali y tu coleccionable digital',
     html,
     text,

@@ -13,7 +13,7 @@ import type { AdminCertificate, CertificateView, PublicCertificate } from '../..
 export const OWNER_COLUMNS =
   'id, event, project_slug, project_name, member_name, email, credential_id, issue_date, honors, wallet, claimed_at, issued_tx, token_id, image_cid';
 
-export const ADMIN_COLUMNS = `${OWNER_COLUMNS}, emails, checked_in_at, metadata_cid, planned_token_id`;
+export const ADMIN_COLUMNS = `${OWNER_COLUMNS}, emails, checked_in_at, metadata_cid, planned_token_id, notified_at`;
 
 export interface CertificateRow {
   id: number;
@@ -48,15 +48,22 @@ export const toOwnerView = (r: CertificateRow): CertificateView => ({
   imageCid: r.image_cid,
 });
 
-export const toAdminView = (
-  r: CertificateRow & { emails: string[]; checked_in_at: string | null; metadata_cid: string | null; planned_token_id: number | string | null }
-): AdminCertificate => ({
+export interface AdminRow extends CertificateRow {
+  emails: string[];
+  checked_in_at: string | null;
+  metadata_cid: string | null;
+  planned_token_id: number | string | null;
+  notified_at: string | null;
+}
+
+export const toAdminView = (r: AdminRow): AdminCertificate => ({
   ...toOwnerView(r),
   email: r.email,
   emails: r.emails,
   checkedInAt: r.checked_in_at,
   metadataCid: r.metadata_cid,
   plannedTokenId: r.planned_token_id == null ? null : String(r.planned_token_id),
+  notifiedAt: r.notified_at,
 });
 
 /** Credential ids are uppercase letters, digits and one dash — anything else is not one. */

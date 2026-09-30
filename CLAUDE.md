@@ -158,6 +158,34 @@ Each domain (faucet, swag) has:
   `CRON_SECRET`), which shares `fetchTrm`/`copPrice`/`repriceDesign` in `lib/shopify.mjs` with
   `scripts/shopify-sync.mjs --prices-only`. Operations runbook: `docs/SWAG_ORDERS.md § Operations`.
 
+## Builder certificates (`/certificate`, `/admin/certificates`)
+
+One row per builder per event in `builder_certificates`; the NFT is `BuilderCertificate`
+on Ethereum mainnet (soulbound ERC-721). The flow is four deliberate steps, and each
+one is its own button or route, in order:
+
+1. **Claim** — the builder signs in with any email they used (Devfolio, Luma) and picks
+   the wallet the NFT goes to. `POST /api/certificates`.
+2. **Pin** — diploma PNG/PDF and the ERC-721 JSON go to IPFS; `planned_token_id` is
+   reserved because the diploma prints its own token id.
+3. **Issue** — the admin "Emitir" button mints in planned order (sponsored), then
+   `POST /api/certificates/admin/confirm` reads the receipt and stamps `token_id` +
+   `issued_tx`. The chain decides; the row remembers.
+4. **Notify** — the admin "Enviar correo" panel: `POST /api/certificates/admin/notify`
+   sends one Spanish email per **issued** certificate to every address the builder used,
+   diploma PDF attached by URL, links to the credential page, LinkedIn, OpenSea and
+   Etherscan, and stamps `notified_at` so a second click sends nothing. "Revisar" is a
+   dry run; "Prueba" sends to the operator's own inbox and stamps nothing.
+
+**Issuing does not email anyone.** Step 4 is separate on purpose: you can check the
+tokens on Etherscan before the builders hear about them. Email is off entirely until
+`RESEND_API_KEY` and `EMAIL_FROM` are set (`lib/email/resend.ts`); the notify route
+answers 503 with the missing name rather than pretending.
+
+Both admin routes gate on `ADMIN_ROLE` on BuilderCertificate, read on chain
+(`lib/certificates/requireCertAdmin.ts`). The `admins` table plays no part.
+The operator runbook, one event start to finish, is `docs/CERTIFICATES.md`.
+
 ## Admin access (`/admin/access`)
 
 One module for who can do what, on every contract the app administers.
