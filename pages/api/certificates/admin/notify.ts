@@ -68,7 +68,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     const db = getSupabaseAdmin();
     const { data, error } = await db
       .from('builder_certificates')
-      .select('event, member_name, project_name, credential_id, issue_date, honors, email, emails, issued_tx, token_id, notified_at')
+      .select('event, member_name, project_name, credential_id, issue_date, honors, email, emails, wallet, issued_tx, token_id, notified_at')
       .in('credential_id', ids);
     if (error) throw new Error(error.message);
     const byId = new Map((data ?? []).map((r) => [r.credential_id as string, r]));
@@ -80,7 +80,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         out.skipped.push({ credentialId: id, reason: 'no such certificate' });
         continue;
       }
-      if (!r.issued_tx || r.token_id == null) {
+      if (!r.issued_tx || r.token_id == null || !r.wallet) {
         out.skipped.push({ credentialId: id, reason: 'not issued yet' });
         continue;
       }
@@ -96,6 +96,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         issueDate: r.issue_date,
         honors: parseHonors(r.honors),
         tokenId: String(r.token_id),
+        wallet: r.wallet,
         emails: Array.isArray(r.emails) && r.emails.length ? r.emails : [r.email],
       };
       const to = testTo ? [testTo] : input.emails;
