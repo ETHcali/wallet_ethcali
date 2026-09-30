@@ -47,6 +47,13 @@ export function renderCertificateEmail(c: CertificateEmailInput) {
   /** The signed-in view: their NFT, their wallet, their credential. Sign-in is this email. */
   const app = `${appUrl()}/certificate`;
   const shortWallet = truncateAddress(c.wallet);
+  /** Share intents are plain URLs, so they work inside an email; a copy button cannot. */
+  const shareText = `Construí ${c.projectName} en ${ev?.headline ?? c.event} y ETH Cali lo certifica.`;
+  const share: [string, string][] = [
+    ['LinkedIn', `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(page)}`],
+    ['X', `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(page)}`],
+    ['WhatsApp', `https://wa.me/?text=${encodeURIComponent(`${shareText} ${page}`)}`],
+  ];
 
   const subject = `Tu certificado ETH Cali · ${eventName}`;
 
@@ -67,7 +74,12 @@ ${honors.length ? `<p>${honors.map((h) => `🏆 <strong>${escapeHtml(h)}</strong
 <p>Para verlo, entra a la app con <strong>este mismo correo</strong>: te llega un código, sin contraseña. Ahí tienes tu NFT, tu wallet y tu credencial en un solo lugar.</p>
 <p style="margin:24px 0 8px">${button(app, 'Ver mi certificado en la app', true)}${linkedin ? button(linkedin, 'Agregar a LinkedIn') : ''}</p>
 <p style="margin:0 0 24px">${button(opensea, 'Ver en OpenSea')}${button(etherscan, 'Ver en Etherscan')}</p>
-<p style="color:#555;font-size:13px">Tu credencial pública, para compartir: <a href="${escapeHtml(page)}" style="color:#555">${escapeHtml(page)}</a></p>
+<div style="margin:0 0 24px;padding:16px;border:1px solid #d9d9e3;border-radius:12px;background:#f5f5fa">
+<p style="margin:0 0 6px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#555">Tu credencial pública</p>
+<p style="margin:0 0 10px;font-size:14px;color:#333">Este es el enlace que va en tu LinkedIn y el que puedes compartir con quien quieras. No requiere cuenta.</p>
+<p style="margin:0 0 12px;word-break:break-all"><a href="${escapeHtml(page)}" style="font-family:ui-monospace,Menlo,monospace;font-size:14px;color:${BLUE};text-decoration:underline">${escapeHtml(page)}</a></p>
+<p style="margin:0;font-size:13px">Compartir: ${share.map(([label, href]) => `<a href="${escapeHtml(href)}" style="color:${BLUE};font-weight:700;margin-right:14px">${escapeHtml(label)}</a>`).join('')}</p>
+</div>
 <p style="color:#555;font-size:13px">¿Preguntas? Responde a este correo o escribe a hola@ethcali.org.</p>
 </div>`;
 
@@ -87,7 +99,9 @@ ${honors.length ? `<p>${honors.map((h) => `🏆 <strong>${escapeHtml(h)}</strong
     `Etherscan: ${etherscan}`,
     `Descargar el diploma: ${pdf}`,
     '',
-    `Tu credencial pública, para compartir: ${page}`,
+    'Tu credencial pública — el enlace que va en tu LinkedIn y el que puedes compartir con quien quieras, sin cuenta:',
+    page,
+    ...share.map(([label, href]) => `Compartir en ${label}: ${href}`),
     '¿Preguntas? Escribe a hola@ethcali.org.',
   ].join('\n');
 

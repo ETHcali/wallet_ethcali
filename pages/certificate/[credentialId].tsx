@@ -39,7 +39,7 @@ import {
 } from '../../lib/certificates/nft';
 import { DEFAULT_CHAIN, explorerAddress, explorerTx } from '../../config/chains';
 import { truncateAddress } from '../../utils/linkedAccounts';
-import { CheckIcon } from '../../components/shared/icons';
+import { CheckIcon, ClipboardIcon } from '../../components/shared/icons';
 import type { PublicCertificate } from '../../types/certificates';
 
 interface Props {
@@ -66,6 +66,50 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 }
 
 const link = 'text-eth-blue-text hover:underline';
+
+/**
+ * Copy the credential URL, and share it where the device has a share sheet.
+ * Copy is the one thing an email cannot do, so the page does it.
+ */
+function ShareLink({ url, title }: { url: string; title: string }) {
+  const [copied, setCopied] = useState(false);
+  const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+  const btn =
+    'inline-flex min-h-tap items-center justify-center gap-1.5 rounded-control border border-line-strong px-4 text-sm font-semibold text-content-primary hover:border-line-brand hover:text-eth-blue-text';
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      window.prompt('Copy this link', url);
+    }
+  }
+
+  async function share() {
+    try {
+      await navigator.share({ title, url });
+    } catch {
+      // Dismissed, or unsupported after all — copying is the fallback.
+      void copy();
+    }
+  }
+
+  return (
+    <>
+      <button type="button" onClick={copy} className={btn} aria-live="polite">
+        {copied ? <CheckIcon className="h-4 w-4 text-signal-confirmed" /> : <ClipboardIcon className="h-4 w-4" />}
+        {copied ? 'Link copied' : 'Copy link'}
+      </button>
+      {canShare && (
+        <button type="button" onClick={share} className={btn}>
+          Share
+        </button>
+      )}
+    </>
+  );
+}
 
 /**
  * The Ethereum diamond, drawn to the text it sits beside: 1em tall, the
@@ -150,13 +194,14 @@ export default function CredentialPage({ cert: built }: Props) {
           </div>
         )}
 
-        <div className="mt-4 flex justify-center">
+        <div className="mt-4 flex flex-wrap justify-center gap-2">
           <a
             href={`${credentialPdfPath(cert.credentialId)}?download=1`}
             className="inline-flex min-h-tap items-center justify-center rounded-control bg-eth-blue px-5 text-sm font-bold text-on-brand hover:bg-eth-blue-lift"
           >
             Download certificate (PDF)
           </a>
+          <ShareLink url={url} title={title} />
         </div>
 
         <div className="mt-6 grid gap-4 md:grid-cols-2">
