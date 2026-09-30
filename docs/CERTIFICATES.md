@@ -1,0 +1,84 @@
+# Builder certificates — the process
+
+One certificate per builder per event: a row in `builder_certificates`, a PDF diploma,
+a public credential page and a soulbound NFT on Ethereum mainnet (`BuilderCertificate`,
+`frontend/addresses.json`). The same five steps every event, in this order, and each
+step is a separate action on purpose: nothing downstream happens by accident.
+
+| # | Step | Where | Writes |
+|---|------|-------|--------|
+| 1 | Load the roster | SQL, from a session (no script yet) | one row per builder: `event`, `project_*`, `member_name`, `email`, `emails`, `credential_id`, `honors`, `checked_in_at` |
+| 2 | Builders claim | `/certificate`, `POST /api/certificates` | `wallet`, `claimed_at` |
+| 3 | Pin | Pinata, from a session (no script yet) | `image_cid`, `pdf_cid`, `metadata_cid`, `planned_token_id` |
+| 4 | Issue | `/admin/certificates` → **Emitir** | on chain: the mint; row: `token_id`, `issued_tx` (via `POST …/admin/confirm`) |
+| 5 | Notify | `/admin/certificates` → **Enviar correo** | `notified_at` (via `POST …/admin/notify`) |
+
+The chain decides steps 4 and 5's truth: a row is re-verifiable with
+`tokenOfCredential(credential_id)` and `ownerOf(token_id)`.
+
+## Before the event
+
+1. Add the event to `CERT_EVENTS` in `lib/certificates/events.ts` — title, venue, dates,
+   LinkedIn name, sponsors — and each sponsor's logo in `lib/certificates/logos` (PNG,
+   legible on white). The diploma, the credential page, LinkedIn and the email follow.
+2. Load the roster (step 1) with `event` set to that key. `emails` must contain every
+   address the builder used (Devfolio, Luma): a claim matches any of them. Lowercase.
+   `credential_id` is `^[A-Z0-9]{2,16}-[A-Z0-9]{6,16}$` and permanent — it is the URL.
+
+## Claim window (step 2)
+
+Send builders to `https://app.ethcali.org/certificate`. Signing in with any of their
+emails is the whole proof; a builder without a wallet gets one from that sign-in. They
+choose the wallet the NFT goes to and can change it until step 4. From here they can
+already add the certificate to LinkedIn and download the diploma.
+
+The admin page (`/admin/certificates`, needs `ADMIN_ROLE` on the contract) shows who
+has claimed. **Do not pin or issue for a row without a wallet.**
+
+## Pin (step 3)
+
+For every claimed row: render the diploma, pin the PNG (the NFT image), the PDF and the
+ERC-721 JSON (`tokenURI = ipfs://<metadata_cid>`), and reserve `planned_token_id` =
+`totalIssued() + position` in the batch you intend to mint. The diploma prints its own
+token id and a QR to it, so the reservation must be right before pinning, and the mint
+must land exactly there (the Emitir button checks that on chain and refuses otherwise).
+
+## Issue (step 4)
+
+On `/admin/certificates`, with a wallet that holds `ADMIN_ROLE`, on Ethereum:
+
+1. Filter **claimed**, select the rows in reserved-token order from the next id, no gaps.
+2. **Emitir N NFTs**. Gas is sponsored. One `issue()` batch, up to 100.
+3. The panel waits for the block, then the server reads the receipt and stamps each row.
+   If that last call fails, the mint still happened: the error shows the tx hash. Re-post it:
+   `POST /api/certificates/admin/confirm { txHash }` is idempotent.
+4. Check a token on Etherscan / OpenSea before step 5. If a diploma is wrong, fix the
+   row, re-pin, and use **Actualizar metadata** — the contract emits `MetadataUpdate`.
+
+**Issuing sends no email.** That is the point of the split.
+
+## Notify (step 5)
+
+Same page. Email is off until `RESEND_API_KEY` and `EMAIL_FROM` are set on Vercel
+(`lib/email/resend.ts`); the route answers 503 naming what is missing.
+
+1. Filter **unsent**, select the rows.
+2. **Prueba a <your email>** — the exact email, flagged `[Prueba]`, to your own inbox.
+   Stamps nothing. Look at the attachment, the links, the honors.
+3. **Revisar** — a dry run: who would get what. Nothing leaves.
+4. **Enviar N correos**. One email per certificate, to every address the builder used,
+   diploma PDF attached (Resend fetches `/api/certificates/<id>/pdf`), links to the
+   credential page, LinkedIn, OpenSea and Etherscan. Each send stamps `notified_at`;
+   a second click sends nothing. Resend's idempotency key
+   (`certificate-issued/<credential_id>`) covers the 24h after a send whose stamp
+   failed to land.
+
+Only issued rows can be notified — the email names the token — and the database enforces
+it (`notified_at` requires `issued_tx`).
+
+## After
+
+- The CSV export on the admin page carries `notified_at`, `token_id`, `issued_tx`.
+- A builder who claims late: pin → issue → notify for that row alone, in that order.
+- A bounced address shows up in the Resend dashboard, not here; correct `emails` on the
+  row, clear `notified_at`, and send again.

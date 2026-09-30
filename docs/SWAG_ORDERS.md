@@ -268,7 +268,7 @@ On `orders/paid`, when the delivery created rows, `lib/swag/email.ts` sends one
 email per Shopify order through Resend. It says the order is printed on demand
 and ships in 1–10 days, and links the claim page with the email pre-filled.
 The idempotency key is `swag-claim-invite/<order id>`. It is a logged no-op
-until `RESEND_API_KEY` and `SWAG_EMAIL_FROM` are set, and a failure never fails
+until `RESEND_API_KEY` and `EMAIL_FROM` are set, and a failure never fails
 the webhook.
 
 `/swag/claim?email=…` opens Privy's login with that email typed in
@@ -394,7 +394,7 @@ Run `create` only against a live URL: Shopify retries a failing endpoint for
 | `SWAG_VOUCHER_SIGNER_KEY` | the signer's private key; its address (`0x3977…62e6`) holds `SIGNER_ROLE` — `scripts/swag-voucher-selftest.mjs` checks both |
 | `SWAG_COLLECTION_ADDRESS` | optional, for a staging collection; defaults to the live clone in `frontend/swag-collection.json` (Ethereum `0x5a10…79E7`) |
 | `RESEND_API_KEY` | optional; the claim invite is off without it |
-| `SWAG_EMAIL_FROM` | optional; e.g. `ETH Cali <tienda@ethcali.org>`, on a domain verified in Resend |
+| `EMAIL_FROM` | optional; e.g. `ETH Cali <hola@ethcali.org>`, on a domain verified in Resend. `SWAG_EMAIL_FROM` still works as a fallback. Shared with the certificate email (`lib/email/resend.ts`) |
 | `SWAG_APP_URL` | optional; defaults to `https://app.ethcali.org` |
 | `SWAG_QUOTE_SECRET` | optional; HMAC key for shipping quotes. Unset = derived from `PRIVY_APP_SECRET`. Rotating it voids unpaid quotes (the checkout re-quotes) |
 | `CRON_SECRET` | bearer token Vercel sends to `/api/cron/swag-prices`; the route refuses everything when unset |

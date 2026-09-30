@@ -13,6 +13,7 @@ import { usePrivy } from '@privy-io/react-auth';
 import { useQuery } from '@tanstack/react-query';
 import AdminShell from '../../components/admin/AdminShell';
 import IssuePanel from '../../components/certificates/IssuePanel';
+import NotifyPanel from '../../components/certificates/NotifyPanel';
 import Loading from '../../components/shared/Loading';
 import { CheckIcon } from '../../components/shared/icons';
 import { DEFAULT_CHAIN, explorerAddress, explorerTx } from '../../config/chains';
@@ -21,11 +22,11 @@ import { CERT_EVENTS, credentialUrl, honorLabel } from '../../lib/certificates/e
 import { openseaUrl } from '../../lib/certificates/nft';
 import type { AdminCertificate, AdminCertificatesResponse } from '../../types/certificates';
 
-type Filter = 'all' | 'unclaimed' | 'claimed' | 'issued';
+type Filter = 'all' | 'unclaimed' | 'claimed' | 'issued' | 'unsent';
 
 function csv(rows: AdminCertificate[]): string {
   const cell = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-  const head = ['event', 'project', 'name', 'emails', 'checked_in_at', 'prizes', 'credential_id', 'credential_url', 'wallet', 'claimed_at', 'issued_tx', 'token_id'];
+  const head = ['event', 'project', 'name', 'emails', 'checked_in_at', 'prizes', 'credential_id', 'credential_url', 'wallet', 'claimed_at', 'issued_tx', 'token_id', 'notified_at'];
   const body = rows.map((r) =>
     [
       r.event,
@@ -40,6 +41,7 @@ function csv(rows: AdminCertificate[]): string {
       r.claimedAt ?? '',
       r.issuedTx ?? '',
       r.tokenId ?? '',
+      r.notifiedAt ?? '',
     ].map(cell).join(',')
   );
   return [head.join(','), ...body].join('\n');
@@ -71,6 +73,7 @@ export default function CertificatesAdmin() {
       if (filter === 'unclaimed' && r.wallet) return false;
       if (filter === 'claimed' && (!r.wallet || r.issuedTx)) return false;
       if (filter === 'issued' && !r.issuedTx) return false;
+      if (filter === 'unsent' && (!r.issuedTx || r.notifiedAt)) return false;
       if (!q) return true;
       return [r.memberName, r.projectName, r.credentialId, ...r.emails].some((v) => v.toLowerCase().includes(q));
     });
@@ -82,6 +85,7 @@ export default function CertificatesAdmin() {
     checkedIn: all.filter((r) => r.checkedInAt).length,
     claimed: all.filter((r) => r.wallet).length,
     issued: all.filter((r) => r.issuedTx).length,
+    emailed: all.filter((r) => r.notifiedAt).length,
   };
 
   function download() {
@@ -111,7 +115,7 @@ export default function CertificatesAdmin() {
         </div>
       ) : (
         <>
-          <dl className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
+          <dl className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-6">
             {(
               [
                 ['Builders', stats.people],
@@ -119,6 +123,7 @@ export default function CertificatesAdmin() {
                 ['Checked in', stats.checkedIn],
                 ['Wallet chosen', stats.claimed],
                 ['NFT issued', stats.issued],
+                ['Emailed', stats.emailed],
               ] as const
             ).map(([label, value]) => (
               <div key={label} className="rounded-card border border-line-hairline bg-surface-slab p-4">
@@ -136,7 +141,7 @@ export default function CertificatesAdmin() {
               className="w-full rounded-control border border-line-hairline bg-surface-inset px-3 py-2.5 text-sm text-content-primary placeholder-content-faint focus:border-eth-blue focus:outline-none sm:max-w-sm"
             />
             <div className="flex gap-1">
-              {(['all', 'unclaimed', 'claimed', 'issued'] as const).map((f) => (
+              {(['all', 'unclaimed', 'claimed', 'issued', 'unsent'] as const).map((f) => (
                 <button
                   key={f}
                   type="button"
@@ -162,6 +167,13 @@ export default function CertificatesAdmin() {
           <IssuePanel
             selected={all.filter((r) => picked.has(r.id))}
             onIssued={() => {
+              setPicked(new Set());
+              void query.refetch();
+            }}
+          />
+          <NotifyPanel
+            selected={all.filter((r) => picked.has(r.id))}
+            onSent={() => {
               setPicked(new Set());
               void query.refetch();
             }}
@@ -263,6 +275,14 @@ export default function CertificatesAdmin() {
                           <a href={explorerTx(DEFAULT_CHAIN.id, r.issuedTx)} target="_blank" rel="noopener noreferrer" className="text-content-muted hover:underline">
                             tx
                           </a>
+                          {' · '}
+                          {r.notifiedAt ? (
+                            <span className="text-content-muted" title={r.notifiedAt}>
+                              emailed {new Date(r.notifiedAt).toLocaleDateString()}
+                            </span>
+                          ) : (
+                            <span className="text-content-faint">email pending</span>
+                          )}
                         </span>
                       ) : (
                         <span className="mt-1 block text-content-faint">
