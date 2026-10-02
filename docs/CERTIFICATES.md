@@ -1,13 +1,14 @@
 # Builder certificates — the process
 
-One certificate per builder per event: a row in `builder_certificates`, a PDF diploma,
+One certificate per person per event: a row in `builder_certificates`, a PDF diploma,
 a public credential page and a soulbound NFT on Ethereum mainnet (`BuilderCertificate`,
-`frontend/addresses.json`). The same five steps every event, in this order, and each
+`frontend/addresses.json`). Builders get one per project; the team that made the event
+happen gets one per role. The same five steps every event, in this order, and each
 step is a separate action on purpose: nothing downstream happens by accident.
 
 | # | Step | Where | Writes |
 |---|------|-------|--------|
-| 1 | Load the roster | SQL, from a session (no script yet) | one row per builder: `event`, `project_*`, `member_name`, `email`, `emails`, `credential_id`, `honors`, `checked_in_at` |
+| 1 | Load the roster | SQL, from a session (no script yet) | one row per person: `event`, `role`, `project_*` (builders only), `member_name`, `email`, `emails`, `credential_id`, `honors`, `checked_in_at` |
 | 2 | Builders claim | `/certificate`, `POST /api/certificates` | `wallet`, `claimed_at` |
 | 3 | Pin | Pinata, from a session (no script yet) | `image_cid`, `pdf_cid`, `metadata_cid`, `planned_token_id` |
 | 4 | Issue | `/admin/certificates` → **Emitir** | on chain: the mint; row: `token_id`, `issued_tx` (via `POST …/admin/confirm`) |
@@ -24,6 +25,43 @@ The chain decides steps 4 and 5's truth: a row is re-verifiable with
 2. Load the roster (step 1) with `event` set to that key. `emails` must contain every
    address the builder used (Devfolio, Luma): a claim matches any of them. Lowercase.
    `credential_id` is `^[A-Z0-9]{2,16}-[A-Z0-9]{6,16}$` and permanent — it is the URL.
+
+## Roles — builders and the team
+
+`role` is what the certificate certifies. Everything role-specific is rendered from
+`CERT_ROLES` in `lib/certificates/events.ts`; nothing else needs to know.
+
+| `role` | Diploma heading | Line under the name | LinkedIn name |
+|---|---|---|---|
+| `builder` (default) | BUILDER CERTIFICATE | *built and shipped* **Project** | Builder at EAG Global Buildathon 2026 |
+| `organizer` | CONTRIBUTOR CERTIFICATE | *contributed as* **Organizer** | Organizer at EAG Global Buildathon 2026 |
+| `mentor` | CONTRIBUTOR CERTIFICATE | *contributed as* **Mentor** | Mentor at … |
+| `judge` | CONTRIBUTOR CERTIFICATE | *contributed as* **Judge** | Judge at … |
+| `volunteer` | CONTRIBUTOR CERTIFICATE | *contributed as* **Volunteer** | Volunteer at … |
+| `speaker` | CONTRIBUTOR CERTIFICATE | *contributed as* **Speaker** | Speaker at … |
+
+Rules the database enforces: a builder row has a project, a contributor row has none;
+one certificate per `(event, project-or-role, email)`, so a person who built *and*
+organized gets two certificates, two tokens, two credential ids. Same contract either
+way — the collection on chain is "ETH Cali Builder Certificate", and the token's own
+name, image and `Role` trait are what say organizer.
+
+A contributor row, step 1:
+
+```sql
+insert into public.builder_certificates
+  (event, role, member_name, email, emails, credential_id, issue_date)
+values
+  ('eag-cali-2026', 'organizer', 'Camila Rodríguez', 'camila@ethcali.org',
+   array['camila@ethcali.org'], 'EAGCALI26-ORG7Q2ZX', current_date);
+```
+
+Then the same claim → pin → issue → notify. The pinned metadata differs in three
+places: `name` is "Camila Rodríguez — Organizer · EAG Global Buildathon Cali 2026",
+`description` says what they did (`achievementEn` in `events.ts` gives the sentence),
+and the attributes carry `{"trait_type": "Role", "value": "Organizer"}` and no
+`Project`. The admin page shows the role as a chip where a builder shows a project,
+and counts the team separately.
 
 ## Claim window (step 2)
 

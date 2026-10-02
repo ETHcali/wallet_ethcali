@@ -19,13 +19,15 @@ import path from 'node:path';
 import { PDFArray, PDFDocument, PDFName, PDFString, rgb, type PDFFont, type PDFPage } from 'pdf-lib';
 import QRCode from 'qrcode';
 import fontkit from '@pdf-lib/fontkit';
-import { CERT_EVENTS, credentialUrl, honorLabel, type Honor } from './events';
+import { CERT_EVENTS, CERT_ROLES, credentialUrl, honorLabel, roleCredentialName, type CertRole, type Honor } from './events';
 import { CERT_ADDRESS, etherscanTokenUrl } from './nft';
 
 export interface DiplomaInput {
   event: string;
+  role: CertRole;
   memberName: string;
-  projectName: string;
+  /** Builders only; a contributor's diploma names the role instead. */
+  projectName: string | null;
   credentialId: string;
   issueDate: string; // YYYY-MM-DD
   honors: Honor[];
@@ -110,12 +112,15 @@ export async function renderDiploma(input: DiplomaInput): Promise<Uint8Array> {
   const ev = CERT_EVENTS[input.event];
   if (!ev) throw new Error(`Unknown certificate event: ${input.event}`);
   const a = assets();
+  const role = CERT_ROLES[input.role];
+  // The line under the name: a builder's project, a contributor's role.
+  const object = input.role === 'builder' && input.projectName ? input.projectName : role.label.en;
 
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
-  doc.setTitle(`${ev.credentialName} — ${input.memberName}`);
+  doc.setTitle(`${roleCredentialName(ev, input.role)} — ${input.memberName}`);
   doc.setAuthor('ETH Cali');
-  doc.setSubject(`${input.projectName} · ${ev.title}`);
+  doc.setSubject(`${object} · ${ev.title}`);
   doc.setKeywords(['ETH Cali', 'Ethereum', 'certificate', input.credentialId]);
 
   const bold = await doc.embedFont(a.bold, { subset: true });
@@ -134,7 +139,7 @@ export async function renderDiploma(input: DiplomaInput): Promise<Uint8Array> {
   const logoW = (logo.width / logo.height) * logoH;
   page.drawImage(logo, { x: (W - logoW) / 2, y: H - 40 - logoH, width: logoW, height: logoH });
 
-  spaced(page, 'BUILDER CERTIFICATE', 426, bold, 11, BLUE, 3.2);
+  spaced(page, role.heading, 426, bold, 11, BLUE, 3.2);
   centred(page, 'This certifies that', 402, regular, 12, MUTED);
   centred(page, input.memberName, 362, bold, 40, INK);
 
@@ -142,8 +147,8 @@ export async function renderDiploma(input: DiplomaInput): Promise<Uint8Array> {
   const line = Math.min(W - 200, Math.max(340, bold.widthOfTextAtSize(input.memberName, 40) + 40)) / 2;
   page.drawLine({ start: { x: W / 2 - line, y: 350 }, end: { x: W / 2 + line, y: 350 }, thickness: 0.9, color: BLUE });
 
-  centred(page, 'built and shipped', 327, regular, 12, MUTED);
-  centred(page, input.projectName, 298, bold, 26, BLUE);
+  centred(page, input.role === 'builder' ? role.did.en : 'contributed as', 327, regular, 12, MUTED);
+  centred(page, object, 298, bold, 26, BLUE);
   centred(page, `at ${ev.headline}`, 274, bold, 13, INK);
   centred(page, ev.chapter, 257, regular, 10.5, MUTED);
 

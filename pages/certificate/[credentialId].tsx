@@ -26,9 +26,12 @@ import { getSupabaseAdmin } from '../../lib/supabase';
 import { getPublicCertificate } from '../../lib/certificates/rows';
 import {
   CERT_EVENTS,
+  CERT_ROLES,
+  achievementEn,
   credentialPdfPath,
   credentialUrl,
   honorLabel,
+  roleCredentialName,
 } from '../../lib/certificates/events';
 import {
   CERT_ADDRESS,
@@ -145,10 +148,8 @@ export default function CredentialPage({ cert: built }: Props) {
   }, [built.credentialId]);
   const ev = CERT_EVENTS[cert.event];
   const url = credentialUrl(cert.credentialId);
-  const title = `${cert.memberName} — ${ev?.credentialName ?? 'Builder certificate'}`;
-  const description = `${cert.memberName} built and shipped ${cert.projectName} at ${
-    ev?.title ?? 'an ETH Cali event'
-  }. Issued by ETH Cali.`;
+  const title = `${cert.memberName} — ${ev ? roleCredentialName(ev, cert.role) : `${CERT_ROLES[cert.role].label.en} certificate`}`;
+  const description = `${achievementEn(cert)}. Issued by ETH Cali.`;
   const image = cert.imageCid ? ipfsHttp(cert.imageCid) : null;
   const minted = Boolean(cert.issuedTx && cert.tokenId);
 
@@ -185,12 +186,12 @@ export default function CredentialPage({ cert: built }: Props) {
         {image ? (
           <div className="overflow-hidden rounded-card border border-line-hairline bg-white shadow-lg">
             {/* eslint-disable-next-line @next/next/no-img-element -- IPFS gateway, not a Next image host */}
-            <img src={image} alt={`Builder certificate — ${cert.memberName}, ${cert.projectName}`} className="h-auto w-full" />
+            <img src={image} alt={`${CERT_ROLES[cert.role].label.en} certificate — ${cert.memberName}${cert.projectName ? `, ${cert.projectName}` : ''}`} className="h-auto w-full" />
           </div>
         ) : (
           <div className="rounded-card border border-line-hairline bg-surface-slab p-10 text-center">
             <p className="text-3xl font-bold text-content-primary">{cert.memberName}</p>
-            <p className="mt-2 text-xl text-eth-blue-text">{cert.projectName}</p>
+            <p className="mt-2 text-xl text-eth-blue-text">{cert.projectName ?? CERT_ROLES[cert.role].label.en}</p>
           </div>
         )}
 
@@ -212,11 +213,14 @@ export default function CredentialPage({ cert: built }: Props) {
               <Row label="Name">
                 <span className="font-semibold">{cert.memberName}</span>
               </Row>
-              <Row label="Project">
-                <a href={`https://devfolio.co/projects/${cert.projectSlug}`} target="_blank" rel="noopener noreferrer" className={link}>
-                  {cert.projectName}
-                </a>
-              </Row>
+              <Row label="Role">{CERT_ROLES[cert.role].label.en}</Row>
+              {cert.projectSlug && cert.projectName && (
+                <Row label="Project">
+                  <a href={`https://devfolio.co/projects/${cert.projectSlug}`} target="_blank" rel="noopener noreferrer" className={link}>
+                    {cert.projectName}
+                  </a>
+                </Row>
+              )}
               {ev && (
                 <Row label="Event">
                   <a href={ev.eventUrl} target="_blank" rel="noopener noreferrer" className={link}>

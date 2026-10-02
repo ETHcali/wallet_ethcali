@@ -160,9 +160,12 @@ Each domain (faucet, swag) has:
 
 ## Builder certificates (`/certificate`, `/admin/certificates`)
 
-One row per builder per event in `builder_certificates`; the NFT is `BuilderCertificate`
-on Ethereum mainnet (soulbound ERC-721). The flow is four deliberate steps, and each
-one is its own button or route, in order:
+One row per person per event in `builder_certificates`; the NFT is `BuilderCertificate`
+on Ethereum mainnet (soulbound ERC-721). `role` says what it certifies — `builder`
+(with a project) or the team: `organizer`, `mentor`, `judge`, `volunteer`, `speaker`
+(no project). Same contract and token type; `CERT_ROLES` in
+`lib/certificates/events.ts` is the only place that knows what each role renders as.
+The flow is four deliberate steps, and each one is its own button or route, in order:
 
 1. **Claim** — the builder signs in with any email they used (Devfolio, Luma) and picks
    the wallet the NFT goes to. `POST /api/certificates`.

@@ -1,11 +1,13 @@
-import type { Honor } from '../lib/certificates/events';
+import type { CertRole, Honor } from '../lib/certificates/events';
 
 /** One builder certificate, as the signed-in builder sees it. */
 export interface CertificateView {
   id: number;
   event: string;
-  projectSlug: string;
-  projectName: string;
+  /** What it certifies; builder rows carry a project, contributor rows do not. */
+  role: CertRole;
+  projectSlug: string | null;
+  projectName: string | null;
   memberName: string;
   /** Public id: LinkedIn's "Credential ID" and the credential URL's last segment. */
   credentialId: string;
@@ -26,8 +28,9 @@ export interface CertificateView {
 /** What anyone holding the credential URL may see. No email, ever. */
 export interface PublicCertificate {
   event: string;
-  projectSlug: string;
-  projectName: string;
+  role: CertRole;
+  projectSlug: string | null;
+  projectName: string | null;
   memberName: string;
   credentialId: string;
   issueDate: string;

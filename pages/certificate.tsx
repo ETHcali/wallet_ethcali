@@ -27,14 +27,7 @@ import Button from '../components/shared/Button';
 import { CheckIcon, CopyIcon } from '../components/shared/icons';
 import { DEFAULT_CHAIN, explorerAddress, explorerTx } from '../config/chains';
 import { isEmbeddedWallet, truncateAddress } from '../utils/linkedAccounts';
-import {
-  CERT_EVENTS,
-  LINKEDIN_ORG,
-  credentialPdfPath,
-  credentialUrl,
-  honorLabel,
-  linkedInAddUrl,
-} from '../lib/certificates/events';
+import { CERT_EVENTS, CERT_ROLES, LINKEDIN_ORG, credentialPdfPath, credentialUrl, honorLabel, linkedInAddUrl, roleCredentialName } from '../lib/certificates/events';
 import { openseaUrl } from '../lib/certificates/nft';
 import type {
   CertificateClaimResponse,
@@ -130,10 +123,10 @@ export default function CertificatePage() {
       <Navigation />
       <Layout>
         <div className="mb-5 md:mb-8">
-          <h1 className="text-2xl font-bold text-content-primary md:text-3xl">Tu certificado de builder</h1>
+          <h1 className="text-2xl font-bold text-content-primary md:text-3xl">Tu certificado ETH Cali</h1>
           <p className="mb-0 mt-1 text-sm text-content-muted">
-            Construiste y publicaste un proyecto. Súmalo a tu LinkedIn, descarga el diploma y elige la
-            wallet donde recibirás el NFT.
+            Fuiste parte de un evento, como builder o en el equipo. Súmalo a tu LinkedIn, descarga el
+            diploma y elige la wallet donde recibirás el NFT.
           </p>
         </div>
 
@@ -189,7 +182,7 @@ function CertificateHeader({ cert }: { cert: CertificateView }) {
       <p className="text-[11px] font-semibold uppercase tracking-wide text-eth-blue-text">
         {ev?.title ?? cert.event}
       </p>
-      <p className="mt-1 text-xl font-bold text-content-primary">{cert.projectName}</p>
+      <p className="mt-1 text-xl font-bold text-content-primary">{cert.projectName ?? CERT_ROLES[cert.role].label.es}</p>
       <p className="text-sm text-content-muted">{cert.memberName}</p>
       {cert.honors.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-2">
@@ -226,13 +219,13 @@ function CertificateHeader({ cert }: { cert: CertificateView }) {
  */
 function LinkedInBlock({ cert }: { cert: CertificateView }) {
   const ev = CERT_EVENTS[cert.event];
-  const addUrl = linkedInAddUrl(cert.event, cert.credentialId, cert.issueDate);
+  const addUrl = linkedInAddUrl(cert.event, cert.credentialId, cert.issueDate, cert.role);
   const [, mm] = cert.issueDate.split('-').map(Number);
   const year = cert.issueDate.slice(0, 4);
 
   const fields: { label: string; value: string; note?: string }[] = ev
     ? [
-        { label: 'Nombre · Name', value: ev.credentialName },
+        { label: 'Nombre · Name', value: roleCredentialName(ev, cert.role) },
         { label: 'Organización emisora · Issuing organization', value: LINKEDIN_ORG.name, note: 'Elige la página "ETH CALI" que sale con el logo.' },
         { label: 'Fecha de expedición · Issue date', value: `${MONTHS_ES[mm - 1]} ${year}`, note: 'Mes y año.' },
         { label: 'Fecha de caducidad · Expiration date', value: 'Déjala vacía', note: 'Este certificado no expira.' },

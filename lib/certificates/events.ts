@@ -5,6 +5,38 @@
  * all read it, so the diploma, the page and the LinkedIn entry cannot drift.
  */
 
+/**
+ * What a certificate certifies. `builder` is every row before 2026-10 and the
+ * default; the rest are the people who made the event happen. Same contract,
+ * same token: the role changes the diploma heading, the line under the name,
+ * the LinkedIn name and the Role trait — all rendered from this table.
+ */
+export type CertRole = 'builder' | 'organizer' | 'mentor' | 'judge' | 'volunteer' | 'speaker';
+
+export interface RoleDef {
+  label: { es: string; en: string };
+  /** Small-caps heading on the diploma. */
+  heading: string;
+  /**
+   * The verb line. For a builder the object is the project ("built and
+   * shipped Phycos at …"); for everyone else it is the event ("organized
+   * EAG … at …" reads wrong, so these take the event name directly).
+   */
+  did: { en: string; es: string };
+}
+
+export const CERT_ROLES: Record<CertRole, RoleDef> = {
+  builder: { label: { es: 'Builder', en: 'Builder' }, heading: 'BUILDER CERTIFICATE', did: { en: 'built and shipped', es: 'Construiste' } },
+  organizer: { label: { es: 'Organizador', en: 'Organizer' }, heading: 'CONTRIBUTOR CERTIFICATE', did: { en: 'organized', es: 'Organizaste' } },
+  mentor: { label: { es: 'Mentor', en: 'Mentor' }, heading: 'CONTRIBUTOR CERTIFICATE', did: { en: 'mentored the builders of', es: 'Acompañaste como mentor a los builders de' } },
+  judge: { label: { es: 'Jurado', en: 'Judge' }, heading: 'CONTRIBUTOR CERTIFICATE', did: { en: 'judged the projects of', es: 'Evaluaste los proyectos de' } },
+  volunteer: { label: { es: 'Voluntario', en: 'Volunteer' }, heading: 'CONTRIBUTOR CERTIFICATE', did: { en: 'made it happen as a volunteer at', es: 'Hiciste posible como voluntario' } },
+  speaker: { label: { es: 'Speaker', en: 'Speaker' }, heading: 'CONTRIBUTOR CERTIFICATE', did: { en: 'spoke at', es: 'Diste una charla en' } },
+};
+
+export const parseRole = (raw: unknown): CertRole =>
+  typeof raw === 'string' && raw in CERT_ROLES ? (raw as CertRole) : 'builder';
+
 export interface Honor {
   track: 'EAG' | 'HSK Chain';
   place: number;
@@ -120,16 +152,46 @@ export function parseHonors(raw: unknown): Honor[] {
   );
 }
 
+/** LinkedIn's "Name" for this role: the event's own for builders, "<Role> at <event>" otherwise. */
+export function roleCredentialName(ev: CertEvent, role: CertRole): string {
+  return role === 'builder' ? ev.credentialName : `${CERT_ROLES[role].label.en} at ${ev.headline}`;
+}
+
+export interface Achievement {
+  role: CertRole;
+  memberName: string;
+  projectName: string | null;
+  event: string;
+}
+
+/** "Ana built and shipped Phycos at EAG Global Buildathon 2026" / "Ana organized EAG Global Buildathon 2026". */
+export function achievementEn(a: Achievement): string {
+  const ev = CERT_EVENTS[a.event];
+  const where = ev?.headline ?? a.event;
+  const r = CERT_ROLES[a.role];
+  return a.role === 'builder' && a.projectName
+    ? `${a.memberName} ${r.did.en} ${a.projectName} at ${where}`
+    : `${a.memberName} ${r.did.en} ${where}`;
+}
+
+/** Second person, Spanish: "Construiste Phycos en EAG …" / "Organizaste EAG …". */
+export function achievementEs(a: Achievement): string {
+  const ev = CERT_EVENTS[a.event];
+  const where = ev?.headline ?? a.event;
+  const r = CERT_ROLES[a.role];
+  return a.role === 'builder' && a.projectName ? `${r.did.es} ${a.projectName} en ${where}` : `${r.did.es} ${where}`;
+}
+
 /**
  * LinkedIn's "Add to profile" link, with every field it accepts filled in.
  * Skills and media are not among them; the guide on the claim page covers those.
  */
-export function linkedInAddUrl(eventKey: string, credentialId: string, issueDate?: string): string | null {
+export function linkedInAddUrl(eventKey: string, credentialId: string, issueDate?: string, role: CertRole = 'builder'): string | null {
   const ev = CERT_EVENTS[eventKey];
   if (!ev) return null;
   const q = new URLSearchParams({
     startTask: 'CERTIFICATION_NAME',
-    name: ev.credentialName,
+    name: roleCredentialName(ev, role),
     organizationId: LINKEDIN_ORG.id,
     issueYear: issueDate ? String(Number(issueDate.slice(0, 4))) : String(ev.issueYear),
     issueMonth: issueDate ? String(Number(issueDate.slice(5, 7))) : String(ev.issueMonth),
