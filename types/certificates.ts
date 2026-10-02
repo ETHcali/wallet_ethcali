@@ -82,6 +82,27 @@ export interface IssueConfirmResponse {
   issued: { credentialId: string; tokenId: string }[];
 }
 
+/** POST /api/certificates/admin/participants — one person added from the admin page. */
+export interface AddParticipantBody {
+  event: string;
+  role: CertRole;
+  memberName: string;
+  /** Primary email; `emails` may add the others they used. */
+  email: string;
+  emails?: string[];
+  /** Builders only. */
+  projectName?: string;
+  projectSlug?: string;
+  /** Create (or find) their ETH Cali wallet from the email now, so the certificate can be issued without waiting for a claim. */
+  createWallet?: boolean;
+}
+
+export interface AddParticipantResponse {
+  certificate: AdminCertificate;
+  /** True when the wallet was created by this call (a new Privy account or a new embedded wallet). */
+  walletCreated: boolean;
+}
+
 export interface AdminCertificatesResponse {
   certificates: AdminCertificate[];
 }

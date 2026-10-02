@@ -43,6 +43,8 @@ export interface Honor {
 }
 
 export interface CertEvent {
+  /** Credential ids for this event are `<credentialPrefix>-<8 chars>`, e.g. EAGCALI26-7K3P9QXM. */
+  credentialPrefix: string;
   /** On the diploma, under the project. */
   title: string;
   /** "Name" on LinkedIn. Short enough to read in a profile list. */
@@ -89,6 +91,7 @@ export interface CertEvent {
  */
 export const CERT_EVENTS: Record<string, CertEvent> = {
   'eag-cali-2026': {
+    credentialPrefix: 'EAGCALI26',
     title: 'EAG Global Buildathon · Ethereum Builders Tour',
     credentialName: 'Builder at EAG Global Buildathon 2026',
     venue: 'Universidad Icesi · Cali, Colombia',

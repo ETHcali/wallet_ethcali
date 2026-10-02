@@ -8,7 +8,7 @@ step is a separate action on purpose: nothing downstream happens by accident.
 
 | # | Step | Where | Writes |
 |---|------|-------|--------|
-| 1 | Load the roster | SQL, from a session (no script yet) | one row per person: `event`, `role`, `project_*` (builders only), `member_name`, `email`, `emails`, `credential_id`, `honors`, `checked_in_at` |
+| 1 | Add people | `/admin/certificates` → **Add a person** (one at a time), or SQL for a whole roster | one row per person: `event`, `role`, `project_*` (builders only), `member_name`, `email`, `emails`, `credential_id`; with "create wallet" on, also `wallet` + `claimed_at` |
 | 2 | Builders claim | `/certificate`, `POST /api/certificates` | `wallet`, `claimed_at` |
 | 3 | Pin | Pinata, from a session (no script yet) | `image_cid`, `pdf_cid`, `metadata_cid`, `planned_token_id` |
 | 4 | Issue | `/admin/certificates` → **Emitir** | on chain: the mint; row: `token_id`, `issued_tx` (via `POST …/admin/confirm`) |
@@ -22,9 +22,13 @@ The chain decides steps 4 and 5's truth: a row is re-verifiable with
 1. Add the event to `CERT_EVENTS` in `lib/certificates/events.ts` — title, venue, dates,
    LinkedIn name, sponsors — and each sponsor's logo in `lib/certificates/logos` (PNG,
    legible on white). The diploma, the credential page, LinkedIn and the email follow.
-2. Load the roster (step 1) with `event` set to that key. `emails` must contain every
-   address the builder used (Devfolio, Luma): a claim matches any of them. Lowercase.
-   `credential_id` is `^[A-Z0-9]{2,16}-[A-Z0-9]{6,16}$` and permanent — it is the URL.
+2. Add the people (step 1). One at a time from the admin page — name, email(s), role,
+   a project for builders — which mints a credential id (`<credentialPrefix>-<8 chars>`)
+   and, by default, finds or creates their ETH Cali wallet from the email, so the
+   certificate can go straight to pin and issue. For a whole hackathon roster, SQL is
+   still faster: `emails` must contain every address the builder used (Devfolio, Luma),
+   lowercase; `credential_id` is `^[A-Z0-9]{2,16}-[A-Z0-9]{6,16}$` and permanent — it is
+   the URL.
 
 ## Roles — builders and the team
 
@@ -46,7 +50,7 @@ organized gets two certificates, two tokens, two credential ids. Same contract e
 way — the collection on chain is "ETH Cali Builder Certificate", and the token's own
 name, image and `Role` trait are what say organizer.
 
-A contributor row, step 1:
+A contributor, step 1: **Add a person** on the admin page with role Organizer, or in SQL:
 
 ```sql
 insert into public.builder_certificates
@@ -69,6 +73,10 @@ Send builders to `https://app.ethcali.org/certificate`. Signing in with any of t
 emails is the whole proof; a builder without a wallet gets one from that sign-in. They
 choose the wallet the NFT goes to and can change it until step 4. From here they can
 already add the certificate to LinkedIn and download the diploma.
+
+A person added with "create wallet" on already has a claim: their ETH Cali wallet,
+tied to that email. They can still sign in and point the NFT at another wallet until
+step 4; the wallet is theirs either way (Privy embedded, controlled by their login).
 
 The admin page (`/admin/certificates`, needs `ADMIN_ROLE` on the contract) shows who
 has claimed. **Do not pin or issue for a row without a wallet.**
