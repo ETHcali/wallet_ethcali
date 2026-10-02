@@ -21,7 +21,7 @@ import { requireCertAdmin } from '../../../../lib/certificates/requireCertAdmin'
 import { requireUser, sendAuthError } from '../../../../lib/swag/requireUser';
 import { getSupabaseAdmin } from '../../../../lib/supabase';
 import { CREDENTIAL_RE } from '../../../../lib/certificates/rows';
-import { parseHonors } from '../../../../lib/certificates/events';
+import { parseHonors, parseRole } from '../../../../lib/certificates/events';
 import {
   renderCertificateEmail,
   sendCertificateEmail,
@@ -68,7 +68,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     const db = getSupabaseAdmin();
     const { data, error } = await db
       .from('builder_certificates')
-      .select('event, member_name, project_name, credential_id, issue_date, honors, email, emails, wallet, issued_tx, token_id, notified_at')
+      .select('event, role, member_name, project_name, credential_id, issue_date, honors, email, emails, wallet, issued_tx, token_id, notified_at')
       .in('credential_id', ids);
     if (error) throw new Error(error.message);
     const byId = new Map((data ?? []).map((r) => [r.credential_id as string, r]));
@@ -90,6 +90,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       }
       const input: CertificateEmailInput = {
         event: r.event,
+        role: parseRole(r.role),
         memberName: r.member_name,
         projectName: r.project_name,
         credentialId: r.credential_id,

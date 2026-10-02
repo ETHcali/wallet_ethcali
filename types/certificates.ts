@@ -1,11 +1,13 @@
-import type { Honor } from '../lib/certificates/events';
+import type { CertRole, Honor } from '../lib/certificates/events';
 
 /** One builder certificate, as the signed-in builder sees it. */
 export interface CertificateView {
   id: number;
   event: string;
-  projectSlug: string;
-  projectName: string;
+  /** What it certifies; builder rows carry a project, contributor rows do not. */
+  role: CertRole;
+  projectSlug: string | null;
+  projectName: string | null;
   memberName: string;
   /** Public id: LinkedIn's "Credential ID" and the credential URL's last segment. */
   credentialId: string;
@@ -26,8 +28,9 @@ export interface CertificateView {
 /** What anyone holding the credential URL may see. No email, ever. */
 export interface PublicCertificate {
   event: string;
-  projectSlug: string;
-  projectName: string;
+  role: CertRole;
+  projectSlug: string | null;
+  projectName: string | null;
   memberName: string;
   credentialId: string;
   issueDate: string;
@@ -77,6 +80,27 @@ export interface NotifyResponse {
 export interface IssueConfirmResponse {
   /** Credential ids whose mint this transaction proved, with their token ids. */
   issued: { credentialId: string; tokenId: string }[];
+}
+
+/** POST /api/certificates/admin/participants — one person added from the admin page. */
+export interface AddParticipantBody {
+  event: string;
+  role: CertRole;
+  memberName: string;
+  /** Primary email; `emails` may add the others they used. */
+  email: string;
+  emails?: string[];
+  /** Builders only. */
+  projectName?: string;
+  projectSlug?: string;
+  /** Create (or find) their ETH Cali wallet from the email now, so the certificate can be issued without waiting for a claim. */
+  createWallet?: boolean;
+}
+
+export interface AddParticipantResponse {
+  certificate: AdminCertificate;
+  /** True when the wallet was created by this call (a new Privy account or a new embedded wallet). */
+  walletCreated: boolean;
 }
 
 export interface AdminCertificatesResponse {

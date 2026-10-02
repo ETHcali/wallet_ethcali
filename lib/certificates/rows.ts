@@ -7,19 +7,20 @@
  * only once the certificate is issued to it.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { parseHonors } from './events';
+import { parseHonors, parseRole } from './events';
 import type { AdminCertificate, CertificateView, PublicCertificate } from '../../types/certificates';
 
 export const OWNER_COLUMNS =
-  'id, event, project_slug, project_name, member_name, email, credential_id, issue_date, honors, wallet, claimed_at, issued_tx, token_id, image_cid';
+  'id, event, role, project_slug, project_name, member_name, email, credential_id, issue_date, honors, wallet, claimed_at, issued_tx, token_id, image_cid';
 
 export const ADMIN_COLUMNS = `${OWNER_COLUMNS}, emails, checked_in_at, metadata_cid, planned_token_id, notified_at`;
 
 export interface CertificateRow {
   id: number;
   event: string;
-  project_slug: string;
-  project_name: string;
+  role: string;
+  project_slug: string | null;
+  project_name: string | null;
   member_name: string;
   email: string;
   credential_id: string;
@@ -35,6 +36,7 @@ export interface CertificateRow {
 export const toOwnerView = (r: CertificateRow): CertificateView => ({
   id: r.id,
   event: r.event,
+  role: parseRole(r.role),
   projectSlug: r.project_slug,
   projectName: r.project_name,
   memberName: r.member_name,
@@ -77,13 +79,14 @@ export async function getPublicCertificate(
   if (!CREDENTIAL_RE.test(id)) return null;
   const { data, error } = await db
     .from('builder_certificates')
-    .select('event, project_slug, project_name, member_name, credential_id, issue_date, honors, wallet, issued_tx, token_id, planned_token_id, image_cid, metadata_cid')
+    .select('event, role, project_slug, project_name, member_name, credential_id, issue_date, honors, wallet, issued_tx, token_id, planned_token_id, image_cid, metadata_cid')
     .eq('credential_id', id)
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) return null;
   return {
     event: data.event,
+    role: parseRole(data.role),
     projectSlug: data.project_slug,
     projectName: data.project_name,
     memberName: data.member_name,

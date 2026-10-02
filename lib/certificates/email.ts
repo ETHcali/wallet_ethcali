@@ -13,15 +13,26 @@
  * Idempotency key certificate-issued/<credential_id>, so a retry within
  * Resend's 24h window cannot deliver it twice.
  */
-import { CERT_EVENTS, credentialPdfPath, credentialUrl, honorLabel, linkedInAddUrl, type Honor } from './events';
+import {
+  CERT_EVENTS,
+  achievementEs,
+  credentialPdfPath,
+  credentialUrl,
+  honorLabel,
+  linkedInAddUrl,
+  roleCredentialName,
+  type CertRole,
+  type Honor,
+} from './events';
 import { etherscanTokenUrl, openseaUrl } from './nft';
 import { appUrl, escapeHtml, sendEmail, type SendResult } from '../email/resend';
 import { truncateAddress } from '../../utils/linkedAccounts';
 
 export interface CertificateEmailInput {
   event: string;
+  role: CertRole;
   memberName: string;
-  projectName: string;
+  projectName: string | null;
   credentialId: string;
   issueDate: string;
   honors: Honor[];
@@ -36,19 +47,24 @@ const BLUE = 'rgb(43,35,239)';
 /** Subject and bodies, without sending — what the dry run shows. */
 export function renderCertificateEmail(c: CertificateEmailInput) {
   const ev = CERT_EVENTS[c.event];
-  const eventName = ev?.credentialName ?? c.event;
+  const eventName = ev ? roleCredentialName(ev, c.role) : c.event;
+  // "Construiste Phycos en EAG …" / "Organizaste EAG …" — second person, no name.
+  const did = achievementEs({ role: c.role, memberName: c.memberName, projectName: c.projectName, event: c.event });
   const page = credentialUrl(c.credentialId);
   const pdf = `${appUrl()}${credentialPdfPath(c.credentialId)}?download=1`;
   const opensea = openseaUrl(c.tokenId);
   const etherscan = etherscanTokenUrl(c.tokenId);
-  const linkedin = linkedInAddUrl(c.event, c.credentialId, c.issueDate);
+  const linkedin = linkedInAddUrl(c.event, c.credentialId, c.issueDate, c.role);
   const honors = c.honors.map((h) => honorLabel(h, 'es'));
   const firstName = c.memberName.trim().split(/\s+/)[0] || c.memberName;
   /** The signed-in view: their NFT, their wallet, their credential. Sign-in is this email. */
   const app = `${appUrl()}/certificate`;
   const shortWallet = truncateAddress(c.wallet);
   /** Share intents are plain URLs, so they work inside an email; a copy button cannot. */
-  const shareText = `Construí ${c.projectName} en ${ev?.headline ?? c.event} y ETH Cali lo certifica.`;
+  const shareText =
+    c.role === 'builder' && c.projectName
+      ? `Construí ${c.projectName} en ${ev?.headline ?? c.event} y ETH Cali lo certifica.`
+      : `Fui parte del equipo del ${ev?.headline ?? c.event} y ETH Cali lo certifica.`;
   const share: [string, string][] = [
     ['LinkedIn', `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(page)}`],
     ['X', `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(page)}`],
@@ -64,9 +80,7 @@ export function renderCertificateEmail(c: CertificateEmailInput) {
 
   const html = `<div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#111">
 <h1 style="font-size:20px;margin:0 0 12px">Tu certificado está listo, ${escapeHtml(firstName)}</h1>
-<p>Construiste <strong>${escapeHtml(c.projectName)}</strong> en ${escapeHtml(ev?.headline ?? c.event)}${
-    ev ? ` (${escapeHtml(ev.location)}, ${escapeHtml(ev.eventDates)})` : ''
-  }, y ETH Cali lo certifica.</p>
+<p>${escapeHtml(did)}${ev ? ` (${escapeHtml(ev.location)}, ${escapeHtml(ev.eventDates)})` : ''}, y ETH Cali lo certifica.</p>
 ${honors.length ? `<p>${honors.map((h) => `🏆 <strong>${escapeHtml(h)}</strong>`).join('<br>')}</p>` : ''}
 <p>Tu diploma va adjunto en PDF. El certificado también es un <strong>NFT en Ethereum</strong> (token #${escapeHtml(
     c.tokenId
@@ -86,7 +100,7 @@ ${honors.length ? `<p>${honors.map((h) => `🏆 <strong>${escapeHtml(h)}</strong
   const text = [
     `Tu certificado está listo, ${firstName}.`,
     '',
-    `Construiste ${c.projectName} en ${ev?.headline ?? c.event}${ev ? ` (${ev.location}, ${ev.eventDates})` : ''}, y ETH Cali lo certifica.`,
+    `${did}${ev ? ` (${ev.location}, ${ev.eventDates})` : ''}, y ETH Cali lo certifica.`,
     ...honors.map((h) => `- ${h}`),
     '',
     `Tu diploma va adjunto en PDF. El certificado también es un NFT en Ethereum (token #${c.tokenId}, no transferible), y ya está en tu wallet ${shortWallet}, la que quedó guardada con tu cuenta al reclamar.`,

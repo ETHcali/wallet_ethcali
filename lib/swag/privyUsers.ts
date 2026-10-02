@@ -7,8 +7,9 @@
  * so this file finds the Privy user for the email — or creates one, with an
  * Ethereum wallet pregenerated — and returns the wallet's address.
  *
- * Server-only: it uses the app secret. It creates identities, so the only
- * caller is the staff route behind requireSwagSuperAdmin.
+ * Server-only: it uses the app secret. It creates identities, so its callers
+ * are admin-gated routes only: the staff and access routes, and the
+ * certificates "add person" route (a wallet for a certificate recipient).
  *
  * Endpoints (Privy REST, Basic auth with app id + secret):
  *   POST /v1/users/email/address      find by email

@@ -14,11 +14,12 @@ import { useQuery } from '@tanstack/react-query';
 import AdminShell from '../../components/admin/AdminShell';
 import IssuePanel from '../../components/certificates/IssuePanel';
 import NotifyPanel from '../../components/certificates/NotifyPanel';
+import AddParticipantPanel from '../../components/certificates/AddParticipantPanel';
 import Loading from '../../components/shared/Loading';
 import { CheckIcon } from '../../components/shared/icons';
 import { DEFAULT_CHAIN, explorerAddress, explorerTx } from '../../config/chains';
 import { truncateAddress } from '../../utils/linkedAccounts';
-import { CERT_EVENTS, credentialUrl, honorLabel } from '../../lib/certificates/events';
+import { CERT_EVENTS, CERT_ROLES, credentialUrl, honorLabel } from '../../lib/certificates/events';
 import { openseaUrl } from '../../lib/certificates/nft';
 import type { AdminCertificate, AdminCertificatesResponse } from '../../types/certificates';
 
@@ -26,11 +27,12 @@ type Filter = 'all' | 'unclaimed' | 'claimed' | 'issued' | 'unsent';
 
 function csv(rows: AdminCertificate[]): string {
   const cell = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-  const head = ['event', 'project', 'name', 'emails', 'checked_in_at', 'prizes', 'credential_id', 'credential_url', 'wallet', 'claimed_at', 'issued_tx', 'token_id', 'notified_at'];
+  const head = ['event', 'role', 'project', 'name', 'emails', 'checked_in_at', 'prizes', 'credential_id', 'credential_url', 'wallet', 'claimed_at', 'issued_tx', 'token_id', 'notified_at'];
   const body = rows.map((r) =>
     [
       r.event,
-      r.projectName,
+      r.role,
+      r.projectName ?? '',
       r.memberName,
       r.emails.join(' '),
       r.checkedInAt ?? '',
@@ -75,7 +77,7 @@ export default function CertificatesAdmin() {
       if (filter === 'issued' && !r.issuedTx) return false;
       if (filter === 'unsent' && (!r.issuedTx || r.notifiedAt)) return false;
       if (!q) return true;
-      return [r.memberName, r.projectName, r.credentialId, ...r.emails].some((v) => v.toLowerCase().includes(q));
+      return [r.memberName, r.projectName ?? '', r.role, r.credentialId, ...r.emails].some((v) => v.toLowerCase().includes(q));
     });
   }, [all, filter, search]);
 
@@ -101,7 +103,8 @@ export default function CertificatesAdmin() {
 
   const stats = {
     people: all.length,
-    projects: new Set(all.map((r) => `${r.event}/${r.projectSlug}`)).size,
+    projects: new Set(all.filter((r) => r.projectSlug).map((r) => `${r.event}/${r.projectSlug}`)).size,
+    team: all.filter((r) => r.role !== 'builder').length,
     checkedIn: all.filter((r) => r.checkedInAt).length,
     claimed: all.filter((r) => r.wallet).length,
     issued: all.filter((r) => r.issuedTx).length,
@@ -135,11 +138,12 @@ export default function CertificatesAdmin() {
         </div>
       ) : (
         <>
-          <dl className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-6">
+          <dl className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
             {(
               [
                 ['Builders', stats.people],
                 ['Projects', stats.projects],
+                ['Team', stats.team],
                 ['Checked in', stats.checkedIn],
                 ['Wallet chosen', stats.claimed],
                 ['NFT issued', stats.issued],
@@ -195,6 +199,7 @@ export default function CertificatesAdmin() {
             </div>
           </div>
 
+          <AddParticipantPanel onAdded={() => void query.refetch()} />
           <IssuePanel
             selected={all.filter((r) => picked.has(r.id))}
             onIssued={() => {
@@ -259,14 +264,20 @@ export default function CertificatesAdmin() {
                       <p className="text-xs text-content-faint">{CERT_EVENTS[r.event]?.credentialName ?? r.event}</p>
                     </td>
                     <td className="px-3 py-3">
-                      <a
-                        href={`https://devfolio.co/projects/${r.projectSlug}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-content-primary hover:text-eth-blue-text"
-                      >
-                        {r.projectName}
-                      </a>
+                      {r.projectSlug && r.projectName ? (
+                        <a
+                          href={`https://devfolio.co/projects/${r.projectSlug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-content-primary hover:text-eth-blue-text"
+                        >
+                          {r.projectName}
+                        </a>
+                      ) : (
+                        <span className="rounded-chip bg-surface-inset px-2 py-0.5 text-xs font-semibold text-content-secondary">
+                          {CERT_ROLES[r.role].label.en}
+                        </span>
+                      )}
                       {r.honors.map((h) => (
                         <p key={`${h.track}-${h.place}`} className="text-xs text-eth-blue-text">
                           {honorLabel(h, 'en')}
