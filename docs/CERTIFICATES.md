@@ -8,7 +8,7 @@ step is a separate action on purpose: nothing downstream happens by accident.
 
 | # | Step | Where | Writes |
 |---|------|-------|--------|
-| 1 | Add people | `/admin/certificates` → **Add a person** (one at a time), or SQL for a whole roster | one row per person: `event`, `role`, `project_*` (builders only), `member_name`, `email`, `emails`, `credential_id`; with "create wallet" on, also `wallet` + `claimed_at` |
+| 1 | Add people | `/admin/certificates` → **Team** (pick from the ethcali.org team) or **Add a person** (anyone), or SQL for a whole hackathon roster | one row per person: `event`, `role`, `project_*` (builders only), `member_name`, `email`, `emails`, `credential_id`; with "create wallet" on, also `wallet` + `claimed_at` |
 | 2 | Builders claim | `/certificate`, `POST /api/certificates` | `wallet`, `claimed_at` |
 | 3 | Pin | Pinata, from a session (no script yet) | `image_cid`, `pdf_cid`, `metadata_cid`, `planned_token_id` |
 | 4 | Issue | `/admin/certificates` → **Emitir** | on chain: the mint; row: `token_id`, `issued_tx` (via `POST …/admin/confirm`) |
@@ -50,7 +50,22 @@ organized gets two certificates, two tokens, two credential ids. Same contract e
 way — the collection on chain is "ETH Cali Builder Certificate", and the token's own
 name, image and `Role` trait are what say organizer.
 
-A contributor, step 1: **Add a person** on the admin page with role Organizer, or in SQL:
+### The team has its own list
+
+The people on ethcali.org's about page are `team_members` — public, read by the site
+with the anon key and `select *`, so **nothing private may ever be added to that
+table**. Their emails live beside it in `team_member_contacts`: RLS on, no policies,
+no client grants, service role only. First filled from the "Intención de Core" form
+responses (13 of 20 members, 2026-10-06); the rest are typed in from the admin.
+
+`/admin/certificates` → **Team** lists every member with their private email (editable
+inline, saved on blur), a role defaulted from their team status (Volunteer → volunteer,
+everyone else → organizer), and the certificates they already hold for the chosen
+event. Tick, **Add N to <event>**: one row per person, with their ETH Cali wallet,
+linked back to the profile through `builder_certificates.team_member_id`. Someone who
+already holds that role's certificate for the event cannot be added twice.
+
+A contributor who is not on the team, step 1: **Add a person** with role Organizer, or in SQL:
 
 ```sql
 insert into public.builder_certificates

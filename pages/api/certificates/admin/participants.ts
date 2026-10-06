@@ -35,9 +35,10 @@ const newCredentialId = (prefix: string) =>
 
 class BadRequest extends Error {}
 
-function parse(raw: unknown): Required<Omit<AddParticipantBody, 'projectName' | 'projectSlug'>> & {
+function parse(raw: unknown): Required<Omit<AddParticipantBody, 'projectName' | 'projectSlug' | 'teamMemberId'>> & {
   projectName: string | null;
   projectSlug: string | null;
+  teamMemberId: number | null;
 } {
   const b = (raw ?? {}) as Partial<AddParticipantBody>;
   if (typeof b.event !== 'string' || !CERT_EVENTS[b.event]) throw new BadRequest('Unknown event');
@@ -61,7 +62,9 @@ function parse(raw: unknown): Required<Omit<AddParticipantBody, 'projectName' | 
   } else if (b.projectName || b.projectSlug) {
     throw new BadRequest(`A ${CERT_ROLES[role].label.en.toLowerCase()} certificate has no project`);
   }
-  return { event: b.event, role, memberName, email, emails, projectName, projectSlug, createWallet: b.createWallet !== false };
+  const teamMemberId = b.teamMemberId == null ? null : Number(b.teamMemberId);
+  if (teamMemberId != null && (!Number.isInteger(teamMemberId) || teamMemberId <= 0)) throw new BadRequest('teamMemberId must be an id');
+  return { event: b.event, role, memberName, email, emails, projectName, projectSlug, createWallet: b.createWallet !== false, teamMemberId };
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<AddParticipantResponse | { error: string }>) {
@@ -110,6 +113,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           emails: input.emails,
           credential_id: credentialId,
           issue_date: now.slice(0, 10),
+          team_member_id: input.teamMemberId,
           wallet,
           claimed_at: wallet ? now : null,
         })

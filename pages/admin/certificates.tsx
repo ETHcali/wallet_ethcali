@@ -15,6 +15,7 @@ import AdminShell from '../../components/admin/AdminShell';
 import IssuePanel from '../../components/certificates/IssuePanel';
 import NotifyPanel from '../../components/certificates/NotifyPanel';
 import AddParticipantPanel from '../../components/certificates/AddParticipantPanel';
+import TeamPanel from '../../components/certificates/TeamPanel';
 import Loading from '../../components/shared/Loading';
 import { CheckIcon } from '../../components/shared/icons';
 import { DEFAULT_CHAIN, explorerAddress, explorerTx } from '../../config/chains';
@@ -199,6 +200,7 @@ export default function CertificatesAdmin() {
             </div>
           </div>
 
+          <TeamPanel onAdded={() => void query.refetch()} />
           <AddParticipantPanel onAdded={() => void query.refetch()} />
           <IssuePanel
             selected={all.filter((r) => picked.has(r.id))}

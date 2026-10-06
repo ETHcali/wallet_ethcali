@@ -167,7 +167,10 @@ on Ethereum mainnet (soulbound ERC-721). `role` says what it certifies — `buil
 `lib/certificates/events.ts` is the only place that knows what each role renders as.
 The flow is four deliberate steps, and each one is its own button or route, in order:
 
-1. **Add + claim** — the admin adds a person (`POST /api/certificates/admin/participants`:
+1. **Add + claim** — the admin picks team members from `/admin/certificates` → Team
+   (`team_members` + the private `team_member_contacts`; **the site reads `team_members`
+   with `select *`, so an email column there would be published — contacts stay in their
+   own service-role-only table**), or adds a person (`POST /api/certificates/admin/participants`:
    row, credential id, and by default their ETH Cali wallet found or created from the
    email via Privy), or a roster is loaded by SQL and the person claims at `/certificate`
    with any email they used, picking the wallet. `POST /api/certificates`.

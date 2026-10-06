@@ -95,6 +95,33 @@ export interface AddParticipantBody {
   projectSlug?: string;
   /** Create (or find) their ETH Cali wallet from the email now, so the certificate can be issued without waiting for a claim. */
   createWallet?: boolean;
+  /** When the person is on the team: ties the certificate to their public profile. */
+  teamMemberId?: number;
+}
+
+/** A team member as the certificates admin sees them: public profile + private contact + certificates for one event. */
+export interface TeamMemberForCerts {
+  id: number;
+  slug: string;
+  name: string;
+  status: string | null;
+  linkedinUrl: string | null;
+  isPublished: boolean;
+  /** Private (team_member_contacts); null when nobody has filled it in yet. */
+  contact: { email: string | null; emails: string[]; telegram: string | null } | null;
+  certificates: { role: CertRole; credentialId: string; issued: boolean; notified: boolean }[];
+}
+
+export interface TeamForCertsResponse {
+  event: string;
+  team: TeamMemberForCerts[];
+}
+
+export interface TeamContactBody {
+  teamMemberId: number;
+  email?: string | null;
+  emails?: string[];
+  telegram?: string | null;
 }
 
 export interface AddParticipantResponse {
