@@ -9,7 +9,7 @@ import { useCallback } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-export type CmsResource = 'events' | 'venues' | 'team' | 'partners';
+export type CmsResource = 'events' | 'venues' | 'partners';
 
 interface WithId {
   id: number;

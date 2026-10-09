@@ -37,7 +37,7 @@ function ContactCell({
   onSaved,
 }: {
   member: TeamMemberForCerts;
-  onSaved: (contact: NonNullable<TeamMemberForCerts['contact']>) => void;
+  onSaved: () => void;
 }) {
   const { getAccessToken } = usePrivy();
   const [value, setValue] = useState(member.contact?.email ?? '');
@@ -52,14 +52,18 @@ function ContactCell({
     setError(null);
     try {
       const token = await getAccessToken();
-      const res = await fetch('/api/certificates/admin/team', {
+      const res = await fetch('/api/admin/team', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ teamMemberId: member.id, email: email || null, emails: member.contact?.emails.filter((e) => e !== member.contact?.email) ?? [], telegram: member.contact?.telegram ?? null }),
+        // Replace the primary; the other addresses stay.
+        body: JSON.stringify({
+          id: member.id,
+          contact: { email: email || null, emails: (member.contact?.emails ?? []).filter((e) => e !== member.contact?.email) },
+        }),
       });
-      const body = (await res.json().catch(() => ({}))) as { contact?: NonNullable<TeamMemberForCerts['contact']>; error?: string };
-      if (!res.ok || !body.contact) throw new Error(body.error ?? `Could not save (${res.status})`);
-      onSaved(body.contact);
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(body.error ?? `Could not save (${res.status})`);
+      onSaved();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not save');
     } finally {
@@ -86,11 +90,9 @@ function ContactCell({
   );
 }
 
-export default function TeamPanel({ events, onAdded }: { events: CertEvent[]; onAdded: () => void }) {
+export default function TeamPanel({ ev, onAdded }: { ev: CertEvent; onAdded: () => void }) {
   const { getAccessToken } = usePrivy();
-  const byKey = Object.fromEntries(events.map((e) => [e.key, e]));
-  const [open, setOpen] = useState(false);
-  const [event, setEvent] = useState(events[0]?.key ?? '');
+  const event = ev.key;
   const [roles, setRoles] = useState<Record<number, CertRole>>({});
   const [picked, setPicked] = useState<Set<number>>(new Set());
   const [busy, setBusy] = useState<string | null>(null);
@@ -98,7 +100,7 @@ export default function TeamPanel({ events, onAdded }: { events: CertEvent[]; on
 
   const query = useQuery({
     queryKey: ['certificates-team', event],
-    enabled: open && Boolean(event),
+    enabled: Boolean(event),
     queryFn: async () => {
       const token = await getAccessToken();
       const res = await fetch(`/api/certificates/admin/team?event=${encodeURIComponent(event)}`, { headers: { Authorization: `Bearer ${token}` } });
@@ -155,29 +157,16 @@ export default function TeamPanel({ events, onAdded }: { events: CertEvent[]; on
     <div className="mb-4 rounded-card border border-line-hairline bg-surface-slab p-4 text-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="font-semibold text-content-primary">Team</p>
+          <p className="font-semibold text-content-primary">Who from the team took part</p>
           <p className="text-xs text-content-muted">
-            The ethcali.org team with their private emails. Pick who gets a certificate for the event; each one is added with their ETH Cali wallet.
+            From the team master list. Tick who worked on this event, set their role, and add them; each gets a certificate and their ETH Cali
+            wallet from the email. Missing an email? Fix it here or on the Team page.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          {open && (
-            <select value={event} onChange={(e) => setEvent(e.target.value)} className={field} aria-label="Event">
-              {events.map((e) => (
-                <option key={e.key} value={e.key}>
-                  {e.headline}
-                </option>
-              ))}
-            </select>
-          )}
-          <Button variant="secondary" size="small" onClick={() => setOpen((v) => !v)}>
-            {open ? 'Close' : 'Open team'}
-          </Button>
-        </div>
+
       </div>
 
-      {open && (
-        <>
+      <>
           {query.isLoading && <p className="mt-3 text-xs text-content-muted">Loading the team…</p>}
           {query.isError && <p className="mt-3 text-xs text-signal-reverted">{(query.error as Error).message}</p>}
           {team.length > 0 && (
@@ -198,7 +187,7 @@ export default function TeamPanel({ events, onAdded }: { events: CertEvent[]; on
                     <th className="px-3 py-2 font-semibold">Member</th>
                     <th className="px-3 py-2 font-semibold">Email (private)</th>
                     <th className="px-3 py-2 font-semibold">Role</th>
-                    <th className="px-3 py-2 font-semibold">Certificates · {byKey[event]?.headline}</th>
+                    <th className="px-3 py-2 font-semibold">Certificates · {ev.headline}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line-hairline">
@@ -265,7 +254,7 @@ export default function TeamPanel({ events, onAdded }: { events: CertEvent[]; on
           )}
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <Button size="small" onClick={addSelected} disabled={Boolean(busy) || selected.length === 0}>
-              {busy ?? `Add ${selected.length} to ${byKey[event]?.headline ?? event}`}
+              {busy ?? `Add ${selected.length} to ${ev.headline}`}
             </Button>
             <span className="text-xs text-content-muted">Each one gets a credential id and their ETH Cali wallet from the email. Next: pin, then issue.</span>
           </div>
@@ -278,8 +267,7 @@ export default function TeamPanel({ events, onAdded }: { events: CertEvent[]; on
               ))}
             </div>
           )}
-        </>
-      )}
+      </>
     </div>
   );
 }

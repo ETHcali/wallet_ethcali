@@ -7,7 +7,10 @@
  * database grants anon and authenticated SELECT and nothing else, so there is no
  * second way in — which is the point.
  *
- * One route rather than four near-identical files. Each resource declares its
+ * The team is not here: it has a public profile and a private contact, edited
+ * together on /admin/team (pages/api/admin/team.ts).
+ *
+ * One route rather than three near-identical files. Each resource declares its
  * table, what may be written, and what must be present to create a row; the
  * handler is the same shape for all of them.
  */
@@ -61,15 +64,6 @@ const RESOURCES: Record<string, ResourceDef> = {
     required: ['slug', 'name'],
     enums: [{ column: 'status', allowed: VENUE_STATUSES }],
     orderBy: { column: 'name', ascending: true },
-  },
-  team: {
-    table: 'team_members',
-    writable: [
-      'slug', 'name', 'role_es', 'role_en', 'status', 'since', 'image_path',
-      'linkedin_url', 'twitter_url', 'github_url', 'sort_order', 'is_published',
-    ],
-    required: ['slug', 'name'],
-    orderBy: { column: 'sort_order', ascending: true },
   },
   partners: {
     table: 'partners',

@@ -119,13 +119,6 @@ export interface TeamForCertsResponse {
   team: TeamMemberForCerts[];
 }
 
-export interface TeamContactBody {
-  teamMemberId: number;
-  email?: string | null;
-  emails?: string[];
-  telegram?: string | null;
-}
-
 export interface AddParticipantResponse {
   certificate: AdminCertificate;
   /** True when the wallet was created by this call (a new Privy account or a new embedded wallet). */
@@ -135,4 +128,57 @@ export interface AddParticipantResponse {
 export interface AdminCertificatesResponse {
   certificates: AdminCertificate[];
   events: Record<string, CertEvent>;
+}
+
+/** The certificate settings an operator edits for one event (certificate_events, minus the joins). */
+export interface CertEventSettings {
+  key: string;
+  eventId: number;
+  credentialPrefix: string;
+  credentialName: string;
+  title: string;
+  headline: string;
+  chapter: string | null;
+  diplomaLocation: string;
+  eventDates: string;
+  eventName: string | null;
+  eventUrl: string | null;
+  venueLabel: string | null;
+  skills: string[];
+}
+
+/** An ethcali.org event, as the certificates admin shows it next to the settings. */
+export interface SiteEventSummary {
+  id: number;
+  slug: string;
+  name: string;
+  kind: string;
+  startsOn: string;
+  endsOn: string | null;
+  city: string | null;
+  venue: string | null;
+  summary: string | null;
+  isPublished: boolean;
+}
+
+export interface CertEventsResponse {
+  /** Events that issue certificates, newest first, with their settings and the site event behind them. */
+  events: { settings: CertEventSettings; site: SiteEventSummary }[];
+  /** Site events with no certificate settings yet — what "New certificate event" offers. */
+  candidates: SiteEventSummary[];
+}
+
+export interface PartnerForCerts {
+  id: number;
+  slug: string;
+  name: string;
+  kind: string;
+  logoPath: string | null;
+  printLogoPath: string | null;
+  isPublished: boolean;
+}
+
+export interface CertSponsorsResponse {
+  sponsors: { partnerId: number; printHeight: number }[];
+  partners: PartnerForCerts[];
 }

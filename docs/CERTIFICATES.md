@@ -6,20 +6,30 @@ a public credential page and a soulbound NFT on Ethereum mainnet (`BuilderCertif
 happen gets one per role. The same five steps every event, in this order, and each
 step is a separate action on purpose: nothing downstream happens by accident.
 
+## Where things live in the admin
+
+| Page | What it is for |
+|---|---|
+| `/admin/team` | The team master list. One editor per person: the **public profile** on ethcali.org (`team_members`) and the **private contact** — emails, Telegram, wallet (`team_member_contacts`). Site content no longer edits the team. |
+| `/admin/certificates` | Every event that issues certificates, with counts, and **Start certificates** for one of ethcali.org's events. |
+| `/admin/certificates?event=<key>` | One event, in tabs: **Event** (the site's facts, read-only, and what certificates say), **Team** (who from the master list took part, with a role), **Builders** (the roster), **Sponsors** (partners on the diploma, in order, with print logos), **Certificate** (a live diploma preview: a sample in any role, or a real person), **Issue & send** (Emitir, then Enviar correo). |
+
 | # | Step | Where | Writes |
 |---|------|-------|--------|
-| 1 | Add people | `/admin/certificates` → **Team** (pick from the ethcali.org team) or **Add a person** (anyone), or SQL for a whole hackathon roster | one row per person: `event`, `role`, `project_*` (builders only), `member_name`, `email`, `emails`, `credential_id`; with "create wallet" on, also `wallet` + `claimed_at` |
+| 1 | Add people | event → **Team** (from the master list) or **Builders** → **Add a person**, or SQL for a whole hackathon roster | one row per person: `event`, `role`, `project_*` (builders only), `member_name`, `email`, `emails`, `credential_id`; with "create wallet" on, also `wallet` + `claimed_at` |
 | 2 | Builders claim | `/certificate`, `POST /api/certificates` | `wallet`, `claimed_at` |
 | 3 | Pin | Pinata, from a session (no script yet) | `image_cid`, `pdf_cid`, `metadata_cid`, `planned_token_id` |
-| 4 | Issue | `/admin/certificates` → **Emitir** | on chain: the mint; row: `token_id`, `issued_tx` (via `POST …/admin/confirm`) |
-| 5 | Notify | `/admin/certificates` → **Enviar correo** | `notified_at` (via `POST …/admin/notify`) |
+| 4 | Issue | event → **Issue & send** → **Emitir** | on chain: the mint; row: `token_id`, `issued_tx` (via `POST …/admin/confirm`) |
+| 5 | Notify | event → **Issue & send** → **Enviar correo** | `notified_at` (via `POST …/admin/notify`) |
 
 The chain decides steps 4 and 5's truth: a row is re-verifiable with
 `tokenOfCredential(credential_id)` and `ownerOf(token_id)`.
 
 ## Before the event
 
-1. Give the event its certificate settings. The event itself is ethcali.org's row in
+1. Give the event its certificate settings: `/admin/certificates` → **Start certificates**,
+   pick the event, then fill the **Event** and **Sponsors** tabs and check the result on
+   **Certificate**. Underneath: the event itself is ethcali.org's row in
    `events` (with its `venues` row); what the certificate says about it is one row in
    `certificate_events` — `key` (what `builder_certificates.event` holds), credential
    prefix, LinkedIn name, diploma headline, chapter, location and dates — and its
@@ -65,10 +75,11 @@ table**. Their emails live beside it in `team_member_contacts`: RLS on, no polic
 no client grants, service role only. First filled from the "Intención de Core" form
 responses (13 of 20 members, 2026-10-06); the rest are typed in from the admin.
 
-`/admin/certificates` → **Team** lists every member with their private email (editable
-inline, saved on blur), a role defaulted from their team status (Volunteer → volunteer,
-everyone else → organizer), and the certificates they already hold for the chosen
-event. Tick, **Add N to <event>**: one row per person, with their ETH Cali wallet,
+`/admin/team` is where a member is added or edited, both halves at once. The event's
+**Team** tab lists every member with their private email (editable inline, saved on
+blur), a role defaulted from their team status (Volunteer → volunteer, everyone else →
+organizer), and the certificates they already hold for that event. Not everyone works
+every event: tick only who did. Tick, **Add N to <event>**: one row per person, with their ETH Cali wallet,
 linked back to the profile through `builder_certificates.team_member_id`. Someone who
 already holds that role's certificate for the event cannot be added twice.
 
@@ -113,7 +124,7 @@ must land exactly there (the Emitir button checks that on chain and refuses othe
 
 ## Issue (step 4)
 
-On `/admin/certificates`, with a wallet that holds `ADMIN_ROLE`, on Ethereum:
+On the event's **Issue & send** tab, with a wallet that holds `ADMIN_ROLE`, on Ethereum:
 
 1. Filter **claimed**, select the rows in reserved-token order from the next id, no gaps.
 2. **Emitir N NFTs**. Gas is sponsored. One `issue()` batch, up to 100.
@@ -127,7 +138,7 @@ On `/admin/certificates`, with a wallet that holds `ADMIN_ROLE`, on Ethereum:
 
 ## Notify (step 5)
 
-Same page. Email is off until `RESEND_API_KEY` and `EMAIL_FROM` are set on Vercel
+Same tab. Email is off until `RESEND_API_KEY` and `EMAIL_FROM` are set on Vercel
 (`lib/email/resend.ts`); the route answers 503 naming what is missing.
 
 1. Filter **unsent**, select the rows.

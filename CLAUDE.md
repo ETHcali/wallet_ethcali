@@ -165,9 +165,19 @@ on Ethereum mainnet (soulbound ERC-721). `role` says what it certifies — `buil
 (with a project) or the team: `organizer`, `mentor`, `judge`, `volunteer`, `speaker`
 (no project). Same contract and token type; `CERT_ROLES` in
 `lib/certificates/events.ts` is the only place that knows what each role renders as.
+
+**Nothing about an event is in code.** What a certificate says about its event lives in
+`certificate_events` (tied to ethcali.org's `events` row) and its diploma sponsors in
+`certificate_event_sponsors` (picked from `partners`, which carry a `print_logo_path` for
+white paper). `lib/certificates/eventStore.ts` joins them into the `CertEvent` every
+renderer takes as an argument. The admin is `/admin/certificates` (events) →
+`?event=<key>&tab=event|team|builders|sponsors|certificate|issue`, and the team master
+list is `/admin/team` (`GET/POST/PUT /api/admin/team`, either ADMIN_ROLE —
+`lib/operatorAuth.ts`). Site content no longer edits the team.
+
 The flow is four deliberate steps, and each one is its own button or route, in order:
 
-1. **Add + claim** — the admin picks team members from `/admin/certificates` → Team
+1. **Add + claim** — the admin picks team members on the event's Team tab
    (`team_members` + the private `team_member_contacts`; **the site reads `team_members`
    with `select *`, so an email column there would be published — contacts stay in their
    own service-role-only table**), or adds a person (`POST /api/certificates/admin/participants`:
