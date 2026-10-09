@@ -61,7 +61,7 @@ export default function IssuePanel({
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [step, setStep] = useState<Step | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<{ hash: string; count: number; verb?: string } | null>(null);
+  const [result, setResult] = useState<{ hash: string; count: number; verb?: string; note?: string } | null>(null);
 
   const address = wallet?.address as Address | undefined;
 
@@ -135,6 +135,7 @@ export default function IssuePanel({
 
   async function issue() {
     if (step) return;
+    let signed = false;
     setError(null);
     setResult(null);
     setStep('checking');
@@ -184,6 +185,7 @@ export default function IssuePanel({
       });
 
       setStep('signing');
+      signed = true;
       const { hash } = await sendTransaction({ to: CERT_ADDRESS, data, chainId: CERT_CHAIN_ID }, { sponsor: true });
 
       setStep('confirming');
@@ -202,11 +204,43 @@ export default function IssuePanel({
       setResult({ hash, count: body.issued.length });
       onIssued();
     } catch (e) {
-      setError(translate(e));
+      // A sponsored mint can report an error and still land (Privy's relay).
+      // Before showing the error, ask the chain: if the batch is minted,
+      // record it from there and say so.
+      const recovered = signed ? await recoverFromChain(ready.map((r) => r.credentialId)) : 0;
+      if (recovered > 0) {
+        setResult({ hash: '', count: recovered, note: 'El relay de Privy reportó un error, pero la cadena confirma el mint; quedó registrado.' });
+        onIssued();
+      } else {
+        setError(translate(e));
+      }
     } finally {
       // Always, so a rejected signature never locks the button.
       setStep(null);
     }
+  }
+
+  /** POST /api/certificates/admin/sync: the server reads the chain and stamps what it finds. */
+  async function recoverFromChain(credentialIds: string[]): Promise<number> {
+    if (credentialIds.length === 0) return 0;
+    setStep('checking');
+    // The relay can answer before the operation lands: look a few times over a minute.
+    for (let attempt = 0; attempt < 4; attempt++) {
+      if (attempt > 0) await new Promise((r) => setTimeout(r, 15_000));
+      try {
+        const token = await getAccessToken();
+        const res = await fetch('/api/certificates/admin/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ credentialIds }),
+        });
+        const body = (await res.json().catch(() => ({}))) as { recorded?: unknown[] };
+        if (res.ok && body.recorded?.length) return body.recorded.length;
+      } catch {
+        // try again
+      }
+    }
+    return 0;
   }
 
   return (
@@ -266,6 +300,7 @@ export default function IssuePanel({
               </a>
             </>
           )}
+          {result.note && <span className="mt-1 block text-xs text-content-muted">{result.note}</span>}
         </p>
       )}
     </div>

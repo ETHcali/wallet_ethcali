@@ -146,6 +146,12 @@ On the event's **Mint** tab, with a wallet that holds `ADMIN_ROLE`, on Ethereum:
 3. The panel waits for the block, then the server reads the receipt and stamps each row.
    If that last call fails, the mint still happened: the error shows the tx hash. Re-post it:
    `POST /api/certificates/admin/confirm { txHash }` is idempotent.
+   **A sponsored mint can report an error and still land.** It goes through Privy's
+   ERC-4337 relay (the transaction's `to` is the EntryPoint), which on 2026-10-09 said
+   "execution reverted" for a batch that minted tokens #30–#33. So before showing any
+   error, the panel asks the chain (`POST /api/certificates/admin/sync`: tokenOfCredential,
+   ownerOf against the row's wallet, the CertificateIssued log for the tx) for about a
+   minute and records what landed. **Check chain** on the Mint tab does the same by hand.
 4. Check a token on Etherscan / OpenSea before step 5. If a diploma is wrong, fix the
    row, re-pin, and use **Actualizar metadata** — the contract emits `MetadataUpdate`.
 
