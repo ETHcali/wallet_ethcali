@@ -70,6 +70,28 @@ export default function MintTab({ rows, onChanged }: { rows: AdminCertificate[];
     onChanged();
   }
 
+  // Prepared but not recorded as minted: the chain may know better (a relay error after a landed mint).
+  const unrecorded = shown.filter((r) => r.metadataCid && !r.issuedTx);
+  const [checking, setChecking] = useState(false);
+  const [checked, setChecked] = useState<string | null>(null);
+  async function checkChain() {
+    if (checking || unrecorded.length === 0) return;
+    setChecking(true);
+    setChecked(null);
+    try {
+      const out = await api<{ recorded: unknown[]; skipped: unknown[] }>('/api/certificates/admin/sync', {
+        method: 'POST',
+        body: { credentialIds: unrecorded.map((r) => r.credentialId) },
+      });
+      setChecked(out.recorded.length ? `${out.recorded.length} minted on chain, now recorded.` : 'Nothing minted on chain that is not already recorded.');
+      if (out.recorded.length) onChanged();
+    } catch (e) {
+      setChecked(e instanceof Error ? e.message : 'Could not read the chain');
+    } finally {
+      setChecking(false);
+    }
+  }
+
   const counts = {
     total: shown.length,
     wallet: shown.filter((r) => r.wallet).length,
@@ -203,7 +225,15 @@ export default function MintTab({ rows, onChanged }: { rows: AdminCertificate[];
           </tbody>
         </table>
       </div>
-      <p className="mt-2 text-xs text-content-faint">Token ids are minted in order: prepare and mint people in the order shown, from the next id.</p>
+      <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-content-faint">
+        <span>Token ids are minted in order: prepare and mint people in the order shown, from the next id.</span>
+        {unrecorded.length > 0 && (
+          <Button variant="secondary" size="small" onClick={checkChain} disabled={checking}>
+            {checking ? 'Reading the chain…' : `Check chain for ${unrecorded.length} prepared`}
+          </Button>
+        )}
+        {checked && <span className="text-content-muted">{checked}</span>}
+      </div>
     </>
   );
 }
