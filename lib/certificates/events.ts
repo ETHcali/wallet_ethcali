@@ -1,8 +1,9 @@
 /**
- * Everything a certificate says that is the same for every builder at an event.
+ * What a certificate says, and how: roles, honors, LinkedIn, the sentences.
  *
- * Browser-safe: the claim page, the public credential page and the PDF route
- * all read it, so the diploma, the page and the LinkedIn entry cannot drift.
+ * Browser-safe and data-free: the event itself (title, venue, dates,
+ * sponsors) comes from the database as a CertEvent — see eventStore.ts — and
+ * is passed in, so the next event is rows in /admin/certificates, not code.
  */
 
 /**
@@ -42,86 +43,58 @@ export interface Honor {
   place: number;
 }
 
+/** A sponsor as the diploma and the credential page show it. */
+export interface CertSponsor {
+  partnerId: number;
+  name: string;
+  /**
+   * The logo as it reads on white paper: a path under the app's /public
+   * (e.g. /certificates/logos/eag-light.png) or ipfs://<cid>. PNG — pdf-lib
+   * cannot embed progressive JPEGs. Null means the diploma skips it.
+   */
+  printLogo: string | null;
+  /** Evens out optical size: a square mark needs more height than a wide wordmark. */
+  height: number;
+  /** The site's own artwork, for the dark credential page. */
+  src: string | null;
+}
+
+/**
+ * Everything a certificate says about its event. Loaded from the database
+ * (certificate_events + events + venues + partners) by
+ * lib/certificates/eventStore.ts on the server, and handed to the browser as
+ * plain data, so the diploma, the page and the LinkedIn entry read one source.
+ */
 export interface CertEvent {
+  /** What builder_certificates.event holds, e.g. 'eag-cali-2026'. */
+  key: string;
+  /** events.id on ethcali.org. */
+  eventId: number;
   /** Credential ids for this event are `<credentialPrefix>-<8 chars>`, e.g. EAGCALI26-7K3P9QXM. */
   credentialPrefix: string;
-  /** On the diploma, under the project. */
+  /** On the diploma's metadata and the claim page. */
   title: string;
-  /** "Name" on LinkedIn. Short enough to read in a profile list. */
+  /** "Name" on LinkedIn for builders. Short enough to read in a profile list. */
   credentialName: string;
-  venue: string;
   /** Diploma centre: "at <headline>", then the chapter line under it. */
   headline: string;
-  chapter: string;
-  /** Diploma footer: where and when the event ran (the issue date is per token). */
+  chapter: string | null;
+  /** Diploma footer: where and when the event ran. */
   location: string;
   eventDates: string;
   /** Short event name for the credential page, and where it lives on ethcali.org. */
   eventName: string;
   eventUrl: string;
-  /** The venue as the credential page names it, and its Google Maps link. */
-  venueName: string;
-  venueMapsUrl: string;
-  dates: { es: string; en: string };
-  /** For LinkedIn's issueYear / issueMonth. */
-  issueYear: number;
-  issueMonth: number;
+  /** The venue as the credential page names it, and its map link. */
+  venueName: string | null;
+  venueMapsUrl: string | null;
+  /** YYYY-MM-DD; LinkedIn's issue year and month fall back to it. */
+  startsOn: string;
   /** Suggested for LinkedIn's Skills field, which the add-link cannot prefill. */
   skills: string[];
-  /**
-   * Printed along the bottom of the diploma, in this order. `file` is in
-   * lib/certificates/logos and must read on white paper: the *-light files
-   * are ethcali.org's sponsor artwork with its white parts recoloured to ink
-   * (colour and transparency untouched). `src` is the original, for the dark
-   * credential page. `height` evens out optical size: a square
-   * mark needs more height than a wide wordmark to read the same.
-   */
-  sponsors: { name: string; file: string; height: number; /** Same artwork on ethcali.org, for the web page. */ src: string }[];
+  /** Printed along the bottom of the diploma, in this order. */
+  sponsors: CertSponsor[];
 }
-
-/**
- * One entry per hackathon. Adding the next one:
- *   1. an entry here, keyed by the `event` value its rows will carry
- *      (e.g. 'eag-medellin-2027'), with its title, venue, dates and sponsors;
- *   2. each sponsor's logo in lib/certificates/logos — PNG (pdf-lib cannot
- *      embed progressive JPEGs), legible on white; white-on-transparent
- *      artwork needs its white recoloured to ink first;
- *   3. its participants loaded into builder_certificates with that `event`.
- * The diploma, the credential page, LinkedIn and the admin list follow.
- */
-export const CERT_EVENTS: Record<string, CertEvent> = {
-  'eag-cali-2026': {
-    credentialPrefix: 'EAGCALI26',
-    title: 'EAG Global Buildathon · Ethereum Builders Tour',
-    credentialName: 'Builder at EAG Global Buildathon 2026',
-    venue: 'Universidad Icesi · Cali, Colombia',
-    headline: 'EAG Global Buildathon 2026',
-    chapter: 'Ethereum Builders Tour · Colombia chapter',
-    location: 'Universidad Icesi, Cali',
-    eventDates: 'Sep 19–20, 2026',
-    eventName: 'EAG Global Buildathon · Colombia',
-    eventUrl: 'https://www.ethcali.org/builders-tour',
-    venueName: 'Auditorio SIDOC — Universidad Icesi, Cali',
-    // The same query ethcali.org's Builders Tour page uses (TOUR.venue.query).
-    venueMapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-      'ICESI University Cl. 18 #122-135, Barrio Pance, Cali, Valle del Cauca, Colombia'
-    )}`,
-    dates: { es: '19–20 de septiembre de 2026', en: '19–20 September 2026' },
-    issueYear: 2026,
-    issueMonth: 9,
-    skills: ['Ethereum', 'Smart Contracts', 'Web3', 'Blockchain', 'Hackathon'],
-    // The tour's sponsor wall (ethcaliorg/content/builders-tour.ts), title
-    // sponsor first. ETH Cali is not repeated: it is the issuer, and its mark
-    // already heads the diploma.
-    sponsors: [
-      { name: 'HashKey Chain', file: 'hashkey-chain.png', src: 'https://www.ethcali.org/tour/hashkey-chain.jpg', height: 30 },
-      { name: 'Ethereum Applications Guild', file: 'eag-light.png', src: 'https://www.ethcali.org/tour/eag.png', height: 26 },
-      { name: 'Devcon VIII India', file: 'devcon-viii.png', src: 'https://www.ethcali.org/tour/devcon-viii.webp', height: 36 },
-      { name: 'Universidad Icesi', file: 'universidad_icesi.png', src: 'https://www.ethcali.org/universities/universidad_icesi.png', height: 26 },
-      { name: 'Ekinoxis Labs', file: 'ekinoxis-light.png', src: 'https://www.ethcali.org/tour/ekinoxis.png', height: 34 },
-    ],
-  },
-};
 
 /** ETH CALI's LinkedIn page, urn:li:organization:93608244 — read off the page. */
 export const LINKEDIN_ORG = {
@@ -164,13 +137,11 @@ export interface Achievement {
   role: CertRole;
   memberName: string;
   projectName: string | null;
-  event: string;
 }
 
 /** "Ana built and shipped Phycos at EAG Global Buildathon 2026" / "Ana organized EAG Global Buildathon 2026". */
-export function achievementEn(a: Achievement): string {
-  const ev = CERT_EVENTS[a.event];
-  const where = ev?.headline ?? a.event;
+export function achievementEn(a: Achievement, ev: CertEvent): string {
+  const where = ev.headline;
   const r = CERT_ROLES[a.role];
   return a.role === 'builder' && a.projectName
     ? `${a.memberName} ${r.did.en} ${a.projectName} at ${where}`
@@ -178,9 +149,8 @@ export function achievementEn(a: Achievement): string {
 }
 
 /** Second person, Spanish: "Construiste Phycos en EAG …" / "Organizaste EAG …". */
-export function achievementEs(a: Achievement): string {
-  const ev = CERT_EVENTS[a.event];
-  const where = ev?.headline ?? a.event;
+export function achievementEs(a: Achievement, ev: CertEvent): string {
+  const where = ev.headline;
   const r = CERT_ROLES[a.role];
   return a.role === 'builder' && a.projectName ? `${r.did.es} ${a.projectName} en ${where}` : `${r.did.es} ${where}`;
 }
@@ -189,15 +159,14 @@ export function achievementEs(a: Achievement): string {
  * LinkedIn's "Add to profile" link, with every field it accepts filled in.
  * Skills and media are not among them; the guide on the claim page covers those.
  */
-export function linkedInAddUrl(eventKey: string, credentialId: string, issueDate?: string, role: CertRole = 'builder'): string | null {
-  const ev = CERT_EVENTS[eventKey];
-  if (!ev) return null;
+export function linkedInAddUrl(ev: CertEvent, credentialId: string, issueDate?: string, role: CertRole = 'builder'): string {
+  const when = issueDate ?? ev.startsOn;
   const q = new URLSearchParams({
     startTask: 'CERTIFICATION_NAME',
     name: roleCredentialName(ev, role),
     organizationId: LINKEDIN_ORG.id,
-    issueYear: issueDate ? String(Number(issueDate.slice(0, 4))) : String(ev.issueYear),
-    issueMonth: issueDate ? String(Number(issueDate.slice(5, 7))) : String(ev.issueMonth),
+    issueYear: String(Number(when.slice(0, 4))),
+    issueMonth: String(Number(when.slice(5, 7))),
     certUrl: credentialUrl(credentialId),
     certId: credentialId,
   });

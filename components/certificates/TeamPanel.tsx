@@ -15,7 +15,7 @@ import { usePrivy } from '@privy-io/react-auth';
 import { useQuery } from '@tanstack/react-query';
 import Button from '../shared/Button';
 import { CheckIcon } from '../shared/icons';
-import { CERT_EVENTS, CERT_ROLES, type CertRole } from '../../lib/certificates/events';
+import { CERT_ROLES, type CertEvent, type CertRole } from '../../lib/certificates/events';
 import type {
   AddParticipantBody,
   AddParticipantResponse,
@@ -86,11 +86,11 @@ function ContactCell({
   );
 }
 
-export default function TeamPanel({ onAdded }: { onAdded: () => void }) {
+export default function TeamPanel({ events, onAdded }: { events: CertEvent[]; onAdded: () => void }) {
   const { getAccessToken } = usePrivy();
-  const events = Object.keys(CERT_EVENTS);
+  const byKey = Object.fromEntries(events.map((e) => [e.key, e]));
   const [open, setOpen] = useState(false);
-  const [event, setEvent] = useState(events[events.length - 1] ?? '');
+  const [event, setEvent] = useState(events[0]?.key ?? '');
   const [roles, setRoles] = useState<Record<number, CertRole>>({});
   const [picked, setPicked] = useState<Set<number>>(new Set());
   const [busy, setBusy] = useState<string | null>(null);
@@ -163,9 +163,9 @@ export default function TeamPanel({ onAdded }: { onAdded: () => void }) {
         <div className="flex items-center gap-2">
           {open && (
             <select value={event} onChange={(e) => setEvent(e.target.value)} className={field} aria-label="Event">
-              {events.map((k) => (
-                <option key={k} value={k}>
-                  {CERT_EVENTS[k].headline}
+              {events.map((e) => (
+                <option key={e.key} value={e.key}>
+                  {e.headline}
                 </option>
               ))}
             </select>
@@ -198,7 +198,7 @@ export default function TeamPanel({ onAdded }: { onAdded: () => void }) {
                     <th className="px-3 py-2 font-semibold">Member</th>
                     <th className="px-3 py-2 font-semibold">Email (private)</th>
                     <th className="px-3 py-2 font-semibold">Role</th>
-                    <th className="px-3 py-2 font-semibold">Certificates · {CERT_EVENTS[event]?.headline}</th>
+                    <th className="px-3 py-2 font-semibold">Certificates · {byKey[event]?.headline}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line-hairline">
@@ -265,7 +265,7 @@ export default function TeamPanel({ onAdded }: { onAdded: () => void }) {
           )}
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <Button size="small" onClick={addSelected} disabled={Boolean(busy) || selected.length === 0}>
-              {busy ?? `Add ${selected.length} to ${CERT_EVENTS[event]?.headline ?? event}`}
+              {busy ?? `Add ${selected.length} to ${byKey[event]?.headline ?? event}`}
             </Button>
             <span className="text-xs text-content-muted">Each one gets a credential id and their ETH Cali wallet from the email. Next: pin, then issue.</span>
           </div>

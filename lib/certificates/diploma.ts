@@ -6,8 +6,9 @@
  * sponsors along the bottom under a hairline rule.
  *
  * It is a template, not a one-off: everything event-specific (title, venue,
- * dates, sponsors) comes from CERT_EVENTS in ./events, so the next hackathon
- * is a new entry there and its logos in ./logos, and nothing here changes. It is what the certificate email attaches and
+ * dates, sponsors) arrives as a CertEvent loaded from the database
+ * (./eventStore), so the next event is rows edited in /admin/certificates and
+ * nothing here changes. It is what the certificate email attaches and
  * what /certificate/<id> downloads, from this one function, so the two are
  * always the same file. The onchain NFT comes later; this is the paper copy.
  *
@@ -19,7 +20,7 @@ import path from 'node:path';
 import { PDFArray, PDFDocument, PDFName, PDFString, rgb, type PDFFont, type PDFPage } from 'pdf-lib';
 import QRCode from 'qrcode';
 import fontkit from '@pdf-lib/fontkit';
-import { CERT_EVENTS, CERT_ROLES, credentialUrl, honorLabel, roleCredentialName, type CertRole, type Honor } from './events';
+import { CERT_ROLES, credentialUrl, honorLabel, roleCredentialName, type CertEvent, type CertRole, type Honor } from './events';
 import { CERT_ADDRESS, etherscanTokenUrl } from './nft';
 
 export interface DiplomaInput {
@@ -55,12 +56,29 @@ const FONT_DIR = path.join(process.cwd(), 'lib/certificates/fonts');
 // without the ETH·CO CALI text. logoethcali.png is the frame alone and read
 // as an empty outline on the paper.
 const LOGO = path.join(process.cwd(), 'public/logo_eth_cali_mark.png');
-const SPONSOR_DIR = path.join(process.cwd(), 'lib/certificates/logos');
-const sponsorFiles = new Map<string, Buffer>();
-function sponsorFile(file: string): Buffer {
-  if (!sponsorFiles.has(file)) sponsorFiles.set(file, readFileSync(path.join(SPONSOR_DIR, file)));
-  return sponsorFiles.get(file) as Buffer;
+const PUBLIC_DIR = path.join(process.cwd(), 'public');
+const IPFS_GATEWAY = 'https://gateway.pinata.cloud/ipfs';
+const sponsorFiles = new Map<string, Promise<Buffer>>();
+/**
+ * A sponsor's print logo: a path under /public is read from disk (shipped with
+ * the function, see next.config.js); ipfs:// and https:// are fetched once per
+ * instance. Anything that fails to load is skipped rather than failing the PDF.
+ */
+function sponsorFile(ref: string): Promise<Buffer> {
+  if (!sponsorFiles.has(ref)) {
+    const load = ref.startsWith('/')
+      ? Promise.resolve(readFileSync(path.join(PUBLIC_DIR, path.normalize(ref).replace(/^(\.\.[/\\])+/, ''))))
+      : fetch(ref.startsWith('ipfs://') ? `${IPFS_GATEWAY}/${ref.slice(7)}` : ref).then(async (r) => {
+          if (!r.ok) throw new Error(`logo ${ref}: ${r.status}`);
+          return Buffer.from(await r.arrayBuffer());
+        });
+    sponsorFiles.set(ref, load);
+    load.catch(() => sponsorFiles.delete(ref));
+  }
+  return sponsorFiles.get(ref) as Promise<Buffer>;
 }
+
+const isPng = (b: Buffer) => b.length > 8 && b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47;
 
 let cache: { bold: Buffer; regular: Buffer; logo: Buffer } | null = null;
 function assets() {
@@ -108,9 +126,8 @@ function addLink(doc: PDFDocument, page: PDFPage, url: string, r: { x: number; y
 }
 
 
-export async function renderDiploma(input: DiplomaInput): Promise<Uint8Array> {
-  const ev = CERT_EVENTS[input.event];
-  if (!ev) throw new Error(`Unknown certificate event: ${input.event}`);
+export async function renderDiploma(input: DiplomaInput, ev: CertEvent): Promise<Uint8Array> {
+  if (ev.key !== input.event) throw new Error(`Diploma for ${input.event} rendered with event ${ev.key}`);
   const a = assets();
   const role = CERT_ROLES[input.role];
   // The line under the name: a builder's project, a contributor's role.
@@ -150,7 +167,7 @@ export async function renderDiploma(input: DiplomaInput): Promise<Uint8Array> {
   centred(page, input.role === 'builder' ? role.did.en : 'contributed as', 327, regular, 12, MUTED);
   centred(page, object, 298, bold, 26, BLUE);
   centred(page, `at ${ev.headline}`, 274, bold, 13, INK);
-  centred(page, ev.chapter, 257, regular, 10.5, MUTED);
+  if (ev.chapter) centred(page, ev.chapter, 257, regular, 10.5, MUTED);
 
   // Prizes, one pill each, side by side.
   if (input.honors.length > 0) {
@@ -209,17 +226,25 @@ export async function renderDiploma(input: DiplomaInput): Promise<Uint8Array> {
   addLink(doc, page, verifyUrl, { x: qx, y: qy - 11, w: Q, h: Q + 11 });
 
   // Sponsors: a hairline rule, a label, one row of logos on the paper.
-  if (ev.sponsors.length > 0) {
+  const loaded = (
+    await Promise.all(
+      ev.sponsors.map(async (sp) => {
+        if (!sp.printLogo) return null;
+        try {
+          const bytes = await sponsorFile(sp.printLogo);
+          const img = isPng(bytes) ? await doc.embedPng(bytes) : await doc.embedJpg(bytes);
+          return { img, h: sp.height, w: (img.width / img.height) * sp.height };
+        } catch {
+          return null;
+        }
+      })
+    )
+  ).filter((i): i is NonNullable<typeof i> => i !== null);
+  if (loaded.length > 0) {
     const ruleY = 116;
     page.drawLine({ start: { x: 60, y: ruleY }, end: { x: W - 60, y: ruleY }, thickness: 0.6, color: rgb(0.82, 0.82, 0.9) });
     spaced(page, 'WITH THE SUPPORT OF', ruleY - 18, bold, 7.5, FAINT, 1.8);
-    const imgs = await Promise.all(
-      ev.sponsors.map(async (sp) => {
-        const bytes = sponsorFile(sp.file);
-        const img = sp.file.endsWith('.jpg') ? await doc.embedJpg(bytes) : await doc.embedPng(bytes);
-        return { img, h: sp.height, w: (img.width / img.height) * sp.height };
-      })
-    );
+    const imgs = loaded;
     const gap = 36;
     const rowMid = 62;
     let x = (W - (imgs.reduce((t, i) => t + i.w, 0) + gap * (imgs.length - 1))) / 2;

@@ -20,7 +20,8 @@ import { randomInt } from 'node:crypto';
 import { requireCertAdmin } from '../../../../lib/certificates/requireCertAdmin';
 import { sendAuthError } from '../../../../lib/swag/requireUser';
 import { getSupabaseAdmin } from '../../../../lib/supabase';
-import { CERT_EVENTS, CERT_ROLES, parseRole } from '../../../../lib/certificates/events';
+import { CERT_ROLES, parseRole } from '../../../../lib/certificates/events';
+import { loadCertEvent } from '../../../../lib/certificates/eventStore';
 import { ADMIN_COLUMNS, toAdminView, type AdminRow } from '../../../../lib/certificates/rows';
 import { PrivyUserError, resolveStaffWallet } from '../../../../lib/swag/privyUsers';
 import { logger } from '../../../../utils/logger';
@@ -41,7 +42,7 @@ function parse(raw: unknown): Required<Omit<AddParticipantBody, 'projectName' | 
   teamMemberId: number | null;
 } {
   const b = (raw ?? {}) as Partial<AddParticipantBody>;
-  if (typeof b.event !== 'string' || !CERT_EVENTS[b.event]) throw new BadRequest('Unknown event');
+  if (typeof b.event !== 'string' || !b.event) throw new BadRequest('Unknown event');
   const role = parseRole(b.role);
   if (b.role !== role) throw new BadRequest('Unknown role');
   const memberName = typeof b.memberName === 'string' ? b.memberName.trim().replace(/\s+/g, ' ') : '';
@@ -87,6 +88,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
   }
 
   try {
+    const db = getSupabaseAdmin();
+    const ev = await loadCertEvent(db, input.event);
+    if (!ev) return res.status(400).json({ error: 'Unknown event' });
     // The wallet first: if Privy fails, no half-row is left behind.
     let wallet: string | null = null;
     let walletCreated = false;
@@ -96,8 +100,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       walletCreated = resolved.created;
     }
 
-    const db = getSupabaseAdmin();
-    const prefix = CERT_EVENTS[input.event].credentialPrefix;
+    const prefix = ev.credentialPrefix;
     const now = new Date().toISOString();
     for (let attempt = 0; attempt < 5; attempt++) {
       const credentialId = newCredentialId(prefix);

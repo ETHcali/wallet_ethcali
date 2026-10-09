@@ -1,4 +1,4 @@
-import type { CertRole, Honor } from '../lib/certificates/events';
+import type { CertEvent, CertRole, Honor } from '../lib/certificates/events';
 
 /** One builder certificate, as the signed-in builder sees it. */
 export interface CertificateView {
@@ -49,6 +49,8 @@ export interface PublicCertificate {
 
 export interface CertificatesResponse {
   certificates: CertificateView[];
+  /** Every event those certificates belong to, keyed by builder_certificates.event. */
+  events: Record<string, CertEvent>;
 }
 
 export interface CertificateClaimResponse {
@@ -132,4 +134,5 @@ export interface AddParticipantResponse {
 
 export interface AdminCertificatesResponse {
   certificates: AdminCertificate[];
+  events: Record<string, CertEvent>;
 }

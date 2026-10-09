@@ -29,6 +29,7 @@ import {
   type CertificateEmailInput,
 } from '../../../../lib/certificates/email';
 import { emailConfigError } from '../../../../lib/email/resend';
+import { loadCertEventsByKey } from '../../../../lib/certificates/eventStore';
 import { logger } from '../../../../utils/logger';
 import type { NotifyResponse } from '../../../../types/certificates';
 
@@ -72,6 +73,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       .in('credential_id', ids);
     if (error) throw new Error(error.message);
     const byId = new Map((data ?? []).map((r) => [r.credential_id as string, r]));
+    const events = await loadCertEventsByKey(db, (data ?? []).map((r) => r.event as string));
 
     const out: NotifyResponse = { dryRun, sent: [], skipped: [] };
     for (const id of ids) {
@@ -88,8 +90,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         out.skipped.push({ credentialId: id, reason: `already sent ${String(r.notified_at).slice(0, 10)}` });
         continue;
       }
+      const ev = events[r.event];
+      if (!ev) {
+        out.skipped.push({ credentialId: id, reason: `unknown event ${r.event}` });
+        continue;
+      }
       const input: CertificateEmailInput = {
-        event: r.event,
+        ev,
         role: parseRole(r.role),
         memberName: r.member_name,
         projectName: r.project_name,

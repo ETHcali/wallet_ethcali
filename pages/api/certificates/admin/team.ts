@@ -14,7 +14,8 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { requireCertAdmin } from '../../../../lib/certificates/requireCertAdmin';
 import { sendAuthError } from '../../../../lib/swag/requireUser';
 import { getSupabaseAdmin } from '../../../../lib/supabase';
-import { CERT_EVENTS, parseRole } from '../../../../lib/certificates/events';
+import { parseRole } from '../../../../lib/certificates/events';
+import { loadCertEvent } from '../../../../lib/certificates/eventStore';
 import { logger } from '../../../../utils/logger';
 import type { TeamContactBody, TeamForCertsResponse, TeamMemberForCerts } from '../../../../types/certificates';
 
@@ -30,7 +31,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
   if (req.method === 'GET') {
     const event = typeof req.query.event === 'string' ? req.query.event : '';
-    if (!CERT_EVENTS[event]) return res.status(400).json({ error: 'Unknown event' });
+    if (!event || !(await loadCertEvent(db, event))) return res.status(400).json({ error: 'Unknown event' });
     try {
       const [members, contacts, certs] = await Promise.all([
         db.from('team_members').select('id, slug, name, status, linkedin_url, is_published').order('sort_order'),

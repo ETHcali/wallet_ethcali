@@ -25,14 +25,15 @@ import { useEffect, useState } from 'react';
 import { getSupabaseAdmin } from '../../lib/supabase';
 import { getPublicCertificate } from '../../lib/certificates/rows';
 import {
-  CERT_EVENTS,
   CERT_ROLES,
   achievementEn,
   credentialPdfPath,
   credentialUrl,
   honorLabel,
   roleCredentialName,
+  type CertEvent,
 } from '../../lib/certificates/events';
+import { loadCertEvent } from '../../lib/certificates/eventStore';
 import {
   CERT_ADDRESS,
   etherscanContractTokenUrl,
@@ -47,6 +48,8 @@ import type { PublicCertificate } from '../../types/certificates';
 
 interface Props {
   cert: PublicCertificate;
+  /** The event, from the database at build time (revalidated with the page). */
+  ev: CertEvent | null;
 }
 
 function formatDate(iso: string): string {
@@ -131,7 +134,7 @@ function EthereumMark() {
   );
 }
 
-export default function CredentialPage({ cert: built }: Props) {
+export default function CredentialPage({ cert: built, ev }: Props) {
   // What can change after the build (the mint) is read live; see the status route.
   const [cert, setCert] = useState<PublicCertificate>(built);
   useEffect(() => {
@@ -146,10 +149,11 @@ export default function CredentialPage({ cert: built }: Props) {
       live = false;
     };
   }, [built.credentialId]);
-  const ev = CERT_EVENTS[cert.event];
   const url = credentialUrl(cert.credentialId);
   const title = `${cert.memberName} — ${ev ? roleCredentialName(ev, cert.role) : `${CERT_ROLES[cert.role].label.en} certificate`}`;
-  const description = `${achievementEn(cert)}. Issued by ETH Cali.`;
+  const description = ev
+    ? `${achievementEn(cert, ev)}. Issued by ETH Cali.`
+    : `${cert.memberName} holds an ETH Cali ${CERT_ROLES[cert.role].label.en.toLowerCase()} certificate.`;
   const image = cert.imageCid ? ipfsHttp(cert.imageCid) : null;
   const minted = Boolean(cert.issuedTx && cert.tokenId);
 
@@ -228,11 +232,15 @@ export default function CredentialPage({ cert: built }: Props) {
                   </a>
                 </Row>
               )}
-              {ev && (
+              {ev?.venueName && (
                 <Row label="Venue">
-                  <a href={ev.venueMapsUrl} target="_blank" rel="noopener noreferrer" className={link}>
-                    {ev.venueName}
-                  </a>
+                  {ev.venueMapsUrl ? (
+                    <a href={ev.venueMapsUrl} target="_blank" rel="noopener noreferrer" className={link}>
+                      {ev.venueName}
+                    </a>
+                  ) : (
+                    ev.venueName
+                  )}
                 </Row>
               )}
               {ev && <Row label="Event dates">{ev.eventDates}</Row>}
@@ -348,8 +356,10 @@ export const getStaticPaths: GetStaticPaths = async () => {
 export const getStaticProps: GetStaticProps<Props> = async ({ params }) => {
   const raw = params?.credentialId;
   if (typeof raw !== 'string') return { notFound: true };
-  const cert = await getPublicCertificate(getSupabaseAdmin(), raw);
+  const db = getSupabaseAdmin();
+  const cert = await getPublicCertificate(db, raw);
   if (!cert) return { notFound: true };
-  // Picks up the NFT once issued_tx is set.
-  return { props: { cert }, revalidate: 300 };
+  const ev = await loadCertEvent(db, cert.event);
+  // Picks up the NFT once issued_tx is set, and event edits made in the admin.
+  return { props: { cert, ev }, revalidate: 300 };
 };

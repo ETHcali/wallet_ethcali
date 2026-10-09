@@ -8,18 +8,17 @@
 import { useState } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
 import Button from '../shared/Button';
-import { CERT_EVENTS, CERT_ROLES, type CertRole } from '../../lib/certificates/events';
+import { CERT_ROLES, type CertEvent, type CertRole } from '../../lib/certificates/events';
 import { truncateAddress } from '../../utils/linkedAccounts';
 import type { AddParticipantBody, AddParticipantResponse } from '../../types/certificates';
 
 const field =
   'w-full rounded-control border border-line-hairline bg-surface-inset px-3 py-2.5 text-sm text-content-primary placeholder-content-faint focus:border-eth-blue focus:outline-none';
 
-export default function AddParticipantPanel({ onAdded }: { onAdded: () => void }) {
+export default function AddParticipantPanel({ events, onAdded }: { events: CertEvent[]; onAdded: () => void }) {
   const { getAccessToken } = usePrivy();
-  const events = Object.keys(CERT_EVENTS);
   const [open, setOpen] = useState(false);
-  const [event, setEvent] = useState(events[events.length - 1] ?? '');
+  const [event, setEvent] = useState(events[0]?.key ?? '');
   const [role, setRole] = useState<CertRole>('organizer');
   const [memberName, setMemberName] = useState('');
   const [emails, setEmails] = useState('');
@@ -92,9 +91,9 @@ export default function AddParticipantPanel({ onAdded }: { onAdded: () => void }
           <label className="block text-xs text-content-muted">
             Event
             <select value={event} onChange={(e) => setEvent(e.target.value)} className={`mt-1 ${field}`}>
-              {events.map((k) => (
-                <option key={k} value={k}>
-                  {CERT_EVENTS[k].headline}
+              {events.map((e) => (
+                <option key={e.key} value={e.key}>
+                  {e.headline}
                 </option>
               ))}
             </select>
