@@ -20,7 +20,7 @@ import Loading from '../../components/shared/Loading';
 import { CheckIcon } from '../../components/shared/icons';
 import { DEFAULT_CHAIN, explorerAddress, explorerTx } from '../../config/chains';
 import { truncateAddress } from '../../utils/linkedAccounts';
-import { CERT_EVENTS, CERT_ROLES, credentialUrl, honorLabel } from '../../lib/certificates/events';
+import { CERT_ROLES, credentialUrl, honorLabel } from '../../lib/certificates/events';
 import { openseaUrl } from '../../lib/certificates/nft';
 import type { AdminCertificate, AdminCertificatesResponse } from '../../types/certificates';
 
@@ -65,11 +65,12 @@ export default function CertificatesAdmin() {
       const res = await fetch('/api/certificates/admin', { headers: { Authorization: `Bearer ${token}` } });
       const body = (await res.json().catch(() => ({}))) as AdminCertificatesResponse & { error?: string };
       if (!res.ok) throw new Error(body.error ?? `Request failed (${res.status})`);
-      return body.certificates;
+      return body;
     },
   });
 
-  const all = useMemo(() => query.data ?? [], [query.data]);
+  const all = useMemo(() => query.data?.certificates ?? [], [query.data]);
+  const events = useMemo(() => Object.values(query.data?.events ?? {}), [query.data]);
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
     return all.filter((r) => {
@@ -200,8 +201,8 @@ export default function CertificatesAdmin() {
             </div>
           </div>
 
-          <TeamPanel onAdded={() => void query.refetch()} />
-          <AddParticipantPanel onAdded={() => void query.refetch()} />
+          <TeamPanel events={events} onAdded={() => void query.refetch()} />
+          <AddParticipantPanel events={events} onAdded={() => void query.refetch()} />
           <IssuePanel
             selected={all.filter((r) => picked.has(r.id))}
             onIssued={() => {
@@ -263,7 +264,7 @@ export default function CertificatesAdmin() {
                     </td>
                     <td className="px-3 py-3">
                       <p className="font-medium text-content-primary">{r.memberName}</p>
-                      <p className="text-xs text-content-faint">{CERT_EVENTS[r.event]?.credentialName ?? r.event}</p>
+                      <p className="text-xs text-content-faint">{query.data?.events[r.event]?.headline ?? r.event}</p>
                     </td>
                     <td className="px-3 py-3">
                       {r.projectSlug && r.projectName ? (

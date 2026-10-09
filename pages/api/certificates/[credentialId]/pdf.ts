@@ -12,6 +12,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { getSupabaseAdmin } from '../../../../lib/supabase';
 import { getPublicCertificate } from '../../../../lib/certificates/rows';
 import { renderDiploma } from '../../../../lib/certificates/diploma';
+import { loadCertEvent } from '../../../../lib/certificates/eventStore';
 import { logger } from '../../../../utils/logger';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -24,10 +25,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (typeof raw !== 'string') return res.status(404).json({ error: 'No such certificate' });
 
   try {
-    const cert = await getPublicCertificate(getSupabaseAdmin(), raw);
+    const db = getSupabaseAdmin();
+    const cert = await getPublicCertificate(db, raw);
     if (!cert) return res.status(404).json({ error: 'No such certificate' });
+    const ev = await loadCertEvent(db, cert.event);
+    if (!ev) throw new Error(`certificate ${cert.credentialId} names unknown event ${cert.event}`);
 
-    const pdf = await renderDiploma({ ...cert, tokenId: cert.tokenId ?? cert.plannedTokenId });
+    const pdf = await renderDiploma({ ...cert, tokenId: cert.tokenId ?? cert.plannedTokenId }, ev);
     const filename = `ETHCali-certificado-${cert.credentialId}.pdf`;
 
     res.setHeader('Content-Type', 'application/pdf');

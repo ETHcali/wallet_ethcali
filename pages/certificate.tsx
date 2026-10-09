@@ -27,7 +27,7 @@ import Button from '../components/shared/Button';
 import { CheckIcon, CopyIcon } from '../components/shared/icons';
 import { DEFAULT_CHAIN, explorerAddress, explorerTx } from '../config/chains';
 import { isEmbeddedWallet, truncateAddress } from '../utils/linkedAccounts';
-import { CERT_EVENTS, CERT_ROLES, LINKEDIN_ORG, credentialPdfPath, credentialUrl, honorLabel, linkedInAddUrl, roleCredentialName } from '../lib/certificates/events';
+import { CERT_ROLES, LINKEDIN_ORG, credentialPdfPath, credentialUrl, honorLabel, linkedInAddUrl, roleCredentialName, type CertEvent } from '../lib/certificates/events';
 import { openseaUrl } from '../lib/certificates/nft';
 import type {
   CertificateClaimResponse,
@@ -83,8 +83,7 @@ export default function CertificatePage() {
     queryFn: async () => {
       const token = await getAccessToken();
       if (!token) throw new Error('Not signed in');
-      const { certificates } = await api<CertificatesResponse>('/api/certificates', token);
-      return certificates;
+      return api<CertificatesResponse>('/api/certificates', token);
     },
   });
 
@@ -115,7 +114,8 @@ export default function CertificatePage() {
   if (!ready) return <Loading fullScreen text="Cargando…" />;
   if (!authenticated) return <Loading fullScreen text="Redirigiendo…" />;
 
-  const certificates = query.data ?? [];
+  const certificates = query.data?.certificates ?? [];
+  const events = query.data?.events ?? {};
   const signedInAs = user?.email?.address ?? user?.google?.email ?? null;
 
   return (
@@ -156,8 +156,8 @@ export default function CertificatePage() {
         <ul className="space-y-6">
           {certificates.map((cert) => (
             <li key={cert.id} className="overflow-hidden rounded-card border border-line-hairline bg-surface-slab">
-              <CertificateHeader cert={cert} />
-              <LinkedInBlock cert={cert} />
+              <CertificateHeader cert={cert} ev={events[cert.event]} />
+              <LinkedInBlock cert={cert} ev={events[cert.event]} />
               <WalletBlock
                 cert={cert}
                 wallets={wallets}
@@ -175,8 +175,7 @@ export default function CertificatePage() {
   );
 }
 
-function CertificateHeader({ cert }: { cert: CertificateView }) {
-  const ev = CERT_EVENTS[cert.event];
+function CertificateHeader({ cert, ev }: { cert: CertificateView; ev?: CertEvent }) {
   return (
     <div className="border-b border-line-hairline p-5">
       <p className="text-[11px] font-semibold uppercase tracking-wide text-eth-blue-text">
@@ -217,9 +216,8 @@ function CertificateHeader({ cert }: { cert: CertificateView }) {
  * the guide lists every field with its value and a copy button, in the order
  * LinkedIn's form asks for them.
  */
-function LinkedInBlock({ cert }: { cert: CertificateView }) {
-  const ev = CERT_EVENTS[cert.event];
-  const addUrl = linkedInAddUrl(cert.event, cert.credentialId, cert.issueDate, cert.role);
+function LinkedInBlock({ cert, ev }: { cert: CertificateView; ev?: CertEvent }) {
+  const addUrl = ev ? linkedInAddUrl(ev, cert.credentialId, cert.issueDate, cert.role) : null;
   const [, mm] = cert.issueDate.split('-').map(Number);
   const year = cert.issueDate.slice(0, 4);
 

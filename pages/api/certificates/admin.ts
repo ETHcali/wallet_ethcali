@@ -11,6 +11,7 @@ import { requireCertAdmin } from '../../../lib/certificates/requireCertAdmin';
 import { sendAuthError } from '../../../lib/swag/requireUser';
 import { getSupabaseAdmin } from '../../../lib/supabase';
 import { ADMIN_COLUMNS, toAdminView, type AdminRow } from '../../../lib/certificates/rows';
+import { loadCertEvents } from '../../../lib/certificates/eventStore';
 import { logger } from '../../../utils/logger';
 import type { AdminCertificatesResponse } from '../../../types/certificates';
 
@@ -38,7 +39,9 @@ export default async function handler(
       .order('member_name');
     if (error) throw new Error(error.message);
     const rows = data as unknown as AdminRow[];
-    return res.status(200).json({ certificates: rows.map(toAdminView) });
+    // Every certificate event, not only those with rows: a new event is empty until people are added.
+    const events = Object.fromEntries((await loadCertEvents(getSupabaseAdmin())).map((e) => [e.key, e]));
+    return res.status(200).json({ certificates: rows.map(toAdminView), events });
   } catch (e) {
     logger.error('certificates: admin list failed', e);
     return res.status(500).json({ error: 'Could not load participants' });

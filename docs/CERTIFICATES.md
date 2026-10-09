@@ -19,9 +19,16 @@ The chain decides steps 4 and 5's truth: a row is re-verifiable with
 
 ## Before the event
 
-1. Add the event to `CERT_EVENTS` in `lib/certificates/events.ts` — title, venue, dates,
-   LinkedIn name, sponsors — and each sponsor's logo in `lib/certificates/logos` (PNG,
-   legible on white). The diploma, the credential page, LinkedIn and the email follow.
+1. Give the event its certificate settings. The event itself is ethcali.org's row in
+   `events` (with its `venues` row); what the certificate says about it is one row in
+   `certificate_events` — `key` (what `builder_certificates.event` holds), credential
+   prefix, LinkedIn name, diploma headline, chapter, location and dates — and its
+   sponsors are rows in `certificate_event_sponsors`, picked from `partners` in order.
+   Each sponsor needs `partners.print_logo_path`: the logo as it reads on white paper
+   (PNG; the site's artwork is for a dark page, so white parts get recoloured to ink),
+   either a file under `public/certificates/logos/` or `ipfs://<cid>`.
+   `lib/certificates/eventStore.ts` joins these into the `CertEvent` the diploma, the
+   credential page, LinkedIn and the email all read. Nothing about an event is in code.
 2. Add the people (step 1). One at a time from the admin page — name, email(s), role,
    a project for builders — which mints a credential id (`<credentialPrefix>-<8 chars>`)
    and, by default, finds or creates their ETH Cali wallet from the email, so the

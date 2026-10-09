@@ -21,6 +21,7 @@ import { getSupabaseAdmin } from '../../lib/supabase';
 import { requireUser, sendAuthError } from '../../lib/swag/requireUser';
 import { logger } from '../../utils/logger';
 import { OWNER_COLUMNS, toOwnerView, type CertificateRow } from '../../lib/certificates/rows';
+import { loadCertEventsByKey } from '../../lib/certificates/eventStore';
 import type { CertificateClaimResponse, CertificatesResponse } from '../../types/certificates';
 
 type Reply = CertificatesResponse | CertificateClaimResponse | { error: string };
@@ -41,7 +42,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
   // No verified email, no rows — and no query that could match on nothing.
   if (user.emails.length === 0) {
     return req.method === 'GET'
-      ? res.status(200).json({ certificates: [] })
+      ? res.status(200).json({ certificates: [], events: {} })
       : res.status(404).json({ error: 'No such certificate' });
   }
 
@@ -55,7 +56,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         .overlaps('emails', user.emails)
         .order('id');
       if (error) throw new Error(error.message);
-      return res.status(200).json({ certificates: (data as CertificateRow[]).map(toOwnerView) });
+      const rows = data as CertificateRow[];
+      const events = await loadCertEventsByKey(db, rows.map((r) => r.event));
+      return res.status(200).json({ certificates: rows.map(toOwnerView), events });
     }
 
     const body = (req.body ?? {}) as { id?: unknown; to?: unknown };
