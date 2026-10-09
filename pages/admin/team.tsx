@@ -177,11 +177,73 @@ function Editor({ member, onDone }: { member: TeamMasterMember | null; onDone: (
         </section>
       </div>
 
-      <div className="mt-5 flex items-center gap-3">
+      <div className="mt-5 flex flex-wrap items-center gap-3">
         <Button onClick={save} disabled={saving}>
           {saving ? 'Saving…' : creating ? 'Add to the team' : 'Save'}
         </Button>
         {error && <p className="text-sm text-signal-reverted">{error}</p>}
+        {!creating && <DeleteMember member={member!} onDeleted={() => onDone(true)} />}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Remove someone from the team for good: the about page and the private
+ * contact. Two steps on the page, typing the name to confirm — no browser
+ * dialog. Hiding them (unpublish) is the reversible option and is said so.
+ */
+function DeleteMember({ member, onDeleted }: { member: TeamMasterMember; onDeleted: () => void }) {
+  const { getAccessToken } = usePrivy();
+  const [open, setOpen] = useState(false);
+  const [typed, setTyped] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const name = member.profile.name;
+
+  async function remove() {
+    if (busy || typed.trim() !== name) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const token = await getAccessToken();
+      const res = await fetch(`/api/admin/team?id=${member.profile.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(body.error ?? `Could not delete (${res.status})`);
+      onDeleted();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not delete');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)} className="min-h-tap px-2 text-sm font-semibold text-signal-reverted hover:underline sm:ml-auto">
+        Delete from the team
+      </button>
+    );
+  }
+  return (
+    <div className="w-full rounded-control border border-signal-reverted/40 bg-signal-reverted/10 p-4 text-sm">
+      <p className="font-semibold text-signal-reverted">Delete {name} for good?</p>
+      <p className="mt-1 text-xs text-content-secondary">
+        They disappear from ethcali.org&apos;s about page on its next refresh, and their private contact is erased. Any certificate they hold stays:
+        it is a token in their wallet. To take them off the site but keep the record, untick &quot;Published&quot; and save instead.
+      </p>
+      <label className="mt-3 block text-xs text-content-muted">
+        Type their name to confirm
+        <input value={typed} onChange={(e) => setTyped(e.target.value)} placeholder={name} className={`mt-1 ${input} sm:max-w-xs`} />
+      </label>
+      <div className="mt-3 flex items-center gap-3">
+        <Button variant="destructive" size="small" onClick={remove} disabled={busy || typed.trim() !== name}>
+          {busy ? 'Deleting…' : 'Delete'}
+        </Button>
+        <button type="button" onClick={() => setOpen(false)} className="text-sm text-content-muted hover:text-content-primary">
+          Cancel
+        </button>
+        {error && <span className="text-sm text-signal-reverted">{error}</span>}
       </div>
     </div>
   );

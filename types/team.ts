@@ -44,3 +44,7 @@ export interface TeamSaveBody {
 export interface TeamSaveResponse {
   member: TeamMasterMember;
 }
+
+export interface TeamDeleteResponse {
+  deleted: { id: number; name: string };
+}
