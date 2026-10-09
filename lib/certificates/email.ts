@@ -45,6 +45,8 @@ export interface CertificateEmailInput {
 
 const BLUE = 'rgb(43,35,239)';
 
+const dedupe = (xs: string[]) => Array.from(new Set(xs.map((x) => x.trim().toLowerCase()).filter(Boolean)));
+
 /** Subject and bodies, without sending — what the dry run shows. */
 export function renderCertificateEmail(c: CertificateEmailInput) {
   const ev = c.ev;
@@ -61,6 +63,10 @@ export function renderCertificateEmail(c: CertificateEmailInput) {
   /** The signed-in view: their NFT, their wallet, their credential. Sign-in is this email. */
   const app = `${appUrl()}/certificate`;
   const shortWallet = truncateAddress(c.wallet);
+  /** The exact addresses that sign in to see it: the primary first. Any of them works. */
+  const logins = dedupe(c.emails);
+  const loginsHtml = logins.map((e) => `<strong>${escapeHtml(e)}</strong>`).join(' o ');
+  const loginsText = logins.join(' o ');
   /** Share intents are plain URLs, so they work inside an email; a copy button cannot. */
   const shareText =
     c.role === 'builder' && c.projectName
@@ -86,7 +92,7 @@ ${honors.length ? `<p>${honors.map((h) => `🏆 <strong>${escapeHtml(h)}</strong
 <p>Tu diploma va adjunto en PDF. El certificado también es un <strong>NFT en Ethereum</strong> (token #${escapeHtml(
     c.tokenId
   )}, no transferible), y ya está en tu wallet <code>${escapeHtml(shortWallet)}</code>, la que quedó guardada con tu cuenta al reclamar.</p>
-<p>Para verlo, entra a la app con <strong>este mismo correo</strong>: te llega un código, sin contraseña. Ahí tienes tu NFT, tu wallet y tu credencial en un solo lugar.</p>
+<p style="padding:12px 14px;border-radius:12px;background:#f5f5fa;border:1px solid #d9d9e3">Para verlo, entra a <a href="${escapeHtml(app)}" style="color:${BLUE}">app.ethcali.org/certificate</a> con ${loginsHtml}. Te llega un código a ese correo, sin contraseña. Ahí tienes tu NFT, tu wallet y tu credencial en un solo lugar.</p>
 <p style="margin:24px 0 8px">${button(app, 'Ver mi certificado en la app', true)}${linkedin ? button(linkedin, 'Agregar a LinkedIn') : ''}</p>
 <p style="margin:0 0 24px">${button(opensea, 'Ver en OpenSea')}${button(etherscan, 'Ver en Etherscan')}</p>
 <div style="margin:0 0 24px;padding:16px;border:1px solid #d9d9e3;border-radius:12px;background:#f5f5fa">
@@ -106,7 +112,7 @@ ${honors.length ? `<p>${honors.map((h) => `🏆 <strong>${escapeHtml(h)}</strong
     '',
     `Tu diploma va adjunto en PDF. El certificado también es un NFT en Ethereum (token #${c.tokenId}, no transferible), y ya está en tu wallet ${shortWallet}, la que quedó guardada con tu cuenta al reclamar.`,
     '',
-    `Para verlo, entra a la app con este mismo correo (te llega un código, sin contraseña): ${app}`,
+    `Para verlo, entra a ${app} con ${loginsText}. Te llega un código a ese correo, sin contraseña.`,
     'Ahí tienes tu NFT, tu wallet y tu credencial en un solo lugar.',
     '',
     ...(linkedin ? [`Agregar a LinkedIn: ${linkedin}`] : []),
@@ -128,7 +134,6 @@ ${honors.length ? `<p>${honors.map((h) => `🏆 <strong>${escapeHtml(h)}</strong
   };
 }
 
-const dedupe = (xs: string[]) => Array.from(new Set(xs.map((x) => x.trim().toLowerCase()).filter(Boolean)));
 
 /** The real one: to every address of the builder, keyed by credential. */
 export function sendCertificateEmail(c: CertificateEmailInput): Promise<SendResult> {

@@ -17,6 +17,7 @@ import { requireCertAdmin } from '../../../../lib/certificates/requireCertAdmin'
 import { sendAuthError } from '../../../../lib/swag/requireUser';
 import { getSupabaseAdmin } from '../../../../lib/supabase';
 import { logger } from '../../../../utils/logger';
+import { PinError, pinFile } from '../../../../lib/ipfsPin';
 import type { CertSponsorsResponse, PartnerForCerts } from '../../../../types/certificates';
 
 export const config = { api: { bodyParser: { sizeLimit: '4mb' } } };
@@ -94,22 +95,11 @@ export default async function handler(
       const bytes = Buffer.from(file.replace(/^data:image\/\w+;base64,/, ''), 'base64');
       if (!isPng(bytes)) return res.status(400).json({ error: 'The print logo must be a PNG' });
       if (bytes.length > MAX_LOGO_BYTES) return res.status(400).json({ error: 'The print logo must be under 2 MB' });
-      const jwt = process.env.PINATA_JWT;
-      if (!jwt) return res.status(500).json({ error: 'Pinata is not configured on the server' });
       const { data: partner, error: pError } = await db.from('partners').select('slug').eq('id', partnerId).maybeSingle();
       if (pError) throw new Error(pError.message);
       if (!partner) return res.status(404).json({ error: 'No such partner' });
-
-      const form = new FormData();
-      form.append('file', new Blob([new Uint8Array(bytes)], { type: 'image/png' }), `print-logo-${partner.slug}.png`);
-      const pin = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${jwt}` },
-        body: form,
-      });
-      const pinned = (await pin.json().catch(() => ({}))) as { IpfsHash?: string; error?: unknown };
-      if (!pin.ok || !pinned.IpfsHash) throw new Error(`Pinata refused the logo (${pin.status})`);
-      const printLogoPath = `ipfs://${pinned.IpfsHash}`;
+      const cid = await pinFile(bytes, `print-logo-${partner.slug}.png`, 'image/png');
+      const printLogoPath = `ipfs://${cid}`;
       const { error } = await db.from('partners').update({ print_logo_path: printLogoPath }).eq('id', partnerId);
       if (error) throw new Error(error.message);
       logger.info(`certificates: ${operator} pinned print logo for partner ${partnerId} → ${printLogoPath}`);
@@ -120,6 +110,6 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (e) {
     logger.error('certificates: sponsors route failed', e);
-    return res.status(500).json({ error: e instanceof Error && e.message.startsWith('Pinata') ? e.message : 'Could not save the sponsors' });
+    return res.status(e instanceof PinError ? 502 : 500).json({ error: e instanceof PinError ? e.message : 'Could not save the sponsors' });
   }
 }

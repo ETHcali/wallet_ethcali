@@ -21,7 +21,7 @@ import { requireCertAdmin } from '../../../../lib/certificates/requireCertAdmin'
 import { requireUser, sendAuthError } from '../../../../lib/swag/requireUser';
 import { getSupabaseAdmin } from '../../../../lib/supabase';
 import { CREDENTIAL_RE } from '../../../../lib/certificates/rows';
-import { parseHonors, parseRole } from '../../../../lib/certificates/events';
+import { credentialUrl, parseHonors, parseRole } from '../../../../lib/certificates/events';
 import {
   renderCertificateEmail,
   sendCertificateEmail,
@@ -34,6 +34,15 @@ import { logger } from '../../../../utils/logger';
 import type { NotifyResponse } from '../../../../types/certificates';
 
 const MAX_BATCH = 100;
+
+async function credentialPageLive(credentialId: string): Promise<boolean> {
+  try {
+    const r = await fetch(credentialUrl(credentialId), { method: 'HEAD', redirect: 'manual' });
+    return r.status === 200;
+  } catch {
+    return false;
+  }
+}
 const PAUSE_MS = 600;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -108,6 +117,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         emails: Array.isArray(r.emails) && r.emails.length ? r.emails : [r.email],
       };
       const to = testTo ? [testTo] : input.emails;
+
+      // The email's links land on /certificate/<id>, which exists only once a
+      // deploy has prerendered it (see publish.ts). Sending before that is a 404.
+      if (!(await credentialPageLive(r.credential_id))) {
+        out.skipped.push({ credentialId: id, reason: 'credential page not live yet: publish, wait for the deploy, then send' });
+        continue;
+      }
 
       if (dryRun) {
         out.sent.push({ credentialId: id, to, subject: renderCertificateEmail(input).subject });

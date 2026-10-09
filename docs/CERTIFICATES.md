@@ -12,15 +12,15 @@ step is a separate action on purpose: nothing downstream happens by accident.
 |---|---|
 | `/admin/team` | The team master list. One editor per person: the **public profile** on ethcali.org (`team_members`) and the **private contact** — emails, Telegram, wallet (`team_member_contacts`). Site content no longer edits the team. |
 | `/admin/certificates` | Every event that issues certificates, with counts, and **Start certificates** for one of ethcali.org's events. |
-| `/admin/certificates?event=<key>` | One event, in tabs: **Event** (the site's facts, read-only, and what certificates say), **Team** (who from the master list took part, with a role), **Builders** (the roster), **Sponsors** (partners on the diploma, in order, with print logos), **Certificate** (a live diploma preview: a sample in any role, or a real person), **Issue & send** (Emitir, then Enviar correo). |
+| `/admin/certificates?event=<key>` | One event, in tabs: **Event** (the site's facts, read-only, and what certificates say), **Team** (who from the master list took part, with a role), **Builders** (the roster), **Sponsors** (partners on the diploma, in order, with print logos), **Certificate** (a live diploma preview: a sample in any role, or a real person), **Mint** (prepare, then Emitir) and **Send** (Enviar correo) — both split into Builders / Team / Everyone. |
 
 | # | Step | Where | Writes |
 |---|------|-------|--------|
 | 1 | Add people | event → **Team** (from the master list) or **Builders** → **Add a person**, or SQL for a whole hackathon roster | one row per person: `event`, `role`, `project_*` (builders only), `member_name`, `email`, `emails`, `credential_id`; with "create wallet" on, also `wallet` + `claimed_at` |
 | 2 | Builders claim | `/certificate`, `POST /api/certificates` | `wallet`, `claimed_at` |
-| 3 | Pin | Pinata, from a session (no script yet) | `image_cid`, `pdf_cid`, `metadata_cid`, `planned_token_id` |
-| 4 | Issue | event → **Issue & send** → **Emitir** | on chain: the mint; row: `token_id`, `issued_tx` (via `POST …/admin/confirm`) |
-| 5 | Notify | event → **Issue & send** → **Enviar correo** | `notified_at` (via `POST …/admin/notify`) |
+| 3 | Prepare | event → **Mint** → **Prepare diplomas** | `image_cid`, `pdf_cid`, `metadata_cid`, `planned_token_id` |
+| 4 | Mint | event → **Mint** → **Emitir** | on chain: the mint; row: `token_id`, `issued_tx` (via `POST …/admin/confirm`) |
+| 5 | Send | event → **Send** → **Enviar correo** | `notified_at` (via `POST …/admin/notify`) |
 
 The chain decides steps 4 and 5's truth: a row is re-verifiable with
 `tokenOfCredential(credential_id)` and `ownerOf(token_id)`.
@@ -114,19 +114,34 @@ step 4; the wallet is theirs either way (Privy embedded, controlled by their log
 The admin page (`/admin/certificates`, needs `ADMIN_ROLE` on the contract) shows who
 has claimed. **Do not pin or issue for a row without a wallet.**
 
-## Pin (step 3)
+## Prepare (step 3)
 
-For every claimed row: render the diploma, pin the PNG (the NFT image), the PDF and the
-ERC-721 JSON (`tokenURI = ipfs://<metadata_cid>`), and reserve `planned_token_id` =
-`totalIssued() + position` in the batch you intend to mint. The diploma prints its own
-token id and a QR to it, so the reservation must be right before pinning, and the mint
-must land exactly there (the Emitir button checks that on chain and refuses otherwise).
+Event → **Mint**, pick Builders or Team, select people with a wallet, **Prepare N
+diplomas**. For each, in table order (`POST /api/certificates/admin/prepare`, one call
+per person):
+
+1. `planned_token_id` — the next id after both `totalIssued()` on chain and every id
+   already reserved. The diploma prints it with a QR to it, and Emitir refuses a batch
+   that would land anywhere else.
+2. The diploma PDF and its PNG — 2924×2066, 250 dpi, the size of every earlier token —
+   rendered on the server (`lib/certificates/rasterize.ts`: pdfjs on `@napi-rs/canvas`),
+   both pinned.
+3. The ERC-721 JSON (`lib/certificates/metadata.ts`; builders carry Builder + Project,
+   the team Contributor + Role), pinned. The row gets `image_cid`, `pdf_cid`,
+   `metadata_cid`; the table links image, metadata and page.
+
+A failure stops the batch so no id is skipped. Then the page calls
+`POST /api/certificates/admin/publish`, which hits `VERCEL_DEPLOY_HOOK_URL` to rebuild
+the site: `/certificate/<id>` is prerendered at build (Privy cannot render per request,
+CLAUDE.md "Rendering gotcha"), so **a new certificate has no credential page until a
+deploy lists it**. Without the variable, the next push to `main` does it; **Send →
+Rebuild credential pages** calls the same hook by hand.
 
 ## Issue (step 4)
 
-On the event's **Issue & send** tab, with a wallet that holds `ADMIN_ROLE`, on Ethereum:
+On the event's **Mint** tab, with a wallet that holds `ADMIN_ROLE`, on Ethereum:
 
-1. Filter **claimed**, select the rows in reserved-token order from the next id, no gaps.
+1. Select the prepared rows in token order from the next id, no gaps (the table is sorted that way).
 2. **Emitir N NFTs**. Gas is sponsored. One `issue()` batch, up to 100.
 3. The panel waits for the block, then the server reads the receipt and stamps each row.
    If that last call fails, the mint still happened: the error shows the tx hash. Re-post it:
@@ -138,10 +153,12 @@ On the event's **Issue & send** tab, with a wallet that holds `ADMIN_ROLE`, on E
 
 ## Notify (step 5)
 
-Same tab. Email is off until `RESEND_API_KEY` and `EMAIL_FROM` are set on Vercel
+On the event's **Send** tab, Builders or Team. Email is off until `RESEND_API_KEY` and `EMAIL_FROM` are set on Vercel
 (`lib/email/resend.ts`); the route answers 503 naming what is missing.
 
-1. Filter **unsent**, select the rows.
+1. Select the minted, unsent rows (the header box picks exactly those). A row whose
+   credential page is not live yet is skipped with that reason: publish, wait for the
+   deploy, send. The email names the exact address(es) that sign in to see it.
 2. **Prueba a <your email>** — the exact email, flagged `[Prueba]`, to your own inbox.
    Stamps nothing. Look at the attachment, the links, the honors.
 3. **Revisar** — a dry run: who would get what. Nothing leaves.
