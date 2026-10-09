@@ -43,3 +43,7 @@
 
 # Claude Code agent worktrees (isolated checkouts, never part of the tree)
 .claude/worktrees/
+
+# Claude Code: per-machine settings and personal notes
+.claude/settings.local.json
+CLAUDE.local.md
