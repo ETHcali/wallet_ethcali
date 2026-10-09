@@ -43,8 +43,8 @@ A secure and easy-to-use Ethereum wallet application built with Next.js and Priv
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/ETHcali/eth-cali-wallet.git
-   cd eth-cali-wallet
+   git clone https://github.com/ETHcali/wallet_ethcali.git
+   cd wallet_ethcali
    ```
 
 2. **Install dependencies:**
@@ -59,13 +59,17 @@ A secure and easy-to-use Ethereum wallet application built with Next.js and Priv
    NEXT_PUBLIC_PRIVY_APP_ID=your_privy_app_id
    PRIVY_APP_SECRET=your_privy_app_secret
    
-   # Optional: Custom RPC Endpoints
+   # Optional: RPC endpoints (Ethereum for everything; Base only for the ethcali.eth registrar).
+   # Unset, config/chains.ts falls back to public endpoints.
+   NEXT_PUBLIC_MAINNET_RPC_URL=https://ethereum-rpc.publicnode.com
    NEXT_PUBLIC_BASE_RPC_URL=https://mainnet.base.org
-   NEXT_PUBLIC_MAINNET_RPC_URL=https://eth.llamarpc.com
-   NEXT_PUBLIC_OPTIMISM_RPC_URL=https://mainnet.optimism.io
-   NEXT_PUBLIC_UNICHAIN_RPC_URL=https://rpc.unichain.org
+
+   # Certificates and email (docs/CERTIFICATES.md)
+   RESEND_API_KEY=            # email is off without it
+   EMAIL_FROM="ETH Cali <hola@ethcali.org>"
+   VERCEL_DEPLOY_HOOK_URL=    # rebuilds the site so new credential pages exist
    
-   # Optional: Pinata IPFS Configuration (for NFT metadata)
+   # Pinata IPFS (NFT metadata, diplomas, print logos)
    PINATA_JWT=your_pinata_jwt_here
    PINATA_GATEWAY=https://gateway.pinata.cloud/ipfs
    NEXT_PUBLIC_PINATA_GATEWAY=https://gateway.pinata.cloud/ipfs
@@ -164,7 +168,7 @@ All on Ethereum mainnet; each address was read from the token itself (`symbol()`
 ### **2. Main Modules**
 
 **💳 Wallet Module** (`/wallet` - wallet.tsx)
-- View token balances across multiple networks (ETH, USDC, EURC)
+- Token balances on Ethereum (ETH, USDC, USDT, EURC)
 - Send tokens with gas sponsorship
 - QR code scanner for easy address input
 - Real-time balance updates
@@ -190,13 +194,25 @@ All on Ethereum mainnet; each address was read from the token itself (`symbol()`
 - **Pay with card**: Shopify checkout in COP; `/swag/claim` mints the NFT with a signed voucher
 - `/swag/orders`: my NFTs and my orders. `/swag/admin`: orders, stock, collection (see `docs/SWAG_ORDERS.md`)
 
+**🎓 Certificates** (`/certificate`, `/certificate/<id>`)
+- Soulbound NFT certificates on Ethereum for builders and for the team behind each event
+- `/certificate`: sign in with the email you registered with; add it to LinkedIn, download the diploma, choose the wallet
+- `/certificate/<id>`: the public credential page, the URL that goes on LinkedIn
+
+**🛠️ Admin** (`/admin`)
+- `/admin/team`: the team master list, public profile on ethcali.org plus private contact
+- `/admin/certificates`: events, then per event Event · Team · Builders · Sponsors · Certificate (preview) · Mint · Send
+- `/admin/access`, `/admin/content`, `/swag/admin`, `/faucet/admin`, `/sybil/admin`, `/donations/admin`
+- Every admin write is re-checked against a role on chain (`hasRole`); see `docs/CERTIFICATES.md` for the certificate runbook
+
 ### **3. User Journey**
 1. **Connect**: User logs in with email, passkey, or external wallet
 2. **Verify**: Complete ZKPassport verification to prove unique identity  
 3. **Mint**: Receive soulbound NFT as proof of sybil-resistance
 4. **Claim**: Access ETH faucet with verified identity
 5. **Shop**: Browse and purchase ETH CALI merchandise
-6. **Transact**: Send tokens with zero gas fees across networks
+6. **Transact**: Send tokens with zero gas fees on Ethereum
+7. **Get certified**: Claim the certificate for an event you built at or helped run
 
 ## 🛠️ Tech Stack
 
@@ -288,6 +304,10 @@ The application includes several API endpoints for backend functionality:
 - `GET|PATCH /api/swag/variants` - Admin artwork pipeline
 - `GET /api/swag/admin/orders`, `PATCH /api/swag/admin/orders/[id]`, `GET /api/swag/admin/summary` - Order desk (swag admin only)
 - `POST /api/shopify/webhook` - Shopify `orders/paid` and `refunds/create`
+- `GET|POST /api/certificates` - My certificates / choose the wallet (Privy token)
+- `GET /api/certificates/<id>/pdf`, `GET /api/certificates/<id>/status` - Public diploma and NFT status
+- `/api/certificates/admin/*` - events, sponsors, participants, team, preview, prepare, publish, confirm, sync, notify (ADMIN_ROLE on BuilderCertificate)
+- `GET|POST|PUT|DELETE /api/admin/team` - Team master list (either admin role)
 - `GET /api/cron/swag-prices` - Daily Shopify re-price from the TRM (Vercel cron, `CRON_SECRET`)
 
 ## 🛍️ Swag
@@ -313,6 +333,7 @@ owns card checkout. Full flows, the voucher format and the `/swag/admin` runbook
 Comprehensive documentation is available in the `docs/` directory:
 
 - [Architecture](./docs/ARCHITECTURE.md) - Pages, hooks, layers
+- [Certificates](./docs/CERTIFICATES.md) - One event start to finish: add, prepare, mint, send
 - [Swag orders](./docs/SWAG_ORDERS.md) - Purchase, webhook, claim and admin flows
 - [Faucet Contract Reference](./docs/FAUCET_CONTRACT_REFERENCE.md) - Complete FaucetManager API
 - [Swag1155 Contract Reference](../scs-ethcali/docs/SWAG1155_CONTRACT_REFERENCE.md) - Maintained once, in the contracts repo
@@ -329,6 +350,13 @@ signed (`hooks/useRequireChain.ts`); the ENS claim is the one button that switch
 Base. Which contract exists comes from the generated `frontend/addresses.json`. Adding
 a chain is a deliberate future change — an entry in the registry and a decision about
 which features it offers — not a flag.
+
+## 🤖 Working with Claude Code
+
+`CLAUDE.md` holds the conventions every session needs; feature rules live in
+`.claude/rules/*.md` and load only when matching files are touched (certificates, swag,
+admin access, ENS, branding). The workspace-level rules are in `../CLAUDE.md`. When you
+change how a feature works, update its rule file and its runbook in `docs/` in the same PR.
 
 ## 🧪 ZKPassport Dev Mode
 
