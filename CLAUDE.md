@@ -171,7 +171,7 @@ on Ethereum mainnet (soulbound ERC-721). `role` says what it certifies — `buil
 `certificate_event_sponsors` (picked from `partners`, which carry a `print_logo_path` for
 white paper). `lib/certificates/eventStore.ts` joins them into the `CertEvent` every
 renderer takes as an argument. The admin is `/admin/certificates` (events) →
-`?event=<key>&tab=event|team|builders|sponsors|certificate|issue`, and the team master
+`?event=<key>&tab=event|team|builders|sponsors|certificate|mint|send`, and the team master
 list is `/admin/team` (`GET/POST/PUT /api/admin/team`, either ADMIN_ROLE —
 `lib/operatorAuth.ts`). Site content no longer edits the team.
 
@@ -184,8 +184,12 @@ The flow is four deliberate steps, and each one is its own button or route, in o
    row, credential id, and by default their ETH Cali wallet found or created from the
    email via Privy), or a roster is loaded by SQL and the person claims at `/certificate`
    with any email they used, picking the wallet. `POST /api/certificates`.
-2. **Pin** — diploma PNG/PDF and the ERC-721 JSON go to IPFS; `planned_token_id` is
-   reserved because the diploma prints its own token id.
+2. **Prepare** — Mint tab → `POST /api/certificates/admin/prepare`, one person per call:
+   reserves `planned_token_id` (the diploma prints it), renders the PDF and its 2924×2066
+   PNG on the server (pdfjs + `@napi-rs/canvas`, both `serverExternalPackages`), pins
+   PNG, PDF and the ERC-721 JSON. Then `…/publish` calls `VERCEL_DEPLOY_HOOK_URL`:
+   **credential pages are prerendered, so a new one 404s until the next deploy** — and the
+   notify route refuses to email anyone whose page is not live.
 3. **Issue** — the admin "Emitir" button mints in planned order (sponsored), then
    `POST /api/certificates/admin/confirm` reads the receipt and stamps `token_id` +
    `issued_tx`. The chain decides; the row remembers.

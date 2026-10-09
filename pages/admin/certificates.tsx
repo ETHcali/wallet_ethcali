@@ -9,7 +9,8 @@
  *     Builders     the hackathon roster
  *     Sponsors     the partners the diploma prints, in order
  *     Certificate  a live diploma preview
- *     Issue & send mint, then email
+ *     Mint         prepare (token id, diploma, metadata on IPFS), then mint
+ *     Send         the email, once minted and the credential page is live
  *
  * Every route behind it re-checks ADMIN_ROLE on BuilderCertificate on chain;
  * what this page shows or hides is presentation only.
@@ -28,7 +29,8 @@ import EventTab from '../../components/certificates/admin/EventTab';
 import BuildersTab from '../../components/certificates/admin/BuildersTab';
 import SponsorsTab from '../../components/certificates/admin/SponsorsTab';
 import PreviewTab from '../../components/certificates/admin/PreviewTab';
-import IssueTab from '../../components/certificates/admin/IssueTab';
+import MintTab from '../../components/certificates/admin/MintTab';
+import SendTab from '../../components/certificates/admin/SendTab';
 import { useAdminApi } from '../../components/certificates/admin/useAdminApi';
 import type { AdminCertificatesResponse, CertEventsResponse } from '../../types/certificates';
 
@@ -38,7 +40,8 @@ const TABS = [
   { id: 'builders', label: 'Builders' },
   { id: 'sponsors', label: 'Sponsors' },
   { id: 'certificate', label: 'Certificate' },
-  { id: 'issue', label: 'Issue & send' },
+  { id: 'mint', label: 'Mint' },
+  { id: 'send', label: 'Send' },
 ] as const;
 type TabId = (typeof TABS)[number]['id'];
 
@@ -146,7 +149,8 @@ export default function CertificatesAdmin() {
           {tab === 'builders' && <BuildersTab ev={ev} rows={rows.filter((r) => r.role === 'builder')} onChanged={refetch} />}
           {tab === 'sponsors' && <SponsorsTab eventKey={ev.key} pinned={pinned} onChanged={refetch} />}
           {tab === 'certificate' && <PreviewTab ev={ev} rows={rows} />}
-          {tab === 'issue' && <IssueTab all={rows} ev={ev} onChanged={refetch} />}
+          {tab === 'mint' && <MintTab rows={rows} onChanged={refetch} />}
+          {tab === 'send' && <SendTab eventKey={ev.key} rows={rows} onChanged={refetch} />}
         </>
       )}
     </AdminShell>

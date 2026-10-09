@@ -49,8 +49,13 @@ const nextConfig = {
   reactStrictMode: true,
   // The diploma PDF reads its fonts and the logo from disk; the tracer cannot
   // see a path built at runtime, so name them for the routes that render it.
+  // Native canvas and pdfjs rasterize diplomas to PNG in /api/certificates/admin/prepare;
+  // bundling either breaks them, so Node loads them from node_modules.
+  serverExternalPackages: ['pdfjs-dist', '@napi-rs/canvas'],
   outputFileTracingIncludes: {
     '/api/certificates/**': ['./lib/certificates/fonts/*.ttf', './public/certificates/logos/*', './public/logo_eth_cali_mark.png'],
+    // pdfjs imports its worker by a computed path, which tracing cannot see.
+    '/api/certificates/admin/prepare': ['./node_modules/pdfjs-dist/legacy/build/*.mjs', './node_modules/@napi-rs/canvas*/**'],
   },
   // Server-side only environment variables (not exposed to client)
   env: {
