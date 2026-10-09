@@ -81,22 +81,6 @@ export interface VenueRecord {
   is_published: boolean;
 }
 
-export interface TeamMemberRecord {
-  id: number;
-  slug: string;
-  name: string;
-  role_es: string | null;
-  role_en: string | null;
-  status: string | null;
-  since: string | null;
-  image_path: string | null;
-  linkedin_url: string | null;
-  twitter_url: string | null;
-  github_url: string | null;
-  sort_order: number;
-  is_published: boolean;
-}
-
 export interface PartnerRecord {
   id: number;
   slug: string;

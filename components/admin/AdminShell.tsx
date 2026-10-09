@@ -13,6 +13,7 @@ export type AdminSection =
   | 'artwork'
   | 'identity'
   | 'content'
+  | 'team'
   | 'certificates';
 
 interface AdminShellProps {
@@ -42,6 +43,7 @@ const SECTIONS: SectionDef[] = [
   { id: 'artwork', href: '/admin/artwork', label: 'Artwork', accent: 'text-eth-blue-text' },
   { id: 'identity', href: '/sybil/admin', label: 'Identity', accent: 'text-eth-blue-text' },
   { id: 'content', href: '/admin/content', label: 'Site content', accent: 'text-eth-blue-text' },
+  { id: 'team', href: '/admin/team', label: 'Team', accent: 'text-eth-blue-text' },
   { id: 'certificates', href: '/admin/certificates', label: 'Certificates', accent: 'text-eth-blue-text' },
 ];
 
@@ -86,6 +88,8 @@ const AdminShell: React.FC<AdminShellProps> = ({ active, title, subtitle, childr
     // Site content is editorial, not an on-chain role, so the menu does not
     // gate it. The API still checks ADMIN_ROLE before it writes anything.
     content: true,
+    // Either ADMIN_ROLE (site or certificates) may edit it; the API checks both.
+    team: true,
     // Gated by ADMIN_ROLE on BuilderCertificate, which the menu does not read;
     // like content, it is listed for everyone who reaches the admin area and
     // the API refuses anyone the contract does not know.

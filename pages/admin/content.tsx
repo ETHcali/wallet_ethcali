@@ -64,21 +64,6 @@ const VENUE_FIELDS: readonly FieldDef[] = [
   { key: 'is_published', label: 'Status', type: 'boolean', inList: true },
 ];
 
-const TEAM_FIELDS: readonly FieldDef[] = [
-  { key: 'slug', label: 'Slug', type: 'text', required: true, inList: true, lockedAfterCreate: true },
-  { key: 'name', label: 'Name', type: 'text', required: true, inList: true },
-  { key: 'role_es', label: 'Rol (ES)', type: 'text', inList: true },
-  { key: 'role_en', label: 'Role (EN)', type: 'text' },
-  { key: 'status', label: 'Status', type: 'text' },
-  { key: 'since', label: 'Since', type: 'date' },
-  { key: 'image_path', label: 'Image path', type: 'text' },
-  { key: 'linkedin_url', label: 'LinkedIn', type: 'text' },
-  { key: 'twitter_url', label: 'X / Twitter', type: 'text' },
-  { key: 'github_url', label: 'GitHub', type: 'text' },
-  { key: 'sort_order', label: 'Order', type: 'number', inList: true },
-  { key: 'is_published', label: 'Status', type: 'boolean', inList: true },
-];
-
 const PARTNER_FIELDS: readonly FieldDef[] = [
   { key: 'slug', label: 'Slug', type: 'text', required: true, inList: true, lockedAfterCreate: true },
   { key: 'name', label: 'Name', type: 'text', required: true, inList: true },
@@ -92,7 +77,6 @@ const PARTNER_FIELDS: readonly FieldDef[] = [
 const TABS: { id: CmsResource; label: string; fields: readonly FieldDef[] }[] = [
   { id: 'events', label: 'Events', fields: EVENT_FIELDS },
   { id: 'venues', label: 'Venues', fields: VENUE_FIELDS },
-  { id: 'team', label: 'Team', fields: TEAM_FIELDS },
   { id: 'partners', label: 'Partners', fields: PARTNER_FIELDS },
 ];
 
@@ -158,7 +142,7 @@ export default function ContentAdmin() {
       <AdminShell
         active="content"
         title="Site content"
-        subtitle="Events, venues, team and partners for ethcali.org. Publishing here changes the public site."
+        subtitle="Events, venues and partners for ethcali.org. Publishing here changes the public site. The team has its own page."
       >
         <div className="mb-5 flex flex-wrap gap-2">
           {TABS.map((t) => (

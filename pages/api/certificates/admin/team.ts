@@ -6,9 +6,8 @@
  *     (team_member_contacts) and whatever certificates that person already
  *     has for the event — so the admin can pick who still needs one.
  *
- *   PUT /api/certificates/admin/team  { teamMemberId, email?, emails?, telegram? }
- *     upsert the contact. The site never sees this table; the only reader is
- *     the service role behind this route's ADMIN_ROLE check.
+ * Read-only. Profiles and contacts are edited in one place, the team master
+ * list (/admin/team, PUT /api/admin/team).
  */
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { requireCertAdmin } from '../../../../lib/certificates/requireCertAdmin';
@@ -17,11 +16,10 @@ import { getSupabaseAdmin } from '../../../../lib/supabase';
 import { parseRole } from '../../../../lib/certificates/events';
 import { loadCertEvent } from '../../../../lib/certificates/eventStore';
 import { logger } from '../../../../utils/logger';
-import type { TeamContactBody, TeamForCertsResponse, TeamMemberForCerts } from '../../../../types/certificates';
+import type { TeamForCertsResponse, TeamMemberForCerts } from '../../../../types/certificates';
 
-const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse<TeamForCertsResponse | { contact: TeamMemberForCerts['contact'] } | { error: string }>) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse<TeamForCertsResponse | { error: string }>) {
   try {
     await requireCertAdmin(req);
   } catch (e) {
@@ -66,30 +64,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     }
   }
 
-  if (req.method === 'PUT') {
-    const b = (req.body ?? {}) as Partial<TeamContactBody>;
-    const id = Number(b.teamMemberId);
-    if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'teamMemberId is required' });
-    const email = typeof b.email === 'string' && b.email.trim() ? b.email.trim().toLowerCase() : null;
-    if (email && !EMAIL.test(email)) return res.status(400).json({ error: 'That is not an email address' });
-    const extra = Array.isArray(b.emails) ? b.emails.map((e) => String(e).trim().toLowerCase()).filter(Boolean) : [];
-    if (extra.some((e) => !EMAIL.test(e))) return res.status(400).json({ error: 'One of the extra emails is not valid' });
-    const emails = Array.from(new Set([...(email ? [email] : []), ...extra]));
-    const telegram = typeof b.telegram === 'string' && b.telegram.trim() ? b.telegram.trim().replace(/^(?!@)/, '@') : null;
-    try {
-      const { data, error } = await db
-        .from('team_member_contacts')
-        .upsert({ team_member_id: id, email, emails, telegram }, { onConflict: 'team_member_id' })
-        .select('email, emails, telegram')
-        .single();
-      if (error) throw new Error(error.message);
-      return res.status(200).json({ contact: { email: data.email ?? null, emails: (data.emails as string[]) ?? [], telegram: data.telegram ?? null } });
-    } catch (e) {
-      logger.error('certificates: team contact upsert failed', e);
-      return res.status(500).json({ error: 'Could not save the contact' });
-    }
-  }
-
-  res.setHeader('Allow', 'GET, PUT');
+  res.setHeader('Allow', 'GET');
   return res.status(405).json({ error: 'Method not allowed' });
 }

@@ -15,11 +15,19 @@ import type { AddParticipantBody, AddParticipantResponse } from '../../types/cer
 const field =
   'w-full rounded-control border border-line-hairline bg-surface-inset px-3 py-2.5 text-sm text-content-primary placeholder-content-faint focus:border-eth-blue focus:outline-none';
 
-export default function AddParticipantPanel({ events, onAdded }: { events: CertEvent[]; onAdded: () => void }) {
+export default function AddParticipantPanel({
+  ev,
+  defaultRole = 'builder',
+  onAdded,
+}: {
+  ev: CertEvent;
+  defaultRole?: CertRole;
+  onAdded: () => void;
+}) {
   const { getAccessToken } = usePrivy();
   const [open, setOpen] = useState(false);
-  const [event, setEvent] = useState(events[0]?.key ?? '');
-  const [role, setRole] = useState<CertRole>('organizer');
+  const event = ev.key;
+  const [role, setRole] = useState<CertRole>(defaultRole);
   const [memberName, setMemberName] = useState('');
   const [emails, setEmails] = useState('');
   const [projectName, setProjectName] = useState('');
@@ -72,7 +80,8 @@ export default function AddParticipantPanel({ events, onAdded }: { events: CertE
         <div>
           <p className="font-semibold text-content-primary">Add a person</p>
           <p className="text-xs text-content-muted">
-            Team or builder. Creates the row, the credential id and, by default, their ETH Cali wallet from the email.
+            Anyone not on the team list: name, email, role, a project for builders. Creates the row, the credential id and, by default,
+            their ETH Cali wallet from the email.
           </p>
         </div>
         <Button variant="secondary" size="small" onClick={() => setOpen((v) => !v)}>
@@ -88,16 +97,6 @@ export default function AddParticipantPanel({ events, onAdded }: { events: CertE
             void submit();
           }}
         >
-          <label className="block text-xs text-content-muted">
-            Event
-            <select value={event} onChange={(e) => setEvent(e.target.value)} className={`mt-1 ${field}`}>
-              {events.map((e) => (
-                <option key={e.key} value={e.key}>
-                  {e.headline}
-                </option>
-              ))}
-            </select>
-          </label>
           <label className="block text-xs text-content-muted">
             Role
             <select value={role} onChange={(e) => setRole(e.target.value as CertRole)} className={`mt-1 ${field}`}>
