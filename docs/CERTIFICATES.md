@@ -75,7 +75,7 @@ table**. Their emails live beside it in `team_member_contacts`: RLS on, no polic
 no client grants, service role only. First filled from the "Intención de Core" form
 responses (13 of 20 members, 2026-10-06); the rest are typed in from the admin.
 
-`/admin/team` is where a member is added or edited, both halves at once. The event's
+`/admin/team` is where a member is added, edited or deleted, both halves at once. Delete removes the about-page profile and erases the private contact (cascade); their certificates stay, since they are tokens in their wallet, and only lose the link to the profile. Unticking Published is the reversible way to take someone off the site. The event's
 **Team** tab lists every member with their private email (editable inline, saved on
 blur), a role defaulted from their team status (Volunteer → volunteer, everyone else →
 organizer), and the certificates they already hold for that event. Not everyone works

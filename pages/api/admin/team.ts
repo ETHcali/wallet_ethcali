@@ -4,6 +4,7 @@
  *   GET  /api/admin/team                    every member, published or not, with contact
  *   POST /api/admin/team  { profile, contact? }      a new member
  *   PUT  /api/admin/team  { id, profile?, contact? } edit either side
+ *   DELETE /api/admin/team?id=<id>                  remove the person
  *
  * Two tables, one person. `team_members` is ethcali.org's about page: the site
  * reads it with `select *` and the anon key, so it holds only what may be
@@ -16,7 +17,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { getSupabaseAdmin } from '../../../lib/supabase';
 import { requireOperator, sendOperatorError } from '../../../lib/operatorAuth';
 import { logger } from '../../../utils/logger';
-import type { TeamContact, TeamMasterMember, TeamMasterResponse, TeamProfile, TeamSaveBody, TeamSaveResponse } from '../../../types/team';
+import type { TeamContact, TeamDeleteResponse, TeamMasterMember, TeamMasterResponse, TeamProfile, TeamSaveBody, TeamSaveResponse } from '../../../types/team';
 
 const PROFILE_COLUMNS =
   'id, slug, name, role_es, role_en, status, since, image_path, linkedin_url, twitter_url, github_url, sort_order, is_published';
@@ -105,7 +106,7 @@ async function writeContact(id: number, patch: Partial<Record<keyof TeamContact,
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<TeamMasterResponse | TeamSaveResponse | { error: string }>
+  res: NextApiResponse<TeamMasterResponse | TeamSaveResponse | TeamDeleteResponse | { error: string }>
 ) {
   let operator: string;
   try {
@@ -163,7 +164,20 @@ export default async function handler(
       return res.status(200).json({ member: await readMember(id) });
     }
 
-    res.setHeader('Allow', 'GET, POST, PUT');
+    if (req.method === 'DELETE') {
+      // Gone from the about page and from the private contacts (cascade).
+      // Their certificates stay — they are tokens in their wallet; the rows
+      // just lose the link to a profile (team_member_id set null).
+      const id = Number(req.query.id);
+      if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'id is required' });
+      const { data, error } = await db.from('team_members').delete().eq('id', id).select('slug, name').maybeSingle();
+      if (error) throw new Error(error.message);
+      if (!data) return res.status(404).json({ error: 'No such team member' });
+      logger.info(`[admin/team] ${operator} deleted team member ${id} (${data.slug})`);
+      return res.status(200).json({ deleted: { id, name: data.name as string } });
+    }
+
+    res.setHeader('Allow', 'GET, POST, PUT, DELETE');
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (e) {
     if (e instanceof Invalid) return res.status(400).json({ error: e.message });
