@@ -137,14 +137,58 @@ export function useUpdateZKPassportMetadata(chainId: number) {
   };
 }
 
-/** Verifier / domain / scope (owner only). */
+/** Domain / scope (owner only). The verifier is fixed at deploy and has no setter. */
 export function useZKPassportContractSettings(chainId: number) {
-  const { write, canWrite } = useZKPassportWrite(chainId, ['zkpassport-admin']);
+  const { write, canWrite } = useZKPassportWrite(chainId, ['zkpassport-admin', 'zkpassport-policy']);
 
   return {
-    setVerifier: (verifierAddress: string) => write('setVerifier', [verifierAddress]),
     setDomain: (domain: string) => write('setDomain', [domain]),
     setScope: (scope: string) => write('setScope', [scope]),
     canUpdate: canWrite,
   };
+}
+
+/**
+ * The policy the contract enforces, read with a minimal ABI so it works before
+ * and after the ABI in frontend/ is regenerated. A contract without these views
+ * (the January build) reads as `null`.
+ */
+const POLICY_ABI = [
+  { type: 'function', name: 'domain', stateMutability: 'view', inputs: [], outputs: [{ type: 'string' }] },
+  { type: 'function', name: 'scope', stateMutability: 'view', inputs: [], outputs: [{ type: 'string' }] },
+  { type: 'function', name: 'excludedCountries', stateMutability: 'view', inputs: [], outputs: [{ type: 'string[]' }] },
+  { type: 'function', name: 'SANCTIONS_STRICT', stateMutability: 'view', inputs: [], outputs: [{ type: 'bool' }] },
+] as const;
+
+export interface ZKPassportPolicy {
+  domain: string;
+  scope: string;
+  excludedCountries: readonly string[];
+  sanctionsStrict: boolean;
+}
+
+export function useZKPassportPolicy(chainId: number) {
+  const zkpassport = zkpassportAddress(chainId);
+  return useQuery({
+    queryKey: ['zkpassport-policy', chainId, zkpassport],
+    queryFn: async (): Promise<ZKPassportPolicy | null> => {
+      const client = publicClientFor(chainId);
+      if (!zkpassport || !client) return null;
+      const read = <T,>(functionName: (typeof POLICY_ABI)[number]['name']) =>
+        client.readContract({ address: zkpassport, abi: POLICY_ABI, functionName } as never) as Promise<T>;
+      try {
+        const [domain, scope, excludedCountries, sanctionsStrict] = await Promise.all([
+          read<string>('domain'),
+          read<string>('scope'),
+          read<readonly string[]>('excludedCountries'),
+          read<boolean>('SANCTIONS_STRICT'),
+        ]);
+        return { domain, scope, excludedCountries, sanctionsStrict };
+      } catch {
+        return null;
+      }
+    },
+    enabled: Boolean(zkpassport),
+    staleTime: 1000 * 60,
+  });
 }

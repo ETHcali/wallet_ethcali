@@ -1,99 +1,64 @@
 /**
- * ZKPassport - Personhood Verification
- * Client-side only implementation
+ * ZKPassport personhood request, browser only.
+ *
+ * The query is built here, in full, rather than fetched as a dashboard policy:
+ * ZKPassportNFT checks every part of it on chain and ZKPassport compares the
+ * country list with the proof's list exactly, so app and contract must agree
+ * byte for byte (scs-ethcali scripts/deploy-identity.ts holds the same values).
+ * The dashboard policy `policy-1` on `ethcali.org` mirrors it; change all three
+ * together.
  */
 
-import { logger } from './logger';
-// Dynamic import to avoid SSR issues
-const getZKPassportSDK = async () => {
+/** Registered in the ZKPassport dashboard; the contract checks it (verifyScopes). */
+export const ZKPASSPORT_DOMAIN = 'ethcali.org';
+/** The dashboard policy id; the contract checks it and it drives the nullifier. */
+export const ZKPASSPORT_SCOPE = 'policy-1';
+/**
+ * Refused as nationality and as issuing country. Sorted: ZKPassport requires
+ * the list in alphabetical order and the contract compares it exactly.
+ */
+export const ZKPASSPORT_EXCLUDED_COUNTRIES = [
+  'AFG', 'BLR', 'CUB', 'IRN', 'MMR', 'PRK', 'RUS', 'SDN', 'SYR', 'VEN', 'YEM', 'ZWE',
+] as const;
+
+const getZKPassport = async () => {
   if (typeof window === 'undefined') {
     throw new Error('ZKPassport SDK can only be used in the browser');
   }
   const { ZKPassport } = await import('@zkpassport/sdk');
-  return ZKPassport;
-};
-
-// Initialize ZKPassport (auto-detects domain in browser)
-const getZKPassportInstance = async () => {
-  const ZKPassport = await getZKPassportSDK();
-  return new ZKPassport(); // Auto-detects domain from window.location
+  // Explicit, not window.location: the app runs on app.ethcali.org while the
+  // registered domain, and the one the contract checks, is ethcali.org.
+  return new ZKPassport(ZKPASSPORT_DOMAIN);
 };
 
 /**
- * Request personhood verification using ZK proofs suitable for on-chain minting.
- * Requires mode "compressed-evm" for on-chain proof generation.
- * Scope must match the deployed contract's scope value: "ethcali-verification".
- * @param walletAddr - The connected wallet address to bind to the proof
+ * Request a proof the ZKPassportNFT on Ethereum will accept: adult, sanctions
+ * (non-strict, matching SANCTIONS_STRICT = false), neither nationality nor
+ * issuing country excluded, document type disclosed (passport vs ID card picks
+ * the layout the contract decodes), bound to this wallet and to Ethereum.
  */
-export const requestPersonhoodVerification = async (walletAddr: `0x${string}` | string) => {
-  const zkPassport = await getZKPassportInstance();
+export const requestPersonhoodVerification = async (walletAddr: `0x${string}`) => {
+  const zkPassport = await getZKPassport();
 
   const queryBuilder = await zkPassport.request({
-    name: "ETH CALI Wallet",
-    logo: "/logo_eth_cali.png",
-    purpose: "Prove your personhood to access ETH CALI",
-    scope: "ethcali-verification",
-    mode: "compressed-evm",
-  } as any);
+    name: 'ETH CALI',
+    logo: `${window.location.origin}/logo_eth_cali.png`,
+    purpose: 'Prove you are a unique adult to get your ETH CALI identity NFT',
+    scope: ZKPASSPORT_SCOPE,
+    mode: 'compressed-evm',
+  });
 
-  const {
-    url,
-    requestId,
-    onRequestReceived,
-    onGeneratingProof,
-    onProofGenerated,
-    onResult,
-    onReject,
-    onError,
-  } = queryBuilder
-    .gte("age", 18)
-    .disclose("nationality")
-    .disclose("document_type")
-    .bind("user_address", walletAddr as `0x${string}`)
+  const excluded = [...ZKPASSPORT_EXCLUDED_COUNTRIES];
+  const request = queryBuilder
+    .gte('age', 18)
+    .sanctions()
+    .out('nationality', excluded)
+    .out('issuing_country', excluded)
+    .disclose('document_type')
+    .bind('user_address', walletAddr)
+    .bind('chain', 'ethereum')
     .done();
 
-  return {
-    url,
-    requestId,
-    onRequestReceived,
-    onGeneratingProof,
-    onProofGenerated,
-    onResult,
-    onReject,
-    onError,
-    // Return instance so the hook can call getSolidityVerifierParameters
-    zkPassport,
-  };
-};
-
-/**
- * Check if unique identifier is already registered
- */
-export const checkUniqueIdentifier = async (uniqueIdentifier: string): Promise<boolean> => {
-  try {
-    const response = await fetch(`/api/check-personhood/${uniqueIdentifier}`);
-    const data = await response.json();
-    return data.registered || false;
-  } catch (error) {
-    logger.error('Error checking unique identifier:', error);
-    return false;
-  }
-};
-
-/**
- * Register unique identifier
- */
-export const registerUniqueIdentifier = async (uniqueIdentifier: string, email?: string): Promise<boolean> => {
-  try {
-    const response = await fetch('/api/register-personhood', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ uniqueIdentifier, email }),
-    });
-    const data = await response.json();
-    return data.success || false;
-  } catch (error) {
-    logger.error('Error registering unique identifier:', error);
-    return false;
-  }
+  // The instance builds the contract's parameters from the proof afterwards.
+  return { ...request, zkPassport };
 };

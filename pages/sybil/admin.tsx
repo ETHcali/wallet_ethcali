@@ -10,7 +10,8 @@ import SwitchChainButton from '../../components/shared/SwitchChainButton';
 import { ZKPassportMetadataAdmin } from '../../components/zkpassport/ZKPassportMetadataAdmin';
 import { DEFAULT_CHAIN, explorerAddress } from '../../config/chains';
 import { useRequireChain } from '../../hooks/useRequireChain';
-import { useZKPassportAdmin, useZKPassportContractSettings } from '../../hooks/useZKPassportAdmin';
+import { useZKPassportAdmin, useZKPassportContractSettings, useZKPassportPolicy } from '../../hooks/useZKPassportAdmin';
+import { ZKPASSPORT_DOMAIN, ZKPASSPORT_EXCLUDED_COUNTRIES, ZKPASSPORT_SCOPE } from '../../utils/zkpassport';
 import { adminErrorMessage } from '../../utils/adminErrors';
 
 type AdminTab = 'metadata' | 'settings' | 'holders' | 'access';
@@ -22,13 +23,61 @@ const TABS: Array<{ id: AdminTab; label: string }> = [
   { id: 'access', label: 'Access' },
 ];
 
-type SettingKey = 'verifier' | 'domain' | 'scope';
+type SettingKey = 'domain' | 'scope';
 
 const SETTINGS: Array<{ key: SettingKey; label: string; hint: string; placeholder: string; mono: boolean }> = [
-  { key: 'verifier', label: 'Verifier', hint: 'The contract that checks a ZKPassport proof before a mint.', placeholder: '0x… verifier address', mono: true },
-  { key: 'domain', label: 'Domain', hint: 'The site a proof must have been generated for.', placeholder: 'app.ethcali.org', mono: false },
-  { key: 'scope', label: 'Scope', hint: 'Separates these proofs from any other app using the same verifier.', placeholder: 'ethcali-verification', mono: false },
+  { key: 'domain', label: 'Domain', hint: 'The domain registered in the ZKPassport dashboard. Proofs for any other domain are refused.', placeholder: ZKPASSPORT_DOMAIN, mono: false },
+  { key: 'scope', label: 'Scope', hint: 'The dashboard policy id. Changing it starts a new nullifier space: one person could mint again.', placeholder: ZKPASSPORT_SCOPE, mono: false },
 ];
+
+/**
+ * What the contract enforces next to what the app requests. They must match
+ * exactly or every real mint reverts, so a difference is called out.
+ */
+function PolicyPanel({ chainId }: { chainId: number }) {
+  const { data: policy, isLoading } = useZKPassportPolicy(chainId);
+  if (isLoading) return <Loading text="Reading the policy from the contract…" />;
+  if (!policy) {
+    return (
+      <div className={CARD}>
+        <h2 className="font-semibold text-content-primary">No policy on this contract</h2>
+        <p className="mt-1 text-sm text-content-muted">
+          This ZKPassportNFT predates on-chain proof verification (no domain, scope or country list), so nobody can
+          mint and the faucet stays locked. It is replaced by the identity redeploy.
+        </p>
+      </div>
+    );
+  }
+  const app = [...ZKPASSPORT_EXCLUDED_COUNTRIES];
+  const rows: Array<{ label: string; chain: string; app: string }> = [
+    { label: 'Domain', chain: policy.domain, app: ZKPASSPORT_DOMAIN },
+    { label: 'Scope', chain: policy.scope, app: ZKPASSPORT_SCOPE },
+    { label: 'Excluded countries', chain: policy.excludedCountries.join(' '), app: app.join(' ') },
+    { label: 'Sanctions', chain: policy.sanctionsStrict ? 'strict' : 'non-strict', app: 'non-strict' },
+  ];
+  const mismatches = rows.filter((r) => r.chain !== r.app);
+  return (
+    <div className={CARD}>
+      <h2 className="font-semibold text-content-primary">Policy</h2>
+      <p className="mt-1 text-sm text-content-muted">
+        {mismatches.length === 0
+          ? 'The contract and the app agree. Age 18+ is always required.'
+          : `${mismatches.length} difference${mismatches.length === 1 ? '' : 's'} between the contract and the app: real mints will revert until they match.`}
+      </p>
+      <dl className="mt-3 divide-y divide-line-hairline text-sm">
+        {rows.map((r) => (
+          <div key={r.label} className="grid gap-1 py-2 sm:grid-cols-[10rem_minmax(0,1fr)]">
+            <dt className="text-content-muted">{r.label}</dt>
+            <dd className="min-w-0 break-words font-mono text-content-primary">
+              {r.chain}
+              {r.chain !== r.app && <span className="mt-1 block text-xs text-signal-pending">App requests: {r.app}</span>}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
 
 /**
  * One owner-only setting: its own field, button, pending flag and error, so
@@ -100,15 +149,19 @@ export default function IdentityAdminPage() {
 
   const { ready } = useWallets();
   const { isOwner, owner, isLoading: isCheckingOwner, walletAddress } = useZKPassportAdmin(chainId);
-  const { setVerifier, setDomain, setScope } = useZKPassportContractSettings(chainId);
+  const { setDomain, setScope } = useZKPassportContractSettings(chainId);
   const [activeTab, setActiveTab] = useState<AdminTab>('metadata');
 
   const setters: Record<SettingKey, (value: string) => Promise<unknown>> = {
-    verifier: setVerifier,
     domain: setDomain,
     scope: setScope,
   };
-  const blocked = chain.ready ? null : `Switch your wallet to ${chain.chainName} first.`;
+  const { data: policy } = useZKPassportPolicy(chainId);
+  const blocked = !chain.ready
+    ? `Switch your wallet to ${chain.chainName} first.`
+    : policy === null
+      ? 'This contract has no domain or scope to set.'
+      : null;
 
   if (!ready || isCheckingOwner) {
     return (
@@ -188,10 +241,13 @@ export default function IdentityAdminPage() {
       {activeTab === 'metadata' && <ZKPassportMetadataAdmin chainId={chainId} />}
 
       {activeTab === 'settings' && (
+        <div className="space-y-4">
+        <PolicyPanel chainId={chainId} />
         <div className={`${CARD} space-y-4`}>
           {SETTINGS.map((def) => (
             <SettingRow key={def.key} def={def} run={setters[def.key]} blocked={blocked} />
           ))}
+        </div>
         </div>
       )}
 

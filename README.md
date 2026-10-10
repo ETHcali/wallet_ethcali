@@ -81,9 +81,6 @@ A secure and easy-to-use Ethereum wallet application built with Next.js and Priv
 
    # Swag needs the Supabase, Shopify, CRON_SECRET and SWAG_VOUCHER_SIGNER_KEY blocks —
    # see .env.example and docs/SWAG_ORDERS.md § Environment
-
-   # Optional: ZKPassport dev mode (set true to test with devnet proofs locally)
-   NEXT_PUBLIC_ZK_DEV_MODE=false
    ```
 
    **Note**: 
@@ -119,7 +116,7 @@ wallet_ethcali/
 │   │   ├── cron/swag-prices.ts  # daily TRM re-price of the Shopify catalogue (CRON_SECRET)
 │   │   ├── fx/trm.ts            # today's TRM from datos.gov.co
 │   │   ├── indexer/sync.ts      # donation index
-│   │   ├── pinata/, poap/, ens/, cms/, donations/, check-personhood/, register-personhood.ts
+│   │   ├── pinata/, poap/, ens/, cms/, donations/
 │   ├── index.tsx, wallet.tsx, settings.tsx
 │   ├── faucet.tsx, faucet/admin.tsx
 │   ├── sybil/index.tsx, sybil/admin.tsx
@@ -245,7 +242,6 @@ All on Ethereum mainnet; each address was read from the token itself (`symbol()`
 - `POAP_API_KEY` (optional; only `/api/poap/holders` reads it — server-side only)
 - Swag: `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SHOPIFY_STORE_DOMAIN`, `SHOPIFY_CLIENT_ID`,
   `SHOPIFY_CLIENT_SECRET`, `SHOPIFY_API_VERSION`, `SWAG_VOUCHER_SIGNER_KEY`, `CRON_SECRET` — see `docs/SWAG_ORDERS.md`
-- `NEXT_PUBLIC_ZK_DEV_MODE` (set `false` in production; `true` only for local devnet testing)
 - Custom RPC URLs (optional, for better performance)
 
 **Gas Sponsorship Setup:**
@@ -293,8 +289,6 @@ The application includes several API endpoints for backend functionality:
 
 - `POST /api/create-wallet` - Create embedded wallet
 - `GET /api/wallet-balance` - Get wallet balance
-- `POST /api/register-personhood` - Register personhood verification
-- `GET /api/check-personhood/[uniqueIdentifier]` - Check personhood status
 - `POST /api/pinata/pin-image` - Pin image to IPFS via Pinata
 - `POST /api/pinata/pin-json` - Pin JSON metadata to IPFS via Pinata
 - `GET /api/poap/holders?eventId=<id>` - Fetch POAP event holders (server-side, uses `POAP_API_KEY`; nothing in the app calls it)
@@ -358,15 +352,11 @@ which features it offers — not a flag.
 admin access, ENS, branding). The workspace-level rules are in `../CLAUDE.md`. When you
 change how a feature works, update its rule file and its runbook in `docs/` in the same PR.
 
-## 🧪 ZKPassport Dev Mode
+## 🪪 ZKPassport
 
-To test ZKPassport verification locally using devnet proofs:
-
-```env
-NEXT_PUBLIC_ZK_DEV_MODE=true
-```
-
-This passes `devMode: true` to `getSolidityVerifierParameters()`, allowing test proofs from the ZKPassport simulator to pass verification. **Always `false` in production.**
+The identity NFT enforces the ZKPassport dashboard policy on chain (domain `ethcali.org`, scope
+`policy-1`, 18+, sanctions, a sorted country exclusion list). Dev-mode proofs are refused by the
+contract, so there is no dev-mode switch in the app. See `docs/ZKPASSPORT_CONTRACT_REFERENCE.md`.
 
 ## 🤝 Contributing
 

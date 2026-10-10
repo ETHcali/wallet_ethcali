@@ -1,8 +1,9 @@
 /**
  * useZKPassportVerification - Hook for managing ZKPassport verification flow
  *
- * Uses on-chain ZK proof verification (mode: "compressed-evm").
- * The proof is passed directly to the contract's mint(ProofVerificationParams, isIDCard) function.
+ * Uses on-chain ZK proof verification (mode: "compressed-evm"). The outer EVM
+ * proof goes straight into ZKPassportNFT.mint(ProofVerificationParams, isIDCard),
+ * which re-checks the whole policy (utils/zkpassport.ts) on chain.
  *
  * The chain is explicit: the identity page passes it down (Ethereum).
  * The mint is gated by `useRequireChain(chainId)` — the UI shows "Switch to
@@ -16,6 +17,9 @@ import { getChain } from '../config/chains';
 import ZKPassportNFTABI from '../frontend/abis/ZKPassportNFT.json';
 import { useActiveWallet } from './useActiveWallet';
 import { useRequireChain, type RequireChainResult } from './useRequireChain';
+import { adminErrorMessage } from '../utils/adminErrors';
+import { waitForSuccess } from '../utils/waitForSuccess';
+import { ZKPASSPORT_DOMAIN, ZKPASSPORT_SCOPE } from '../utils/zkpassport';
 
 // Dynamic import for ZKPassport (browser-only)
 let requestPersonhoodVerification: any;
@@ -161,8 +165,10 @@ export function useZKPassportVerification(chainId: number, onMintSuccess?: () =>
         setProofsGenerated((prev) => prev + 1);
       });
 
+      // The client-side `verified` flag is advisory (it can be tampered with in
+      // the browser); the contract verifies the proof itself at mint.
       onResult(async (resultData: any) => {
-        const { verified, result: verificationResult } = resultData || {};
+        const { verified, result: verificationResult, proofs } = resultData || {};
 
         if (!verified) {
           setStatus('failed');
@@ -170,13 +176,18 @@ export function useZKPassportVerification(chainId: number, onMintSuccess?: () =>
           return;
         }
 
-        // Build the solidity verifier params struct from the captured proof
+        // The contract takes the outer EVM proof, not whichever proof arrived last.
+        const evmProof =
+          (proofs as Array<{ name?: string }> | undefined)?.find((p) => p.name?.startsWith('outer_evm')) ?? proofRef.current;
+
         try {
-          const devMode = process.env.NEXT_PUBLIC_ZK_DEV_MODE === 'true';
+          // Domain and scope must equal what the contract stores; devMode is
+          // always off because the contract refuses dev-mode proofs.
           verifierParamsRef.current = zkPassportRef.current?.getSolidityVerifierParameters({
-            proof: proofRef.current,
-            scope: 'ethcali-verification',
-            devMode,
+            proof: evmProof,
+            domain: ZKPASSPORT_DOMAIN,
+            scope: ZKPASSPORT_SCOPE,
+            devMode: false,
           });
         } catch (paramError: any) {
           setStatus('failed');
@@ -191,8 +202,8 @@ export function useZKPassportVerification(chainId: number, onMintSuccess?: () =>
         // Extract on-chain bytes32 scoped nullifier
         const uid = (verificationResult?.uniqueIdentifier || resultData?.uniqueIdentifier) as `0x${string}` | undefined;
 
-        // Nationality (ISO alpha-3) and age from disclosed proof fields
-        const nat: string | null = verificationResult?.nationality?.disclose?.result ?? null;
+        // The policy proves nationality is not excluded without disclosing it.
+        const nat: string | null = null;
         const over18: boolean = verificationResult?.age?.gte?.result === true;
 
         setUniqueIdentifier(uid ?? null);
@@ -296,13 +307,23 @@ export function useZKPassportVerification(chainId: number, onMintSuccess?: () =>
         { to: nftContractAddress, data: mintTxData, chainId },
         { sponsor: true }
       );
+      // Minted means confirmed on chain, not just submitted.
+      await waitForSuccess(chainId, result.hash);
 
       setMintTxHash(result.hash);
       setStatus('minted');
       onMintSuccess?.();
     } catch (error: any) {
-      setStatus('verified');
-      setErrorMessage(error.message || 'Failed to mint NFT. Please try again.');
+      // The sponsored relay can report an error for an operation that landed;
+      // the chain decides before the user is told it failed.
+      const landed = await hasNFTByAddress(chainId, wallet.address).catch(() => false);
+      if (landed) {
+        setStatus('minted');
+        onMintSuccess?.();
+      } else {
+        setStatus('verified');
+        setErrorMessage(adminErrorMessage(error));
+      }
     } finally {
       setIsMinting(false);
     }
