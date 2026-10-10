@@ -302,7 +302,7 @@ The application includes several API endpoints for backend functionality:
 - `GET|POST /api/swag/orders` - My orders / record a crypto purchase from its tx hash (Privy token)
 - `POST /api/swag/claim` - Issue a claim voucher for a card order, or record the claim tx
 - `GET|PATCH /api/swag/variants` - Admin artwork pipeline
-- `GET /api/swag/admin/orders`, `PATCH /api/swag/admin/orders/[id]`, `GET /api/swag/admin/summary` - Order desk (swag admin only)
+- `GET /api/swag/admin/orders`, `PATCH /api/swag/admin/orders/[id]`, `POST /api/swag/admin/orders/bulk`, `GET /api/swag/admin/summary` - Order desk (swag fulfilment or admin)
 - `POST /api/shopify/webhook` - Shopify `orders/paid` and `refunds/create`
 - `GET|POST /api/certificates` - My certificates / choose the wallet (Privy token)
 - `GET /api/certificates/<id>/pdf`, `GET /api/certificates/<id>/status` - Public diploma and NFT status

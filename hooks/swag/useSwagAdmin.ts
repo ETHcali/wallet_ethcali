@@ -34,10 +34,13 @@ import type {
   SwagAdminShippingZone,
   SwagAdminBatchResponse,
   SwagAdminBatchStartResponse,
+  SwagAdminBulkBody,
+  SwagAdminBulkResponse,
   SwagAdminOrderPatchBody,
   SwagAdminOrderPatchResponse,
   SwagAdminOrdersResponse,
   SwagAdminSummary,
+  SwagAttention,
   SwagOrderChannel,
   SwagOrderStatus,
   SwagStaffListResponse,
@@ -71,6 +74,7 @@ function useAdminFetch() {
 export interface AdminOrderFilters {
   status: SwagOrderStatus | '';
   channel: SwagOrderChannel | '';
+  attention: SwagAttention | '';
   q: string;
 }
 
@@ -81,6 +85,7 @@ export function useSwagAdminOrders(filters: AdminOrderFilters) {
   const params = new URLSearchParams();
   if (filters.status) params.set('status', filters.status);
   if (filters.channel) params.set('channel', filters.channel);
+  if (filters.attention) params.set('attention', filters.attention);
   if (filters.q.trim()) params.set('q', filters.q.trim());
   const key = params.toString();
 
@@ -109,6 +114,23 @@ export function usePatchSwagOrder() {
         body: JSON.stringify(patch),
       }),
     onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['swag-admin-orders'] }),
+        queryClient.invalidateQueries({ queryKey: swagKeys.adminSummary }),
+        queryClient.invalidateQueries({ queryKey: swagKeys.adminBatch }),
+      ]),
+  });
+}
+
+/** One forward move for many orders; the reply says, per id, whether it moved. */
+export function useBulkSwagOrders() {
+  const adminFetch = useAdminFetch();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: SwagAdminBulkBody) =>
+      adminFetch<SwagAdminBulkResponse>('/api/swag/admin/orders/bulk', { method: 'POST', body: JSON.stringify(body) }),
+    // Settled, not success: a partial move still changed rows worth refetching.
+    onSettled: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: ['swag-admin-orders'] }),
         queryClient.invalidateQueries({ queryKey: swagKeys.adminSummary }),

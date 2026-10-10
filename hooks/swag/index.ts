@@ -37,6 +37,7 @@ export { SWAG, SWAG_CHAIN, swagClient, swagKeys } from './client';
 export {
   useSwagAdminOrders,
   usePatchSwagOrder,
+  useBulkSwagOrders,
   useSwagAdminSummary,
   useSwagStock,
   useSwagCollectionState,

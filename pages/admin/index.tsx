@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { formatEther } from 'viem';
 import AdminShell from '../../components/admin/AdminShell';
 import { StatTile } from '../../components/admin/StatTile';
+import { ATTENTION_COPY } from '../../components/swag/AdminAttention';
 import { HashChip } from '../../components/swag/HashChip';
 import { ACCESS_CONTRACTS } from '../../config/access';
 import { DEFAULT_CHAIN } from '../../config/chains';
@@ -22,6 +23,7 @@ import { useZKPassportAdmin } from '../../hooks/useZKPassportAdmin';
 import { formatUsd } from '../../utils/money';
 import { formatTokenBalance } from '../../utils/tokenUtils';
 import type { Campaign } from '../../types/donations';
+import { SWAG_ATTENTION, type SwagAdminSummary } from '../../types/swag-orders';
 
 /** One product: a heading that links to its admin page, then its numbers. */
 function Area({ title, href, status, children }: { title: string; href: string; status?: React.ReactNode; children: React.ReactNode }) {
@@ -72,6 +74,24 @@ function CampaignLine({ campaign }: { campaign: Campaign }) {
         </p>
       ))}
     </li>
+  );
+}
+
+/** One line: how many orders wait on someone, linking to the swag queue. */
+function SwagAttentionLine({ data }: { data: SwagAdminSummary }) {
+  const admin = data.viewer.role === 'admin';
+  const waiting = SWAG_ATTENTION.filter((r) => admin || !ATTENTION_COPY[r].adminOnly).reduce((n, r) => n + data.attention[r], 0);
+  if (waiting === 0) return null;
+  return (
+    <Link
+      href="/swag/admin"
+      className="col-span-2 flex min-h-tap items-center justify-between gap-2 rounded-card border border-line-strong bg-surface-inset/50 px-4 text-sm hover:border-line-brand"
+    >
+      <span className="font-semibold text-content-primary">
+        {waiting} order{waiting === 1 ? '' : 's'} need{waiting === 1 ? 's' : ''} attention
+      </span>
+      <span className="text-xs font-semibold text-eth-blue-text">Review →</span>
+    </Link>
   );
 }
 
@@ -171,9 +191,10 @@ export default function AdminOverviewPage() {
           <Area title="Swag" href="/swag/admin" status={<LiveBadge paused={swagState.isLoading ? undefined : swagState.paused} />}>
             {swag.data ? (
               <div className="grid grid-cols-2 gap-3">
-                <StatTile label="To produce" value={String(swag.data.counts.byStatus.paid)} hint="Paid, not yet printed" />
-                <StatTile label="In transit" value={String(swag.data.counts.byStatus.shipped)} hint="Shipped, not delivered" />
-                <StatTile label="Orders" value={String(swag.data.counts.total)} hint="All channels" />
+                <SwagAttentionLine data={swag.data} />
+                <StatTile label="To produce" value={String(swag.data.counts.byStatus.paid)} hint="Paid, not yet printed" href="/swag/admin?tab=orders&status=paid" />
+                <StatTile label="In transit" value={String(swag.data.counts.byStatus.shipped)} hint="Shipped, not delivered" href="/swag/admin?tab=orders&status=shipped" />
+                <StatTile label="Orders" value={String(swag.data.counts.total)} hint="All channels" href="/swag/admin?tab=orders" />
                 <StatTile
                   label="USDC in"
                   value={formatUsd(swag.data.revenue.USDC.item + swag.data.revenue.USDC.shipping, { cents: true })}
