@@ -113,17 +113,3 @@ export interface CreateSwagOrderInput {
   size: SwagSize | null;
   quantity: number;
 }
-
-// ── NFT metadata (what the pin route writes to IPFS) ────────────────────────
-
-export interface Swag1155MetadataAttribute {
-  trait_type: 'Product' | 'Color' | 'Gender' | 'Style' | 'Size';
-  value: string;
-}
-
-export interface Swag1155Metadata {
-  name: string;
-  description: string;
-  image: string;
-  attributes?: Swag1155MetadataAttribute[];
-}
