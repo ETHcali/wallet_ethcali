@@ -19,7 +19,12 @@ deployer           0x3c9204b25966591749450fb233d58E850E7c1f9F
 - **Contract:** `0x5a1012486764c217a20B5D1b97508E1de83179E7`, `grantRole(DEFAULT_ADMIN_ROLE, seed)`
 - **Calldata:** `0x2f2ff15d000000000000000000000000000000000000000000000000000000000000000000000000000000000000000035b0c64cedc2fd1a7298984cba5c7e402970bc6b`
 
-## 2. Seed becomes owner of ZKPassportNFT
+> **Superseded 2026-10-10:** the January ZKPassportNFT and FaucetManager on Ethereum are being
+> replaced (scs-ethcali PR #7, `deploy:identity:ethereum`). The new pair is owned by the Safe, and
+> the seed gets faucet ADMIN_ROLE at deploy. Steps 2 and 4, and the faucet half of step 3, apply
+> only to the old contracts. Skip them. Steps 1 and 3 (BuilderCertificate) still stand.
+
+## 2. Seed becomes owner of ZKPassportNFT (superseded)
 
 - **Signed by:** the deployer `0x3C92…1f9F`, the current owner.
 - **Contract:** `0x607003f188c49ed6e0553805734b9990393402df`, `transferOwnership(seed)`
@@ -37,7 +42,7 @@ both today.
   `0x2940e286b41d279b61e484b98a08498e355e4778`, `grantRole(ADMIN_ROLE, ops)`
 - **Calldata (both):** `0x2f2ff15da49807205ce4d355092ef5a8a18f56e8913cf4a201fbe287825b095693c217750000000000000000000000003b89ad8cc39900778abcdcc22bc83cac031a415b`
 
-## 4. Retire the deployer — only after 1 and 2 are confirmed on chain
+## 4. Retire the deployer (superseded for the faucet; BuilderCertificate still applies)
 
 - **Signed by:** the seed (DEFAULT_ADMIN_ROLE on both contracts).
 - **FaucetManager `0x2940…4778`:**
