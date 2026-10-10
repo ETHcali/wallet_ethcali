@@ -28,7 +28,9 @@ export const MINTER_ROLE = keccak256(toBytes('MINTER_ROLE'));
  * chain does not show, and offers the grant to whoever can sign it.
  *
  * Donations stop at ADMIN_ROLE on purpose: DEFAULT_ADMIN_ROLE there changes
- * the beneficiary and custody mode, and stays with the Safe.
+ * the beneficiary and custody mode, and stays with the Safe. Identity follows
+ * the same split (owner decision 2026-10-10): the Safe owns ZKPassportNFT and
+ * holds the faucet's DEFAULT_ADMIN_ROLE; the seed runs the faucet with ADMIN_ROLE.
  */
 export interface SeedOperator {
   address: Address;
@@ -42,10 +44,9 @@ export const SEED_OPERATORS: readonly SeedOperator[] = [
     label: 'ETH Cali foundation (seed operator)',
     expects: {
       swag: ['super', 'admin'],
-      faucet: ['super', 'admin'],
+      faucet: ['admin'],
       donations: ['admin'],
       receipts: ['admin'],
-      identity: ['owner'],
       certificates: ['super', 'admin'],
     },
   },
