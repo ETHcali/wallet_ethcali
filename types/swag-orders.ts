@@ -305,7 +305,26 @@ export interface SwagAdminOrderView {
   timeline: Array<{ status: SwagOrderStatus; at: string }>;
 }
 
-/** GET /api/swag/admin/orders?status=&channel=&q=&cursor= — pages of 50, newest first. */
+/**
+ * Why an order is waiting on someone. One predicate (lib/swag/orders.ts ›
+ * attentionOf) decides it, so the count on a tile and the list it opens never
+ * disagree.
+ */
+export type SwagAttention = 'shipping_unpaid' | 'stale' | 'no_document' | 'mirror_failed' | 'no_tracking' | 'voucher_cancel';
+
+export const SWAG_ATTENTION: readonly SwagAttention[] = [
+  'stale',
+  'no_document',
+  'mirror_failed',
+  'no_tracking',
+  'shipping_unpaid',
+  'voucher_cancel',
+];
+
+/** Paid or in production for longer than this is "stale": past the weekly batch it should have joined. */
+export const SWAG_STALE_DAYS = 7;
+
+/** GET /api/swag/admin/orders?status=&channel=&attention=&q=&cursor= — pages of 50, newest first. */
 export interface SwagAdminOrdersResponse {
   orders: SwagAdminOrderView[];
   /** Pass back as ?cursor= for the next page; null on the last one. */
@@ -324,6 +343,22 @@ export interface SwagAdminOrderPatchBody {
 
 export interface SwagAdminOrderPatchResponse {
   order: SwagAdminOrderView;
+}
+
+/**
+ * POST /api/swag/admin/orders/bulk — one forward move for many orders.
+ * Cancelling stays one order at a time, behind its own confirmation.
+ */
+export interface SwagAdminBulkBody {
+  ids: number[];
+  status: Extract<SwagOrderStatus, 'in_production' | 'shipped' | 'delivered'>;
+  /** status 'shipped' only: tracking per order id. A missing or empty entry leaves tracking as it is. */
+  tracking?: Record<string, string>;
+}
+
+/** Per order, because the status trigger can refuse one move and allow the next. */
+export interface SwagAdminBulkResponse {
+  results: Array<{ id: number; ok: true } | { id: number; ok: false; error: string }>;
 }
 
 /** getVariant(id) plus the USDC price, bigints as decimal strings. */
@@ -370,6 +405,11 @@ export interface SwagAdminSummary {
   revenue: Record<SwagCurrency, { item: number; shipping: number; orders: number }>;
   /** Orders whose USDC shipping is still unpaid, and the USDC owed. */
   shippingDue: { orders: number; usdc: number };
+  /**
+   * How many orders wait on each reason. voucher_cancel counts only rows the
+   * chain has not closed yet (orderClaimed is false).
+   */
+  attention: Record<SwagAttention, number>;
   /** Orders still flagged voucher_needs_cancel=true, with the chain's own answer. */
   voucherCancelQueue: Array<{
     id: number;

@@ -17,11 +17,16 @@ import {
   NOTE_MIRROR_FAILED,
   NOTE_VOUCHER_CANCELLED_TX,
   NOTE_VOUCHER_NEEDS_CANCEL,
+  SWAG_ATTENTION,
   SWAG_SIZES,
+  SWAG_STALE_DAYS,
+  type SwagAdminBulkBody,
+  type SwagAdminBulkResponse,
   type SwagAdminOrderPatchBody,
   type SwagAdminOrderView,
   type SwagAdminOrdersResponse,
   type SwagAdminShipping,
+  type SwagAttention,
   type SwagMirrorResult,
   type SwagOrderChannel,
   type SwagOrderRow,
@@ -436,6 +441,44 @@ export function needsVoucherCancel(row: Pick<SwagOrderRow, 'notes' | 'claim_tx_h
   );
 }
 
+/** The columns attentionOf reads; the summary and the filtered list both select exactly these. */
+export const ATTENTION_COLUMNS = 'id, status, channel, created_at, shipping, notes, claim_tx_hash';
+export type AttentionRow = Pick<SwagOrderRow, 'id' | 'status' | 'channel' | 'created_at' | 'shipping' | 'notes' | 'claim_tx_hash'>;
+
+const OPEN: readonly SwagOrderStatus[] = ['awaiting_shipping_payment', 'paid', 'in_production'];
+
+/**
+ * Every reason this order is waiting on someone. The one predicate behind the
+ * summary's counts and the ?attention= list, so a tile and the list it opens
+ * always agree. voucher_cancel here is the database's view; the summary
+ * narrows it with the chain's orderClaimed().
+ */
+export function attentionOf(row: AttentionRow, now: number = Date.now()): SwagAttention[] {
+  const shipping = (row.shipping ?? {}) as SwagStoredShipping;
+  const reasons: SwagAttention[] = [];
+  if (row.status === 'awaiting_shipping_payment') reasons.push('shipping_unpaid');
+  if (
+    (row.status === 'paid' || row.status === 'in_production') &&
+    now - new Date(row.created_at).getTime() > SWAG_STALE_DAYS * 86_400_000
+  ) {
+    reasons.push('stale');
+  }
+  if (OPEN.includes(row.status) && (shipping.country ?? '').toUpperCase() === 'CO' && !clean(shipping.document)) {
+    reasons.push('no_document');
+  }
+  if (row.status !== 'cancelled' && Boolean(row.notes?.includes(NOTE_MIRROR_FAILED))) reasons.push('mirror_failed');
+  if (row.status === 'shipped' && !normaliseTracking(shipping.tracking)?.number) reasons.push('no_tracking');
+  if (needsVoucherCancel(row)) reasons.push('voucher_cancel');
+  return reasons;
+}
+
+/** How many rows wait on each reason. */
+export function countAttention(rows: readonly AttentionRow[], now: number = Date.now()): Record<SwagAttention, number> {
+  const counts = Object.fromEntries(SWAG_ATTENTION.map((k) => [k, 0])) as Record<SwagAttention, number>;
+  for (const row of rows) for (const reason of attentionOf(row, now)) counts[reason] += 1;
+  return counts;
+}
+
 export function toAdminOrderView(row: OrderJoined): SwagAdminOrderView {
   const stored = (row.shipping ?? {}) as SwagStoredShipping;
   const tracking = normaliseTracking(stored.tracking);
@@ -494,15 +537,21 @@ const ORDER_CHANNELS: readonly SwagOrderChannel[] = ['onchain', 'shopify', 'even
 
 /**
  * A search term that is safe to put inside a PostgREST `or=()` filter. No
- * commas, parentheses or quotes — those are the filter grammar — and no
- * whitespace. `_` stays a single-character wildcard, which is harmless here.
+ * commas, parentheses, quotes or `*` — those are the filter grammar. Letters
+ * in any script and single spaces are allowed, for names and cities. `_`
+ * stays a single-character wildcard, which is harmless here.
  */
-const SEARCH_TERM = /^[A-Za-z0-9@.+_-]{1,80}$/;
+const SEARCH_TERM = /^[\p{L}\p{N}@.+_ -]{1,80}$/u;
 
 export interface AdminOrderFilters {
   status?: SwagOrderStatus;
   channel?: SwagOrderChannel;
-  /** Matched against the design SKU, the buyer email and the buyer wallet. */
+  /** Only orders waiting on this reason (attentionOf). */
+  attention?: SwagAttention;
+  /**
+   * Matched against the order number (`#12` or `12`), the design SKU, the
+   * buyer email and wallet, the recipient's name and city, and tracking.
+   */
   q?: string;
   /** The smallest id already shown; the next page is everything older. */
   cursor?: number;
@@ -533,9 +582,17 @@ export function parseAdminOrderFilters(query: Record<string, string | string[] |
     filters.channel = channel as SwagOrderChannel;
   }
 
-  const q = one('q')?.trim();
+  const attention = one('attention');
+  if (attention !== undefined) {
+    if (!(SWAG_ATTENTION as readonly string[]).includes(attention)) {
+      throw new OrderError(`attention must be one of ${SWAG_ATTENTION.join(', ')}`, 400);
+    }
+    filters.attention = attention as SwagAttention;
+  }
+
+  const q = one('q')?.trim().replace(/\s+/g, ' ').replace(/^#/, '');
   if (q) {
-    if (!SEARCH_TERM.test(q)) throw new OrderError('q may only contain letters, digits, @ . + _ -', 400);
+    if (!SEARCH_TERM.test(q)) throw new OrderError('Search may only contain letters, digits, spaces and @ . + _ -', 400);
     filters.q = q;
   }
 
@@ -560,6 +617,20 @@ export async function listAdminOrders(
   if (filters.channel) query = query.eq('channel', filters.channel);
   if (filters.cursor) query = query.lt('id', filters.cursor);
 
+  if (filters.attention) {
+    // The reasons are computed, not stored, so resolve them to ids with the
+    // same predicate the summary counts with. The table is one row per
+    // order line; reading its narrow columns whole is cheap.
+    const { data: all, error: attentionError } = await db.from('swag_orders').select(ATTENTION_COLUMNS);
+    if (attentionError) throw new OrderError(attentionError.message, 500);
+    const now = Date.now();
+    const ids = ((all ?? []) as AttentionRow[])
+      .filter((row) => attentionOf(row, now).includes(filters.attention as SwagAttention))
+      .map((row) => row.id);
+    if (ids.length === 0) return { orders: [], nextCursor: null };
+    query = query.in('id', ids);
+  }
+
   if (filters.q) {
     // The SKU lives on the design, and PostgREST cannot OR a parent column
     // with an embedded one, so resolve matching designs to ids first.
@@ -570,7 +641,17 @@ export async function listAdminOrders(
     if (productError) throw new OrderError(productError.message, 500);
     const ids = (products ?? []).map((p) => p.id as number);
 
-    const clauses = [`buyer_email.ilike.*${filters.q}*`, `buyer_wallet.ilike.*${filters.q}*`];
+    const like = `*${filters.q}*`;
+    const clauses = [
+      `buyer_email.ilike.${like}`,
+      `buyer_wallet.ilike.${like}`,
+      `shipping->>name.ilike.${like}`,
+      `shipping->>city.ilike.${like}`,
+      // ->> on the tracking object yields its JSON text, so this matches an
+      // operator's bare string and the webhook's { number, … } alike.
+      `shipping->>tracking.ilike.${like}`,
+    ];
+    if (/^\d{1,9}$/.test(filters.q)) clauses.push(`id.eq.${filters.q}`);
     if (ids.length > 0) clauses.push(`product_id.in.(${ids.join(',')})`);
     query = query.or(clauses.join(','));
   }
@@ -650,6 +731,56 @@ export async function patchAdminOrder(
     throw new OrderError(error.message, error.code === '23514' ? 409 : 500);
   }
   return data as unknown as OrderJoined;
+}
+
+const BULK_STATUSES = ['in_production', 'shipped', 'delivered'] as const;
+const BULK_MAX = 100;
+
+/** Body → validated bulk move. Cancelling is not offered in bulk. */
+export function parseAdminBulk(raw: unknown): SwagAdminBulkBody {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new OrderError('A JSON body is required', 400);
+  const r = raw as Record<string, unknown>;
+  if (typeof r.status !== 'string' || !(BULK_STATUSES as readonly string[]).includes(r.status)) {
+    throw new OrderError(`status must be one of ${BULK_STATUSES.join(', ')}`, 400);
+  }
+  if (!Array.isArray(r.ids) || r.ids.length === 0) throw new OrderError('ids must list at least one order', 400);
+  if (r.ids.length > BULK_MAX) throw new OrderError(`At most ${BULK_MAX} orders at a time`, 400);
+  const ids = Array.from(new Set(r.ids));
+  if (!ids.every((id) => Number.isInteger(id) && (id as number) > 0)) throw new OrderError('ids must be positive integers', 400);
+
+  const body: SwagAdminBulkBody = { ids: ids as number[], status: r.status as SwagAdminBulkBody['status'] };
+  if (r.tracking !== undefined) {
+    if (body.status !== 'shipped') throw new OrderError('tracking goes with status shipped only', 400);
+    if (!r.tracking || typeof r.tracking !== 'object' || Array.isArray(r.tracking)) throw new OrderError('tracking must map order ids to strings', 400);
+    const tracking: Record<string, string> = {};
+    for (const [id, value] of Object.entries(r.tracking as Record<string, unknown>)) {
+      if (typeof value !== 'string') throw new OrderError('tracking must map order ids to strings', 400);
+      const v = clean(value);
+      if (v.length > 120) throw new OrderError(`tracking for #${id} is too long`, 400);
+      if (v) tracking[id] = v;
+    }
+    body.tracking = tracking;
+  }
+  return body;
+}
+
+/**
+ * One move for many orders, each through patchAdminOrder and so through the
+ * status trigger. Sequential on purpose: a refusal on one order is reported
+ * beside its id and never stops the rest.
+ */
+export async function bulkPatchAdminOrders(db: SupabaseClient, body: SwagAdminBulkBody): Promise<SwagAdminBulkResponse> {
+  const results: SwagAdminBulkResponse['results'] = [];
+  for (const id of body.ids) {
+    const tracking = body.tracking?.[String(id)];
+    try {
+      await patchAdminOrder(db, id, { status: body.status, ...(tracking ? { tracking } : {}) });
+      results.push({ id, ok: true });
+    } catch (e) {
+      results.push({ id, ok: false, error: e instanceof OrderError ? e.message : 'Could not update the order' });
+    }
+  }
+  return { results };
 }
 
 /** The voucher-cancel queue: cancelled rows the webhook flagged and nobody has closed. */
