@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { isAddress } from 'viem';
 import { useDonationAddresses, useDonationAdminActions } from '../../hooks/donations';
+import { Spinner, buttonClass } from '../admin/primitives';
 import type { CreateCampaignInput } from '../../hooks/donations/useDonationAdmin';
 
 interface CampaignAdminFormProps {
@@ -13,7 +14,7 @@ const ETHCALI_SAFE = '0xB6BDe4fB6dFBad5488Fa31Edf0F3730D9D86da64';
 
 const CampaignAdminForm: React.FC<CampaignAdminFormProps> = ({ chainId, onCreated }) => {
   const { receiptCollection } = useDonationAddresses(chainId);
-  const { createCampaign, pendingAction, error, clearError } = useDonationAdminActions(chainId);
+  const { createCampaign, pendingAction, error, clearError, blocked } = useDonationAdminActions(chainId);
 
   const [form, setForm] = useState<CreateCampaignInput>({
     name: '',
@@ -26,7 +27,7 @@ const CampaignAdminForm: React.FC<CampaignAdminFormProps> = ({ chainId, onCreate
 
   const beneficiaryValid = isAddress(form.beneficiary);
   const isCreating = pendingAction === 'createCampaign';
-  const canSubmit = form.name.trim().length > 0 && beneficiaryValid && !isCreating;
+  const canSubmit = form.name.trim().length > 0 && beneficiaryValid && !isCreating && !blocked;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,17 +141,15 @@ const CampaignAdminForm: React.FC<CampaignAdminFormProps> = ({ chainId, onCreate
 
       {txHash && (
         <div className="rounded-control border border-signal-confirmed/40 bg-signal-confirmed/10 p-3 text-xs text-signal-confirmed">
-          Campaign created. It will appear in the list once the transaction confirms.
+          Campaign created and confirmed on chain.
         </div>
       )}
 
-      <button
-        type="submit"
-        disabled={!canSubmit}
-        className="w-full rounded-control bg-eth-blue py-2.5 text-sm font-semibold text-on-brand transition-colors hover:bg-eth-blue-lift disabled:cursor-not-allowed disabled:bg-surface-ridge disabled:text-content-muted"
-      >
+      <button type="submit" disabled={!canSubmit} className={buttonClass('primary', 'w-full')}>
+        {isCreating && <Spinner />}
         {isCreating ? 'Creating…' : 'Create campaign'}
       </button>
+      {blocked && !isCreating && <p className="text-[11px] text-content-faint">{blocked}</p>}
     </form>
   );
 };

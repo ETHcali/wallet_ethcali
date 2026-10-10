@@ -10,14 +10,15 @@ import SwitchChainButton from '../../components/shared/SwitchChainButton';
 import { VaultList } from '../../components/faucet/VaultList';
 import { CreateVaultForm } from '../../components/faucet/CreateVaultForm';
 import { VaultWhitelistManager } from '../../components/faucet/VaultWhitelistManager';
-import { buttonClass, CARD, FIELD, LABEL } from '../../components/swag/AdminPrimitives';
-import { HashChip } from '../../components/swag/HashChip';
+import { buttonClass, CARD, ConfirmDialog, FIELD, LABEL, Spinner, Tabs, useToast } from '../../components/admin/primitives';
+import { HashChip } from '../../components/shared/HashChip';
 import { DEFAULT_CHAIN } from '../../config/chains';
 import { useRequireChain } from '../../hooks/useRequireChain';
 import { useTokenPrices } from '../../hooks/useTokenPrices';
 import { useFaucetManagerAdmin, useFaucetPaused, useAllVaults, useFaucetPause } from '../../hooks/faucet';
 import { formatTokenBalance } from '../../utils/tokenUtils';
 import { formatUsd } from '../../utils/money';
+import { adminErrorMessage } from '../../utils/adminErrors';
 
 type AdminTab = 'vaults' | 'whitelist' | 'access';
 
@@ -45,6 +46,8 @@ export default function FaucetAdminPage() {
   const [selectedVaultForWhitelist, setSelectedVaultForWhitelist] = useState<number | null>(null);
   const [isTogglingPause, setIsTogglingPause] = useState(false);
   const [pauseError, setPauseError] = useState<string | null>(null);
+  const [askPause, setAskPause] = useState(false);
+  const toast = useToast();
 
   const handleTogglePause = async () => {
     setIsTogglingPause(true);
@@ -52,9 +55,10 @@ export default function FaucetAdminPage() {
     try {
       if (isPaused) await unpause();
       else await pause();
-      refetchPaused();
+      await refetchPaused();
+      toast(isPaused ? 'Faucet live again.' : 'Faucet paused.');
     } catch (err) {
-      setPauseError(err instanceof Error ? err.message : 'Could not change the pause state.');
+      setPauseError(adminErrorMessage(err));
     } finally {
       setIsTogglingPause(false);
     }
@@ -113,10 +117,8 @@ export default function FaucetAdminPage() {
 
       {/* Reads work from anywhere; the wallet only has to be here to sign. */}
       {!chain.ready && (
-        <div className="mb-6 max-w-sm">
-          <p className="mb-2 text-xs text-content-muted">
-            Your wallet is on another network; to sign anything below it has to be on {chain.chainName}.
-          </p>
+        <div className={`${CARD} mb-6 flex flex-wrap items-center justify-between gap-3`}>
+          <p className="text-sm text-content-muted">Your wallet is on another network. Every action here signs on {chain.chainName}.</p>
           <SwitchChainButton chain={chain} />
         </div>
       )}
@@ -130,11 +132,13 @@ export default function FaucetAdminPage() {
           {canPause && (
             <button
               type="button"
-              onClick={handleTogglePause}
+              onClick={() => (isPaused ? void handleTogglePause() : setAskPause(true))}
               disabled={isLoadingPaused || isTogglingPause || !chain.ready}
-              className="mt-2 text-xs font-semibold text-eth-blue-text hover:underline disabled:cursor-not-allowed disabled:text-content-faint"
+              title={!chain.ready ? `Switch to ${chain.chainName} first.` : undefined}
+              className={buttonClass('secondary', 'mt-2 w-full')}
             >
-              {isTogglingPause ? 'Saving…' : isPaused ? 'Unpause' : 'Pause'}
+              {isTogglingPause && <Spinner />}
+              {isTogglingPause ? (isPaused ? 'Resuming…' : 'Pausing…') : isPaused ? 'Unpause' : 'Pause'}
             </button>
           )}
           {pauseError && <p className="mt-1 text-[11px] text-signal-reverted">{pauseError}</p>}
@@ -144,24 +148,30 @@ export default function FaucetAdminPage() {
         <StatTile label="Vaults" value={`${activeVaults} / ${vaults.length}`} hint="Active / total" />
       </div>
 
-      <div role="tablist" aria-label="Faucet admin sections" className="no-scrollbar -mx-4 mb-4 flex gap-2 overflow-x-auto px-4 lg:mx-0 lg:px-0">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            role="tab"
-            type="button"
-            aria-selected={activeTab === t.id}
-            onClick={() => setActiveTab(t.id)}
-            className={`min-h-tap shrink-0 rounded-control border px-4 text-sm font-semibold transition-colors ${
-              activeTab === t.id
-                ? 'border-eth-blue bg-eth-blue-wash text-eth-blue-text'
-                : 'border-line-hairline bg-surface-inset text-content-secondary hover:border-line-strong'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
+      <div className="mb-4">
+        <Tabs label="Faucet admin sections" tabs={TABS} value={activeTab} onChange={setActiveTab} />
       </div>
+
+      {askPause && (
+        <ConfirmDialog
+          title="Pause the faucet?"
+          body="Every claim from every vault reverts until it is unpaused. Vault balances stay where they are."
+          confirmLabel="Pause faucet"
+          pendingLabel="Pausing…"
+          danger
+          onConfirm={async () => {
+            try {
+              await pause();
+            } catch (err) {
+              // Shown inside the dialog; translated so no selector reaches the screen.
+              throw new Error(adminErrorMessage(err));
+            }
+            await refetchPaused();
+            toast('Faucet paused.');
+          }}
+          onClose={() => setAskPause(false)}
+        />
+      )}
 
       {activeTab === 'vaults' && (
         <div className="space-y-4">

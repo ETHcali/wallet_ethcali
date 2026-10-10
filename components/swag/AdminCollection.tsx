@@ -8,12 +8,13 @@
  * also DEFAULT_ADMIN and is deliberately not here: it moves every future
  * payment, and that belongs in a Safe transaction, not behind a text field.
  */
+import { useState } from 'react';
 import { encodeFunctionData, type Address } from 'viem';
 import { swag1155Abi } from '../../frontend/abis/swag';
 import { SWAG, SWAG_CHAIN, useSwagAdminTx, useSwagCollectionState } from '../../hooks/swag';
 import { explorerAddress } from '../../config/chains';
-import { HashChip } from './HashChip';
-import { AddressForm, CARD, ChainGate, Pill, TxButton } from './AdminPrimitives';
+import { HashChip } from '../shared/HashChip';
+import { AddressForm, CARD, ChainGate, ConfirmDialog, Pill, TxButton } from '../admin/primitives';
 
 function RolePill({ held, label }: { held: boolean; label: string }) {
   return <Pill tone={held ? 'confirmed' : 'muted'}>{label}{held ? ' · held' : ' · not held'}</Pill>;
@@ -22,6 +23,7 @@ function RolePill({ held, label }: { held: boolean; label: string }) {
 export function AdminCollection() {
   const state = useSwagCollectionState();
   const pauseTx = useSwagAdminTx();
+  const [askPause, setAskPause] = useState(false);
   const unpauseTx = useSwagAdminTx();
   const addAdminTx = useSwagAdminTx();
   const removeAdminTx = useSwagAdminTx();
@@ -51,7 +53,18 @@ export function AdminCollection() {
         </div>
         <div className="mt-4 flex flex-wrap gap-3">
           {!state.paused && (
-            <TxButton label="Pause store" pendingLabel="Pausing…" tx={pauseTx} onClick={() => pauseTx.run(call('pause'))} reason={needsAdmin} variant="secondary" />
+            <TxButton label="Pause store" pendingLabel="Pausing…" tx={pauseTx} onClick={() => setAskPause(true)} reason={needsAdmin} variant="secondary" />
+          )}
+          {askPause && (
+            <ConfirmDialog
+              title="Pause the store?"
+              body="Every buy() and claim() reverts until it is unpaused, including buyers mid-checkout and card buyers claiming. Orders already recorded are not affected."
+              confirmLabel="Pause store"
+              pendingLabel="Pausing…"
+              danger
+              onConfirm={() => pauseTx.run(call('pause'))}
+              onClose={() => setAskPause(false)}
+            />
           )}
           {state.paused && (
             <TxButton label="Unpause store" pendingLabel="Unpausing…" tx={unpauseTx} onClick={() => unpauseTx.run(call('unpause'))} reason={needsAdmin} />

@@ -11,8 +11,14 @@ import FaucetManagerABI from '../../frontend/abis/FaucetManager.json';
 import { getChain } from '../../config/chains';
 import { VaultFormData, VaultUpdateData } from '../../types/faucet';
 import { useActiveWallet } from '../useActiveWallet';
+import { waitForSuccess } from '../../utils/waitForSuccess';
 
-/** Shared write path: encode, send pinned to the chain, invalidate the given keys. */
+/**
+ * Shared write path: encode, send pinned to the chain, wait for the receipt,
+ * then re-read. Callers hold their button from the click until this resolves,
+ * so it must not resolve on the hash alone or the button re-enables while the
+ * change is still in flight.
+ */
 function useFaucetWrite(chainId: number, invalidate: string[]) {
   const faucetManager = getChain(chainId)?.contracts.FaucetManager;
   const { wallet } = useActiveWallet();
@@ -29,7 +35,8 @@ function useFaucetWrite(chainId: number, invalidate: string[]) {
       { sponsor: true }
     );
 
-    for (const key of invalidate) queryClient.invalidateQueries({ queryKey: [key] });
+    await waitForSuccess(chainId, result.hash);
+    await Promise.all(invalidate.map((key) => queryClient.invalidateQueries({ queryKey: [key] })));
     return result;
   };
 

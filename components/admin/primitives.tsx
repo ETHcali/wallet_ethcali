@@ -1,5 +1,7 @@
 /**
- * The small parts every swag admin tab is built from.
+ * The small parts every admin area is built from: fields, buttons, pills,
+ * tabs, the confirm dialog, toasts, and the onchain TxButton / ChainGate.
+ * New admin UI imports from here; it does not restyle its own.
  *
  * TxButton is the one way an onchain action is rendered here: it takes the
  * useSwagAdminTx instance that belongs to it, puts both pending flags on
@@ -7,13 +9,14 @@
  * after a failed one, and the hash after a good one — all under the button,
  * where the eye already is.
  */
-import { useState } from 'react';
+import { createContext, useCallback, useContext, useRef, useState } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
 import type { Address } from 'viem';
 import { useActiveWallet } from '../../hooks/useActiveWallet';
 import { useRequireChain } from '../../hooks/useRequireChain';
 import { SWAG, looksLikeAddressInput, resolveAddressInput, type SwagAdminTxResult } from '../../hooks/swag';
-import { HashChip } from './HashChip';
+import { HashChip } from '../shared/HashChip';
+import { Sheet } from '../shared/Sheet';
 
 export const FIELD =
   'w-full rounded-control border border-line-strong bg-surface-inset px-3 py-3 text-sm text-content-primary placeholder:text-content-faint focus:border-line-brand focus:outline-none disabled:text-content-faint';
@@ -180,5 +183,180 @@ export function AddressForm({ label, actionLabel, pendingLabel, tx, reason = nul
       {localError && <p className="text-xs text-signal-reverted">{localError}</p>}
       <TxButton label={actionLabel} pendingLabel={resolving ? 'Resolving…' : pendingLabel} tx={tx} onClick={submit} reason={why} variant="secondary" />
     </div>
+  );
+}
+
+// ── Tabs ────────────────────────────────────────────────────────────────────
+
+export interface TabDef<T extends string> {
+  id: T;
+  label: string;
+  /** A small count beside the label, e.g. orders waiting. Hidden at 0. */
+  count?: number;
+}
+
+/** The one tab row for every admin area. Scrolls sideways inside the gutter on a phone. */
+export function Tabs<T extends string>({
+  tabs,
+  value,
+  onChange,
+  label,
+}: {
+  tabs: readonly TabDef<T>[];
+  value: T;
+  onChange: (next: T) => void;
+  /** Accessible name of the tab list. */
+  label: string;
+}) {
+  return (
+    <div role="tablist" aria-label={label} className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+      {tabs.map((t) => {
+        const current = t.id === value;
+        return (
+          <button
+            key={t.id}
+            role="tab"
+            type="button"
+            aria-selected={current}
+            onClick={() => onChange(t.id)}
+            className={`inline-flex min-h-tap shrink-0 items-center gap-2 rounded-control border px-4 text-sm font-semibold transition-colors ${
+              current
+                ? 'border-eth-blue bg-eth-blue-wash text-eth-blue-text'
+                : 'border-line-hairline bg-surface-inset text-content-secondary hover:border-line-strong'
+            }`}
+          >
+            {t.label}
+            {Boolean(t.count) && (
+              <span className="rounded-full bg-surface-ridge px-2 py-0.5 font-mono text-[10px] text-content-primary">{t.count}</span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Confirm ─────────────────────────────────────────────────────────────────
+
+interface ConfirmDialogProps {
+  title: string;
+  /** What happens, and what does not (e.g. "the refund itself happens in Shopify"). */
+  body: React.ReactNode;
+  confirmLabel: string;
+  pendingLabel: string;
+  /** Destructive actions get the quiet red; everything else the brand button. */
+  danger?: boolean;
+  /** When set, the confirm button stays disabled until this exact text is typed. */
+  typeToConfirm?: string;
+  /**
+   * The action. The dialog owns its pending flag (cleared in finally) and
+   * stays open, undismissable, while it runs; a throw is shown inside it.
+   */
+  onConfirm: () => Promise<unknown>;
+  onClose: () => void;
+}
+
+/**
+ * The one confirmation for the admin, on the shared Sheet (bottom sheet on a
+ * phone, centred dialog above). Replaces window.confirm, which some embedded
+ * wallet browsers block outright.
+ */
+export function ConfirmDialog({ title, body, confirmLabel, pendingLabel, danger = false, typeToConfirm, onConfirm, onClose }: ConfirmDialogProps) {
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [typed, setTyped] = useState('');
+  const blocked = Boolean(typeToConfirm) && typed.trim() !== typeToConfirm;
+
+  const confirm = async () => {
+    setPending(true);
+    setError(null);
+    try {
+      await onConfirm();
+      onClose();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'That did not go through.');
+    } finally {
+      setPending(false);
+    }
+  };
+
+  return (
+    <Sheet onClose={onClose} label={title} dismissable={!pending}>
+      <div className="space-y-4 p-5">
+        <h2 className="text-lg font-bold text-content-primary">{title}</h2>
+        <div className="text-sm leading-relaxed text-content-muted">{body}</div>
+        {typeToConfirm && (
+          <label className="block">
+            <span className={LABEL}>
+              Type <span className="font-mono text-content-primary">{typeToConfirm}</span> to confirm
+            </span>
+            <input value={typed} onChange={(e) => setTyped(e.target.value)} className={FIELD} disabled={pending} autoComplete="off" spellCheck={false} />
+          </label>
+        )}
+        {error && <p className="text-xs text-signal-reverted">{error}</p>}
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <button type="button" onClick={onClose} disabled={pending} className={buttonClass('secondary')}>
+            Keep it
+          </button>
+          <button
+            type="button"
+            onClick={() => void confirm()}
+            disabled={pending || blocked}
+            className={
+              danger
+                ? 'inline-flex min-h-tap items-center justify-center gap-2 rounded-control border border-signal-reverted/30 bg-signal-reverted/10 px-4 text-sm font-semibold text-signal-reverted transition-colors hover:bg-signal-reverted/20 disabled:cursor-not-allowed disabled:opacity-50'
+                : buttonClass('primary')
+            }
+          >
+            {pending && <Spinner />}
+            {pending ? pendingLabel : confirmLabel}
+          </button>
+        </div>
+      </div>
+    </Sheet>
+  );
+}
+
+// ── Toasts ──────────────────────────────────────────────────────────────────
+
+interface Toast {
+  id: number;
+  text: string;
+  tone: 'done' | 'error';
+}
+
+const ToastContext = createContext<(text: string, tone?: Toast['tone']) => void>(() => {});
+
+/** Say what just happened, briefly, after a dialog or a row has closed. Inline errors stay inline. */
+export const useToast = () => useContext(ToastContext);
+
+/** Mounted once by AdminShell. Toasts stack bottom-centre, above the bulk bar, and leave on their own. */
+export function ToastProvider({ children }: { children: React.ReactNode }) {
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const nextId = useRef(1);
+
+  const push = useCallback((text: string, tone: Toast['tone'] = 'done') => {
+    const id = nextId.current++;
+    setToasts((all) => [...all.slice(-2), { id, text, tone }]);
+    setTimeout(() => setToasts((all) => all.filter((t) => t.id !== id)), tone === 'error' ? 8000 : 4000);
+  }, []);
+
+  return (
+    <ToastContext.Provider value={push}>
+      {children}
+      <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-24 z-[80] flex flex-col items-center gap-2 px-4 lg:bottom-6">
+        {toasts.map((t) => (
+          <p
+            key={t.id}
+            role="status"
+            className={`pointer-events-auto max-w-md rounded-control border bg-surface-slab px-4 py-3 text-sm ${
+              t.tone === 'error' ? 'border-signal-reverted/40 text-signal-reverted' : 'border-line-strong text-content-primary'
+            }`}
+          >
+            {t.text}
+          </p>
+        ))}
+      </div>
+    </ToastContext.Provider>
   );
 }

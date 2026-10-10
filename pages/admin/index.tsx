@@ -3,8 +3,9 @@ import Link from 'next/link';
 import { formatEther } from 'viem';
 import AdminShell from '../../components/admin/AdminShell';
 import { StatTile } from '../../components/admin/StatTile';
+import { Pill } from '../../components/admin/primitives';
 import { ATTENTION_COPY } from '../../components/swag/AdminAttention';
-import { HashChip } from '../../components/swag/HashChip';
+import { HashChip } from '../../components/shared/HashChip';
 import { ACCESS_CONTRACTS } from '../../config/access';
 import { DEFAULT_CHAIN } from '../../config/chains';
 import { useAccessMatrix } from '../../hooks/admin';
@@ -43,17 +44,10 @@ function Area({ title, href, status, children }: { title: string; href: string; 
   );
 }
 
+/** Paused or live, read from the contract: on-chain state, so the signal colours apply. */
 function LiveBadge({ paused }: { paused: boolean | undefined }) {
   if (paused === undefined) return null;
-  return (
-    <span
-      className={`rounded-full px-2.5 py-1 text-[10px] font-semibold ${
-        paused ? 'bg-signal-reverted/15 text-signal-reverted' : 'bg-signal-confirmed/15 text-signal-confirmed'
-      }`}
-    >
-      {paused ? 'Paused' : 'Live'}
-    </span>
-  );
+  return <Pill tone={paused ? 'reverted' : 'confirmed'}>{paused ? 'Paused' : 'Live'}</Pill>;
 }
 
 /** Raised per currency for one campaign. formatToken uses each token's own decimals. */

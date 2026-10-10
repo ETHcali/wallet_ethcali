@@ -3,7 +3,8 @@ import Head from 'next/head';
 import { useWallets } from '@privy-io/react-auth';
 import AdminShell from '../../components/admin/AdminShell';
 import { AccessManager } from '../../components/admin/AccessManager';
-import { buttonClass } from '../../components/swag/AdminPrimitives';
+import { CARD, ConfirmDialog, FIELD, Spinner, Tabs, buttonClass, useToast } from '../../components/admin/primitives';
+import { HashChip } from '../../components/shared/HashChip';
 import SwitchChainButton from '../../components/shared/SwitchChainButton';
 import { useRequireChain } from '../../hooks/useRequireChain';
 import CampaignAdminForm from '../../components/donations/CampaignAdminForm';
@@ -25,7 +26,12 @@ import {
 
 type Tab = 'campaigns' | 'receipts' | 'bank' | 'access';
 
-const TAB_LABEL: Record<Tab, string> = { campaigns: 'Campaigns', receipts: 'Receipts', bank: 'Bank', access: 'Access' };
+const TABS: Array<{ id: Tab; label: string }> = [
+  { id: 'campaigns', label: 'Campaigns' },
+  { id: 'receipts', label: 'Receipts' },
+  { id: 'bank', label: 'Bank' },
+  { id: 'access', label: 'Access' },
+];
 
 export default function DonationsAdminPage() {
   const { ready } = useWallets();
@@ -37,8 +43,13 @@ export default function DonationsAdminPage() {
   const { vault, receiptCollection, isDeployed, tokens } = useDonationAddresses(chainId);
   const { isAdmin, isSuperAdmin, isPaused, walletAddress, isLoading } =
     useDonationAdmin(chainId);
-  const { setPaused, setReceiptTier, addReceiptMinter, pendingAction, error } =
+  const { setPaused, setReceiptTier, addReceiptMinter, pendingAction, error, errorAction, blocked } =
     useDonationAdminActions(chainId);
+  const toast = useToast();
+  const [askPause, setAskPause] = useState(false);
+  /** The error, only beside the button whose action raised it. */
+  const errorFor = (...actions: string[]) =>
+    error && errorAction && actions.includes(errorAction) ? <p className="mt-1 text-xs text-signal-reverted">{error}</p> : null;
   const { data: vaultIsMinter, isLoading: isCheckingMinter } =
     useReceiptMinterStatus(chainId);
 
@@ -52,7 +63,7 @@ export default function DonationsAdminPage() {
   const campaign = campaigns.find((c) => c.id === selectedCampaign) ?? campaigns[0] ?? null;
   const { data: totals = [] } = useCampaignTotals(campaign?.id ?? null, chainId);
   const { data: campaignRowId } = useCampaignRowId(chainId, vault, campaign?.id ?? null);
-  const { formatToken } = useDisplayCurrency();
+  const { format, formatToken } = useDisplayCurrency();
 
   const acceptedTokens = totals.map((t) => t.token.address);
 
@@ -85,8 +96,8 @@ export default function DonationsAdminPage() {
             <p className="text-sm text-content-muted">
               {walletAddress ? (
                 <>
-                  <span className="font-mono text-xs">{walletAddress}</span> does not hold
-                  ADMIN_ROLE on this vault.
+                  <HashChip hash={walletAddress} kind="address" /> does not hold ADMIN_ROLE on this vault.
+                  Roles are read from the wallet you are signed in with.
                 </>
               ) : (
                 'Connect an admin wallet to continue.'
@@ -100,37 +111,76 @@ export default function DonationsAdminPage() {
   return (
     <AdminShell
       active="donations"
-      title="Donations Admin"
-      subtitle={vault ?? undefined}
+      title="Donations"
+      subtitle="Campaigns, currencies, receipt tiers and bank details. Every change is a transaction on the vault."
     >
       <Head>
-        <title>Donations Admin · ETH Cali</title>
+        <title>Donations admin · ETH Cali</title>
       </Head>
 
       <div>
-        <header className="mb-6 flex flex-wrap items-center gap-2">
-            {isSuperAdmin && (
-              <span className="rounded-full border border-eth-blue/40 bg-eth-blue/10 px-2 py-0.5 text-[11px] font-semibold text-eth-blue-text">
-                super admin
-              </span>
+        {/* Rule 2: the network comes first. Until the wallet is on the vault's chain
+            this is the only primary action, and every button below says why it waits. */}
+        {!chain.ready && (
+          <div className={`${CARD} mb-6 flex flex-wrap items-center justify-between gap-3`}>
+            <p className="text-sm text-content-muted">Your wallet is on another network. Every action here signs on {chain.chainName}.</p>
+            <SwitchChainButton chain={chain} />
+          </div>
+        )}
+
+        <header className={`${CARD} mb-6 flex flex-wrap items-center justify-between gap-3`}>
+          <div className="min-w-0">
+            <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-content-primary">
+              DonationVault {vault && <HashChip hash={vault} kind="address" />}
+              {isSuperAdmin && (
+                <span className="rounded-full bg-eth-blue-wash px-2.5 py-1 text-[10px] font-semibold text-eth-blue-text">Super admin</span>
+              )}
+            </p>
+            <p className="mt-1 text-xs text-content-faint">
+              {isPaused ? 'Paused: nobody can donate until it is resumed.' : 'Live: donations go through.'}
+            </p>
+          </div>
+          <div>
+            {isPaused ? (
+              <button
+                type="button"
+                onClick={async () => {
+                  if (await setPaused(false)) toast('Donations resumed.');
+                }}
+                disabled={pendingAction === 'unpause' || Boolean(blocked)}
+                className={buttonClass('primary')}
+              >
+                {pendingAction === 'unpause' && <Spinner />}
+                {pendingAction === 'unpause' ? 'Resuming…' : 'Resume donations'}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setAskPause(true)}
+                disabled={pendingAction === 'pause' || Boolean(blocked)}
+                className={buttonClass('secondary')}
+              >
+                {pendingAction === 'pause' && <Spinner />}
+                {pendingAction === 'pause' ? 'Pausing…' : 'Pause donations'}
+              </button>
             )}
-            <button
-              type="button"
-              onClick={() => setPaused(!isPaused)}
-              disabled={pendingAction === 'pause' || pendingAction === 'unpause'}
-              className={`rounded-control px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
-                isPaused
-                  ? 'bg-eth-blue text-on-brand hover:bg-eth-blue-lift'
-                  : 'border border-line-strong bg-surface-inset text-content-secondary hover:border-signal-reverted hover:text-signal-reverted'
-              }`}
-            >
-              {pendingAction === 'pause' || pendingAction === 'unpause'
-                ? 'Saving…'
-                : isPaused
-                  ? 'Resume donations'
-                  : 'Pause donations'}
-            </button>
+            {errorFor('pause', 'unpause')}
+          </div>
         </header>
+
+        {askPause && (
+          <ConfirmDialog
+            title="Pause donations?"
+            body="Every donation to every campaign reverts until you resume. Funds already raised stay where they are."
+            confirmLabel="Pause donations"
+            pendingLabel="Pausing…"
+            danger
+            onConfirm={async () => {
+              if (await setPaused(true)) toast('Donations paused.');
+            }}
+            onClose={() => setAskPause(false)}
+          />
+        )}
 
         {/* The launch mistake that silently costs donors their NFTs */}
         {receiptCollection && !isCheckingMinter && !vaultIsMinter && (
@@ -145,52 +195,22 @@ export default function DonationsAdminPage() {
             </p>
             <button
               type="button"
-              onClick={() => vault && addReceiptMinter(vault)}
-              disabled={pendingAction === 'addReceiptMinter'}
-              className="rounded-control bg-signal-pending px-3 py-1.5 text-xs font-semibold text-on-brand hover:bg-signal-pending disabled:opacity-50"
+              onClick={async () => {
+                if (vault && (await addReceiptMinter(vault))) toast('The vault can mint receipts now.');
+              }}
+              disabled={pendingAction === 'addReceiptMinter' || Boolean(blocked)}
+              className={buttonClass('primary')}
             >
+              {pendingAction === 'addReceiptMinter' && <Spinner />}
               {pendingAction === 'addReceiptMinter' ? 'Granting…' : 'Grant MINTER_ROLE'}
             </button>
+            {errorFor('addReceiptMinter')}
           </div>
         )}
 
-        {isPaused && (
-          <div className="mb-6 rounded-card border border-signal-reverted/50 bg-signal-reverted/10 p-4 text-sm text-signal-reverted">
-            Donations are paused. Nobody can donate until this is resumed.
-          </div>
-        )}
-
-        {!chain.ready && (
-          <div className="mb-6 max-w-sm">
-            <p className="mb-2 text-xs text-content-muted">
-              Your wallet is on another network; to sign anything below it has to be on {chain.chainName}.
-            </p>
-            <SwitchChainButton chain={chain} />
-          </div>
-        )}
-
-        <div className="mb-5 flex gap-2 border-b border-line-hairline">
-          {(Object.keys(TAB_LABEL) as Tab[]).map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setTab(t)}
-              className={`px-4 py-2 text-sm font-semibold transition-colors ${
-                tab === t
-                  ? 'border-b-2 border-eth-blue text-eth-blue-text'
-                  : 'text-content-muted hover:text-content-primary'
-              }`}
-            >
-              {TAB_LABEL[t]}
-            </button>
-          ))}
+        <div className="mb-5">
+          <Tabs label="Donation admin sections" tabs={TABS} value={tab} onChange={setTab} />
         </div>
-
-        {error && (
-          <div className="mb-4 rounded-control border border-signal-reverted/40 bg-signal-reverted/10 p-3 text-xs text-signal-reverted">
-            {error}
-          </div>
-        )}
 
         {tab === 'campaigns' && (
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -258,8 +278,9 @@ export default function DonationsAdminPage() {
                         className="flex items-center justify-between text-xs"
                       >
                         <span className="text-content-muted">{t.token.symbol}</span>
-                        <span className="font-semibold text-content-primary">
+                        <span className="text-right font-mono text-content-primary">
                           {formatToken(t.raised, t.token)}
+                          <span className="ml-1 text-content-faint">≈ {format(t.raised, t.token)}</span>
                         </span>
                       </li>
                     ))}
@@ -322,14 +343,16 @@ export default function DonationsAdminPage() {
                         setTierForm({ ...tierForm, id: e.target.value.replace(/[^0-9]/g, '') })
                       }
                       placeholder="1"
-                      className="w-16 rounded-chip border border-line-hairline bg-surface-inset px-2 py-2 text-xs text-content-primary outline-none focus:border-eth-blue"
+                      aria-label="Tier token id"
+                      className={`${FIELD} w-20`}
                     />
                     <input
                       type="text"
                       value={tierForm.name}
                       onChange={(e) => setTierForm({ ...tierForm, name: e.target.value })}
                       placeholder="Supporter"
-                      className="flex-1 rounded-chip border border-line-hairline bg-surface-inset px-2 py-2 text-xs text-content-primary outline-none focus:border-eth-blue"
+                      aria-label="Tier name"
+                      className={FIELD}
                     />
                   </div>
                   <input
@@ -337,25 +360,23 @@ export default function DonationsAdminPage() {
                     value={tierForm.uri}
                     onChange={(e) => setTierForm({ ...tierForm, uri: e.target.value })}
                     placeholder="ipfs://…/1.json"
-                    className="w-full rounded-chip border border-line-hairline bg-surface-inset px-2 py-2 font-mono text-xs text-content-primary outline-none focus:border-eth-blue"
+                    aria-label="Tier metadata URI"
+                    className={`${FIELD} font-mono`}
                   />
                   <button
                     type="button"
-                    onClick={() =>
-                      setReceiptTier(
-                        Number(tierForm.id || 0),
-                        tierForm.name,
-                        tierForm.uri,
-                        true
-                      )
-                    }
-                    disabled={
-                      !tierForm.name || !tierForm.uri || pendingAction === 'setReceiptTier'
-                    }
-                    className="w-full rounded-control bg-eth-blue py-2 text-xs font-semibold text-on-brand hover:bg-eth-blue-lift disabled:cursor-not-allowed disabled:bg-surface-ridge disabled:text-content-muted"
+                    onClick={async () => {
+                      if (await setReceiptTier(Number(tierForm.id || 0), tierForm.name, tierForm.uri, true)) {
+                        toast(`Receipt tier #${tierForm.id || 0} saved.`);
+                      }
+                    }}
+                    disabled={!tierForm.name || !tierForm.uri || pendingAction === 'setReceiptTier' || Boolean(blocked)}
+                    className={buttonClass('primary', 'w-full')}
                   >
+                    {pendingAction === 'setReceiptTier' && <Spinner />}
                     {pendingAction === 'setReceiptTier' ? 'Saving…' : 'Save tier'}
                   </button>
+                  {errorFor('setReceiptTier')}
                 </div>
               )}
             </div>

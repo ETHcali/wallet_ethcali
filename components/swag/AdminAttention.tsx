@@ -6,7 +6,7 @@
  */
 import Link from 'next/link';
 import { SWAG_ATTENTION, SWAG_STALE_DAYS, type SwagAdminSummary, type SwagAttention } from '../../types/swag-orders';
-import { CARD } from './AdminPrimitives';
+import { CARD } from '../admin/primitives';
 
 export const ATTENTION_COPY: Record<SwagAttention, { label: string; hint: string; adminOnly: boolean }> = {
   stale: {

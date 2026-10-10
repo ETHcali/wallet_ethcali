@@ -20,7 +20,7 @@ import {
 import { useActiveWallet } from '../../hooks/useActiveWallet';
 import { formatUnits } from 'viem';
 import { SWAG_COLLECTION } from '../../config/constants';
-import { HashChip } from './HashChip';
+import { HashChip } from '../shared/HashChip';
 import { ShippingForm } from './ShippingForm';
 import { Sheet, SHEET_BODY } from '../shared/Sheet';
 
