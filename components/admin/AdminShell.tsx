@@ -63,37 +63,23 @@ function truncate(address?: string): string {
 const AdminShell: React.FC<AdminShellProps> = ({ active, title, subtitle, children }) => {
   const { address } = useActiveWallet();
 
-  const {
-    isSwagAdmin,
-    isSwagFulfilment,
-    isFaucetAdmin,
-    isFaucetSuperAdmin,
-    isZKPassportOwner,
-    isDonationAdmin,
-    isDonationSuperAdmin,
-    hasAnyAdmin,
-  } = useAdminRoles();
+  const roles = useAdminRoles();
 
   const permitted: Record<AdminSection, boolean> = {
     overview: true,
-    // Any role anywhere; the route re-checks, and the page shows who can grant.
-    access: hasAnyAdmin,
-    donations: isDonationAdmin || isDonationSuperAdmin,
-    faucet: isFaucetAdmin || isFaucetSuperAdmin,
-    swag: isSwagAdmin || isSwagFulfilment,
-    // Artwork is production state, not an on-chain role. Anyone who can reach
-    // an admin area can prepare artwork; the API still verifies ADMIN_ROLE.
-    artwork: true,
-    identity: isZKPassportOwner,
-    // Site content is editorial, not an on-chain role, so the menu does not
-    // gate it. The API still checks ADMIN_ROLE before it writes anything.
-    content: true,
-    // Either ADMIN_ROLE (site or certificates) may edit it; the API checks both.
-    team: true,
-    // Gated by ADMIN_ROLE on BuilderCertificate, which the menu does not read;
-    // like content, it is listed for everyone who reaches the admin area and
-    // the API refuses anyone the contract does not know.
-    certificates: true,
+    // Any admin-level role; fulfilment alone does not see who holds what.
+    access: roles.isOperator,
+    donations: roles.isDonationAdmin || roles.isDonationSuperAdmin,
+    faucet: roles.isFaucetAdmin || roles.isFaucetSuperAdmin,
+    swag: roles.isSwagAdmin || roles.isSwagFulfilment,
+    // Artwork is swag production state; its routes ask the collection for ADMIN_ROLE.
+    artwork: roles.isSwagAdmin,
+    identity: roles.isZKPassportOwner,
+    // Site content is gated on DonationVault ADMIN_ROLE (lib/adminAuth.ts), by owner decision.
+    content: roles.isDonationAdmin,
+    // The team list feeds the site and the certificates; either ADMIN_ROLE edits it.
+    team: roles.isDonationAdmin || roles.isCertAdmin,
+    certificates: roles.isCertAdmin,
   };
 
   // The current section stays listed even if the role read is still resolving,

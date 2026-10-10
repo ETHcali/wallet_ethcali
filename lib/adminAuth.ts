@@ -1,27 +1,24 @@
 /**
- * Server-side admin gate for internal API routes.
+ * Server-side gate for the site-operator routes: site content, the team list
+ * and the donation bank details.
  *
- * Three steps, in order, because each one alone is insufficient:
+ * Two steps, because each alone is insufficient:
  *
- *   1. Verify the Privy access token against Privy's JWKS. Proves the caller
- *      is a logged-in user of THIS app and not merely someone holding a
- *      plausible-looking JWT.
- *   2. Resolve that DID to its linked wallets via Privy's REST API, using the
- *      app secret. The access token carries the DID but no addresses, and a
+ *   1. requireUser: a Privy token verified against Privy's JWKS, then the
+ *      linked wallets from Privy's REST API with the app secret. A
  *      client-supplied address would be an unverified claim.
- *   3. Check ADMIN_ROLE on chain. The contract is the authority — a Privy
- *      login proves identity, never permission.
+ *   2. ADMIN_ROLE on chain, through lib/roles.ts. A Privy login proves
+ *      identity, never permission.
  *
- * The authority contract is the DonationVault on Ethereum: its ADMIN_ROLE is
- * the ETH Cali operator set for donations and site content. Verified on chain
- * 2026-09-23 that the ops key (0x3B89…415B) and the operator (0x35b0…BC6B)
- * both hold it there. Swag routes have their own gate against the swag
- * collection (lib/swag/requireSwagAdmin.ts).
+ * The authority is the DonationVault on Ethereum. Its ADMIN_ROLE is the ETH
+ * Cali operator set for donations and site content (owner decision
+ * 2026-10-10: kept there deliberately, not moved to BuilderCertificate).
+ * Swag routes ask the collection (lib/swag/requireSwagAdmin.ts), certificate
+ * routes ask BuilderCertificate (lib/certificates/requireCertAdmin.ts).
  */
 import type { NextApiRequest } from 'next';
-import * as jose from 'jose';
-import DonationVaultABI from '../frontend/abis/DonationVault.json';
-import { DEFAULT_CHAIN, publicClientFor } from '../config/chains';
+import { firstHolder } from './roles';
+import { requireUser, UserAuthError } from './swag/requireUser';
 
 export class AdminAuthError extends Error {
   constructor(
@@ -32,102 +29,20 @@ export class AdminAuthError extends Error {
   }
 }
 
-/** The contract whose ADMIN_ROLE defines "an ETH Cali operator". */
-const AUTHORITY = {
-  chainId: DEFAULT_CHAIN.id,
-  address: DEFAULT_CHAIN.contracts.DonationVault,
-};
-
-let jwks: ReturnType<typeof jose.createRemoteJWKSet> | null = null;
-
-function getJwks(appId: string) {
-  if (!jwks) {
-    jwks = jose.createRemoteJWKSet(
-      new URL(`https://auth.privy.io/api/v1/apps/${appId}/jwks.json`)
-    );
-  }
-  return jwks;
-}
-
-/** Step 1: the token is real, unexpired, and issued to this app. */
-async function verifyPrivyToken(token: string, appId: string): Promise<string> {
-  try {
-    const { payload } = await jose.jwtVerify(token, getJwks(appId), {
-      issuer: 'privy.io',
-      audience: appId,
-    });
-    if (!payload.sub) throw new Error('no subject');
-    return payload.sub;
-  } catch {
-    // Deliberately vague: distinguishing "expired" from "forged" helps an
-    // attacker more than it helps a legitimate caller.
-    throw new AdminAuthError('Invalid or expired session', 401);
-  }
-}
-
-/** Step 2: which wallets has this DID actually linked? */
-async function walletsForDid(did: string, appId: string, appSecret: string): Promise<string[]> {
-  const res = await fetch(`https://auth.privy.io/api/v1/users/${encodeURIComponent(did)}`, {
-    headers: {
-      Authorization: `Basic ${Buffer.from(`${appId}:${appSecret}`).toString('base64')}`,
-      'privy-app-id': appId,
-    },
-  });
-
-  if (!res.ok) throw new AdminAuthError('Could not resolve the account', 502);
-
-  const user = (await res.json()) as {
-    linked_accounts?: Array<{ type?: string; address?: string }>;
-  };
-
-  return (user.linked_accounts ?? [])
-    .filter((a) => a.type === 'wallet' && a.address)
-    .map((a) => (a.address as string).toLowerCase());
-}
-
-/** Step 3: the chain decides. */
-async function holdsAdminRole(wallets: string[]): Promise<string | null> {
-  if (!AUTHORITY.address || wallets.length === 0) return null;
-
-  const client = publicClientFor(AUTHORITY.chainId);
-
-  for (const wallet of wallets) {
-    try {
-      const isAdmin = (await client.readContract({
-        address: AUTHORITY.address,
-        abi: DonationVaultABI,
-        functionName: 'isAdmin',
-        args: [wallet as `0x${string}`],
-      })) as boolean;
-      if (isAdmin) return wallet;
-    } catch {
-      // A single RPC hiccup must not read as "authorised"; try the next wallet
-      // and fall through to the deny below.
-    }
-  }
-  return null;
-}
-
 /**
  * Throws AdminAuthError unless the caller is a logged-in ETH Cali operator.
  * Returns the wallet address that satisfied the check, for audit logging.
  */
 export async function requireAdmin(req: NextApiRequest): Promise<string> {
-  const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
-  const appSecret = process.env.PRIVY_APP_SECRET;
-
-  if (!appId || !appSecret) {
-    throw new AdminAuthError('Admin auth is not configured on the server', 500);
+  let wallets: string[];
+  try {
+    wallets = (await requireUser(req)).wallets;
+  } catch (e) {
+    if (e instanceof UserAuthError) throw new AdminAuthError(e.message, e.status);
+    throw e;
   }
 
-  const header = req.headers.authorization ?? '';
-  const token = header.startsWith('Bearer ') ? header.slice(7) : null;
-  if (!token) throw new AdminAuthError('Missing session token', 401);
-
-  const did = await verifyPrivyToken(token, appId);
-  const wallets = await walletsForDid(did, appId, appSecret);
-  const admin = await holdsAdminRole(wallets);
-
+  const admin = await firstHolder('donations', 'admin', wallets);
   if (!admin) throw new AdminAuthError('Not an ETH Cali operator', 403);
   return admin;
 }

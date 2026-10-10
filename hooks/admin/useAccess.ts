@@ -126,7 +126,7 @@ export function useAccessTx(to: Address | undefined): SwagAdminTxResult {
           hash = null;
         }
         await Promise.all(
-          [accessKeys.matrix, ['admin-roles'], ['admin-status'], ['swag-admin-staff'], ...(opts?.invalidate ?? [])].map((queryKey) =>
+          [accessKeys.matrix, ['admin-roles'], ['swag-admin-staff'], ...(opts?.invalidate ?? [])].map((queryKey) =>
             queryClient.invalidateQueries({ queryKey: [...queryKey] })
           )
         );

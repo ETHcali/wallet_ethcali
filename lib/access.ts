@@ -171,11 +171,15 @@ export async function readAccessMatrix(db: SupabaseClient): Promise<AccessMatrix
   return { contracts, people, seed, readAt: new Date().toISOString() };
 }
 
-/** Whether any of `wallets` holds an admin-level role anywhere in the matrix. */
+/**
+ * Whether any of `wallets` holds an admin-level role anywhere in the matrix.
+ * Fulfilment alone is not one: the matrix carries every operator's email, and
+ * the order desk has no need to see them.
+ */
 export function isOperator(matrix: AccessMatrix, wallets: string[]): boolean {
   const mine = new Set(wallets.map((w) => w.toLowerCase()));
   return matrix.contracts.some((c) =>
-    (['super', 'admin', 'owner', 'fulfilment'] as const).some((r) => (c.holders[r] ?? []).some((w) => mine.has(w)))
+    (['super', 'admin', 'owner'] as const).some((r) => (c.holders[r] ?? []).some((w) => mine.has(w)))
   );
 }
 
