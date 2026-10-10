@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useCreateVault } from '../../hooks/faucet';
 import { VaultType, VaultFormData } from '../../types/faucet';
+import { adminErrorMessage } from '../../utils/adminErrors';
 
 interface CreateVaultFormProps {
   chainId: number;
@@ -55,7 +56,7 @@ export function CreateVaultForm({ chainId, onSuccess }: CreateVaultFormProps) {
       });
       onSuccess?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create vault');
+      setError(adminErrorMessage(err));
     } finally {
       setIsSubmitting(false);
     }

@@ -74,9 +74,8 @@ wallet_ethcali/
 │   │   ├── SwagCard.tsx          # One design: photo, USD + COP, both stocks, two buttons
 │   │   ├── SwagCheckoutModal.tsx # Connect → Switch to Ethereum → Approve → Buy, then shipping
 │   │   ├── ShippingForm.tsx      # POST /api/swag/orders after a confirmed buy
-│   │   ├── HashChip.tsx          # 0x55C9…711d with copy + Basescan link
-│   │   ├── AdminPrimitives.tsx   # TxButton (two flags), ChainGate, AddressForm
-│   │   ├── AdminOrders.tsx       # /swag/admin › Orders: ship, deliver, cancel, cancel voucher on chain
+│   │   ├── AdminOrders.tsx       # /swag/admin › Orders: filters in the URL, bulk moves, cancel, cancel voucher on chain
+│   │   ├── AdminAttention.tsx    # "Needs attention": counts that open their filtered list
 │   │   ├── AdminStock.tsx        # /swag/admin › Stock: setVariant caps, setPaymentOption
 │   │   └── AdminCollection.tsx   # /swag/admin › Collection: pause, treasury, roles
 │   ├── ens/             # ENS integration

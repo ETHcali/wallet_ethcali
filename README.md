@@ -107,7 +107,7 @@ wallet_ethcali/
 │   ├── wallet/              # WalletInfo, SendTokenModal, QRScanner, NFT cards
 │   ├── faucet/              # FaucetClaim, VaultList, admin forms
 │   ├── sybil/, zkpassport/  # ZKPassport verification and admin
-│   ├── swag/                # SwagCard, SwagCheckoutModal, ShippingForm, HashChip, Admin{Orders,Stock,Collection,Primitives}
+│   ├── swag/                # SwagCard, SwagCheckoutModal, ShippingForm, Admin{Orders,Attention,Batch,Stock,Collection,Shipping,Team}
 │   ├── settings/            # AccountSection, PasskeysSection, SecuritySection
 │   ├── donations/, ens/, admin/
 │   └── Navigation.tsx

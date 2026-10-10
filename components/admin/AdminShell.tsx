@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Navigation from '../Navigation';
 import { useActiveWallet } from '../../hooks/useActiveWallet';
 import { useAdminRoles } from '../../hooks/useAdminStatus';
+import { ToastProvider } from './primitives';
 
 export type AdminSection =
   | 'overview'
@@ -145,6 +146,7 @@ const AdminShell: React.FC<AdminShellProps> = ({ active, title, subtitle, childr
     // The dark ground has to live here. globals.css only paints the body dark
     // under prefers-color-scheme: dark, so without this the app renders white
     // and every white heading disappears. Every other page root does the same.
+    <ToastProvider>
     <div className="min-h-screen bg-surface-void">
       <Navigation />
 
@@ -199,6 +201,7 @@ const AdminShell: React.FC<AdminShellProps> = ({ active, title, subtitle, childr
       </div>
 
     </div>
+    </ToastProvider>
   );
 };
 

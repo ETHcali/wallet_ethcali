@@ -14,6 +14,7 @@ import {
   type BankAccountInput,
   type BankAccountType,
 } from '../../hooks/donations';
+import { FIELD, LABEL } from '../admin/primitives';
 
 interface BankAccountManagerProps {
   /** Supabase campaign row id. Null until a campaign is selected. */
@@ -44,9 +45,6 @@ const EMPTY: BankAccountInput = {
   sort_order: 0,
 };
 
-const inputClass =
-  'w-full rounded-control border border-line-strong bg-surface-slab px-3 py-2 text-sm text-content-primary placeholder-content-faint focus:border-eth-blue focus:outline-none';
-const labelClass = 'mb-1 block text-[11px] uppercase tracking-wide text-content-faint';
 
 const BankAccountManager: React.FC<BankAccountManagerProps> = ({ campaignId }) => {
   const { accounts, create, update, remove } = useBankAccountAdmin(campaignId);
@@ -167,10 +165,10 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ campaignId }) =
 
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
-            <label className={labelClass} htmlFor="ba-bank">Bank</label>
+            <label className={LABEL} htmlFor="ba-bank">Bank</label>
             <input
               id="ba-bank"
-              className={inputClass}
+              className={FIELD}
               value={form.bank_name ?? ''}
               onChange={(e) => set({ bank_name: e.target.value })}
               placeholder="Bancolombia"
@@ -179,10 +177,10 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ campaignId }) =
           </div>
 
           <div>
-            <label className={labelClass} htmlFor="ba-label">Label</label>
+            <label className={LABEL} htmlFor="ba-label">Label</label>
             <input
               id="ba-label"
-              className={inputClass}
+              className={FIELD}
               value={form.label ?? ''}
               onChange={(e) => set({ label: e.target.value })}
               placeholder="Cuenta principal"
@@ -191,10 +189,10 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ campaignId }) =
           </div>
 
           <div>
-            <label className={labelClass} htmlFor="ba-type">Type</label>
+            <label className={LABEL} htmlFor="ba-type">Type</label>
             <select
               id="ba-type"
-              className={inputClass}
+              className={FIELD}
               value={form.account_type}
               onChange={(e) => set({ account_type: e.target.value as BankAccountType })}
             >
@@ -207,10 +205,10 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ campaignId }) =
           </div>
 
           <div>
-            <label className={labelClass} htmlFor="ba-currency">Currency</label>
+            <label className={LABEL} htmlFor="ba-currency">Currency</label>
             <select
               id="ba-currency"
-              className={inputClass}
+              className={FIELD}
               value={form.currency}
               onChange={(e) => set({ currency: e.target.value as 'COP' | 'USD' })}
             >
@@ -220,14 +218,14 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ campaignId }) =
           </div>
 
           <div className="sm:col-span-2">
-            <label className={labelClass} htmlFor="ba-number">
+            <label className={LABEL} htmlFor="ba-number">
               Account number {form.account_type === 'nequi' || form.account_type === 'daviplata'
                 ? '(phone)'
                 : ''}
             </label>
             <input
               id="ba-number"
-              className={`${inputClass} font-mono`}
+              className={`${FIELD} font-mono`}
               value={form.account_number ?? ''}
               onChange={(e) => set({ account_number: e.target.value })}
               required
@@ -235,10 +233,10 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ campaignId }) =
           </div>
 
           <div>
-            <label className={labelClass} htmlFor="ba-holder">Account holder</label>
+            <label className={LABEL} htmlFor="ba-holder">Account holder</label>
             <input
               id="ba-holder"
-              className={inputClass}
+              className={FIELD}
               value={form.account_holder ?? ''}
               onChange={(e) => set({ account_holder: e.target.value })}
               placeholder="Razón social de la ESAL"
@@ -248,10 +246,10 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ campaignId }) =
 
           <div className="grid grid-cols-[90px_1fr] gap-2">
             <div>
-              <label className={labelClass} htmlFor="ba-doctype">Doc</label>
+              <label className={LABEL} htmlFor="ba-doctype">Doc</label>
               <select
                 id="ba-doctype"
-                className={inputClass}
+                className={FIELD}
                 value={form.holder_document_type}
                 onChange={(e) =>
                   set({ holder_document_type: e.target.value as 'NIT' | 'CC' | 'CE' })
@@ -263,10 +261,10 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ campaignId }) =
               </select>
             </div>
             <div>
-              <label className={labelClass} htmlFor="ba-docnum">Number</label>
+              <label className={LABEL} htmlFor="ba-docnum">Number</label>
               <input
                 id="ba-docnum"
-                className={`${inputClass} font-mono`}
+                className={`${FIELD} font-mono`}
                 value={form.holder_document_number ?? ''}
                 onChange={(e) => set({ holder_document_number: e.target.value })}
                 required
@@ -277,19 +275,19 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ campaignId }) =
           {isInternational && (
             <>
               <div>
-                <label className={labelClass} htmlFor="ba-swift">SWIFT / BIC</label>
+                <label className={LABEL} htmlFor="ba-swift">SWIFT / BIC</label>
                 <input
                   id="ba-swift"
-                  className={`${inputClass} font-mono`}
+                  className={`${FIELD} font-mono`}
                   value={form.swift_bic ?? ''}
                   onChange={(e) => set({ swift_bic: e.target.value })}
                 />
               </div>
               <div>
-                <label className={labelClass} htmlFor="ba-iban">IBAN</label>
+                <label className={LABEL} htmlFor="ba-iban">IBAN</label>
                 <input
                   id="ba-iban"
-                  className={`${inputClass} font-mono`}
+                  className={`${FIELD} font-mono`}
                   value={form.iban ?? ''}
                   onChange={(e) => set({ iban: e.target.value })}
                 />
@@ -298,12 +296,12 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ campaignId }) =
           )}
 
           <div className="sm:col-span-2">
-            <label className={labelClass} htmlFor="ba-note">
+            <label className={LABEL} htmlFor="ba-note">
               Instructions for the donor
             </label>
             <input
               id="ba-note"
-              className={inputClass}
+              className={FIELD}
               value={form.reference_note ?? ''}
               onChange={(e) => set({ reference_note: e.target.value })}
               placeholder="Escribe tu correo en la referencia para recibir tu certificado."

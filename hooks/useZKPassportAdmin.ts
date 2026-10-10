@@ -11,6 +11,7 @@ import { encodeFunctionData } from 'viem';
 import ZKPassportNFTABI from '../frontend/abis/ZKPassportNFT.json';
 import { getChain, publicClientFor } from '../config/chains';
 import { useActiveWallet } from './useActiveWallet';
+import { waitForSuccess } from '../utils/waitForSuccess';
 
 export interface ZKPassportMetadata {
   imageURI: string;
@@ -100,7 +101,7 @@ export function useZKPassportMetadata(chainId: number) {
   };
 }
 
-/** Shared write path for every owner call: encode, send pinned to the chain, invalidate. */
+/** Shared write path for every owner call: encode, send pinned to the chain, wait for the receipt, re-read. */
 function useZKPassportWrite(chainId: number, invalidate: string[]) {
   const zkpassport = zkpassportAddress(chainId);
   const { wallet } = useActiveWallet();
@@ -114,7 +115,8 @@ function useZKPassportWrite(chainId: number, invalidate: string[]) {
     const data = encodeFunctionData({ abi: ZKPassportNFTABI as any, functionName, args });
     const result = await sendTransaction({ to: zkpassport, data, chainId }, { sponsor: true });
 
-    for (const key of invalidate) queryClient.invalidateQueries({ queryKey: [key] });
+    await waitForSuccess(chainId, result.hash);
+    await Promise.all(invalidate.map((key) => queryClient.invalidateQueries({ queryKey: [key] })));
     return result;
   };
 

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useVaultWhitelist, useIsWhitelisted } from '../../hooks/faucet';
 import { Vault } from '../../types/faucet';
+import { adminErrorMessage } from '../../utils/adminErrors';
 
 interface VaultWhitelistManagerProps {
   chainId: number;
@@ -46,7 +47,7 @@ export function VaultWhitelistManager({ chainId, vault, onSuccess }: VaultWhitel
       refetchWhitelist();
       onSuccess?.();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Failed to add to whitelist');
+      setActionError(adminErrorMessage(err));
     } finally {
       setIsProcessing(false);
     }
@@ -66,7 +67,7 @@ export function VaultWhitelistManager({ chainId, vault, onSuccess }: VaultWhitel
       refetchWhitelist();
       onSuccess?.();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Failed to remove from whitelist');
+      setActionError(adminErrorMessage(err));
     } finally {
       setIsProcessing(false);
     }
@@ -90,7 +91,7 @@ export function VaultWhitelistManager({ chainId, vault, onSuccess }: VaultWhitel
       setBatchInput('');
       onSuccess?.();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Failed to add batch to whitelist');
+      setActionError(adminErrorMessage(err));
     } finally {
       setIsProcessing(false);
     }
@@ -114,7 +115,7 @@ export function VaultWhitelistManager({ chainId, vault, onSuccess }: VaultWhitel
       setBatchInput('');
       onSuccess?.();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Failed to remove batch from whitelist');
+      setActionError(adminErrorMessage(err));
     } finally {
       setIsProcessing(false);
     }
@@ -127,7 +128,7 @@ export function VaultWhitelistManager({ chainId, vault, onSuccess }: VaultWhitel
       await setWhitelistEnabled(vault.id, !vault.whitelistEnabled);
       onSuccess?.();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Failed to toggle whitelist');
+      setActionError(adminErrorMessage(err));
     } finally {
       setIsProcessing(false);
     }

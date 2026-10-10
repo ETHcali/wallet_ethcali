@@ -33,6 +33,7 @@ import MintTab from '../../components/certificates/admin/MintTab';
 import SendTab from '../../components/certificates/admin/SendTab';
 import { useAdminApi } from '../../components/certificates/admin/useAdminApi';
 import type { AdminCertificatesResponse, CertEventsResponse } from '../../types/certificates';
+import { Tabs } from '../../components/admin/primitives';
 
 const TABS = [
   { id: 'event', label: 'Event' },
@@ -123,25 +124,19 @@ export default function CertificatesAdmin() {
         </div>
       ) : (
         <>
-          <div className="mb-5 flex flex-wrap items-center gap-2">
-            <Link href="/admin/certificates" className="mr-2 text-xs font-semibold text-content-muted hover:text-content-primary">
+          <div className="mb-5 space-y-3">
+            <Link href="/admin/certificates" className="inline-flex min-h-[36px] items-center text-xs font-semibold text-content-muted hover:text-content-primary">
               ← All events
             </Link>
-            {TABS.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => go({ event: eventKey, tab: t.id })}
-                aria-current={t.id === tab ? 'page' : undefined}
-                className={`min-h-[36px] rounded-full px-3.5 text-xs font-semibold transition-colors ${
-                  t.id === tab ? 'bg-eth-blue/15 text-eth-blue-text' : 'border border-line-hairline text-content-muted hover:text-content-primary'
-                }`}
-              >
-                {t.label}
-                {t.id === 'team' && counts[eventKey]?.team ? ` · ${counts[eventKey].team}` : ''}
-                {t.id === 'builders' && counts[eventKey]?.builders ? ` · ${counts[eventKey].builders}` : ''}
-              </button>
-            ))}
+            <Tabs
+              label="Certificate event sections"
+              value={tab}
+              onChange={(next) => go({ event: eventKey, tab: next })}
+              tabs={TABS.map((t) => ({
+                ...t,
+                count: t.id === 'team' ? counts[eventKey]?.team : t.id === 'builders' ? counts[eventKey]?.builders : undefined,
+              }))}
+            />
           </div>
 
           {tab === 'event' && <EventTab key={current.settings.key} settings={current.settings} site={current.site} pinned={pinned} onSaved={refetch} />}

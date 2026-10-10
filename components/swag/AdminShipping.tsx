@@ -9,7 +9,7 @@
 import { useState } from 'react';
 import { formatCop, useSwagAdminShipping, usePatchShippingZone, useTrm } from '../../hooks/swag';
 import type { SwagAdminShippingZone } from '../../types/swag-orders';
-import { CARD, FIELD, LABEL, Pill, Spinner, buttonClass } from './AdminPrimitives';
+import { CARD, FIELD, LABEL, Pill, Spinner, buttonClass } from '../admin/primitives';
 
 function ZoneCard({ zone }: { zone: SwagAdminShippingZone }) {
   const patch = usePatchShippingZone();

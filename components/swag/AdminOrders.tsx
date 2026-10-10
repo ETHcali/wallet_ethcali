@@ -35,8 +35,8 @@ import {
 } from '../../types/swag-orders';
 import { ATTENTION_COPY } from './AdminAttention';
 import { ChevronDownIcon } from '../shared/icons';
-import { HashChip } from './HashChip';
-import { CARD, FIELD, LABEL, Pill, Spinner, TxButton, buttonClass, ChainGate } from './AdminPrimitives';
+import { HashChip } from '../shared/HashChip';
+import { CARD, FIELD, LABEL, Pill, Spinner, TxButton, buttonClass, ChainGate, ConfirmDialog, useToast } from '../admin/primitives';
 
 const STATUS_TONE: Record<SwagOrderStatus, { label: string; tone: 'pending' | 'brand' | 'confirmed' | 'reverted' }> = {
   awaiting_shipping_payment: { label: 'Shipping unpaid', tone: 'pending' },
@@ -188,6 +188,8 @@ interface OrderRowProps {
 function OrderRow({ order, canAdmin, selected, onToggle }: OrderRowProps) {
   const patch = usePatchSwagOrder();
   const voucherTx = useSwagAdminTx();
+  const toast = useToast();
+  const [confirmCancel, setConfirmCancel] = useState(false);
 
   const [expanded, setExpanded] = useState(false);
   const [askTracking, setAskTracking] = useState(false);
@@ -209,6 +211,7 @@ function OrderRow({ order, canAdmin, selected, onToggle }: OrderRowProps) {
     try {
       await patch.mutateAsync(body);
       setAskTracking(false);
+      if (body.status) toast(`#${order.id} ${STATUS_TONE[body.status].label.toLowerCase()}.`);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'The update failed.');
     } finally {
@@ -374,11 +377,7 @@ function OrderRow({ order, canAdmin, selected, onToggle }: OrderRowProps) {
             {canAdmin && (open || awaiting || order.status === 'shipped') && (
               <button
                 type="button"
-                onClick={() => {
-                  if (window.confirm(`Cancel order #${order.id}? The refund itself happens in Shopify or by hand; this only closes the fulfilment record.`)) {
-                    void act(setCancelling, { id: order.id, status: 'cancelled' });
-                  }
-                }}
+                onClick={() => setConfirmCancel(true)}
                 disabled={busy}
                 className={buttonClass('secondary')}
               >
@@ -410,6 +409,31 @@ function OrderRow({ order, canAdmin, selected, onToggle }: OrderRowProps) {
 
           {error && <p className="text-xs text-signal-reverted">{error}</p>}
         </div>
+      )}
+
+      {confirmCancel && (
+        <ConfirmDialog
+          title={`Cancel order #${order.id}?`}
+          body={
+            <>
+              This closes the fulfilment record only. The refund itself happens in Shopify, or by hand for a USDC order.
+              {order.voucherIssued && !order.claimTxHash && ' A claim voucher is live, so the order joins the on-chain cancel queue.'}
+            </>
+          }
+          confirmLabel="Cancel order"
+          pendingLabel="Cancelling…"
+          danger
+          onConfirm={async () => {
+            setCancelling(true);
+            try {
+              await patch.mutateAsync({ id: order.id, status: 'cancelled' });
+              toast(`#${order.id} cancelled.`);
+            } finally {
+              setCancelling(false);
+            }
+          }}
+          onClose={() => setConfirmCancel(false)}
+        />
       )}
     </li>
   );
@@ -454,6 +478,7 @@ const MOVES: Record<Stage, Array<{ to: SwagAdminBulkBody['status']; label: strin
  */
 function BulkBar({ selected, onDone, onClear }: { selected: SwagAdminOrderView[]; onDone: (moved: number[]) => void; onClear: () => void }) {
   const bulk = useBulkSwagOrders();
+  const toast = useToast();
   const [pendingTo, setPendingTo] = useState<SwagAdminBulkBody['status'] | null>(null);
   const [sheet, setSheet] = useState(false);
   const [tracking, setTracking] = useState<Record<number, string>>({});
@@ -479,6 +504,8 @@ function BulkBar({ selected, onDone, onClear }: { selected: SwagAdminOrderView[]
       const failed = results.flatMap((r) => (r.ok ? [] : [{ id: r.id, error: r.error }]));
       setFailures(failed);
       if (failed.length === 0) setSheet(false);
+      const moved = results.length - failed.length;
+      if (moved > 0) toast(`${moved} order${moved === 1 ? '' : 's'} ${STATUS_TONE[to].label.toLowerCase()}.`);
       onDone(results.filter((r) => r.ok).map((r) => r.id));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'The update failed.');

@@ -4,6 +4,7 @@ import { useUpdateVault, useUpdateVaultGating } from '../../hooks/faucet';
 import { Vault, VaultType } from '../../types/faucet';
 import { Sheet, SHEET_BODY } from '../shared/Sheet';
 import { CloseIcon } from '../shared/icons';
+import { adminErrorMessage } from '../../utils/adminErrors';
 
 interface VaultEditModalProps {
   chainId: number;
@@ -45,7 +46,7 @@ export function VaultEditModal({ chainId, vault, onClose, onSuccess }: VaultEdit
       await updateVaultGating(vault.id, gatingForm.zkPassportRequired, gatingForm.allowedToken);
       onSuccess();
     } catch (err) {
-      setGatingError(err instanceof Error ? err.message : 'Failed to update gating');
+      setGatingError(adminErrorMessage(err));
     } finally {
       setIsGatingSubmitting(false);
     }
@@ -78,7 +79,7 @@ export function VaultEditModal({ chainId, vault, onClose, onSuccess }: VaultEdit
       });
       onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update vault');
+      setError(adminErrorMessage(err));
     } finally {
       setIsSubmitting(false);
     }

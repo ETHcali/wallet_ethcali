@@ -4,6 +4,7 @@ import { useVaultDeposit, useVaultWithdraw } from '../../hooks/faucet';
 import { Vault } from '../../types/faucet';
 import { Sheet, SHEET_BODY } from '../shared/Sheet';
 import { CloseIcon } from '../shared/icons';
+import { adminErrorMessage } from '../../utils/adminErrors';
 
 interface VaultDepositWithdrawProps {
   chainId: number;
@@ -57,7 +58,7 @@ export function VaultDepositWithdraw({ chainId, vault, onClose, onSuccess }: Vau
         onSuccess();
       }, 1500);
     } catch (err) {
-      setError(err instanceof Error ? err.message : `Failed to ${mode}`);
+      setError(adminErrorMessage(err));
     } finally {
       setIsSubmitting(false);
     }

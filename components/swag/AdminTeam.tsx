@@ -32,8 +32,8 @@ import {
   useSwagStaff,
 } from '../../hooks/swag';
 import type { SwagStaffRole, SwagStaffView } from '../../types/swag-orders';
-import { HashChip } from './HashChip';
-import { CARD, ChainGate, FIELD, LABEL, Pill, Spinner, TxButton } from './AdminPrimitives';
+import { HashChip } from '../shared/HashChip';
+import { CARD, ChainGate, FIELD, LABEL, Pill, Spinner, TxButton } from '../admin/primitives';
 
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
