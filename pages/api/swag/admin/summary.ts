@@ -19,7 +19,7 @@ import { swag1155Abi } from '../../../../frontend/abis/swag';
 import { SWAG_COLLECTION } from '../../../../config/constants';
 import { getSupabaseAdmin } from '../../../../lib/supabase';
 import { getSwagClient, getSwagCollection, SWAG_CHAIN_ID } from '../../../../lib/swag/onchain';
-import { listVoucherCancelQueue, OrderError } from '../../../../lib/swag/orders';
+import { ATTENTION_COLUMNS, countAttention, listVoucherCancelQueue, OrderError, type AttentionRow } from '../../../../lib/swag/orders';
 import { requireSwagStaff } from '../../../../lib/swag/requireSwagAdmin';
 import { sendAuthError } from '../../../../lib/swag/requireUser';
 import { logger } from '../../../../utils/logger';
@@ -79,9 +79,7 @@ async function readCollection(): Promise<SwagAdminSummary['collection']> {
   return { address, chainId: SWAG_CHAIN_ID, paused, treasury, stock };
 }
 
-type LedgerRow = {
-  status: SwagOrderStatus;
-  channel: SwagOrderChannel;
+type LedgerRow = AttentionRow & {
   item_amount: number | string | null;
   item_currency: SwagCurrency | null;
   shipping_amount: number | string | null;
@@ -89,10 +87,10 @@ type LedgerRow = {
   shipping_quote: { amountUnits?: string } | null;
 };
 
-async function readCounts(): Promise<Pick<SwagAdminSummary, 'counts' | 'revenue' | 'shippingDue'>> {
+async function readCounts(): Promise<Pick<SwagAdminSummary, 'counts' | 'revenue' | 'shippingDue' | 'attention'>> {
   const { data, error } = await getSupabaseAdmin()
     .from('swag_orders')
-    .select('status, channel, item_amount, item_currency, shipping_amount, shipping_currency, shipping_quote');
+    .select(`${ATTENTION_COLUMNS}, item_amount, item_currency, shipping_amount, shipping_currency, shipping_quote`);
   if (error) throw new OrderError(error.message, 500);
 
   // Amounts are copies of the payment of record (see the ledger migration);
@@ -121,7 +119,12 @@ async function readCounts(): Promise<Pick<SwagAdminSummary, 'counts' | 'revenue'
     if (row.status in byStatus) byStatus[row.status] += 1;
     if (row.channel in byChannel) byChannel[row.channel] += 1;
   }
-  return { counts: { byStatus, byChannel, total: data?.length ?? 0 }, revenue, shippingDue };
+  return {
+    counts: { byStatus, byChannel, total: data?.length ?? 0 },
+    revenue,
+    shippingDue,
+    attention: countAttention((data ?? []) as LedgerRow[]),
+  };
 }
 
 async function readQueue(): Promise<SwagAdminSummary['voucherCancelQueue']> {
@@ -168,8 +171,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       readCollection(),
       readQueue(),
     ]);
+    // The notes flag is a reminder; the chain says whether cancelOrder() already ran.
+    const attention = { ...ledger.attention, voucher_cancel: voucherCancelQueue.filter((q) => !q.closedOnChain).length };
     res.setHeader('Cache-Control', 'no-store');
-    return res.status(200).json({ viewer, ...ledger, collection, voucherCancelQueue });
+    return res.status(200).json({ viewer, ...ledger, attention, collection, voucherCancelQueue });
   } catch (e) {
     if (e instanceof OrderError) return res.status(e.status).json({ error: e.message });
     logger.error('[swag/admin/summary] failed', e);

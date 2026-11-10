@@ -171,6 +171,33 @@ The admin page keeps **Mark shipped** / **Mark delivered** for exceptions
 (a parcel handed over at an event, a USDC order whose mirror failed), but the
 normal path is Shopify.
 
+## The order desk (`/swag/admin`)
+
+**Needs attention** sits on top of the page and on the admin overview. Each line counts orders
+waiting on one reason and opens the list filtered to exactly those orders
+(`?tab=orders&attention=<reason>`). One predicate, `attentionOf` in `lib/swag/orders.ts`, both
+counts and filters, so a line that says 3 opens 3 orders.
+
+| Reason | Rule |
+|---|---|
+| `stale` | `paid` or `in_production`, created more than `SWAG_STALE_DAYS` (7) days ago |
+| `no_document` | open, Colombian address, no cédula / NIT: Envia cannot print the label |
+| `mirror_failed` | not cancelled, notes carry `mirror_failed=true`: create the Shopify order by hand |
+| `no_tracking` | `shipped` with no tracking number |
+| `shipping_unpaid` | `awaiting_shipping_payment` |
+| `voucher_cancel` | admin only; counted only where the chain's `orderClaimed(orderRef)` is still false |
+
+- **Filters live in the URL**: `status`, `channel`, `attention`, `q`. The summary tiles link to them.
+- **Search** matches the order number (`#12` or `12`), SKU, buyer email and wallet, recipient
+  name and city, and tracking (string or object).
+- **Bulk moves**: tick orders in the same stage, then *Start production*, *Mark shipped* (one
+  sheet with a tracking field per parcel) or *Mark delivered*. `POST /api/swag/admin/orders/bulk
+  { ids, status, tracking? }` (fulfilment or admin, at most 100) runs each order through the same
+  update as a single PATCH, so the status trigger rules every row. Refusals come back per id
+  and stay on screen. **Cancelling is never bulk**: it is one order at a time, behind a confirmation.
+- Only *Cancel voucher on chain* signs a transaction, so the network check sits inside that
+  block. The status moves are database writes and never ask anyone to switch network.
+
 ## Status
 
 `awaiting_shipping_payment → paid` (USDC orders, until the shipping transfer

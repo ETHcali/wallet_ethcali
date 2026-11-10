@@ -5,6 +5,7 @@ import { usePrivy } from '@privy-io/react-auth';
 import AdminShell from '../../components/admin/AdminShell';
 import { StatTile } from '../../components/admin/StatTile';
 import Loading from '../../components/shared/Loading';
+import { AdminAttention, attentionHref } from '../../components/swag/AdminAttention';
 import { AdminBatch } from '../../components/swag/AdminBatch';
 import { AdminCollection } from '../../components/swag/AdminCollection';
 import { AdminOrders } from '../../components/swag/AdminOrders';
@@ -30,28 +31,30 @@ const TABS: Array<{ id: Tab; label: string; admin: boolean }> = [
 
 const isTab = (v: unknown): v is Tab => TABS.some((t) => t.id === v);
 
+const ordersHref = (status: string) => `/swag/admin?tab=orders&status=${status}`;
+
 const usdc = (n: number) => `${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC`;
 const copFmt = (n: number) => `COP ${Math.round(n).toLocaleString('es-CO')}`;
 
 function Summary({ data }: { data: SwagAdminSummary }) {
-  const queue = data.voucherCancelQueue.filter((q) => !q.closedOnChain).length;
   const admin = data.viewer.role === 'admin';
   const { USDC, COP } = data.revenue;
   return (
     <div className="space-y-3">
+    <AdminAttention data={data} />
     {admin && (
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <StatTile label="USDC in" value={usdc(USDC.item + USDC.shipping)} hint={`${USDC.orders} orders · items ${usdc(USDC.item)} · shipping ${usdc(USDC.shipping)}`} />
         <StatTile label="Card in (COP)" value={copFmt(COP.item + COP.shipping)} hint={`${COP.orders} lines · items ${copFmt(COP.item)} · shipping ${copFmt(COP.shipping)}`} />
-        <StatTile label="Shipping unpaid" value={String(data.shippingDue.orders)} hint={data.shippingDue.orders ? `${usdc(data.shippingDue.usdc)} owed; not printed until paid` : 'Every USDC order has paid shipping'} />
+        <StatTile label="Shipping unpaid" value={String(data.shippingDue.orders)} hint={data.shippingDue.orders ? `${usdc(data.shippingDue.usdc)} owed; not printed until paid` : 'Every USDC order has paid shipping'} href={data.shippingDue.orders ? attentionHref('shipping_unpaid') : undefined} />
       </div>
     )}
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-      <StatTile label="To produce" value={String(data.counts.byStatus.paid)} hint="Paid, not yet on the press" />
-      <StatTile label="In production" value={String(data.counts.byStatus.in_production)} hint="Printing or packing" />
-      <StatTile label="In transit" value={String(data.counts.byStatus.shipped)} hint="Shipped, not yet delivered" />
+      <StatTile label="To produce" value={String(data.counts.byStatus.paid)} hint="Paid, not yet on the press" href={ordersHref('paid')} />
+      <StatTile label="In production" value={String(data.counts.byStatus.in_production)} hint="Printing or packing" href={ordersHref('in_production')} />
+      <StatTile label="In transit" value={String(data.counts.byStatus.shipped)} hint="Shipped, not yet delivered" href={ordersHref('shipped')} />
       {admin ? (
-        <StatTile label="Vouchers to cancel" value={String(queue)} hint="Refunded with a live voucher" />
+        <StatTile label="Vouchers to cancel" value={String(data.attention.voucher_cancel)} hint="Refunded with a live voucher" href={attentionHref('voucher_cancel')} />
       ) : (
         <StatTile label="Store" value={data.collection.paused ? 'Paused' : 'Live'} hint={`${data.counts.total} orders in total`} />
       )}

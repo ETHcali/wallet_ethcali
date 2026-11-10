@@ -47,5 +47,7 @@ Runbook: `docs/SWAG_ORDERS.md`. Design record: `../docs/swag-rebuild-spec.md` (w
 `pages/api/swag/admin/*` behind `lib/swag/requireSwagAdmin.ts`, whose authority is the
 collection's roles: `requireSwagStaff` (ADMIN or FULFILLMENT), `requireSwagAdmin`,
 `requireSwagSuperAdmin` (DEFAULT_ADMIN). `swag_staff` names people and grants nothing.
-Onchain writes go through `useSwagAdminTx`, one instance per button. Card prices re-push daily
+Onchain writes go through `useSwagAdminTx`, one instance per button. "Needs attention" counts
+and the `?attention=` filter share one predicate (`attentionOf`); bulk moves
+(`/api/swag/admin/orders/bulk`) never cancel. Only the voucher cancel shows `ChainGate`. Card prices re-push daily
 from `pages/api/cron/swag-prices.ts` (`CRON_SECRET`).
