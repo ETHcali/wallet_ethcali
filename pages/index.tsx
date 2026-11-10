@@ -6,48 +6,95 @@ import Loading from '../components/shared/Loading';
 import { safeNext, DEFAULT_NEXT } from '../lib/returnTo';
 import Navigation from '../components/Navigation';
 import { DEFAULT_CHAIN } from '../config/chains';
+import Link from 'next/link';
 import {
   ArrowRightIcon,
-  BagIcon,
-  DropIcon,
-  GasIcon,
   GitHubIcon,
   InstagramIcon,
   LinkedInIcon,
-  ShieldIcon,
   TelegramIcon,
   XIcon,
   YouTubeIcon,
 } from '../components/shared/icons';
 
 /* UX_GUIDELINES.md §1 — Landing (signed out): display headline, one-paragraph
-   promise, one primary CTA, then four numbered feature cells in a hairline
-   grid, an infrastructure logo strip, the network line and the footer. */
+   promise, one primary CTA, then the app's areas as numbered cells in a
+   hairline grid, an infrastructure logo strip, the network line and the footer.
 
-const FEATURES = [
+   Every cell opens its part of the app. The list mirrors `MAIN_NAV` in
+   components/Navigation.tsx and `APP_AREAS` in ethcaliorg/content/app.ts —
+   add an area there and it belongs here too.
+
+   `signIn` says how the cell gets you there. Wallet, identity, faucet and
+   certificates need a session, so the cell signs you in and carries the
+   destination through `?next=`. Swag and donations read fine signed out, so
+   they are plain links: a login wall in front of a store is a click for nothing. */
+
+type Area = {
+  n: string;
+  href: string;
+  title: string;
+  body: string;
+  action: string;
+  signIn: boolean;
+  /** One of a set rendered together, so the six read as a family. public/images/landing/ */
+  image: string;
+};
+
+const AREAS: Area[] = [
   {
     n: '01',
-    title: 'Gas paid by the community',
-    body: `Every transaction on ${DEFAULT_CHAIN.name} is sponsored. You never buy ETH just to move.`,
-    Icon: GasIcon,
+    href: '/wallet',
+    title: 'A wallet that pays its own gas',
+    body: `Send, receive and swap ETH, USDC, USDT and EURC on ${DEFAULT_CHAIN.name}. The community sponsors the gas; the keys stay yours.`,
+    action: 'Open your wallet',
+    signIn: true,
+    image: '/images/landing/wallet.webp',
   },
   {
     n: '02',
+    href: '/sybil',
     title: 'Identity without surveillance',
-    body: 'Prove you are one person with a zero-knowledge passport proof. We store a nullifier, never a name.',
-    Icon: ShieldIcon,
+    body: 'Prove you are one person with a zero-knowledge passport proof, then claim your name.ethcali.eth. We store a nullifier, never a name.',
+    action: 'Verify yourself',
+    signIn: true,
+    image: '/images/landing/identity.webp',
   },
   {
     n: '03',
+    href: '/faucet',
     title: 'A faucet for verified humans',
-    body: 'Verify once, then claim test ETH from community vaults without asking anyone.',
-    Icon: DropIcon,
+    body: 'When ETH Cali opens a vault for an event or a hackathon, verified people claim a little ETH for gas without asking anyone.',
+    action: 'Go to the faucet',
+    signIn: true,
+    image: '/images/landing/faucet.webp',
   },
   {
     n: '04',
-    title: 'Swag and donations, onchain',
-    body: 'Buy merch in USDC and support ETH Cali campaigns. Every receipt is a token you keep.',
-    Icon: BagIcon,
+    href: '/certificate',
+    title: 'Certificates you own',
+    body: 'Builders and organisers of ETH Cali events receive a soulbound certificate on Ethereum, with a PDF and a one-click LinkedIn credential.',
+    action: 'See your certificates',
+    signIn: true,
+    image: '/images/landing/certificates.webp',
+  },
+  {
+    n: '05',
+    href: '/swag',
+    title: 'Swag, paid by card or USDC',
+    body: 'Every design is a token on Ethereum. Pay by card, or in USDC for less, and the token is yours either way.',
+    action: 'Browse the store',
+    signIn: false,
+    image: '/images/landing/swag.webp',
+  },
+  {
+    n: '06',
+    href: '/donations',
+    title: 'Donations you can verify',
+    body: 'Fund ETH Cali campaigns in ETH or USDC, straight to the community Safe. Totals and the donor wall are read from the chain.',
+    action: 'See the campaigns',
+    signIn: false,
+    image: '/images/landing/donations.webp',
   },
 ];
 
@@ -138,6 +185,14 @@ export default function Home() {
     }
   }, [ready, authenticated, router, next]);
 
+  // A cell that needs a session: record where it leads, then open Privy. The
+  // redirect effect above reads `next` once the session lands. Shallow, so the
+  // page does not re-run its data fetching for a query change.
+  const signInTo = (href: string) => {
+    router.replace({ pathname: '/', query: { next: href } }, undefined, { shallow: true });
+    login();
+  };
+
   // Loading timeout state
   const [loadingTimeout, setLoadingTimeout] = React.useState(false);
 
@@ -221,31 +276,62 @@ export default function Home() {
               <ArrowRightIcon className="h-5 w-5" />
             </button>
             <p className="font-mono text-xs text-content-faint">
-              0.00 <span className="text-signal-confirmed">· sponsored</span> on every supported network
+              gas 0.00 <span className="text-signal-confirmed">· sponsored</span> on {DEFAULT_CHAIN.name}
             </p>
           </div>
         </div>
       </section>
 
-      {/* ── Features: four numbered cells in a hairline grid ── */}
-      <section className="mx-auto max-w-page px-4 pb-12 sm:px-6 sm:pb-16 lg:pb-24">
-        <div className="grid grid-cols-1 overflow-hidden rounded-card border border-line-hairline sm:grid-cols-2 lg:grid-cols-4">
-          {FEATURES.map(({ n, title, body, Icon }) => (
-            <div
-              key={n}
-              className="border-line-hairline p-5 sm:p-6 sm:[&:nth-child(odd)]:border-r lg:[&:not(:last-child)]:border-r [&:not(:last-child)]:border-b sm:[&:nth-child(-n+2)]:border-b lg:[&:not(:last-child)]:border-b-0"
-            >
-              <div className="mb-4 flex items-center justify-between sm:mb-6">
-                <span className="font-mono text-[11px] tracking-[0.16em] text-content-faint">/{n}</span>
-                <span className="flex h-10 w-10 items-center justify-center rounded-control bg-eth-blue-wash text-eth-blue-text">
-                  <Icon className="h-5 w-5" />
+      {/* ── What the app does: one cell per area, each one a way in ── */}
+      <section aria-labelledby="areas-heading" className="mx-auto max-w-page px-4 pb-12 sm:px-6 sm:pb-16 lg:pb-24">
+        <h2 id="areas-heading" className="mb-6 font-mono text-[11px] font-normal uppercase tracking-[0.16em] text-content-faint">
+          What you can do here
+        </h2>
+        {/* The 1px gap over a hairline background draws the grid lines at every
+            breakpoint, without per-column border rules to keep in step. */}
+        <ul className="grid grid-cols-1 gap-px overflow-hidden rounded-card border border-line-hairline bg-line-hairline sm:grid-cols-2 lg:grid-cols-3">
+          {AREAS.map((area) => {
+            const { n, href, title, body, action, signIn, image } = area;
+            const cell =
+              'group flex h-full w-full flex-col bg-surface-void text-left';
+            const inner = (
+              <>
+                {/* Decorative: the title says what the cell is. */}
+                <span className="relative block aspect-[16/10] overflow-hidden">
+                  <Image
+                    src={image}
+                    alt=""
+                    fill
+                    sizes="(min-width: 1024px) 400px, (min-width: 640px) 50vw, 100vw"
+                    className="object-contain opacity-90 transition-opacity duration-base [mask-image:radial-gradient(ellipse_closest-side_at_center,black_60%,transparent_100%)] group-hover:opacity-100 motion-reduce:transition-none"
+                  />
                 </span>
-              </div>
-              <h2 className="mb-2 text-lg font-bold leading-snug sm:text-xl">{title}</h2>
-              <p className="mb-0 text-sm leading-relaxed text-content-muted">{body}</p>
-            </div>
-          ))}
-        </div>
+                <span className="flex flex-1 flex-col px-5 pb-5 sm:px-6 sm:pb-6">
+                  <span className="mb-3 font-mono text-[11px] tracking-[0.16em] text-content-faint">/{n}</span>
+                  <span className="mb-2 block text-lg font-bold leading-snug text-content-primary sm:text-xl">{title}</span>
+                  <span className="mb-5 block flex-1 text-sm leading-relaxed text-content-muted">{body}</span>
+                  <span className="inline-flex min-h-tap items-center gap-2 text-sm font-semibold text-eth-blue-text group-hover:text-content-primary">
+                    {action}
+                    <ArrowRightIcon className="h-4 w-4" />
+                  </span>
+                </span>
+              </>
+            );
+            return (
+              <li key={n} className="flex">
+                {signIn ? (
+                  <button type="button" onClick={() => signInTo(href)} className={cell}>
+                    {inner}
+                  </button>
+                ) : (
+                  <Link href={href} className={cell}>
+                    {inner}
+                  </Link>
+                )}
+              </li>
+            );
+          })}
+        </ul>
       </section>
 
       {/* ── Infrastructure strip ── */}
