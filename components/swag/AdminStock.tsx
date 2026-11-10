@@ -26,7 +26,7 @@ import {
   type SwagTokenStock,
 } from '../../hooks/swag';
 import type { SwagProduct } from '../../types/swag';
-import { CARD, ChainGate, FIELD, LABEL, Pill, TxButton } from './AdminPrimitives';
+import { CARD, ChainGate, FIELD, LABEL, Pill, TxButton } from '../admin/primitives';
 
 const UINT128_MAX = (1n << 128n) - 1n;
 

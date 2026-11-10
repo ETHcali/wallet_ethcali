@@ -17,6 +17,8 @@ import DonationVaultABI from '../../frontend/abis/DonationVault.json';
 import DonationReceiptABI from '../../frontend/abis/DonationReceipt1155.json';
 import { donationClient, useDonationAddresses } from './useDonationAddresses';
 import { useActiveWallet } from '../useActiveWallet';
+import { useRequireChain } from '../useRequireChain';
+import { waitForSuccess } from '../../utils/waitForSuccess';
 import { parseDonationError } from '../../utils/donationErrors';
 import type { DonationTier } from '../../types/donations';
 import { logger } from '../../utils/logger';
@@ -103,19 +105,28 @@ export interface DonationAdminActions {
   ) => Promise<string | null>;
   addReceiptMinter: (minter: string) => Promise<string | null>;
   isSubmitting: boolean;
-  /** Which action is in flight — so each button owns its own pending state. */
+  /**
+   * Which action is in flight — so each button owns its own pending state. It
+   * stays set from the click until the receipt is in and the screen has
+   * re-read the chain, so a button cannot be pressed twice in the gap.
+   */
   pendingAction: string | null;
   error: string | null;
+  /** The action the error belongs to, so it is shown beside that button. */
+  errorAction: string | null;
   clearError: () => void;
+  /** Why no action can be sent right now (wrong network), or null. Put it on `disabled`. */
+  blocked: string | null;
 }
 
 export function useDonationAdminActions(chainId?: number): DonationAdminActions {
   const { vault, receiptCollection, chainId: resolvedChainId } = useDonationAddresses(chainId);
   const { sendTransaction } = useSendTransaction();
   const queryClient = useQueryClient();
+  const chain = useRequireChain(resolvedChainId);
 
   const [pendingAction, setPendingAction] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ action: string; message: string } | null>(null);
 
   const clearError = useCallback(() => setError(null), []);
 
@@ -139,17 +150,23 @@ export function useDonationAdminActions(chainId?: number): DonationAdminActions 
           { sponsor: true }
         );
 
-        // Refresh everything the admin screen renders.
-        queryClient.invalidateQueries({ queryKey: ['donation-campaigns'] });
-        queryClient.invalidateQueries({ queryKey: ['donation-campaign'] });
-        queryClient.invalidateQueries({ queryKey: ['donation-campaign-totals'] });
-        queryClient.invalidateQueries({ queryKey: ['donation-tiers'] });
-        queryClient.invalidateQueries({ queryKey: ['donation-admin-status'] });
+        await waitForSuccess(resolvedChainId, result.hash);
+
+        await Promise.all(
+          [
+            ['donation-campaigns'],
+            ['donation-campaign'],
+            ['donation-campaign-totals'],
+            ['donation-tiers'],
+            ['donation-admin-status'],
+            ['donation-minter-status'],
+          ].map((queryKey) => queryClient.invalidateQueries({ queryKey }))
+        );
 
         return result.hash;
       } catch (e) {
         logger.error(`[useDonationAdminActions] ${action} failed`, e);
-        setError(parseDonationError(e));
+        setError({ action, message: parseDonationError(e) });
         return null;
       } finally {
         setPendingAction(null);
@@ -236,8 +253,10 @@ export function useDonationAdminActions(chainId?: number): DonationAdminActions 
 
     isSubmitting: pendingAction !== null,
     pendingAction,
-    error,
+    error: error?.message ?? null,
+    errorAction: error?.action ?? null,
     clearError,
+    blocked: chain.ready ? null : `Switch your wallet to ${chain.chainName} first.`,
   };
 }
 

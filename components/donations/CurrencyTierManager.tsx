@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Spinner, buttonClass } from '../admin/primitives';
 import { CloseIcon } from '../shared/icons';
 import { parseUnits, formatUnits } from 'viem';
 import {
@@ -36,7 +37,7 @@ const CurrencyTierManager: React.FC<CurrencyTierManagerProps> = ({
   acceptedTokens,
 }) => {
   const { tokens } = useDonationAddresses(chainId);
-  const { setAcceptedToken, setTiers, pendingAction, error, clearError } =
+  const { setAcceptedToken, setTiers, pendingAction, error, errorAction, clearError, blocked } =
     useDonationAdminActions(chainId);
 
   const [selected, setSelected] = useState<DonationToken>(tokens[0]);
@@ -145,13 +146,11 @@ const CurrencyTierManager: React.FC<CurrencyTierManagerProps> = ({
         <button
           type="button"
           onClick={() => setAcceptedToken(campaign.id, selected.address, !isAccepted)}
-          disabled={pendingAction === 'setAcceptedToken'}
-          className={`rounded-control px-3 py-1.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-            isAccepted
-              ? 'border border-line-strong bg-surface-inset text-content-secondary hover:border-signal-reverted hover:text-signal-reverted'
-              : 'bg-eth-blue text-on-brand hover:bg-eth-blue-lift'
-          }`}
+          disabled={pendingAction === 'setAcceptedToken' || Boolean(blocked)}
+          title={blocked ?? undefined}
+          className={buttonClass(isAccepted ? 'secondary' : 'primary')}
         >
+          {pendingAction === 'setAcceptedToken' && <Spinner />}
           {pendingAction === 'setAcceptedToken'
             ? 'Saving…'
             : isAccepted
@@ -159,6 +158,7 @@ const CurrencyTierManager: React.FC<CurrencyTierManagerProps> = ({
               : 'Accept'}
         </button>
       </div>
+      {errorAction === 'setAcceptedToken' && error && <p className="text-xs text-signal-reverted">{error}</p>}
 
       {/* Tiers */}
       <div className="rounded-control border border-line-hairline bg-surface-slab/60 p-3">
@@ -226,7 +226,7 @@ const CurrencyTierManager: React.FC<CurrencyTierManagerProps> = ({
           </p>
         )}
 
-        {error && (
+        {errorAction === 'setTiers' && error && (
           <p className="mt-2 rounded-chip border border-signal-reverted/40 bg-signal-reverted/10 p-2 text-[11px] text-signal-reverted">
             {error}
           </p>
@@ -235,11 +235,13 @@ const CurrencyTierManager: React.FC<CurrencyTierManagerProps> = ({
         <button
           type="button"
           onClick={handleSaveTiers}
-          disabled={!allValid || !ascending || pendingAction === 'setTiers'}
-          className="mt-3 w-full rounded-control bg-eth-blue py-2 text-xs font-semibold text-on-brand transition-colors hover:bg-eth-blue-lift disabled:cursor-not-allowed disabled:bg-surface-ridge disabled:text-content-muted"
+          disabled={!allValid || !ascending || pendingAction === 'setTiers' || Boolean(blocked)}
+          className={buttonClass('primary', 'mt-3 w-full')}
         >
+          {pendingAction === 'setTiers' && <Spinner />}
           {pendingAction === 'setTiers' ? 'Saving…' : `Save ${selected.symbol} tiers`}
         </button>
+        {blocked && pendingAction !== 'setTiers' && <p className="mt-1 text-[11px] text-content-faint">{blocked}</p>}
       </div>
     </div>
   );

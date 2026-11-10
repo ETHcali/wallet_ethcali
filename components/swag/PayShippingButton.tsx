@@ -9,7 +9,7 @@ import { formatCop, formatUsdc, SWAG, usePayShipping, useSwagLocale, useTrm } fr
 import { useActiveWallet } from '../../hooks/useActiveWallet';
 import { useRequireChain } from '../../hooks/useRequireChain';
 import SwitchChainButton from '../shared/SwitchChainButton';
-import { HashChip } from './HashChip';
+import { HashChip } from '../shared/HashChip';
 import type { SwagOrderView } from '../../types/swag-orders';
 
 const BUTTON =

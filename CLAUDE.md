@@ -49,7 +49,9 @@ deliberate change, not a flag.
 - Reads: `useQuery` + `publicClientFor(chainId).readContract()`.
 - Writes: Privy `useSendTransaction` + viem `encodeFunctionData`, explicit `chainId`,
   always `{ sponsor: true }`, after `useRequireChain(chainId).ready`. Invalidate queries after.
-- Each onchain button owns its pending state, cleared in `finally` (see ethskills `frontend-ux`).
+- Each onchain button owns its pending state, cleared in `finally` (see ethskills `frontend-ux`),
+  and holds it until `waitForSuccess(chainId, hash)` (`utils/waitForSuccess.ts`) and the re-read
+  finish, not just until the hash. Errors go through `adminErrorMessage` (`utils/adminErrors.ts`).
 - Sponsored writes go through Privy's ERC-4337 relay and can report an error for an operation
   that landed. Before telling a user a write failed, re-read the chain.
 

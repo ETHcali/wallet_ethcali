@@ -26,8 +26,8 @@ import { looksLikeAddressInput, resolveAddressInput } from '../../hooks/swag';
 import { useActiveWallet } from '../../hooks/useActiveWallet';
 import { ACCESS_ABI } from '../../lib/accessAbi';
 import type { AccessContractView, AccessMatrix, AccessPerson } from '../../types/access';
-import { CARD, ChainGate, FIELD, LABEL, Pill, Spinner, TxButton } from '../swag/AdminPrimitives';
-import { HashChip, truncateHex } from '../swag/HashChip';
+import { CARD, ChainGate, ConfirmDialog, FIELD, LABEL, Pill, Spinner, TxButton, useToast } from './primitives';
+import { HashChip, truncateHex } from '../shared/HashChip';
 
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
@@ -80,18 +80,33 @@ function Person({ wallet, people, me }: { wallet: string; people: Record<string,
   );
 }
 
-function RevokeButton({ contract, role, wallet, block }: { contract: AccessContractDef; role: AccessRoleDef; wallet: string; block: string | null }) {
+function RevokeButton({ contract, role, wallet, who, block }: { contract: AccessContractDef; role: AccessRoleDef; wallet: string; who: string; block: string | null }) {
   const tx = useAccessTx(contract.address);
+  const toast = useToast();
+  const [asking, setAsking] = useState(false);
   return (
-    <TxButton
-      label="Revoke"
-      pendingLabel="Revoking…"
-      tx={tx}
-      variant="secondary"
-      quiet
-      reason={block}
-      onClick={() => tx.run(encodeFunctionData({ abi: ACCESS_ABI, functionName: 'revokeRole', args: [role.id!, wallet as Address] }))}
-    />
+    <>
+      <TxButton label="Revoke" pendingLabel="Revoking…" tx={tx} variant="secondary" quiet reason={block} onClick={() => setAsking(true)} />
+      {asking && (
+        <ConfirmDialog
+          title={`Revoke ${role.label} on ${contract.name}?`}
+          body={
+            <>
+              <span className="font-semibold text-content-primary">{who}</span> loses: {role.unlocks.toLowerCase()}. This is a
+              transaction from your wallet; granting it back is another one.
+            </>
+          }
+          confirmLabel="Revoke"
+          pendingLabel="Revoking…"
+          danger
+          onConfirm={async () => {
+            const hash = await tx.run(encodeFunctionData({ abi: ACCESS_ABI, functionName: 'revokeRole', args: [role.id!, wallet as Address] }));
+            if (hash) toast(`${who} no longer holds ${role.label} on ${contract.name}.`);
+          }}
+          onClose={() => setAsking(false)}
+        />
+      )}
+    </>
   );
 }
 
@@ -117,6 +132,7 @@ function RoleBlock({ ctx, contract, view, role }: { ctx: Ctx; contract: AccessCo
                 contract={contract}
                 role={role}
                 wallet={wallet}
+                who={nameOf(ctx.matrix.people, wallet)}
                 block={isLastSuper ? 'The last super admin. Revoking it would lock this contract for good.' : block}
               />
             )}

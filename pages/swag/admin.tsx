@@ -12,8 +12,8 @@ import { AdminOrders } from '../../components/swag/AdminOrders';
 import { AdminShipping } from '../../components/swag/AdminShipping';
 import { AdminStock } from '../../components/swag/AdminStock';
 import { AdminTeam } from '../../components/swag/AdminTeam';
-import { CARD, buttonClass } from '../../components/swag/AdminPrimitives';
-import { HashChip } from '../../components/swag/HashChip';
+import { CARD, Tabs, buttonClass } from '../../components/admin/primitives';
+import { HashChip } from '../../components/shared/HashChip';
 import { SWAG, useSwagAdminSummary } from '../../hooks/swag';
 import type { SwagAdminSummary } from '../../types/swag-orders';
 
@@ -117,24 +117,7 @@ export default function SwagAdminPage() {
     body = (
       <div className="space-y-6">
         <Summary data={summary.data} />
-        <div role="tablist" aria-label="Swag admin sections" className="flex gap-2 overflow-x-auto">
-          {tabs.map((t) => (
-            <button
-              key={t.id}
-              role="tab"
-              type="button"
-              aria-selected={shown === t.id}
-              onClick={() => selectTab(t.id)}
-              className={`min-h-tap shrink-0 rounded-control border px-4 text-sm font-semibold transition-colors ${
-                shown === t.id
-                  ? 'border-eth-blue bg-eth-blue-wash text-eth-blue-text'
-                  : 'border-line-hairline bg-surface-inset text-content-secondary hover:border-line-strong'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+        <Tabs label="Swag admin sections" tabs={tabs} value={shown} onChange={selectTab} />
         {shown === 'batch' && <AdminBatch />}
         {shown === 'orders' && <AdminOrders canAdmin={isAdmin} />}
         {shown === 'stock' && isAdmin && <AdminStock />}

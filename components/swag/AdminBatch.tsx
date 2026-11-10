@@ -15,7 +15,7 @@ import { createPortal } from 'react-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { useStartSwagBatch, useSwagAdminBatch } from '../../hooks/swag';
 import { SWAG_SIZES, type SwagAdminOrderView } from '../../types/swag-orders';
-import { CARD, Pill, Spinner, buttonClass } from './AdminPrimitives';
+import { CARD, Pill, Spinner, buttonClass } from '../admin/primitives';
 
 const NO_SIZE = 'One size';
 const SIZE_COLUMNS = [...SWAG_SIZES, NO_SIZE] as const;

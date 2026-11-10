@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useZKPassportMetadata, useUpdateZKPassportMetadata, ZKPassportMetadata } from '../../hooks/useZKPassportAdmin';
+import { adminErrorMessage } from '../../utils/adminErrors';
 
 interface ZKPassportMetadataAdminProps {
   chainId: number;
@@ -45,7 +46,7 @@ export function ZKPassportMetadataAdmin({ chainId }: ZKPassportMetadataAdminProp
       setSuccess(true);
       refetch();
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'Failed to update metadata');
+      setSubmitError(adminErrorMessage(err));
     } finally {
       setIsSubmitting(false);
     }

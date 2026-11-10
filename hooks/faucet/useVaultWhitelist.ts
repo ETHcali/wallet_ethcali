@@ -7,6 +7,7 @@ import { encodeFunctionData } from 'viem';
 import FaucetManagerABI from '../../frontend/abis/FaucetManager.json';
 import { getChain, publicClientFor } from '../../config/chains';
 import { useActiveWallet } from '../useActiveWallet';
+import { waitForSuccess } from '../../utils/waitForSuccess';
 
 export function useVaultWhitelist(chainId: number) {
   const faucetManager = getChain(chainId)?.contracts.FaucetManager;
@@ -21,8 +22,11 @@ export function useVaultWhitelist(chainId: number) {
     const data = encodeFunctionData({ abi: FaucetManagerABI as any, functionName, args });
     const result = await sendTransaction({ to: faucetManager, data, chainId }, { sponsor: true });
 
-    queryClient.invalidateQueries({ queryKey: ['faucet-all-vaults'] });
-    queryClient.invalidateQueries({ queryKey: ['faucet-whitelist-check'] });
+    await waitForSuccess(chainId, result.hash);
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['faucet-all-vaults'] }),
+      queryClient.invalidateQueries({ queryKey: ['faucet-whitelist-check'] }),
+    ]);
     return result;
   };
 

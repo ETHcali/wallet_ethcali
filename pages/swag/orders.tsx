@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePrivy } from '@privy-io/react-auth';
 import Navigation from '../../components/Navigation';
 import Loading from '../../components/shared/Loading';
-import { HashChip } from '../../components/swag/HashChip';
+import { HashChip } from '../../components/shared/HashChip';
 import { PayShippingButton } from '../../components/swag/PayShippingButton';
 import {
   productAltName,
