@@ -60,7 +60,7 @@ This module reuses patterns already in the codebase rather than inventing new on
 | Pay-then-redeem lifecycle | `Swag1155` `buy` → `redeem` |
 | Personhood / token gating | `FaucetManager` vault gating + `ZKPassportNFT` |
 | QR check-in at a physical event | `components/swag/AdminQRScanner.tsx` |
-| Off-chain metadata | `/api/pinata/pin-json`, `lib/` Pinata integration |
+| Off-chain metadata | `lib/ipfsPin.ts` (`pinJson`, `pinFile`), server-side Pinata |
 | User page + separate admin page | `pages/swag/index.tsx` + `pages/swag/admin.tsx` |
 | Sponsored gas | Privy `useSendTransaction` with `{ sponsor: true }` |
 

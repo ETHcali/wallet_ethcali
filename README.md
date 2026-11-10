@@ -295,8 +295,7 @@ The application includes several API endpoints for backend functionality:
 - `GET /api/wallet-balance` - Get wallet balance
 - `POST /api/register-personhood` - Register personhood verification
 - `GET /api/check-personhood/[uniqueIdentifier]` - Check personhood status
-- `POST /api/pinata/pin-image` - Pin image to IPFS via Pinata
-- `POST /api/pinata/pin-json` - Pin JSON metadata to IPFS via Pinata
+- `POST /api/pinata/pin-image` - Pin swag artwork to IPFS via Pinata (swag ADMIN_ROLE)
 - `GET /api/poap/holders?eventId=<id>` - Fetch POAP event holders (server-side, uses `POAP_API_KEY`; nothing in the app calls it)
 - `GET /api/fx/trm` - Today's COP/USD TRM
 - `GET|POST /api/swag/orders` - My orders / record a crypto purchase from its tx hash (Privy token)

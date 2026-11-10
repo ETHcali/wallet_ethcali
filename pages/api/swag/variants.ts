@@ -1,8 +1,9 @@
 /**
  * Swag artwork pipeline — read and update variant state.
  *
- * Admin-only. Uses the service role, so the gate is the only thing standing
- * between the internet and these tables; see lib/adminAuth.ts.
+ * ADMIN_ROLE on the swag collection only: artwork is swag production state.
+ * Uses the service role, so the gate is the only thing standing between the
+ * internet and these tables; see lib/swag/requireSwagAdmin.ts.
  *
  * A row here is a design on a chain (swag_variants) joined to the design
  * itself (swag_products). Drive links and notes belong to the per-chain row;
@@ -11,7 +12,8 @@
  */
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getSupabaseAdmin } from '../../../lib/supabase';
-import { requireAdmin, AdminAuthError } from '../../../lib/adminAuth';
+import { requireSwagAdmin } from '../../../lib/swag/requireSwagAdmin';
+import { sendAuthError } from '../../../lib/swag/requireUser';
 import { logger } from '../../../utils/logger';
 
 /** Only these may be written from the client. status is derived, never sent. */
@@ -24,10 +26,9 @@ const PRODUCT_SELECT =
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   let admin: string;
   try {
-    admin = await requireAdmin(req);
+    admin = (await requireSwagAdmin(req)).admin;
   } catch (e) {
-    const err = e as AdminAuthError;
-    return res.status(err.status ?? 401).json({ error: err.message });
+    return sendAuthError(res, e);
   }
 
   const supabase = getSupabaseAdmin();

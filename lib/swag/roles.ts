@@ -10,4 +10,6 @@
 import { keccak256, toBytes, zeroHash } from 'viem';
 
 export const FULFILLMENT_ROLE = keccak256(toBytes('FULFILLMENT_ROLE'));
+/** The voucher signer `claim()` trusts; granted by addSigner / removeSigner, not grantRole. */
+export const SIGNER_ROLE = keccak256(toBytes('SIGNER_ROLE'));
 export const DEFAULT_ADMIN_ROLE = zeroHash;

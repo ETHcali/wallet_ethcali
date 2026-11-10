@@ -14,7 +14,7 @@
  */
 import { keccak256, toBytes, type Address, type Hex } from 'viem';
 import { CERT_ADDRESS } from '../lib/certificates/nft';
-import { DEFAULT_ADMIN_ROLE, FULFILLMENT_ROLE } from '../lib/swag/roles';
+import { DEFAULT_ADMIN_ROLE, FULFILLMENT_ROLE, SIGNER_ROLE } from '../lib/swag/roles';
 import { DEFAULT_CHAIN } from './chains';
 
 export const ADMIN_ROLE = keccak256(toBytes('ADMIN_ROLE'));
@@ -57,9 +57,10 @@ export const KNOWN_WALLETS: Readonly<Record<string, string>> = {
   '0x3b89ad8cc39900778abcdcc22bc83cac031a415b': 'Ops key',
   '0xb6bde4fb6dfbad5488fa31edf0f3730d9d86da64': 'ethcali.eth Safe (3-of-5)',
   '0x3c9204b25966591749450fb233d58e850e7c1f9f': 'Original deployer',
+  '0x397798d66f6a563c2ea51cd6f0a708c7298062e6': 'Swag voucher signer (server key)',
 };
 
-export type AccessRoleKey = 'super' | 'admin' | 'fulfilment' | 'minter' | 'owner';
+export type AccessRoleKey = 'super' | 'admin' | 'fulfilment' | 'signer' | 'minter' | 'owner';
 
 export interface AccessRoleDef {
   key: AccessRoleKey;
@@ -68,7 +69,10 @@ export interface AccessRoleDef {
   label: string;
   /** What holding it unlocks, in the words an operator would use. */
   unlocks: string;
-  /** Whether the Access UI offers a grant form for it (MINTER is contract-to-contract). */
+  /**
+   * Whether the Access UI offers a grant form for it. MINTER is contract-to-
+   * contract; the swag SIGNER moves only through addSigner / removeSigner.
+   */
   grantable: boolean;
 }
 
@@ -105,6 +109,13 @@ export const ACCESS_CONTRACTS: readonly AccessContractDef[] = [
       SUPER,
       { key: 'admin', id: ADMIN_ROLE, label: 'Admin', unlocks: 'Prices, caps, pause, vouchers, and the whole order desk', grantable: true },
       { key: 'fulfilment', id: FULFILLMENT_ROLE, label: 'Fulfilment', unlocks: 'Order desk only: addresses, batch, print sheet, shipped', grantable: true },
+      {
+        key: 'signer',
+        id: SIGNER_ROLE,
+        label: 'Voucher signer',
+        unlocks: 'The server key whose vouchers claim() accepts for card and event orders. Changed with addSigner / removeSigner.',
+        grantable: false,
+      },
     ],
   },
   {

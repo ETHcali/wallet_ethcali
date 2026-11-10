@@ -123,6 +123,7 @@ export default function AdminOverviewPage() {
     roles.isFaucetSuperAdmin && 'Faucet · super admin',
     roles.isFaucetAdmin && 'Faucet · admin',
     roles.isZKPassportOwner && 'Identity · owner',
+    roles.isCertAdmin && 'Certificates · admin',
   ].filter((r): r is string => Boolean(r));
 
   return (
@@ -211,7 +212,7 @@ export default function AdminOverviewPage() {
           </Area>
 
           <Area title="Artwork" href="/admin/artwork">
-            <p className="text-sm text-content-muted">Swag product artwork, pinned to IPFS before it goes on chain.</p>
+            <p className="text-sm text-content-muted">Swag product artwork, pinned to IPFS before it goes on chain. Needs Admin on the swag collection.</p>
           </Area>
         </div>
 

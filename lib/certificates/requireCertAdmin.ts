@@ -11,22 +11,14 @@
  * email signs in with a code, and their Privy wallet carries the role.
  */
 import type { NextApiRequest } from 'next';
-import { publicClientFor } from '../../config/chains';
+import { firstHolder } from '../roles';
 import { requireUser, UserAuthError } from '../swag/requireUser';
-import { CERT_ABI, CERT_ADDRESS, CERT_ADMIN_ROLE, CERT_CHAIN_ID } from './nft';
 
 /** Returns the first linked wallet holding ADMIN_ROLE, or throws UserAuthError. */
 export async function requireCertAdmin(req: NextApiRequest): Promise<string> {
   const user = await requireUser(req);
-  const client = publicClientFor(CERT_CHAIN_ID);
-  for (const wallet of user.wallets) {
-    const ok = (await client.readContract({
-      address: CERT_ADDRESS,
-      abi: CERT_ABI,
-      functionName: 'hasRole',
-      args: [CERT_ADMIN_ROLE, wallet as `0x${string}`],
-    })) as boolean;
-    if (ok) return wallet;
-  }
-  throw new UserAuthError('This account holds no ADMIN_ROLE on BuilderCertificate', 403);
+  // firstHolder skips a wallet whose read fails, so one RPC error cannot 500 the route.
+  const admin = await firstHolder('certificates', 'admin', user.wallets);
+  if (!admin) throw new UserAuthError('This account holds no ADMIN_ROLE on BuilderCertificate', 403);
+  return admin;
 }
